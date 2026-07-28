@@ -16,12 +16,15 @@ export async function adisyonGetir(masaAd: string): Promise<AdisyonVerisi> {
   return { sepet, indirim, tahsilatlar: (data.tahsilatlar as Tahsilat[]) ?? [], acilis: data.acilis };
 }
 
-export async function tumAdisyonlar(): Promise<Record<string, SepetKalemi[]>> {
-  const { data } = await supabase.from("adisyonlar").select("masa_ad, kalemler");
-  const sonuc: Record<string, SepetKalemi[]> = {};
+export async function tumAdisyonlar(): Promise<Record<string, any>> {
+  const { data } = await supabase.from("adisyonlar").select("masa_ad, kalemler, acilis");
+  const sonuc: Record<string, any> = {};
   for (const satir of data ?? []) {
     const k = satir.kalemler as any;
-    sonuc[satir.masa_ad] = Array.isArray(k) ? k : (k?.sepet ?? []);
+    sonuc[satir.masa_ad] = {
+      sepet: Array.isArray(k) ? k : (k?.sepet ?? []),
+      acilis: satir.acilis,
+    };
   }
   return sonuc;
 }

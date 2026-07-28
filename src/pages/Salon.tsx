@@ -14,7 +14,7 @@ function sureFarki(acilis: string): string {
 
 export default function Salon() {
   const navigate = useNavigate();
-  const [adisyonlar, setAdisyonlar] = useState<Record<string, SepetKalemi[]>>({});
+  const [adisyonlar, setAdisyonlar] = useState<Record<string, any>>({});
 
   useEffect(() => {
     tumAdisyonlar().then(setAdisyonlar);
@@ -28,7 +28,7 @@ export default function Salon() {
       </header>
 
       {bolgeler.map((bolge) => {
-        const doluSayisi = bolge.masalar.filter((m) => (adisyonlar[m.ad] ?? []).length > 0).length;
+        const doluSayisi = bolge.masalar.filter((m) => (adisyonlar[m.ad]?.sepet ?? []).length > 0).length;
         return (
           <section key={bolge.ad} className="bolge">
             <h2>
@@ -37,10 +37,10 @@ export default function Salon() {
             </h2>
             <div className="masa-grid">
               {bolge.masalar.map((masa) => {
-                const kalemler = adisyonlar[masa.ad] ?? [];
-                const tutar = kalemler.reduce((t, k) => t + k.fiyat * k.adet, 0);
                 const adisyon = adisyonlar[masa.ad];
-                const acilis = (adisyon as any)?.acilis;
+                const kalemler = adisyon?.sepet ?? [];
+                const tutar = kalemler.reduce((t: number, k: any) => t + k.fiyat * k.adet, 0);
+                const acilis = adisyon?.acilis;
                 const sure = acilis ? sureFarki(acilis) : "şimdi";
                 const canli = kalemler.length > 0
                   ? { ...masa, dolu: true, tutar, sure, garson: "Ramazan" }
