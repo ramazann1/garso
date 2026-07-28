@@ -13,14 +13,14 @@ type Props = {
 };
 
 export default function TahsilatPanel({ kalemler, toplam, araToplam, kayitliTahsilatlar, onKaydet, onKapat, onOdendi }: Props) {
-  const [tahsilatlar, setTahsilatlar] = useState<Tahsilat[]>(kayitliTahsilatlar);
+  const [tahsilatlar, setTahsilatlar] = useState<Tahsilat[]>(kayitliTahsilatlar ?? []);
   const [girilen, setGirilen] = useState("");
   const [secilen, setSecilen] = useState<Record<number, number>>({});
   const [odenmis, setOdenmis] = useState<Record<number, number>>({});
   const [indirimAcik, setIndirimAcik] = useState(false);
   const [panelIndirimi, setPanelIndirimi] = useState(0);
 
-  const odenen = tahsilatlar.reduce((t, o) => t + o.tutar, 0);
+  const odenen = (tahsilatlar ?? []).reduce((t, o) => t + o.tutar, 0);
   const efektifToplam = toplam - panelIndirimi;
   const kalan = efektifToplam - odenen;
 
@@ -43,7 +43,7 @@ export default function TahsilatPanel({ kalemler, toplam, araToplam, kayitliTahs
     const tutar = girilen ? Number(girilen) : kalan;
     if (tutar <= 0) return;
     if (tutar > kalan) { alert(`Tutar kalandan büyük olamaz (kalan ₺${kalan})`); return; }
-    const yeni = [...tahsilatlar, { tip, tutar }];
+    const yeni = [...(tahsilatlar ?? []), { tip, tutar }];
     setTahsilatlar(yeni);
     setOdenmis((o) => {
       const g = { ...o };
@@ -106,7 +106,7 @@ export default function TahsilatPanel({ kalemler, toplam, araToplam, kayitliTahs
             })}
           </div>
 
-          {tahsilatlar.length > 0 && (
+          {(tahsilatlar ?? []).length > 0 && (
             <div className="tahsilat-gecmis">
               {tahsilatlar.map((o, i) => (
                 <div key={i} className="tahsilat-satir">
@@ -133,9 +133,11 @@ export default function TahsilatPanel({ kalemler, toplam, araToplam, kayitliTahs
             onChange={(e) => { setSecilen({}); setGirilen(e.target.value); }}
           />
         </div>
+
         <div className="tahsilat-kaydet-bar">
           <button className="tahsilat-kaydet" onClick={() => { onKaydet(tahsilatlar); onKapat(); }}>Kaydet</button>
         </div>
+
         <div className="tahsilat-indirim-bar">
           <button className="indirim-btn" onClick={() => setIndirimAcik(true)}>İndirim</button>
         </div>
