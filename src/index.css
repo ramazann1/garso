@@ -558,3 +558,17 @@ body {
   cursor: pointer;
   margin-bottom: 8px;
 }
+.tahsilat-indirim-bar {
+  padding: 0 16px 12px;
+}
+.tahsilat-indirim-bar .indirim-btn {
+  width: 100%;
+  padding: 12px;
+  border: none;
+  border-radius: 10px;
+  background: #6c757d;
+  color: #fff;
+  font-size: 15px;
+  font-weight: 600;
+  cursor: pointer;
+}

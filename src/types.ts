@@ -36,4 +36,5 @@ export type Tahsilat = {
 export type Adisyon = {
   sepet: SepetKalemi[];
   indirim: number;
+  tahsilatlar: Tahsilat[];
 };

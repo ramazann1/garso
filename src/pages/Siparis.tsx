@@ -13,6 +13,7 @@ export default function Siparis() {
   const [secili, setSecili] = useState(kategoriler[0]);
   const [sepet, setSepet] = useState<SepetKalemi[]>([]);
   const [indirim, setIndirim] = useState(0);
+  const [kayitliTahsilatlar, setKayitliTahsilatlar] = useState<import("../types").Tahsilat[]>([]);
   const [secimUrunu, setSecimUrunu] = useState<Urun | null>(null);
   const [tahsilatAcik, setTahsilatAcik] = useState(false);
   const [indirimAcik, setIndirimAcik] = useState(false);
@@ -21,6 +22,7 @@ export default function Siparis() {
     adisyonGetir(masaAd ?? "").then((veri) => {
       setSepet(veri.sepet);
       setIndirim(veri.indirim);
+      setKayitliTahsilatlar(veri.tahsilatlar);
     });
   }, [masaAd]);
 
@@ -41,7 +43,7 @@ export default function Siparis() {
   const toplam = Math.max(0, araToplam - indirim);
 
   const kaydet = async () => {
-    await adisyonKaydet(masaAd ?? "", { sepet, indirim });
+    await adisyonKaydet(masaAd ?? "", { sepet, indirim, tahsilatlar: kayitliTahsilatlar });
     navigate("/");
   };
 
@@ -140,7 +142,7 @@ export default function Siparis() {
           araToplam={araToplam}
           onKapat={() => setTahsilatAcik(false)}
           onOdendi={() => {
-            adisyonKaydet(masaAd ?? "", { sepet: [], indirim: 0 });
+            adisyonKaydet(masaAd ?? "", { sepet: [], indirim: 0, tahsilatlar: [] });
             navigate("/");
           }}
         />
@@ -148,6 +150,8 @@ export default function Siparis() {
       {indirimAcik && (
         <IndirimModal
           araToplam={araToplam}
+          kayitliTahsilatlar={kayitliTahsilatlar}
+          onKaydet={(t) => setKayitliTahsilatlar(t)}
           mevcutIndirim={indirim}
           onKapat={() => setIndirimAcik(false)}
           onUygula={(tutar) => { setIndirim(tutar); setIndirimAcik(false); }}

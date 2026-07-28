@@ -1,18 +1,19 @@
 import { supabase } from "./supabase";
-import type { SepetKalemi } from "./types";
+import type { SepetKalemi, Tahsilat } from "./types";
 
-type AdisyonVerisi = { sepet: SepetKalemi[]; indirim: number };
+type AdisyonVerisi = { sepet: SepetKalemi[]; indirim: number; tahsilatlar: Tahsilat[] };
 
 export async function adisyonGetir(masaAd: string): Promise<AdisyonVerisi> {
   const { data } = await supabase
     .from("adisyonlar")
-    .select("kalemler")
+    .select("kalemler, tahsilatlar")
     .eq("masa_ad", masaAd)
     .maybeSingle();
-  const kalemler = data?.kalemler as any;
-  if (!kalemler) return { sepet: [], indirim: 0 };
-  if (Array.isArray(kalemler)) return { sepet: kalemler, indirim: 0 };
-  return { sepet: kalemler.sepet ?? [], indirim: kalemler.indirim ?? 0 };
+  if (!data) return { sepet: [], indirim: 0, tahsilatlar: [] };
+  const k = data.kalemler as any;
+  const sepet = Array.isArray(k) ? k : (k?.sepet ?? []);
+  const indirim = Array.isArray(k) ? 0 : (k?.indirim ?? 0);
+  return { sepet, indirim, tahsilatlar: (data.tahsilatlar as Tahsilat[]) ?? [] };
 }
 
 export async function tumAdisyonlar(): Promise<Record<string, SepetKalemi[]>> {
@@ -29,8 +30,9 @@ export async function adisyonKaydet(masaAd: string, veri: AdisyonVerisi) {
   if (veri.sepet.length === 0) {
     await supabase.from("adisyonlar").delete().eq("masa_ad", masaAd);
   } else {
-    await supabase
-      .from("adisyonlar")
-      .upsert({ masa_ad: masaAd, kalemler: veri, guncelleme: new Date().toISOString() }, { onConflict: "masa_ad" });
+    await supabase.from("adisyonlar").upsert(
+      { masa_ad: masaAd, kalemler: { sepet: veri.sepet, indirim: veri.indirim }, tahsilatlar: veri.tahsilatlar, guncelleme: new Date().toISOString() },
+      { onConflict: "masa_ad" }
+    );
   }
 }
