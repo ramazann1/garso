@@ -30,6 +30,10 @@ export type SepetKalemi = {
   secimler?: string[];
 };
 export type Tahsilat = {
-  tip: "Nakit" | "Kredi Kartı";
+  tip: "Nakit" | "Kredi Kartı" | "İndirim";
   tutar: number;
+};
+export type Adisyon = {
+  sepet: SepetKalemi[];
+  indirim: number;
 };

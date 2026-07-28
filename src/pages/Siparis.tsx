@@ -1,35 +1,49 @@
-import { useState } from "react";
+import { useEffect, useState } from "react";
 import { useNavigate, useParams } from "react-router-dom";
 import { kategoriler } from "../ornekVeri";
 import { adisyonGetir, adisyonKaydet } from "../adisyonlar";
 import UrunSecim from "../components/UrunSecim";
 import TahsilatPanel from "../components/TahsilatPanel";
-import type { Urun } from "../types";
+import IndirimModal from "../components/IndirimModal";
+import type { SepetKalemi, Urun } from "../types";
 
 export default function Siparis() {
   const { masaAd } = useParams();
   const navigate = useNavigate();
   const [secili, setSecili] = useState(kategoriler[0]);
-  const [sepet, setSepet] = useState(() => adisyonGetir(masaAd ?? ""));
+  const [sepet, setSepet] = useState<SepetKalemi[]>([]);
+  const [indirim, setIndirim] = useState(0);
   const [secimUrunu, setSecimUrunu] = useState<Urun | null>(null);
   const [tahsilatAcik, setTahsilatAcik] = useState(false);
+  const [indirimAcik, setIndirimAcik] = useState(false);
+
+  useEffect(() => {
+    adisyonGetir(masaAd ?? "").then((veri) => {
+      setSepet(veri.sepet);
+      setIndirim(veri.indirim);
+    });
+  }, [masaAd]);
+
   const sepeteEkle = (ad: string, fiyat: number, porsiyon?: string, secimler?: string[]) => {
     const anahtar = [ad, porsiyon, ...(secimler ?? [])].join("|");
     setSepet((s) => {
       const var_mi = s.find((k) => [k.ad, k.porsiyon, ...(k.secimler ?? [])].join("|") === anahtar);
-      if (var_mi)
-        return s.map((k) => (k === var_mi ? { ...k, adet: k.adet + 1 } : k));
+      if (var_mi) return s.map((k) => (k === var_mi ? { ...k, adet: k.adet + 1 } : k));
       return [...s, { ad, fiyat, adet: 1, porsiyon, secimler }];
     });
   };
+
   const sepettenCikar = (ad: string) => {
-    setSepet((s) =>
-      s
-        .map((k) => (k.ad === ad ? { ...k, adet: k.adet - 1 } : k))
-        .filter((k) => k.adet > 0)
-    );
+    setSepet((s) => s.map((k) => (k.ad === ad ? { ...k, adet: k.adet - 1 } : k)).filter((k) => k.adet > 0));
   };
-  const toplam = sepet.reduce((t, k) => t + k.fiyat * k.adet, 0);
+
+  const araToplam = sepet.reduce((t, k) => t + k.fiyat * k.adet, 0);
+  const toplam = Math.max(0, araToplam - indirim);
+
+  const kaydet = async () => {
+    await adisyonKaydet(masaAd ?? "", { sepet, indirim });
+    navigate("/");
+  };
 
   return (
     <div className="siparis-sayfa">
@@ -58,11 +72,7 @@ export default function Siparis() {
               <button
                 key={u.ad}
                 className="urun-kart"
-                onClick={() =>
-                  u.porsiyonlar || u.secenekler
-                    ? setSecimUrunu(u)
-                    : sepeteEkle(u.ad, u.fiyat)
-                }
+                onClick={() => u.porsiyonlar || u.secenekler ? setSecimUrunu(u) : sepeteEkle(u.ad, u.fiyat)}
               >
                 <span>{u.ad}</span>
                 <strong>₺{u.fiyat}</strong>
@@ -70,6 +80,7 @@ export default function Siparis() {
             ))}
           </div>
         </main>
+
         <aside className="sepet">
           <h2>Adisyon</h2>
           <div className="sepet-liste">
@@ -91,37 +102,55 @@ export default function Siparis() {
             ))}
           </div>
           <footer>
+            {indirim > 0 && (
+              <div className="indirim-satir">
+                <span>⭐ İndirim</span>
+                <span>−₺{indirim}</span>
+              </div>
+            )}
             <div className="toplam">
               <span>Toplam</span>
               <strong>₺{toplam}</strong>
             </div>
-            <button
-              className="ode"
-              disabled={sepet.length === 0}
-              onClick={() => setTahsilatAcik(true)}
-            >
-              Öde
-            </button>
-            <button
-              className="kaydet"
-              onClick={() => {
-                adisyonKaydet(masaAd ?? "", sepet);
-                navigate("/");
-              }}
-            >
-              Kaydet
-            </button>
+            <div className="sepet-aksiyonlar">
+              <button
+                className="indirim-btn"
+                disabled={sepet.length === 0}
+                onClick={() => setIndirimAcik(true)}
+              >
+                İndirim
+              </button>
+              <button
+                className="ode"
+                disabled={sepet.length === 0}
+                onClick={() => setTahsilatAcik(true)}
+              >
+                Öde
+              </button>
+            </div>
+            <button className="kaydet" onClick={kaydet}>Kaydet</button>
           </footer>
         </aside>
       </div>
+
       {tahsilatAcik && (
         <TahsilatPanel
           kalemler={sepet}
+          toplam={toplam}
+          araToplam={araToplam}
           onKapat={() => setTahsilatAcik(false)}
           onOdendi={() => {
-            adisyonKaydet(masaAd ?? "", []);
+            adisyonKaydet(masaAd ?? "", { sepet: [], indirim: 0 });
             navigate("/");
           }}
+        />
+      )}
+      {indirimAcik && (
+        <IndirimModal
+          araToplam={araToplam}
+          mevcutIndirim={indirim}
+          onKapat={() => setIndirimAcik(false)}
+          onUygula={(tutar) => { setIndirim(tutar); setIndirimAcik(false); }}
         />
       )}
       {secimUrunu && (

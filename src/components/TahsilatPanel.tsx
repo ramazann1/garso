@@ -1,24 +1,23 @@
 import { useState } from "react";
+import IndirimModal from "./IndirimModal";
 import type { SepetKalemi, Tahsilat } from "../types";
 
 type Props = {
   kalemler: SepetKalemi[];
+  toplam: number;
+  araToplam: number;
   onKapat: () => void;
   onOdendi: () => void;
 };
 
-export default function TahsilatPanel({ kalemler, onKapat, onOdendi }: Props) {
-  const toplam = kalemler.reduce((t, k) => t + k.fiyat * k.adet, 0);
+export default function TahsilatPanel({ kalemler, toplam, onKapat, onOdendi }: Props) {
   const [tahsilatlar, setTahsilatlar] = useState<Tahsilat[]>([]);
   const [girilen, setGirilen] = useState("");
   const [secilen, setSecilen] = useState<Record<number, number>>({});
   const [odenmis, setOdenmis] = useState<Record<number, number>>({});
 
-  const odenen = tahsilatlar.reduce((t, o) => t + o.tutar, 0);
-  const kalan = toplam - odenen;
-
-  const seciliTutar = (sec: Record<number, number>) =>
-    Object.entries(sec).reduce((t, [i, adet]) => t + kalemler[Number(i)].fiyat * adet, 0);
+  const odenen = tahsilatlar.filter((t) => t.tip !== "İndirim").reduce((t, o) => t + o.tutar, 0);
+  const kalan = toplam - panelIndirimi - odenen;
 
   const kalemSec = (i: number) => {
     const odenmisAdet = odenmis[i] ?? 0;
@@ -29,19 +28,16 @@ export default function TahsilatPanel({ kalemler, onKapat, onOdendi }: Props) {
       const yeniAdet = su >= kalanAdet ? 0 : su + 1;
       const yeni = { ...s, [i]: yeniAdet };
       if (yeniAdet === 0) delete yeni[i];
-      const tutar = seciliTutar(yeni);
+      const tutar = Object.entries(yeni).reduce((t, [x, adet]) => t + kalemler[Number(x)].fiyat * adet, 0);
       setGirilen(tutar > 0 ? String(tutar) : "");
       return yeni;
     });
   };
 
-  const odemeAl = (tip: Tahsilat["tip"]) => {
+  const odemeAl = (tip: "Nakit" | "Kredi Kartı") => {
     const tutar = girilen ? Number(girilen) : kalan;
     if (tutar <= 0) return;
-    if (tutar > kalan) {
-      alert(`Tutar kalandan büyük olamaz (kalan ₺${kalan})`);
-      return;
-    }
+    if (tutar > kalan) { alert(`Tutar kalandan büyük olamaz (kalan ₺${kalan})`); return; }
     const yeni = [...tahsilatlar, { tip, tutar }];
     setTahsilatlar(yeni);
     setOdenmis((o) => {
@@ -123,11 +119,21 @@ export default function TahsilatPanel({ kalemler, onKapat, onOdendi }: Props) {
             onChange={(e) => { setSecilen({}); setGirilen(e.target.value); }}
           />
         </div>
-
+        <div className="tahsilat-alt" style={{paddingBottom: 0, borderTop: 'none'}}>
+          <button className="indirim-btn" onClick={() => setIndirimAcik(true)}>İndirim</button>
+        </div>
         <footer className="tahsilat-alt">
           <button className="odeme-tip nakit" onClick={() => odemeAl("Nakit")}>Nakit</button>
           <button className="odeme-tip kart" onClick={() => odemeAl("Kredi Kartı")}>Kredi Kartı</button>
         </footer>
+      {indirimAcik && (
+        <IndirimModal
+          araToplam={araToplam}
+          mevcutIndirim={panelIndirimi}
+          onKapat={() => setIndirimAcik(false)}
+          onUygula={(tutar) => { setPanelIndirimi(tutar); setIndirimAcik(false); }}
+        />
+      )}
       </aside>
     </div>
   );

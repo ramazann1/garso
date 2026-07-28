@@ -464,3 +464,97 @@ body {
   font-style: normal;
   font-weight: 600;
 }
+.indirim-kisayol { display: flex; gap: 8px; margin-top: 8px; }
+.indirim-kisayol button {
+  flex: 1;
+  padding: 10px;
+  border: 1px dashed var(--mercan);
+  border-radius: 10px;
+  background: var(--kart);
+  color: var(--mercan);
+  font-size: 14px;
+  cursor: pointer;
+}
+.tahsilat-satir.indirim { color: var(--mercan); }
+.indirim-satir {
+  display: flex;
+  justify-content: space-between;
+  color: var(--mercan);
+  font-size: 14px;
+  margin-bottom: 4px;
+}
+.sepet-aksiyonlar { display: flex; gap: 8px; margin-bottom: 8px; }
+.sepet-aksiyonlar .indirim-btn {
+  flex: 1;
+  padding: 12px;
+  border: none;
+  border-radius: 10px;
+  background: #6c757d;
+  color: #fff;
+  font-size: 16px;
+  font-weight: 600;
+  cursor: pointer;
+  margin-bottom: 8px;
+}
+.sepet-aksiyonlar .indirim-btn:disabled { opacity: 0.4; cursor: default; }
+.sepet-aksiyonlar .ode { flex: 2; margin-bottom: 0; }
+.modal-fon {
+  position: fixed; inset: 0;
+  background: rgba(45,52,54,0.35);
+  display: flex; align-items: center; justify-content: center;
+  z-index: 30;
+}
+.indirim-modal {
+  background: var(--kart);
+  border-radius: 16px;
+  padding: 24px;
+  width: 340px;
+  box-shadow: 0 8px 32px rgba(0,0,0,0.15);
+}
+.indirim-modal h3 { margin: 0 0 16px; font-size: 18px; }
+.mod-sec { display: flex; gap: 8px; margin-bottom: 16px; }
+.mod-sec button {
+  flex: 1; padding: 10px;
+  border: 1px solid #eee6dc;
+  border-radius: 10px;
+  background: var(--kart);
+  cursor: pointer; font-size: 14px;
+}
+.mod-sec button.aktif { background: var(--mercan); color: #fff; border-color: var(--mercan); }
+.onizleme { font-size: 14px; color: var(--soluk); margin-bottom: 12px; }
+.onizleme strong { color: var(--metin); }
+.numpad {
+  display: grid; grid-template-columns: repeat(3, 1fr);
+  gap: 8px; margin-bottom: 16px;
+}
+.numpad button {
+  padding: 14px;
+  border: 1px solid #eee6dc;
+  border-radius: 10px;
+  background: var(--zemin);
+  font-size: 18px; cursor: pointer;
+}
+.modal-aksiyonlar { display: flex; gap: 8px; }
+.modal-aksiyonlar .iptal {
+  flex: 1; padding: 12px;
+  border: 1px solid #eee6dc; border-radius: 10px;
+  background: var(--kart); cursor: pointer;
+}
+.modal-aksiyonlar .uygula {
+  flex: 2; padding: 12px;
+  border: none; border-radius: 10px;
+  background: var(--mercan); color: #fff;
+  font-size: 14px; font-weight: 600; cursor: pointer;
+}
+.tahsilat-alt .indirim-btn {
+  width: 100%;
+  padding: 12px;
+  border: none;
+  border-radius: 10px;
+  background: #6c757d;
+  color: #fff;
+  font-size: 15px;
+  font-weight: 600;
+  cursor: pointer;
+  margin-bottom: 8px;
+}
