@@ -13,30 +13,33 @@ export default function Salon() {
         <span>Salon Görünümü</span>
       </header>
 
-      {bolgeler.map((bolge) => (
-        <section key={bolge.ad} className="bolge">
-          <h2>
-            {bolge.ad}{" "}
-            <span>({bolge.masalar.filter((m) => m.dolu).length}/{bolge.masalar.length} dolu)</span>
-          </h2>
-          <div className="masa-grid">
-            {bolge.masalar.map((masa) => {
-              const kalemler = adisyonGetir(masa.ad);
-              const tutar = kalemler.reduce((t, k) => t + k.fiyat * k.adet, 0);
-              const canli = kalemler.length > 0
-                ? { ...masa, dolu: true, tutar, sure: "şimdi", garson: "Ramazan" }
-                : { ...masa, dolu: false, tutar: undefined, sure: undefined, garson: undefined };
-              return (
-                <MasaKarti
-                  key={masa.ad}
-                  masa={canli}
-                  onClick={() => navigate(`/siparis/${encodeURIComponent(masa.ad)}`)}
-                />
-              );
-            })}
-          </div>
-        </section>
-      ))}
+      {bolgeler.map((bolge) => {
+        const doluSayisi = bolge.masalar.filter((m) => adisyonGetir(m.ad).length > 0).length;
+        return (
+          <section key={bolge.ad} className="bolge">
+            <h2>
+              {bolge.ad}{" "}
+              <span>({doluSayisi}/{bolge.masalar.length} dolu)</span>
+            </h2>
+            <div className="masa-grid">
+              {bolge.masalar.map((masa) => {
+                const kalemler = adisyonGetir(masa.ad);
+                const tutar = kalemler.reduce((t, k) => t + k.fiyat * k.adet, 0);
+                const canli = kalemler.length > 0
+                  ? { ...masa, dolu: true, tutar, sure: "şimdi", garson: "Ramazan" }
+                  : { ...masa, dolu: false, tutar: undefined, sure: undefined, garson: undefined };
+                return (
+                  <MasaKarti
+                    key={masa.ad}
+                    masa={canli}
+                    onClick={() => navigate(`/siparis/${encodeURIComponent(masa.ad)}`)}
+                  />
+                );
+              })}
+            </div>
+          </section>
+        );
+      })}
     </div>
   );
 }

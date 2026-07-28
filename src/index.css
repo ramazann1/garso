@@ -417,3 +417,50 @@ body {
   font-size: 14px;
   cursor: pointer;
 }
+.kalem-sec-liste { margin-top: 16px; display: flex; flex-direction: column; gap: 6px; }
+.kalem-sec {
+  display: flex;
+  justify-content: space-between;
+  padding: 10px 12px;
+  border: 1px solid #eee6dc;
+  border-radius: 10px;
+  background: var(--kart);
+  font-size: 14px;
+  cursor: pointer;
+}
+.kalem-sec.aktif {
+  border-color: var(--yesil);
+  background: #e9faf4;
+}
+.tahsilat-fon { animation: fon-belir 0.2s ease; }
+.tahsilat-panel { animation: panel-kay 0.25s ease; }
+@keyframes fon-belir {
+  from { background: rgba(45, 52, 54, 0); }
+  to { background: rgba(45, 52, 54, 0.35); }
+}
+@keyframes panel-kay {
+  from { transform: translateX(100%); }
+  to { transform: translateX(0); }
+}
+.kalem-sec.odendi {
+  opacity: 0.5;
+  text-decoration: line-through;
+  cursor: default;
+}
+.siparis-sayfa { animation: sayfa-gel 0.25s ease; }
+.sayfa { animation: sayfa-gel 0.25s ease; }
+@keyframes sayfa-gel {
+  from { opacity: 0; }
+  to { opacity: 1; }
+}
+.odendi-rozet {
+  display: inline-block;
+  margin-left: 6px;
+  padding: 2px 8px;
+  border-radius: 999px;
+  background: var(--yesil);
+  color: #fff;
+  font-size: 11px;
+  font-style: normal;
+  font-weight: 600;
+}
