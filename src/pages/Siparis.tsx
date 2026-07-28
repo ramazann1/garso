@@ -173,7 +173,7 @@ export default function Siparis() {
           araToplam={araToplam}
           mevcutIndirim={indirim}
           onKapat={() => setIndirimAcik(false)}
-          onUygula={(tutar) => { setIndirim(tutar); setIndirimAcik(false); }}
+          onUygula={(tutar: number) => { setIndirim(tutar); setIndirimAcik(false); }}
         />
       )}
 
