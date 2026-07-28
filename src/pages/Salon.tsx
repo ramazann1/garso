@@ -3,7 +3,6 @@ import { useNavigate } from "react-router-dom";
 import { bolgeler } from "../ornekVeri";
 import MasaKarti from "../components/MasaKarti";
 import { tumAdisyonlar } from "../adisyonlar";
-import type { SepetKalemi } from "../types";
 
 function sureFarki(acilis: string): string {
   const dk = Math.floor((Date.now() - new Date(acilis).getTime()) / 60000);
