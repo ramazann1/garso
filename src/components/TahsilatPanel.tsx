@@ -31,6 +31,12 @@ export default function TahsilatPanel({ kalemler, toplam, araToplam, kayitliTahs
   const efektifToplam = toplam - panelIndirimi;
   const kalan = efektifToplam - odenen;
 
+  const numpadTus = (v: string) => {
+    if (v === "⌫") { setGirilen((g) => g.slice(0, -1)); return; }
+    if (v === "Tümü") { setGirilen(String(kalan)); return; }
+    setGirilen((g) => g + v);
+  };
+
   const kalemSec = (i: number) => {
     const odenmisAdet = odenmis[i] ?? 0;
     const kalanAdet = kalemler[i].adet - odenmisAdet;
@@ -65,121 +71,120 @@ export default function TahsilatPanel({ kalemler, toplam, araToplam, kayitliTahs
 
   return (
     <div className="tahsilat-fon" onClick={onKapat}>
-      <aside className="tahsilat-panel" onClick={(e) => e.stopPropagation()}>
+      <aside className="tahsilat-panel genis" onClick={(e) => e.stopPropagation()}>
         <header className="tahsilat-ust">
-          <h2>Tahsilat</h2>
+          <h2>Tahsilat — Toplam ₺{toplam} / Kalan ₺{kalan}</h2>
           <button className="kapat" onClick={onKapat}>×</button>
         </header>
 
-        <div className="tahsilat-govde">
-          <div className="tahsilat-tutarlar">
-            <div className="tutar-satir">
-              <span>Toplam</span>
-              <strong>₺{toplam}</strong>
+        <div className="tahsilat-iki-sutun">
+          {/* SOL: Ürünler + geçmiş */}
+          <div className="tahsilat-sol">
+            <p className="sutun-baslik">Ödenmemiş Ürünler</p>
+            <div className="kalem-sec-liste">
+              {kalemler.map((k, i) => {
+                const odenmisAdet = odenmis[i] ?? 0;
+                const seciliAdet = secilen[i] ?? 0;
+                const bitti = odenmisAdet >= k.adet;
+                return (
+                  <button
+                    key={i}
+                    className={bitti ? "kalem-sec odendi" : seciliAdet > 0 ? "kalem-sec aktif" : "kalem-sec"}
+                    disabled={bitti}
+                    onClick={() => kalemSec(i)}
+                  >
+                    <span>
+                      {k.adet}× {k.ad}
+                      {odenmisAdet > 0 && !bitti && <em className="odendi-rozet">{odenmisAdet} ödendi</em>}
+                    </span>
+                    <span>
+                      {bitti ? "✓" : seciliAdet > 0
+                        ? `${seciliAdet} seçili · ₺${k.fiyat * seciliAdet}`
+                        : `₺${k.fiyat * k.adet}`}
+                    </span>
+                  </button>
+                );
+              })}
             </div>
-            {panelIndirimi > 0 && (
-              <div className="tutar-satir indirim">
-                <span>İndirim</span>
-                <span>−₺{panelIndirimi}</span>
+
+            {(tahsilatlar ?? []).length > 0 && (
+              <div className="tahsilat-gecmis">
+                <p className="gecmis-baslik">Alınan Ödemeler</p>
+                {tahsilatlar.map((o, i) => (
+                  <div key={i} className="gecmis-satir">
+                    <span className="gecmis-tip">{o.tip}</span>
+                    <span className="gecmis-tutar">₺{o.tutar}</span>
+                  </div>
+                ))}
               </div>
             )}
-            {odenen > 0 && (
-              <div className="tutar-satir odendi">
-                <span>Ödenen</span>
-                <span>₺{odenen}</span>
-              </div>
-            )}
-            <div className="tutar-satir kalan-satir">
-              <span>Kalan</span>
-              <strong>₺{kalan}</strong>
-            </div>
           </div>
 
-          {(tahsilatlar ?? []).length > 0 && (
-            <div className="tahsilat-gecmis">
-              <p className="gecmis-baslik">Alınan Ödemeler</p>
-              {tahsilatlar.map((o, i) => (
-                <div key={i} className="gecmis-satir">
-                  <span className="gecmis-tip">{o.tip}</span>
-                  <span className="gecmis-tutar">₺{o.tutar}</span>
+          {/* SAĞ: Numpad + ödeme tipleri */}
+          <div className="tahsilat-sag">
+            <div className="tahsilat-tutarlar">
+              {panelIndirimi > 0 && (
+                <div className="tutar-satir indirim">
+                  <span>İndirim</span><span>−₺{panelIndirimi}</span>
                 </div>
+              )}
+              {odenen > 0 && (
+                <div className="tutar-satir odendi">
+                  <span>Ödenen</span><span>₺{odenen}</span>
+                </div>
+              )}
+              <div className="tutar-satir kalan-satir">
+                <span>Kalan</span><strong>₺{kalan}</strong>
+              </div>
+            </div>
+
+            <div className="odeme-numpad">
+              <div className="numpad-ekran">
+                {girilen || <span className="placeholder">₺{kalan}</span>}
+              </div>
+              <div className="numpad-grid">
+                {["7","8","9","4","5","6","1","2","3","Tümü","0","⌫"].map((t) => (
+                  <button key={t} className={t === "Tümü" ? "numpad-tus tum" : "numpad-tus"} onClick={() => numpadTus(t)}>{t}</button>
+                ))}
+              </div>
+              <div className="bolme-kisayol">
+                {[2, 3, 4].map((n) => (
+                  <button key={n} onClick={() => { setSecilen({}); setGirilen(String(Math.ceil(kalan / n))); }}>
+                    1/{n}
+                  </button>
+                ))}
+                <button onClick={() => setIndirimAcik(true)}>İndirim</button>
+              </div>
+            </div>
+
+            <div className="odeme-tipler">
+              {odemeTipleri.map(({ id, ad, renk }) => (
+                <button
+                  key={id}
+                  className="odeme-tip-btn"
+                  style={{ background: renk }}
+                  onClick={() => odemeAl(ad)}
+                >
+                  {ad}
+                </button>
               ))}
             </div>
-          )}
 
-          <div className="kalem-sec-liste">
-            {kalemler.map((k, i) => {
-              const odenmisAdet = odenmis[i] ?? 0;
-              const seciliAdet = secilen[i] ?? 0;
-              const bitti = odenmisAdet >= k.adet;
-              return (
-                <button
-                  key={i}
-                  className={bitti ? "kalem-sec odendi" : seciliAdet > 0 ? "kalem-sec aktif" : "kalem-sec"}
-                  disabled={bitti}
-                  onClick={() => kalemSec(i)}
-                >
-                  <span>
-                    {k.adet}× {k.ad}
-                    {odenmisAdet > 0 && !bitti && <em className="odendi-rozet">{odenmisAdet} ödendi</em>}
-                  </span>
-                  <span>
-                    {bitti ? "✓" : seciliAdet > 0
-                      ? `${seciliAdet} seçili · ₺${k.fiyat * seciliAdet}`
-                      : `₺${k.fiyat * k.adet}`}
-                  </span>
-                </button>
-              );
-            })}
-          </div>
-
-          <div className="bolme-kisayol">
-            {[2, 3, 4].map((n) => (
-              <button key={n} onClick={() => { setSecilen({}); setGirilen(String(Math.ceil(kalan / n))); }}>
-                1/{n}
-              </button>
-            ))}
-          </div>
-
-          <input
-            className="tutar-giris"
-            type="number"
-            placeholder={`Tutar gir (boş = kalan ₺${kalan})`}
-            value={girilen}
-            onChange={(e) => { setSecilen({}); setGirilen(e.target.value); }}
-          />
-
-          <div className="odeme-tipler">
-            {odemeTipleri.map(({ id, ad, renk }) => (
-              <button
-                key={id}
-                className="odeme-tip-btn"
-                style={{ background: renk }}
-                onClick={() => odemeAl(ad)}
-              >
-                {ad}
-              </button>
-            ))}
+            <div className="tahsilat-alt-butonlar">
+              <button className="tahsilat-kaydet" onClick={() => { onKaydet(tahsilatlar); onKapat(); }}>Kaydet</button>
+            </div>
           </div>
         </div>
-
-        <div className="tahsilat-indirim-bar">
-          <button className="indirim-btn" onClick={() => setIndirimAcik(true)}>İndirim</button>
-        </div>
-
-        <div className="tahsilat-kaydet-bar">
-          <button className="tahsilat-kaydet" onClick={() => { onKaydet(tahsilatlar); onKapat(); }}>Kaydet</button>
-        </div>
-
-        {indirimAcik && (
-          <IndirimModal
-            araToplam={araToplam}
-            mevcutIndirim={panelIndirimi}
-            onKapat={() => setIndirimAcik(false)}
-            onUygula={(tutar) => { setPanelIndirimi(tutar); setIndirimAcik(false); }}
-          />
-        )}
       </aside>
+
+      {indirimAcik && (
+        <IndirimModal
+          araToplam={araToplam}
+          mevcutIndirim={panelIndirimi}
+          onKapat={() => setIndirimAcik(false)}
+          onUygula={(tutar) => { setPanelIndirimi(tutar); setIndirimAcik(false); }}
+        />
+      )}
     </div>
   );
 }

@@ -661,3 +661,88 @@ body {
   font-weight: 600;
   cursor: pointer;
 }
+.tahsilat-panel.genis { width: 820px; }
+
+.tahsilat-iki-sutun {
+  display: flex;
+  flex: 1;
+  overflow: hidden;
+}
+
+.tahsilat-sol {
+  flex: 1;
+  padding: 16px;
+  overflow-y: auto;
+  border-right: 1px solid #eee6dc;
+}
+
+.tahsilat-sag {
+  width: 340px;
+  padding: 16px;
+  display: flex;
+  flex-direction: column;
+  gap: 12px;
+  overflow-y: auto;
+}
+
+.sutun-baslik {
+  font-size: 11px;
+  text-transform: uppercase;
+  letter-spacing: 0.5px;
+  color: var(--soluk);
+  margin: 0 0 10px;
+}
+
+.numpad-ekran {
+  background: var(--zemin);
+  border-radius: 10px;
+  padding: 12px 16px;
+  font-size: 24px;
+  font-weight: 700;
+  text-align: right;
+  min-height: 52px;
+  margin-bottom: 8px;
+}
+.numpad-ekran .placeholder { color: var(--soluk); font-weight: 400; font-size: 18px; }
+
+.numpad-grid {
+  display: grid;
+  grid-template-columns: repeat(3, 1fr);
+  gap: 6px;
+  margin-bottom: 8px;
+}
+.numpad-tus {
+  padding: 14px;
+  border: 1px solid #eee6dc;
+  border-radius: 10px;
+  background: var(--kart);
+  font-size: 18px;
+  cursor: pointer;
+}
+.numpad-tus.tum {
+  background: var(--zemin);
+  font-size: 14px;
+  font-weight: 600;
+}
+
+.tahsilat-alt-butonlar { margin-top: auto; }
+.tahsilat-alt-butonlar .tahsilat-kaydet {
+  width: 100%;
+  padding: 14px;
+  border: 1px solid #ddd;
+  border-radius: 10px;
+  background: var(--kart);
+  color: var(--metin);
+  font-size: 15px;
+  font-weight: 600;
+  cursor: pointer;
+}
+.gecmis-sil {
+  border: none;
+  background: none;
+  color: #e74c3c;
+  font-size: 18px;
+  cursor: pointer;
+  padding: 0 4px;
+  line-height: 1;
+}
