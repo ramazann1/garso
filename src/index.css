@@ -304,3 +304,116 @@ body {
   color: var(--soluk);
   font-size: 12px;
 }
+.sepet footer .ode {
+  width: 100%;
+  padding: 12px;
+  border: none;
+  border-radius: 10px;
+  background: var(--yesil);
+  color: #fff;
+  font-size: 16px;
+  font-weight: 600;
+  cursor: pointer;
+  margin-bottom: 8px;
+}
+.sepet footer .ode:disabled { opacity: 0.4; cursor: default; }
+
+.tahsilat-fon {
+  position: fixed;
+  inset: 0;
+  background: rgba(45, 52, 54, 0.35);
+  display: flex;
+  justify-content: flex-end;
+  z-index: 20;
+}
+.tahsilat-panel {
+  width: 420px;
+  max-width: 90vw;
+  background: var(--kart);
+  display: flex;
+  flex-direction: column;
+  box-shadow: -8px 0 24px rgba(0, 0, 0, 0.12);
+}
+.tahsilat-ust {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  padding: 16px 20px;
+  border-bottom: 1px solid #eee6dc;
+}
+.tahsilat-ust .kapat {
+  border: none;
+  background: none;
+  font-size: 24px;
+  cursor: pointer;
+  color: var(--soluk);
+}
+.tahsilat-govde { flex: 1; padding: 20px; overflow-y: auto; }
+.tahsilat-toplam {
+  display: flex;
+  justify-content: space-between;
+  font-size: 20px;
+}
+.tahsilat-alt { padding: 16px 20px; border-top: 1px solid #eee6dc; }
+.tahsilat-alt .hizli-kapat {
+  width: 100%;
+  padding: 14px;
+  border: none;
+  border-radius: 10px;
+  background: var(--mercan);
+  color: #fff;
+  font-size: 16px;
+  font-weight: 600;
+  cursor: pointer;
+}
+.tahsilat-kalan {
+  display: flex;
+  justify-content: space-between;
+  font-size: 16px;
+  color: var(--mercan);
+  margin-top: 8px;
+}
+.tahsilat-gecmis {
+  margin-top: 16px;
+  border-top: 1px dashed #eee6dc;
+  padding-top: 12px;
+}
+.tahsilat-satir {
+  display: flex;
+  justify-content: space-between;
+  color: var(--soluk);
+  font-size: 14px;
+  padding: 4px 0;
+}
+.tutar-giris {
+  width: 100%;
+  margin-top: 16px;
+  padding: 12px;
+  border: 1px solid #eee6dc;
+  border-radius: 10px;
+  font-size: 16px;
+  box-sizing: border-box;
+}
+.tahsilat-alt { display: flex; gap: 10px; }
+.tahsilat-alt .odeme-tip {
+  flex: 1;
+  padding: 14px;
+  border: none;
+  border-radius: 10px;
+  color: #fff;
+  font-size: 15px;
+  font-weight: 600;
+  cursor: pointer;
+}
+.odeme-tip.nakit { background: var(--yesil); }
+.odeme-tip.kart { background: var(--mercan); }
+.bolme-kisayol { display: flex; gap: 8px; margin-top: 16px; }
+.bolme-kisayol button {
+  flex: 1;
+  padding: 10px;
+  border: 1px solid #eee6dc;
+  border-radius: 10px;
+  background: var(--kart);
+  font-size: 14px;
+  cursor: pointer;
+}

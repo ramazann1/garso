@@ -29,3 +29,7 @@ export type SepetKalemi = {
   porsiyon?: string;
   secimler?: string[];
 };
+export type Tahsilat = {
+  tip: "Nakit" | "Kredi Kartı";
+  tutar: number;
+};

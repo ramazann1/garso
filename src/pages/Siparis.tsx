@@ -3,6 +3,7 @@ import { useNavigate, useParams } from "react-router-dom";
 import { kategoriler } from "../ornekVeri";
 import { adisyonGetir, adisyonKaydet } from "../adisyonlar";
 import UrunSecim from "../components/UrunSecim";
+import TahsilatPanel from "../components/TahsilatPanel";
 import type { Urun } from "../types";
 
 export default function Siparis() {
@@ -11,6 +12,7 @@ export default function Siparis() {
   const [secili, setSecili] = useState(kategoriler[0]);
   const [sepet, setSepet] = useState(() => adisyonGetir(masaAd ?? ""));
   const [secimUrunu, setSecimUrunu] = useState<Urun | null>(null);
+  const [tahsilatAcik, setTahsilatAcik] = useState(false);
   const sepeteEkle = (ad: string, fiyat: number, porsiyon?: string, secimler?: string[]) => {
     const anahtar = [ad, porsiyon, ...(secimler ?? [])].join("|");
     setSepet((s) => {
@@ -94,6 +96,13 @@ export default function Siparis() {
               <strong>₺{toplam}</strong>
             </div>
             <button
+              className="ode"
+              disabled={sepet.length === 0}
+              onClick={() => setTahsilatAcik(true)}
+            >
+              Öde
+            </button>
+            <button
               className="kaydet"
               onClick={() => {
                 adisyonKaydet(masaAd ?? "", sepet);
@@ -105,6 +114,16 @@ export default function Siparis() {
           </footer>
         </aside>
       </div>
+      {tahsilatAcik && (
+        <TahsilatPanel
+          kalemler={sepet}
+          onKapat={() => setTahsilatAcik(false)}
+          onOdendi={() => {
+            adisyonKaydet(masaAd ?? "", []);
+            navigate("/");
+          }}
+        />
+      )}
       {secimUrunu && (
         <UrunSecim
           urun={secimUrunu}
