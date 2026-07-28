@@ -225,13 +225,13 @@ body {
   font-size: 18px;
 }
 
-.kaydet {
+.sepet footer .kaydet {
   width: 100%;
-  padding: 13px;
-  border: none;
+  padding: 12px;
+  border: 1px solid #ddd;
   border-radius: 10px;
-  background: var(--mercan);
-  color: #fff;
+  background: var(--kart);
+  color: var(--metin);
   font-size: 15px;
   font-weight: 600;
   cursor: pointer;
@@ -568,6 +568,36 @@ body {
   border-radius: 10px;
   background: #6c757d;
   color: #fff;
+  font-size: 15px;
+  font-weight: 600;
+  cursor: pointer;
+}
+.sepet-ozet { margin-bottom: 12px; }
+.ozet-satir {
+  display: flex;
+  justify-content: space-between;
+  font-size: 14px;
+  color: var(--soluk);
+  padding: 3px 0;
+}
+.ozet-satir.indirim { color: var(--mercan); }
+.ozet-satir.odendi { color: var(--yesil); }
+.ozet-satir.kalan { color: var(--mercan); font-weight: 600; }
+.ozet-satir.toplam-satir {
+  color: var(--metin);
+  font-size: 16px;
+  font-weight: 700;
+  border-top: 1px solid #eee6dc;
+  margin-top: 6px;
+  padding-top: 8px;
+}
+.tahsilat-kaydet {
+  width: 100%;
+  padding: 12px;
+  border: 1px solid #ddd;
+  border-radius: 10px;
+  background: var(--kart);
+  color: var(--metin);
   font-size: 15px;
   font-weight: 600;
   cursor: pointer;

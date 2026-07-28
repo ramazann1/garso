@@ -134,10 +134,6 @@ export default function TahsilatPanel({ kalemler, toplam, araToplam, kayitliTahs
           />
         </div>
 
-        <div className="tahsilat-kaydet-bar">
-          <button className="tahsilat-kaydet" onClick={() => { onKaydet(tahsilatlar); onKapat(); }}>Kaydet</button>
-        </div>
-
         <div className="tahsilat-indirim-bar">
           <button className="indirim-btn" onClick={() => setIndirimAcik(true)}>İndirim</button>
         </div>
@@ -146,6 +142,9 @@ export default function TahsilatPanel({ kalemler, toplam, araToplam, kayitliTahs
           <button className="odeme-tip nakit" onClick={() => odemeAl("Nakit")}>Nakit</button>
           <button className="odeme-tip kart" onClick={() => odemeAl("Kredi Kartı")}>Kredi Kartı</button>
         </footer>
+        <div className="tahsilat-kaydet-bar">
+          <button className="tahsilat-kaydet" onClick={() => { onKaydet(tahsilatlar); onKapat(); }}>Kaydet</button>
+        </div>
 
         {indirimAcik && (
           <IndirimModal

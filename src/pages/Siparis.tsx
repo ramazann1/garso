@@ -5,7 +5,7 @@ import { adisyonGetir, adisyonKaydet } from "../adisyonlar";
 import UrunSecim from "../components/UrunSecim";
 import TahsilatPanel from "../components/TahsilatPanel";
 import IndirimModal from "../components/IndirimModal";
-import type { SepetKalemi, Urun } from "../types";
+import type { SepetKalemi, Tahsilat, Urun } from "../types";
 
 export default function Siparis() {
   const { masaAd } = useParams();
@@ -13,7 +13,7 @@ export default function Siparis() {
   const [secili, setSecili] = useState(kategoriler[0]);
   const [sepet, setSepet] = useState<SepetKalemi[]>([]);
   const [indirim, setIndirim] = useState(0);
-  const [kayitliTahsilatlar, setKayitliTahsilatlar] = useState<import("../types").Tahsilat[]>([]);
+  const [kayitliTahsilatlar, setKayitliTahsilatlar] = useState<Tahsilat[]>([]);
   const [secimUrunu, setSecimUrunu] = useState<Urun | null>(null);
   const [tahsilatAcik, setTahsilatAcik] = useState(false);
   const [indirimAcik, setIndirimAcik] = useState(false);
@@ -104,15 +104,33 @@ export default function Siparis() {
             ))}
           </div>
           <footer>
-            {indirim > 0 && (
-              <div className="indirim-satir">
-                <span>⭐ İndirim</span>
-                <span>−₺{indirim}</span>
+            <div className="sepet-ozet">
+              <div className="ozet-satir">
+                <span>Ara Toplam</span>
+                <span>₺{araToplam}</span>
               </div>
-            )}
-            <div className="toplam">
-              <span>Toplam</span>
-              <strong>₺{toplam}</strong>
+              {indirim > 0 && (
+                <div className="ozet-satir indirim">
+                  <span>İndirim</span>
+                  <span>−₺{indirim}</span>
+                </div>
+              )}
+              {kayitliTahsilatlar.length > 0 && (
+                <>
+                  <div className="ozet-satir odendi">
+                    <span>Ödenen</span>
+                    <span>₺{kayitliTahsilatlar.reduce((t, o) => t + o.tutar, 0)}</span>
+                  </div>
+                  <div className="ozet-satir kalan">
+                    <span>Kalan</span>
+                    <span>₺{Math.max(0, toplam - kayitliTahsilatlar.reduce((t, o) => t + o.tutar, 0))}</span>
+                  </div>
+                </>
+              )}
+              <div className="ozet-satir toplam-satir">
+                <span>Toplam</span>
+                <strong>₺{toplam}</strong>
+              </div>
             </div>
             <div className="sepet-aksiyonlar">
               <button
@@ -140,6 +158,8 @@ export default function Siparis() {
           kalemler={sepet}
           toplam={toplam}
           araToplam={araToplam}
+          kayitliTahsilatlar={kayitliTahsilatlar}
+          onKaydet={(t) => setKayitliTahsilatlar(t)}
           onKapat={() => setTahsilatAcik(false)}
           onOdendi={() => {
             adisyonKaydet(masaAd ?? "", { sepet: [], indirim: 0, tahsilatlar: [] });
@@ -147,16 +167,16 @@ export default function Siparis() {
           }}
         />
       )}
+
       {indirimAcik && (
         <IndirimModal
           araToplam={araToplam}
-          kayitliTahsilatlar={kayitliTahsilatlar}
-          onKaydet={(t) => setKayitliTahsilatlar(t)}
           mevcutIndirim={indirim}
           onKapat={() => setIndirimAcik(false)}
           onUygula={(tutar) => { setIndirim(tutar); setIndirimAcik(false); }}
         />
       )}
+
       {secimUrunu && (
         <UrunSecim
           urun={secimUrunu}
