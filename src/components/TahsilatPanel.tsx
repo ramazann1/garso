@@ -18,7 +18,21 @@ export default function TahsilatPanel({ kalemler, toplam, araToplam, kayitliTahs
   const [tahsilatlar, setTahsilatlar] = useState<Tahsilat[]>(kayitliTahsilatlar ?? []);
   const [girilen, setGirilen] = useState("");
   const [secilen, setSecilen] = useState<Record<number, number>>({});
-  const [odenmis, setOdenmis] = useState<Record<number, number>>({});
+  const [odenmis, setOdenmis] = useState<Record<number, number>>(() => {
+    const baslangic: Record<number, number> = {};
+    const odenmisToplam = (kayitliTahsilatlar ?? []).reduce((t, o) => t + o.tutar, 0);
+    if (odenmisToplam > 0) {
+      let kalan = odenmisToplam;
+      kalemler.forEach((k, i) => {
+        const kalemTutar = k.fiyat * k.adet;
+        if (kalan >= kalemTutar) {
+          baslangic[i] = k.adet;
+          kalan -= kalemTutar;
+        }
+      });
+    }
+    return baslangic;
+  });
   const [indirimAcik, setIndirimAcik] = useState(false);
   const [panelIndirimi, setPanelIndirimi] = useState(0);
   const [odemeTipleri, setOdemeTipleri] = useState<OdemeTipi[]>([]);
@@ -111,11 +125,20 @@ export default function TahsilatPanel({ kalemler, toplam, araToplam, kayitliTahs
               <div className="tahsilat-gecmis">
                 <p className="gecmis-baslik">Alınan Ödemeler</p>
                 {tahsilatlar.map((o, i) => (
-                  <div key={i} className="gecmis-satir">
-                    <span className="gecmis-tip">{o.tip}</span>
-                    <span className="gecmis-tutar">₺{o.tutar}</span>
-                  </div>
-                ))}
+                <div key={i} className="gecmis-satir">
+                  <span className="gecmis-tip">{o.tip}</span>
+                  <span className="gecmis-tutar">₺{o.tutar}</span>
+                  <button
+                    className="gecmis-sil"
+                    onClick={(e) => {
+                      e.stopPropagation();
+                      const yeni = tahsilatlar.filter((_, j) => j !== i);
+                      setTahsilatlar(yeni);
+                      onKaydet(yeni);
+                    }}
+                  >×</button>
+                </div>
+              ))}
               </div>
             )}
           </div>
@@ -139,9 +162,13 @@ export default function TahsilatPanel({ kalemler, toplam, araToplam, kayitliTahs
             </div>
 
             <div className="odeme-numpad">
-              <div className="numpad-ekran">
-                {girilen || <span className="placeholder">₺{kalan}</span>}
-              </div>
+              <input
+  className="numpad-ekran"
+  type="number"
+  placeholder={`₺${kalan}`}
+  value={girilen}
+  onChange={(e) => { setSecilen({}); setGirilen(e.target.value); }}
+/>
               <div className="numpad-grid">
                 {["7","8","9","4","5","6","1","2","3","Tümü","0","⌫"].map((t) => (
                   <button key={t} className={t === "Tümü" ? "numpad-tus tum" : "numpad-tus"} onClick={() => numpadTus(t)}>{t}</button>
