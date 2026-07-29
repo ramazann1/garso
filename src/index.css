@@ -661,7 +661,13 @@ body {
   font-weight: 600;
   cursor: pointer;
 }
-.tahsilat-panel.genis { width: 820px; }
+.tahsilat-panel.genis {
+  width: min(860px, 98vw);
+  height: 100vh;
+  overflow: hidden;
+  display: flex;
+  flex-direction: column;
+}
 
 .tahsilat-iki-sutun {
   display: flex;
@@ -694,14 +700,16 @@ body {
 }
 
 .numpad-ekran {
+  width: 100%;
   background: var(--zemin);
+  border: 1px solid #eee6dc;
   border-radius: 10px;
-  padding: 12px 16px;
-  font-size: 24px;
+  padding: 10px 14px;
+  font-size: 20px;
   font-weight: 700;
   text-align: right;
-  min-height: 52px;
   margin-bottom: 8px;
+  box-sizing: border-box;
 }
 .numpad-ekran .placeholder { color: var(--soluk); font-weight: 400; font-size: 18px; }
 

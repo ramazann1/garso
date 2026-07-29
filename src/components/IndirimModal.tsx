@@ -8,8 +8,11 @@ type Props = {
 };
 
 export default function IndirimModal({ araToplam, mevcutIndirim, onKapat, onUygula }: Props) {
-  const [mod, setMod] = useState<"yuzde" | "tutar">("yuzde");
-  const [girdi, setGirdi] = useState(mevcutIndirim > 0 ? String(mevcutIndirim) : "");
+  const [mod, setMod] = useState<"yuzde" | "tutar">("tutar");
+  const [tutarGirdi, setTutarGirdi] = useState(mevcutIndirim > 0 ? String(mevcutIndirim) : "");
+  const [yuzdeGirdi, setYuzdeGirdi] = useState("");
+  const girdi = mod === "tutar" ? tutarGirdi : yuzdeGirdi;
+  const setGirdi = (v: string) => mod === "tutar" ? setTutarGirdi(v) : setYuzdeGirdi(v);
 
   const hesapla = () => {
     const sayi = Number(girdi);
@@ -36,8 +39,8 @@ export default function IndirimModal({ araToplam, mevcutIndirim, onKapat, onUygu
       <div className="indirim-modal" onClick={(e) => e.stopPropagation()}>
         <h3>İndirim Uygula</h3>
         <div className="mod-sec">
-          <button className={mod === "yuzde" ? "aktif" : ""} onClick={() => { setMod("yuzde"); setGirdi(""); }}>Yüzde</button>
-          <button className={mod === "tutar" ? "aktif" : ""} onClick={() => { setMod("tutar"); setGirdi(""); }}>Tutar</button>
+          <button className={mod === "tutar" ? "aktif" : ""} onClick={() => setMod("tutar")}>Tutar</button>
+          <button className={mod === "yuzde" ? "aktif" : ""} onClick={() => setMod("yuzde")}>Yüzde</button>
         </div>
         <div className="onizleme">
           Uygulanacak İndirim: <strong>{mod === "yuzde" ? `%${girdi || "0"}` : `₺${girdi || "0"}`}</strong>
