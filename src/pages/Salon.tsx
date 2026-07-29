@@ -14,9 +14,13 @@ function sureFarki(acilis: string): string {
 export default function Salon() {
   const navigate = useNavigate();
   const [adisyonlar, setAdisyonlar] = useState<Record<string, any>>({});
+  const [yukleniyor, setYukleniyor] = useState(true);
 
   useEffect(() => {
-    tumAdisyonlar().then(setAdisyonlar);
+    tumAdisyonlar().then((veri) => {
+      setAdisyonlar(veri);
+      setYukleniyor(false);
+    });
   }, []);
 
   return (
@@ -26,7 +30,11 @@ export default function Salon() {
         <span>Salon Görünümü</span>
       </header>
 
-      {bolgeler.map((bolge) => {
+      {yukleniyor && (
+        <div className="yukleniyor"><div className="cember" /></div>
+      )}
+
+      {!yukleniyor && bolgeler.map((bolge) => {
         const doluSayisi = bolge.masalar.filter((m) => (adisyonlar[m.ad]?.sepet ?? []).length > 0).length;
         return (
           <section key={bolge.ad} className="bolge">

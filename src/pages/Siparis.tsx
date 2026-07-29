@@ -17,12 +17,15 @@ export default function Siparis() {
   const [secimUrunu, setSecimUrunu] = useState<Urun | null>(null);
   const [tahsilatAcik, setTahsilatAcik] = useState(false);
   const [indirimAcik, setIndirimAcik] = useState(false);
+  const [yukleniyor, setYukleniyor] = useState(true);
 
   useEffect(() => {
+    setYukleniyor(true);
     adisyonGetir(masaAd ?? "").then((veri) => {
       setSepet(veri.sepet);
       setIndirim(veri.indirim);
       setKayitliTahsilatlar(veri.tahsilatlar);
+      setYukleniyor(false);
     });
   }, [masaAd]);
 
@@ -86,7 +89,8 @@ export default function Siparis() {
         <aside className="sepet">
           <h2>Adisyon</h2>
           <div className="sepet-liste">
-            {sepet.length === 0 && <p className="bos">Henüz ürün yok</p>}
+            {yukleniyor && <div className="yukleniyor"><div className="cember" /></div>}
+            {!yukleniyor && sepet.length === 0 && <p className="bos">Henüz ürün yok</p>}
             {sepet.map((k) => (
               <div key={k.ad} className="sepet-satir">
                 <span className="adet">{k.adet}</span>

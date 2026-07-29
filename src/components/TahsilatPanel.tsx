@@ -27,23 +27,15 @@ export default function TahsilatPanel({ kalemler, toplam, araToplam, indirim, ka
     odemeTipleriniGetir().then(setOdemeTipleri);
   }, []);
 
-  const kayitliOdenen = (kayitliTahsilatlar ?? []).reduce((t, o) => t + o.tutar, 0);
   const odenen = (tahsilatlar ?? []).reduce((t, o) => t + o.tutar, 0);
   const kalan = toplam - odenen;
 
   const odenmisMap = (() => {
     const map: Record<number, number> = {};
-    let kalanOdeme = kayitliOdenen;
-    if (kalanOdeme > 0) {
-      kalemler.forEach((k, i) => {
-        if (kalanOdeme <= 0) return;
-        const kalemTutar = k.fiyat;
-        const odenebilecekAdet = Math.min(k.adet, Math.floor(kalanOdeme / kalemTutar));
-        if (odenebilecekAdet > 0) {
-          map[i] = odenebilecekAdet;
-          kalanOdeme -= odenebilecekAdet * kalemTutar;
-        }
-      });
+    for (const o of tahsilatlar ?? []) {
+      for (const [i, adet] of Object.entries(o.kalemler ?? {})) {
+        map[Number(i)] = (map[Number(i)] ?? 0) + adet;
+      }
     }
     return map;
   })();
@@ -73,7 +65,8 @@ export default function TahsilatPanel({ kalemler, toplam, araToplam, indirim, ka
     const tutar = girilen ? Number(girilen) : kalan;
     if (tutar <= 0) return;
     if (tutar > kalan) { alert(`Tutar kalandan büyük olamaz (kalan ₺${kalan})`); return; }
-    const yeni = [...(tahsilatlar ?? []), { tip, tutar }];
+    const secilenKalemler = Object.keys(secilen).length > 0 ? { ...secilen } : undefined;
+    const yeni = [...(tahsilatlar ?? []), { tip, tutar, kalemler: secilenKalemler }];
     setTahsilatlar(yeni);
     setSecilen({});
     setGirilen("");

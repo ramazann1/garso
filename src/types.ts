@@ -32,6 +32,7 @@ export type SepetKalemi = {
 export type Tahsilat = {
   tip: string;
   tutar: number;
+  kalemler?: Record<number, number>;
 };
 export type Adisyon = {
   sepet: SepetKalemi[];
