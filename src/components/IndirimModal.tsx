@@ -12,7 +12,8 @@ export default function IndirimModal({ araToplam, mevcutIndirim, onKapat, onUygu
   const [tutarGirdi, setTutarGirdi] = useState(mevcutIndirim > 0 ? String(mevcutIndirim) : "");
   const [yuzdeGirdi, setYuzdeGirdi] = useState("");
   const girdi = mod === "tutar" ? tutarGirdi : yuzdeGirdi;
-  const setGirdi = (v: string) => mod === "tutar" ? setTutarGirdi(v) : setYuzdeGirdi(v);
+  const setGirdi = (guncelle: (onceki: string) => string) =>
+    mod === "tutar" ? setTutarGirdi(guncelle) : setYuzdeGirdi(guncelle);
 
   const hesapla = () => {
     const sayi = Number(girdi);

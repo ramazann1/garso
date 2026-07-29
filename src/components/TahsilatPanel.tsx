@@ -8,31 +8,29 @@ type Props = {
   kalemler: SepetKalemi[];
   toplam: number;
   araToplam: number;
+  indirim: number;
   kayitliTahsilatlar: Tahsilat[];
   onKaydet: (tahsilatlar: Tahsilat[]) => void;
+  onIndirimDegis: (tutar: number) => void;
   onKapat: () => void;
   onOdendi: () => void;
 };
 
-export default function TahsilatPanel({ kalemler, toplam, araToplam, kayitliTahsilatlar, onKaydet, onKapat, onOdendi }: Props) {
+export default function TahsilatPanel({ kalemler, toplam, araToplam, indirim, kayitliTahsilatlar, onKaydet, onIndirimDegis, onKapat, onOdendi }: Props) {
   const [tahsilatlar, setTahsilatlar] = useState<Tahsilat[]>(kayitliTahsilatlar ?? []);
   const [girilen, setGirilen] = useState("");
   const [secilen, setSecilen] = useState<Record<number, number>>({});
   const [odemeTipleri, setOdemeTipleri] = useState<OdemeTipi[]>([]);
   const [indirimAcik, setIndirimAcik] = useState(false);
-  const [panelIndirimi, setPanelIndirimi] = useState(0);
 
   useEffect(() => {
     odemeTipleriniGetir().then(setOdemeTipleri);
   }, []);
 
-  // Kayıtlı tahsilatlardan ödenen tutarı hesapla
   const kayitliOdenen = (kayitliTahsilatlar ?? []).reduce((t, o) => t + o.tutar, 0);
   const odenen = (tahsilatlar ?? []).reduce((t, o) => t + o.tutar, 0);
-  const efektifToplam = toplam - panelIndirimi;
-  const kalan = efektifToplam - odenen;
+  const kalan = toplam - odenen;
 
-  // Hangi kalemlerin kaç adeti ödendi — kayıtlı tahsilatlardan hesapla
   const odenmisMap = (() => {
     const map: Record<number, number> = {};
     let kalanOdeme = kayitliOdenen;
@@ -80,7 +78,7 @@ export default function TahsilatPanel({ kalemler, toplam, araToplam, kayitliTahs
     setSecilen({});
     setGirilen("");
     onKaydet(yeni);
-    if (yeni.reduce((t, o) => t + o.tutar, 0) >= efektifToplam) onOdendi();
+    if (yeni.reduce((t, o) => t + o.tutar, 0) >= toplam) onOdendi();
   };
 
   return (
@@ -92,7 +90,6 @@ export default function TahsilatPanel({ kalemler, toplam, araToplam, kayitliTahs
         </header>
 
         <div className="tahsilat-iki-sutun">
-          {/* SOL */}
           <div className="tahsilat-sol">
             <p className="sutun-baslik">Ürünler</p>
             <div className="kalem-sec-liste">
@@ -145,12 +142,11 @@ export default function TahsilatPanel({ kalemler, toplam, araToplam, kayitliTahs
             )}
           </div>
 
-          {/* SAĞ */}
           <div className="tahsilat-sag">
             <div className="tahsilat-tutarlar">
-              {panelIndirimi > 0 && (
+              {indirim > 0 && (
                 <div className="tutar-satir indirim">
-                  <span>İndirim</span><span>−₺{panelIndirimi}</span>
+                  <span>İndirim</span><span>−₺{indirim}</span>
                 </div>
               )}
               {odenen > 0 && (
@@ -209,9 +205,9 @@ export default function TahsilatPanel({ kalemler, toplam, araToplam, kayitliTahs
       {indirimAcik && (
         <IndirimModal
           araToplam={araToplam}
-          mevcutIndirim={panelIndirimi}
+          mevcutIndirim={indirim}
           onKapat={() => setIndirimAcik(false)}
-          onUygula={(tutar) => { setPanelIndirimi(tutar); setIndirimAcik(false); }}
+          onUygula={(tutar) => { onIndirimDegis(tutar); setIndirimAcik(false); }}
         />
       )}
     </div>

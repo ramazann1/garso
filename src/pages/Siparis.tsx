@@ -158,8 +158,10 @@ export default function Siparis() {
           kalemler={sepet}
           toplam={toplam}
           araToplam={araToplam}
+          indirim={indirim}
           kayitliTahsilatlar={kayitliTahsilatlar}
           onKaydet={(t) => setKayitliTahsilatlar(t)}
+          onIndirimDegis={(tutar) => setIndirim(tutar)}
           onKapat={() => setTahsilatAcik(false)}
           onOdendi={() => {
             adisyonKaydet(masaAd ?? "", { sepet: [], indirim: 0, tahsilatlar: [] });
