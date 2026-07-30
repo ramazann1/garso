@@ -3,6 +3,7 @@ import { useNavigate } from "react-router-dom";
 import { bolgeler } from "../ornekVeri";
 import MasaKarti from "../components/MasaKarti";
 import { tumAdisyonlar } from "../adisyonlar";
+import Duzen from "../components/Duzen";
 
 function sureFarki(acilis: string): string {
   const dk = Math.floor((Date.now() - new Date(acilis).getTime()) / 60000);
@@ -24,6 +25,7 @@ export default function Salon() {
   }, []);
 
   return (
+    <Duzen>
     <div className="sayfa">
       <header className="baslik">
         <h1>Garso</h1>
@@ -65,5 +67,6 @@ export default function Salon() {
         );
       })}
     </div>
+    </Duzen>
   );
 }

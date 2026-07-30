@@ -18,6 +18,7 @@ export type Urun = {
 };
 
 export type Kategori = {
+  id?: number;
   ad: string;
   renk: string;
   urunler: Urun[];
@@ -38,4 +39,39 @@ export type Adisyon = {
   sepet: SepetKalemi[];
   indirim: number;
   tahsilatlar: Tahsilat[];
+};
+export type MenuKategori = {
+  id: number;
+  ad: string;
+  renk: string;
+  sira: number;
+};
+
+export type MenuPorsiyon = {
+  ad: string;
+  fiyat: number;
+  varsayilan: boolean;
+};
+
+export type MenuSecenek = {
+  id?: number;
+  ad: string;
+  ekFiyat: number;
+};
+
+export type MenuSecenekGrubu = {
+  id: number;
+  ad: string;
+  tekli: boolean;
+  liste: MenuSecenek[];
+};
+
+export type MenuUrun = {
+  id?: number;
+  ad: string;
+  renk?: string;
+  favori: boolean;
+  porsiyonlar: MenuPorsiyon[];
+  kategoriIdler: number[];
+  grupIdler: number[];
 };
