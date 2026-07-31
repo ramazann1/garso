@@ -11,14 +11,16 @@ import {
   urunSil,
   grupKaydet,
   grupSil,
+  birimleriKaydet,
+  porsiyonFiyat,
 } from "../menu";
-import type { MenuKategori, MenuSecenekGrubu, MenuUrun } from "../types";
+import type { MenuBirim, MenuKategori, MenuSecenekGrubu, MenuUrun } from "../types";
 
 const renkler = ["#e8b4b4", "#d4b896", "#a8d5c2", "#9fc5d8", "#c9b8d8", "#e0c9a6", "#b8d4a8", "#d8b8c4"];
 
 function anaFiyat(u: MenuUrun) {
   const p = u.porsiyonlar.find((x) => x.varsayilan) ?? u.porsiyonlar[0];
-  return p?.fiyat ?? 0;
+  return p ? porsiyonFiyat(p) : 0;
 }
 
 function KategoriPenceresi({
@@ -157,15 +159,89 @@ function GrupPaneli({
   );
 }
 
+function BirimlerSekmesi({
+  birimler,
+  kullanim,
+  onKaydet,
+  onUyari,
+}: {
+  birimler: MenuBirim[];
+  kullanim: (id: number) => number;
+  onKaydet: (liste: { id?: number; ad: string }[], silinenler: number[]) => void;
+  onUyari: (mesaj: string) => void;
+}) {
+  const [liste, setListe] = useState<{ id?: number; ad: string }[]>(
+    birimler.map((b) => ({ id: b.id, ad: b.ad }))
+  );
+  const [silinenler, setSilinenler] = useState<number[]>([]);
+
+  const satirSil = (i: number) => {
+    const satir = liste[i];
+    if (satir.id && kullanim(satir.id) > 0) {
+      onUyari(`"${satir.ad}" birimi ${kullanim(satir.id)} porsiyonda kullanılıyor. Önce o porsiyonların birimini değiştir.`);
+      return;
+    }
+    if (satir.id) setSilinenler((s) => [...s, satir.id!]);
+    setListe((l) => l.filter((_, j) => j !== i));
+  };
+
+  const kaydet = () => {
+    const dolu = liste.filter((b) => b.ad.trim()).map((b) => ({ ...b, ad: b.ad.trim() }));
+    const adlar = dolu.map((b) => b.ad.toLocaleLowerCase("tr"));
+    if (new Set(adlar).size !== adlar.length) {
+      onUyari("Aynı isimde iki birim olamaz.");
+      return;
+    }
+    onKaydet(dolu, silinenler);
+  };
+
+  return (
+    <div className="ms-urunler">
+      <div className="ms-urun-ust">
+        <h2>Birimler</h2>
+        <span>{liste.length} birim</span>
+        <button className="ms-urun-ekle" onClick={() => setListe([...liste, { ad: "" }])}>+ Birim</button>
+      </div>
+
+      <p className="ipucu">
+        Porsiyon adları bu listeden seçilir — "Tam" ile "tam" karmaşası olmasın diye tek yerde tutuluyor.
+      </p>
+
+      <div className="birim-liste">
+        {liste.map((b, i) => (
+          <div key={b.id ?? `yeni-${i}`} className="satir-alan">
+            <input
+              value={b.ad}
+              onChange={(e) =>
+                setListe((l) => l.map((x, j) => (j === i ? { ...x, ad: e.target.value } : x)))
+              }
+              placeholder="Tam"
+            />
+            <span className="birim-sayac">{b.id ? `${kullanim(b.id)} porsiyon` : "yeni"}</span>
+            <button className="satir-sil" onClick={() => satirSil(i)}>×</button>
+          </div>
+        ))}
+      </div>
+
+      {liste.length === 0 && <p className="bos">Henüz birim yok</p>}
+
+      <div className="birim-aksiyon">
+        <button className="birim-kaydet" onClick={kaydet}>Kaydet</button>
+      </div>
+    </div>
+  );
+}
+
 export default function MenuStudyosu() {
   const [kategoriler, setKategoriler] = useState<MenuKategori[]>([]);
   const [urunler, setUrunler] = useState<MenuUrun[]>([]);
   const [gruplar, setGruplar] = useState<MenuSecenekGrubu[]>([]);
+  const [birimler, setBirimler] = useState<MenuBirim[]>([]);
   const [seciliId, setSeciliId] = useState<number | null>(null);
   const [yukleniyor, setYukleniyor] = useState(true);
   const [pencere, setPencere] = useState<{ kategori?: MenuKategori } | null>(null);
   const [panel, setPanel] = useState<MenuUrun | null>(null);
-  const [gorunum, setGorunum] = useState<"kategoriler" | "gruplar">("kategoriler");
+  const [gorunum, setGorunum] = useState<"kategoriler" | "gruplar" | "birimler">("kategoriler");
   const [grupPencere, setGrupPencere] = useState<{ grup?: MenuSecenekGrubu } | null>(null);
   const [uyari, setUyari] = useState<string | null>(null);
   const [onaySor, setOnaySor] = useState<{ mesaj: string; devam: () => void } | null>(null);
@@ -175,6 +251,7 @@ export default function MenuStudyosu() {
     setKategoriler(veri.kategoriler);
     setUrunler(veri.urunler);
     setGruplar(veri.gruplar);
+    setBirimler(veri.birimler);
     if (ilk) setSeciliId(veri.kategoriler[0]?.id ?? null);
   };
 
@@ -249,10 +326,18 @@ export default function MenuStudyosu() {
     });
   };
 
+  const birimKullanimi = (id: number) =>
+    urunler.reduce((t, u) => t + u.porsiyonlar.filter((p) => p.birimId === id).length, 0);
+
+  const birimleriYaz = async (liste: { id?: number; ad: string }[], silinenler: number[]) => {
+    await birimleriKaydet(liste, silinenler);
+    yukle();
+  };
+
   const yeniUrun = (): MenuUrun => ({
     ad: "",
     favori: false,
-    porsiyonlar: [{ ad: "Tam", fiyat: 0, varsayilan: true }],
+    porsiyonlar: [],
     kategoriIdler: secili ? [secili.id] : [],
     grupIdler: [],
   });
@@ -269,11 +354,22 @@ export default function MenuStudyosu() {
             <button className={gorunum === "gruplar" ? "aktif" : ""} onClick={() => setGorunum("gruplar")}>
               Seçenek Grupları
             </button>
+            <button className={gorunum === "birimler" ? "aktif" : ""} onClick={() => setGorunum("birimler")}>
+              Birimler
+            </button>
           </div>
         </header>
 
         {yukleniyor ? (
           <div className="yukleniyor"><div className="cember" /></div>
+        ) : gorunum === "birimler" ? (
+          <BirimlerSekmesi
+            key={birimler.map((b) => `${b.id}:${b.ad}`).join("|")}
+            birimler={birimler}
+            kullanim={birimKullanimi}
+            onKaydet={birimleriYaz}
+            onUyari={setUyari}
+          />
         ) : gorunum === "gruplar" ? (
           <div className="ms-urunler">
             <div className="ms-urun-ust">
@@ -381,6 +477,7 @@ export default function MenuStudyosu() {
           urun={panel}
           kategoriler={kategoriler}
           gruplar={gruplar}
+          birimler={birimler}
           onKapat={() => setPanel(null)}
           onKaydet={kaydet}
           onSil={() => urunuSil(panel)}

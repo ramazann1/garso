@@ -1,30 +1,25 @@
 # GARSO — Teknik Tasarım: Veri Modeli & Ekran Haritası
 *Restoran ve cafe'ler için bulut tabanlı satış ve işletme yönetim sistemi.*
 
-## 0. SIRADAKİ İŞ (1 Ağu 2026'da devam)
+## 0. SIRADAKİ İŞ (1 Ağu 2026 seansı sonunda güncellendi)
 
 *Ramazan seansa "devam edelim" diye giriyor — sıradaki iş bu listenin en üstündeki
 maddedir. Seans sonunda bu liste güncellenir: biten madde silinir, kalanlar
 yukarı kayar, yeni çıkanlar sıraya girer.*
 
-1. **Şema tamamlama (Ramazan'ın onayıyla çalıştırılacak).** Veritabanına tek
-   seferde dokunmak için üç iş birlikte yapılır:
-   - `alter table kategoriler drop column urunler;` — jsonb sütunu artık
-     kullanılmıyor (ürünler kendi tablosunda), sipariş ekranı yeni menüye
-     bağlandığı için silinebilir durumda.
-   - `porsiyonlar` tablosuna eksik alanlar: `birim`, `maliyet`.
-   - **Karar gerekiyor:** porsiyon fiyatı sipariş türüne göre ayrılacak mı
-     (masa / gel al / paket)? Adisyo ayırıyor. Sonradan dönmek pahalı olduğu
-     için şemaya dokunmuşken karara bağlanmalı. *(31 Tem 2026 bulgusu)*
-2. **Sürükle-bırak sıralama** (kategori ve ürün). Adisyo ayrı modalda yapıyor
+1. **Sürükle-bırak sıralama** (kategori ve ürün). Adisyo ayrı modalda yapıyor
    + "A-Z" düğmesi sunuyor; bizim yöntemimiz ayrıca kararlaştırılacak.
-3. **Ürün kopyalama, ürün kodu / barkod.**
-4. **Arayüz eksikleri paketi** (model değişmiyor): satış/mutfak ekranında
+2. **Ürün kopyalama, ürün kodu.** (Barkod porsiyon bazında 1 Ağu'da eklendi.)
+3. **Arayüz eksikleri paketi** (model değişmiyor): satış/mutfak ekranında
    göster anahtarları, seçenek grubunda "zorunlu", serbest hex renk, kategori
    adında karakter sayacı, aramada kapsam seçici.
-5. **Toplu ürün işlemleri tablosu** (Excel benzeri tek ekran + tek Kaydet).
+4. **Toplu ürün işlemleri tablosu** (Excel benzeri tek ekran + tek Kaydet).
+5. **Seçenek gruplarını üründen porsiyona taşı** + reçete alanı. Adisyo ikisini
+   de porsiyona bağlıyor; bizde `urun_secenek_gruplari` ürün seviyesinde. Sipariş
+   ekranını ve `UrunSecim`'i de değiştirdiği için ayrı görev olarak ayrıldı.
+   *(1 Ağu 2026)*
 
-*(30-31 Tem'de yapılanlar bölüm 5'te; menü modülünün tam eksik listesi
+*(30 Tem – 1 Ağu'da yapılanlar bölüm 5'te; menü modülünün tam eksik listesi
 bölüm 5'in sonundaki "SONRAKİ ADIMLAR" başlığında.)*
 
 ---
@@ -55,17 +50,22 @@ zones          (id, branch_id, ad, kisa_ad, sira)     -- salon/bahçe/teras
 tables         (id, zone_id, ad, sira, aktif)
 ```
 
-### Menü — 30 Tem 2026'da prototipte kuruldu
+### Menü — 30 Tem 2026'da kuruldu, 1 Ağu 2026'da tamamlandı
 ```sql
 kategoriler          (id, ad, renk, sira)
 urunler              (id, ad, renk, kod, favori, aktif, sira)
-porsiyonlar          (id, urun_id, ad, birim, fiyat, maliyet, varsayilan, sira)
+birimler             (id, ad UNIQUE, sira)            -- Tam, Yarım, Adet, Kg... porsiyon adının tek kaynağı
+porsiyonlar          (id, urun_id, birim_id, fiyat, maliyet, barkod,
+                      masa_fiyat, gelal_fiyat, paket_fiyat, varsayilan, sira)
 urun_kategorileri    (urun_id, kategori_id)           -- çoktan-çoğa: ürün birden fazla kategoride
 secenek_gruplari     (id, ad, tekli, zorunlu, sira)   -- Servis, Şeker, Aroma...
 secenekler           (id, grup_id, ad, ek_fiyat, sira)
 urun_secenek_gruplari(urun_id, grup_id)               -- grup bir kez tanımlanır, ürünlere bağlanır
 ```
-Kalıcı modelde ayrıca gelecek: `stations` (Mutfak/Bar/Nargile — KDS ve yazıcı hedefi), `tax_groups` (KDV oranları), `birimler`, menü/kampanya ürünü.
+`fiyat` = tek fiyat (varsayılan). `masa_fiyat`/`gelal_fiyat`/`paket_fiyat` boşsa o
+sipariş türünde tek fiyat geçerlidir — kural tek yerde: `menu.ts → porsiyonFiyat()`.
+
+Kalıcı modelde ayrıca gelecek: `stations` (Mutfak/Bar/Nargile — KDS ve yazıcı hedefi), `tax_groups` (KDV oranları), menü/kampanya ürünü, reçete.
 
 ### Satış Çekirdeği — Garso'nun kalbi
 ```sql
@@ -165,12 +165,31 @@ stock_moves    (id, branch_id, urun/malzeme, tip ENUM('giris','sayim','satis_dus
 - ✅ **Buton düzeltmeleri:** `UrunSecim.tsx`'teki "Ekle" butonu hiç stillenmemiş bir eski hataydı — mercan renkli ana buton stiline çekildi. Ürün/grup listesindeki sil butonu (`.ms-islem`) hover'da görünen, üründe hiç açılmayan bir eski hataydı — artık "Sil ×" olarak her zaman görünür. Ürün/grup düzenleme panellerine de ayrı, kırmızı kutulu belirgin bir "Sil" butonu eklendi (sadece mevcut kayıtta, yeni kayıt oluştururken görünmez).
 - ✅ **Kendi modal sistemimiz:** `components/OnayModal.tsx` eklendi — onay (Vazgeç/Evet, tehlikeli işlemler kırmızı) ve uyarı (tek Tamam) için. Tüm `confirm()`/`alert()` çağrıları (kategori/ürün/grup silme onayları, dolu kategori/grup uyarısı, indirim/tahsilat tutar limiti uyarıları) buna taşındı. Kural: bundan sonra onay/uyarı gereken her yerde tarayıcı popup'ı değil, bu modal kullanılacak (`CLAUDE.md`'ye işlendi).
 
+### 1 AĞUSTOS — ŞEMA TAMAMLANDI, BİRİMLER VE SİPARİŞ TÜRÜNE GÖRE FİYAT
+- ✅ **Veritabanı tek seferde elden geçti:** `kategoriler.urunler` jsonb sütunu silindi;
+  `birimler` tablosu kuruldu ve mevcut porsiyon adlarından (Tam, Single, Double...)
+  otomatik dolduruldu; `porsiyonlar`'a `birim_id`, `barkod`, `masa_fiyat`,
+  `gelal_fiyat`, `paket_fiyat` eklendi, artık gereksiz `ad`/`birim` metin sütunları
+  silindi. (RLS bilinçli olarak kapalı — tüm tablolara birden kurulacak bir iş.)
+- ✅ **Porsiyonun adı yok, birimi var:** `UrunPaneli`'nde porsiyon satırı serbest metin
+  yerine birim açılır listesi. "Tam"/"tam"/"TAM" karmaşası şemadan çözüldü.
+- ✅ **Sipariş türüne göre fiyat:** porsiyon satırının altında katlanır detay —
+  maliyet, barkod ve Masa / Gel Al / Paket fiyat kutuları. Kapalıyken panel eskisi
+  gibi sade; tek fiyatlı ürün hiç kalabalıklaşmıyor.
+- ✅ **Menü Stüdyosu'na üçüncü sekme: Birimler.** Düzenlenebilir liste + tek Kaydet.
+  Kullanımdaki birim silinmek istenirse kaç porsiyonda geçtiği söylenip engelleniyor.
+- ✅ **`porsiyonFiyat(porsiyon, tur)`** (`menu.ts`) — fiyat kuralının tek kaynağı;
+  Sipariş ekranı, `UrunSecim` ve Menü Stüdyosu hepsi buradan geçiyor. Paket/gel-al
+  akışı gelince sadece `tur` parametresi değişecek, hesap kodu değişmeyecek.
+- ✅ Tarayıcı testi (Ramazan): birim ekleme/silme koruması, porsiyon birim seçimi,
+  paket fiyatı kaydı, sipariş ekranında masa fiyatının doğru gelmesi — hepsi çalıştı.
+
 ### 📌 SONRAKİ ADIMLAR
 **Menü Stüdyosu'nda kalanlar (Adisyo paritesi hedefi):**
-- `kategoriler.urunler` sütununu veritabanından silmek (yukarıda 0. bölümde, onay bekliyor)
 - Sürükle-bırak sıralama (kategori ve ürün) — Adisyo bunu **ayrı sıralama modalında** yapıyor, listeye gömmüyor; modalda ayrıca **"A-Z" tek tıkla alfabetik sıralama** var
 - Ürün kopyalama
-- Ürün kodu / barkod, birim, maliyet, KDV grubu
+- Ürün kodu, KDV grubu
+- Seçenek grubu ve reçetenin porsiyon bazına taşınması
 - Menü/kampanya ürünü (birden fazla ürün tek fiyata)
 - Mutfak grubu alanı (anlamı KDS gelince oluşur)
 - Ürün arama, aktif/pasif ürün
@@ -182,9 +201,9 @@ stock_moves    (id, branch_id, urun/malzeme, tip ENUM('giris','sayim','satis_dus
 *(Tüm ⋮ menüleri ve kapalı anahtarlar açılarak bulundu. Ayrıntılı döküm: `pos-yol-haritasi.md` → "Menü/Ürünler Modülü — Derin Tur".)*
 
 *Veri modelini etkileyenler (önce karar, sonra kod):*
-- **Sipariş türüne göre fiyat** — porsiyon fiyatı tek sayı değil: Tek Fiyat / Masa / Gel Al / Paket. Paket servis fiyatı masadan farklı olabiliyor. `porsiyonlar.fiyat` tek sütun olarak kalırsa sonradan dönmek pahalı.
-- **Barkod, reçete ve seçenek grubu bağlama porsiyon bazlı** — bizde seçenek grupları ürüne bağlı (`urun_secenek_gruplari`). Adisyo porsiyona bağlıyor.
-- **Birimler merkezi liste** — porsiyon adı serbest metin değil, ortak `birimler` tablosundan seçiliyor ("Tam" / "tam" / "TAM" karmaşasını önlüyor).
+- ~~**Sipariş türüne göre fiyat**~~ ✅ 1 Ağu'da yapıldı (tek fiyat + üç opsiyonel tür fiyatı).
+- ~~**Birimler merkezi liste**~~ ✅ 1 Ağu'da yapıldı (`birimler` tablosu + Birimler sekmesi).
+- **Reçete ve seçenek grubu bağlama porsiyon bazlı** — bizde seçenek grupları hâlâ ürüne bağlı (`urun_secenek_gruplari`). Adisyo porsiyona bağlıyor. (Barkod 1 Ağu'da porsiyona eklendi.)
 - **Alt kategori (kategori ağacı)** — kategori formunda opsiyonel üst kategori.
 - **KDV grupları** — `{ ad, oran, varsayılan mı, sıra }`, en fazla 8 tanım.
 - **Mutfak grubunda opsiyonel KDS aşamaları** (Pişirme / Paketleme) — İstasyon ekranındaki kanban kolonları sabit olamaz, gruba göre değişir.
@@ -220,6 +239,10 @@ stock_moves    (id, branch_id, urun/malzeme, tip ENUM('giris','sayim','satis_dus
 11. **İngilizce ad alanı yapılmayacak.** Kullanıcının Adisyo'daki iki dilli menüsü deneme amaçlıydı, gerçek ihtiyaç değil. *(30 Tem 2026)*
 12. **Silme aksiyonları her zaman görünür, hover'a bağlı değil.** Liste satırlarında "Sil ×" yazı+ikon olarak duruyor; düzenleme panellerinde ayrı kırmızı kutulu bir "Sil" butonu var. *(31 Tem 2026)*
 13. **Onay/uyarı için tarayıcının `confirm()`/`alert()`'i kullanılmaz.** Her zaman kendi `OnayModal.tsx` bileşenimiz kullanılır — stillenemeyen, siteye yabancı duran native popup'lar yasak. *(31 Tem 2026)*
+14. **Porsiyonun adı yoktur, birimi vardır.** Porsiyon adı serbest metin değil, merkezi `birimler` tablosundan seçilir; aynı şeyin farklı yazımı (Tam/tam/TAM) şemadan engellenir. Kullanımdaki birim silinemez — dolu kategori kuralının aynısı. *(1 Ağu 2026)*
+15. **Fiyat = tek fiyat + isteğe bağlı tür fiyatları.** Porsiyonda `fiyat` her zaman doludur; masa/gel al/paket sütunları boşsa tek fiyat geçerlidir. Fiyat okuma tek fonksiyondan geçer (`porsiyonFiyat`), ekranlar kendi kuralını yazmaz. *(1 Ağu 2026)*
+16. **Menüyle ilgili her tanım Menü Stüdyosu'nda.** Adisyo birimleri ayrı sol menü maddesine koymuş; bizde sekme olarak aynı ekranda (Kategoriler / Seçenek Grupları / Birimler). Gezinme sığ kalıyor. *(1 Ağu 2026)*
+17. **Nadir kullanılan alanlar katlanır detayda durur.** Porsiyon satırında maliyet, barkod ve tür fiyatları kapalı başlar; tek fiyatlı ürün ekleyen kullanıcı onları hiç görmez. *(1 Ağu 2026)*
 
 ## 7. KOD PAYLAŞIM DÜZENİ
 - Kod GitHub'da: `github.com/ramazann1/garso` (şimdilik Public — final'de Private yapılacak)

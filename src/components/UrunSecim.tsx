@@ -1,4 +1,5 @@
 import { useState } from "react";
+import { porsiyonFiyat } from "../menu";
 import type { MenuPorsiyon, MenuSecenekGrubu, MenuUrun } from "../types";
 
 type Props = {
@@ -38,7 +39,7 @@ export default function UrunSecim({ urun, gruplar, onEkle, onKapat }: Props) {
     }
   }
 
-  const fiyat = (porsiyon?.fiyat ?? 0) + ekToplam;
+  const fiyat = (porsiyon ? porsiyonFiyat(porsiyon, "masa") : 0) + ekToplam;
 
   return (
     <div className="perde" onClick={onKapat}>
@@ -51,11 +52,11 @@ export default function UrunSecim({ urun, gruplar, onEkle, onKapat }: Props) {
             <div className="secim-liste">
               {urun.porsiyonlar.map((p) => (
                 <button
-                  key={p.ad}
-                  className={porsiyon?.ad === p.ad ? "secim aktif" : "secim"}
+                  key={p.birimId}
+                  className={porsiyon?.birimId === p.birimId ? "secim aktif" : "secim"}
                   onClick={() => setPorsiyon(p)}
                 >
-                  {p.ad} · ₺{p.fiyat}
+                  {p.ad} · ₺{porsiyonFiyat(p, "masa")}
                 </button>
               ))}
             </div>

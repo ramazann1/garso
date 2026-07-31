@@ -1,15 +1,16 @@
 import { useEffect, useState } from "react";
 import { useNavigate, useParams } from "react-router-dom";
-import { menuGetir } from "../menu";
+import { menuGetir, porsiyonFiyat } from "../menu";
 import { adisyonGetir, adisyonKaydet } from "../adisyonlar";
 import UrunSecim from "../components/UrunSecim";
 import TahsilatPanel from "../components/TahsilatPanel";
 import IndirimModal from "../components/IndirimModal";
 import type { MenuKategori, MenuSecenekGrubu, MenuUrun, SepetKalemi, Tahsilat } from "../types";
 
+// Masa siparişi ekranı — fiyat kuralı tek yerden (porsiyonFiyat) geçiyor.
 function anaFiyat(u: MenuUrun) {
   const p = u.porsiyonlar.find((x) => x.varsayilan) ?? u.porsiyonlar[0];
-  return p?.fiyat ?? 0;
+  return p ? porsiyonFiyat(p, "masa") : 0;
 }
 
 export default function Siparis() {

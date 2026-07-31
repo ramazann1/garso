@@ -34,9 +34,23 @@ export type MenuKategori = {
   sira: number;
 };
 
+export type MenuBirim = {
+  id: number;
+  ad: string;
+  sira: number;
+};
+
+export type SiparisTuru = "masa" | "gelal" | "paket";
+
 export type MenuPorsiyon = {
+  birimId?: number;
   ad: string;
   fiyat: number;
+  maliyet?: number;
+  barkod?: string;
+  masaFiyat?: number;
+  gelalFiyat?: number;
+  paketFiyat?: number;
   varsayilan: boolean;
 };
 

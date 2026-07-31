@@ -1,12 +1,19 @@
 import { useState } from "react";
-import type { MenuKategori, MenuPorsiyon, MenuSecenekGrubu, MenuUrun } from "../types";
+import type { MenuBirim, MenuKategori, MenuPorsiyon, MenuSecenekGrubu, MenuUrun } from "../types";
 
 const renkler = ["#e8b4b4", "#d4b896", "#a8d5c2", "#9fc5d8", "#c9b8d8", "#e0c9a6", "#b8d4a8", "#d8b8c4"];
+
+// Boş bırakılan para alanı 0 değil, "tanımsız" demektir — tür fiyatında bu ayrım önemli.
+const paraCevir = (deger: string) => {
+  const temiz = deger.replace(/[^0-9.]/g, "");
+  return temiz === "" ? undefined : Number(temiz) || 0;
+};
 
 export default function UrunPaneli({
   urun,
   kategoriler,
   gruplar,
+  birimler,
   onKapat,
   onKaydet,
   onSil,
@@ -14,29 +21,42 @@ export default function UrunPaneli({
   urun: MenuUrun;
   kategoriler: MenuKategori[];
   gruplar: MenuSecenekGrubu[];
+  birimler: MenuBirim[];
   onKapat: () => void;
   onKaydet: (u: MenuUrun) => void;
   onSil?: () => void;
 }) {
+  const yeniPorsiyon = (varsayilan: boolean): MenuPorsiyon => ({
+    birimId: birimler[0]?.id,
+    ad: birimler[0]?.ad ?? "",
+    fiyat: 0,
+    varsayilan,
+  });
+
   const [ad, setAd] = useState(urun.ad);
   const [renk, setRenk] = useState(urun.renk);
   const [favori, setFavori] = useState(urun.favori);
   const [porsiyonlar, setPorsiyonlar] = useState<MenuPorsiyon[]>(
-    urun.porsiyonlar.length ? urun.porsiyonlar : [{ ad: "Tam", fiyat: 0, varsayilan: true }]
+    urun.porsiyonlar.length ? urun.porsiyonlar : [yeniPorsiyon(true)]
   );
   const [kategoriIdler, setKategoriIdler] = useState<number[]>(urun.kategoriIdler);
   const [grupIdler, setGrupIdler] = useState<number[]>(urun.grupIdler);
   const [acik, setAcik] = useState<string[]>(["porsiyon"]);
+  const [detayli, setDetayli] = useState<number[]>([]);
 
   const katla = (bolum: string) =>
     setAcik((l) => (l.includes(bolum) ? l.filter((x) => x !== bolum) : [...l, bolum]));
 
-  const porsiyonDegis = (i: number, alan: "ad" | "fiyat", deger: string) => {
-    setPorsiyonlar((liste) =>
-      liste.map((p, j) =>
-        j === i ? { ...p, [alan]: alan === "fiyat" ? Number(deger) || 0 : deger } : p
-      )
-    );
+  const detayKatla = (i: number) =>
+    setDetayli((l) => (l.includes(i) ? l.filter((x) => x !== i) : [...l, i]));
+
+  const porsiyonDegis = (i: number, degisim: Partial<MenuPorsiyon>) => {
+    setPorsiyonlar((liste) => liste.map((p, j) => (j === i ? { ...p, ...degisim } : p)));
+  };
+
+  const birimSec = (i: number, birimId: number) => {
+    const birim = birimler.find((b) => b.id === birimId);
+    porsiyonDegis(i, { birimId, ad: birim?.ad ?? "" });
   };
 
   const varsayilanSec = (i: number) => {
@@ -49,6 +69,7 @@ export default function UrunPaneli({
       if (kalan.length && !kalan.some((p) => p.varsayilan)) kalan[0].varsayilan = true;
       return kalan;
     });
+    setDetayli((l) => l.filter((x) => x !== i).map((x) => (x > i ? x - 1 : x)));
   };
 
   const secimDegis = (liste: number[], ayarla: (l: number[]) => void, deger: number) => {
@@ -58,7 +79,7 @@ export default function UrunPaneli({
   const gecerli =
     ad.trim().length > 0 &&
     kategoriIdler.length > 0 &&
-    porsiyonlar.some((p) => p.ad.trim());
+    porsiyonlar.some((p) => p.birimId);
 
   const kaydet = () => {
     onKaydet({
@@ -66,7 +87,7 @@ export default function UrunPaneli({
       ad: ad.trim(),
       renk,
       favori,
-      porsiyonlar: porsiyonlar.filter((p) => p.ad.trim()),
+      porsiyonlar: porsiyonlar.filter((p) => p.birimId),
       kategoriIdler,
       grupIdler,
     });
@@ -121,31 +142,106 @@ export default function UrunPaneli({
             {acik.includes("porsiyon") && (
               <>
                 <div className="ekle-satir">
-                  <button onClick={() => setPorsiyonlar([...porsiyonlar, { ad: "", fiyat: 0, varsayilan: false }])}>
+                  <button onClick={() => setPorsiyonlar([...porsiyonlar, yeniPorsiyon(false)])}>
                     + Porsiyon
                   </button>
                 </div>
-                <p className="ipucu">Yıldızlı porsiyon, siparişte varsayılan olarak gelir.</p>
+                <p className="ipucu">
+                  {birimler.length
+                    ? "Yıldızlı porsiyon, siparişte varsayılan olarak gelir."
+                    : "Önce Menü Stüdyosu'nun Birimler sekmesinden birim tanımla."}
+                </p>
                 {porsiyonlar.map((p, i) => (
-                  <div key={i} className="satir-alan">
-                    <button
-                      className={p.varsayilan ? "varsayilan-tus aktif" : "varsayilan-tus"}
-                      onClick={() => varsayilanSec(i)}
-                      title="Varsayılan porsiyon"
-                    >
-                      {p.varsayilan ? "★" : "☆"}
+                  <div key={i} className="porsiyon">
+                    <div className="satir-alan">
+                      <button
+                        className={p.varsayilan ? "varsayilan-tus aktif" : "varsayilan-tus"}
+                        onClick={() => varsayilanSec(i)}
+                        title="Varsayılan porsiyon"
+                      >
+                        {p.varsayilan ? "★" : "☆"}
+                      </button>
+                      <select
+                        value={p.birimId ?? ""}
+                        onChange={(e) => birimSec(i, Number(e.target.value))}
+                      >
+                        <option value="" disabled>Birim seç</option>
+                        {birimler.map((b) => (
+                          <option key={b.id} value={b.id}>{b.ad}</option>
+                        ))}
+                      </select>
+                      <input
+                        className="kisa"
+                        value={p.fiyat || ""}
+                        onChange={(e) => porsiyonDegis(i, { fiyat: paraCevir(e.target.value) ?? 0 })}
+                        placeholder="₺"
+                        inputMode="decimal"
+                      />
+                      <button className="satir-sil" onClick={() => porsiyonSil(i)} disabled={porsiyonlar.length === 1}>
+                        ×
+                      </button>
+                    </div>
+
+                    <button className="detay-tus" onClick={() => detayKatla(i)}>
+                      {detayli.includes(i) ? "− Detayı gizle" : "+ Maliyet, barkod, sipariş türü fiyatı"}
                     </button>
-                    <input value={p.ad} onChange={(e) => porsiyonDegis(i, "ad", e.target.value)} placeholder="Tam" />
-                    <input
-                      className="kisa"
-                      value={p.fiyat || ""}
-                      onChange={(e) => porsiyonDegis(i, "fiyat", e.target.value.replace(/[^0-9.]/g, ""))}
-                      placeholder="₺"
-                      inputMode="decimal"
-                    />
-                    <button className="satir-sil" onClick={() => porsiyonSil(i)} disabled={porsiyonlar.length === 1}>
-                      ×
-                    </button>
+
+                    {detayli.includes(i) && (
+                      <div className="porsiyon-detay">
+                        <div className="detay-satir">
+                          <label>
+                            <span>Maliyet</span>
+                            <input
+                              value={p.maliyet ?? ""}
+                              onChange={(e) => porsiyonDegis(i, { maliyet: paraCevir(e.target.value) })}
+                              placeholder="₺"
+                              inputMode="decimal"
+                            />
+                          </label>
+                          <label className="genis">
+                            <span>Barkod</span>
+                            <input
+                              value={p.barkod ?? ""}
+                              onChange={(e) => porsiyonDegis(i, { barkod: e.target.value })}
+                              placeholder="—"
+                            />
+                          </label>
+                        </div>
+
+                        <p className="ipucu">
+                          Sipariş türüne göre fiyat. Boş bıraktığın türde yukarıdaki tek fiyat geçerli olur.
+                        </p>
+                        <div className="detay-satir">
+                          <label>
+                            <span>Masa</span>
+                            <input
+                              value={p.masaFiyat ?? ""}
+                              onChange={(e) => porsiyonDegis(i, { masaFiyat: paraCevir(e.target.value) })}
+                              placeholder={`₺${p.fiyat || 0}`}
+                              inputMode="decimal"
+                            />
+                          </label>
+                          <label>
+                            <span>Gel Al</span>
+                            <input
+                              value={p.gelalFiyat ?? ""}
+                              onChange={(e) => porsiyonDegis(i, { gelalFiyat: paraCevir(e.target.value) })}
+                              placeholder={`₺${p.fiyat || 0}`}
+                              inputMode="decimal"
+                            />
+                          </label>
+                          <label>
+                            <span>Paket</span>
+                            <input
+                              value={p.paketFiyat ?? ""}
+                              onChange={(e) => porsiyonDegis(i, { paketFiyat: paraCevir(e.target.value) })}
+                              placeholder={`₺${p.fiyat || 0}`}
+                              inputMode="decimal"
+                            />
+                          </label>
+                        </div>
+                      </div>
+                    )}
                   </div>
                 ))}
               </>

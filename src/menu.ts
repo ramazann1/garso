@@ -1,22 +1,39 @@
 import { supabase } from "./supabase";
-import type { MenuKategori, MenuSecenekGrubu, MenuUrun } from "./types";
+import type {
+  MenuBirim,
+  MenuKategori,
+  MenuPorsiyon,
+  MenuSecenekGrubu,
+  MenuUrun,
+  SiparisTuru,
+} from "./types";
+
+// Sipariş türüne göre fiyat: tür fiyatı boşsa tek fiyat geçerlidir.
+export function porsiyonFiyat(p: MenuPorsiyon, tur: SiparisTuru = "masa") {
+  const ozel = tur === "masa" ? p.masaFiyat : tur === "gelal" ? p.gelalFiyat : p.paketFiyat;
+  return ozel ?? p.fiyat;
+}
+
+const say = (v: any) => (v == null ? undefined : Number(v));
 
 export async function menuGetir() {
-  const [kat, urn, grp] = await Promise.all([
+  const [kat, urn, grp, brm] = await Promise.all([
     supabase.from("kategoriler").select("id, ad, renk, sira").order("sira"),
     supabase
       .from("urunler")
       .select(
-        "id, ad, renk, favori, sira, porsiyonlar(ad, fiyat, varsayilan, sira), urun_kategorileri(kategori_id), urun_secenek_gruplari(grup_id)"
+        "id, ad, renk, favori, sira, porsiyonlar(birim_id, fiyat, maliyet, barkod, masa_fiyat, gelal_fiyat, paket_fiyat, varsayilan, sira), urun_kategorileri(kategori_id), urun_secenek_gruplari(grup_id)"
       )
       .order("sira"),
     supabase
       .from("secenek_gruplari")
       .select("id, ad, tekli, sira, secenekler(id, ad, ek_fiyat, sira)")
       .order("sira"),
+    supabase.from("birimler").select("id, ad, sira").order("sira"),
   ]);
 
   const kategoriler = (kat.data ?? []) as MenuKategori[];
+  const birimler = (brm.data ?? []) as MenuBirim[];
 
   const urunler: MenuUrun[] = (urn.data ?? []).map((u: any) => ({
     id: u.id,
@@ -26,7 +43,17 @@ export async function menuGetir() {
     porsiyonlar: (u.porsiyonlar ?? [])
       .slice()
       .sort((a: any, b: any) => a.sira - b.sira)
-      .map((p: any) => ({ ad: p.ad, fiyat: Number(p.fiyat), varsayilan: p.varsayilan })),
+      .map((p: any) => ({
+        birimId: p.birim_id ?? undefined,
+        ad: birimler.find((b) => b.id === p.birim_id)?.ad ?? "",
+        fiyat: Number(p.fiyat),
+        maliyet: say(p.maliyet),
+        barkod: p.barkod ?? undefined,
+        masaFiyat: say(p.masa_fiyat),
+        gelalFiyat: say(p.gelal_fiyat),
+        paketFiyat: say(p.paket_fiyat),
+        varsayilan: p.varsayilan,
+      })),
     kategoriIdler: (u.urun_kategorileri ?? []).map((x: any) => x.kategori_id),
     grupIdler: (u.urun_secenek_gruplari ?? []).map((x: any) => x.grup_id),
   }));
@@ -41,7 +68,7 @@ export async function menuGetir() {
       .map((s: any) => ({ id: s.id, ad: s.ad, ekFiyat: Number(s.ek_fiyat) })),
   }));
 
-  return { kategoriler, urunler, gruplar };
+  return { kategoriler, urunler, gruplar, birimler };
 }
 
 export async function kategoriEkle(ad: string, renk: string, sira: number) {
@@ -79,8 +106,13 @@ export async function urunKaydet(u: MenuUrun) {
     await supabase.from("porsiyonlar").insert(
       u.porsiyonlar.map((p, i) => ({
         urun_id: id,
-        ad: p.ad,
+        birim_id: p.birimId ?? null,
         fiyat: p.fiyat,
+        maliyet: p.maliyet ?? null,
+        barkod: p.barkod?.trim() || null,
+        masa_fiyat: p.masaFiyat ?? null,
+        gelal_fiyat: p.gelalFiyat ?? null,
+        paket_fiyat: p.paketFiyat ?? null,
         varsayilan: p.varsayilan,
         sira: i + 1,
       }))
@@ -136,4 +168,21 @@ export async function grupKaydet(
 
 export async function grupSil(id: number) {
   await supabase.from("secenek_gruplari").delete().eq("id", id);
+}
+
+export async function birimleriKaydet(liste: { id?: number; ad: string }[], silinenler: number[]) {
+  if (silinenler.length) {
+    await supabase.from("birimler").delete().in("id", silinenler);
+  }
+
+  const yeniler = liste.filter((b) => !b.id);
+  if (yeniler.length) {
+    await supabase.from("birimler").insert(
+      yeniler.map((b) => ({ ad: b.ad, sira: liste.indexOf(b) + 1 }))
+    );
+  }
+
+  for (const [i, b] of liste.entries()) {
+    if (b.id) await supabase.from("birimler").update({ ad: b.ad, sira: i + 1 }).eq("id", b.id);
+  }
 }
