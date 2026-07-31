@@ -18,6 +18,13 @@ Açıklama gerekiyorsa en fazla bir-iki cümle.
 
 ## Çalışma düzeni
 
+- **Seans başlangıcı:** Ramazan sadece "devam edelim" yazar. Bu şu demek:
+  garso-tasarim.md ve pos-yol-haritasi.md'yi oku, tasarım dosyasının
+  "0. SIRADAKİ İŞ" listesindeki **en üstteki maddeyi** al, planını anlat,
+  onay bekle. Ne yapılacağını Ramazan'a sorma — liste zaten söylüyor.
+- **Seans sonu:** "0. SIRADAKİ İŞ" listesi güncellenir — biten madde silinir,
+  kalanlar yukarı kayar, o seansta çıkan yeni işler sıraya eklenir. Liste bir
+  sonraki seansın tek giriş noktasıdır, güncel tutulmazsa akış kopar.
 - Görevler TEK TEK verilir. Bir görev bitip Ramazan onaylamadan yenisine geçilmez.
 - Değişiklik yapmadan önce planını anlat, onay bekle.
 - Bir dosyayı değiştirirken hangi dosyada ne yaptığını ve neden yaptığını söyle.

@@ -2,11 +2,30 @@
 *Restoran ve cafe'ler için bulut tabanlı satış ve işletme yönetim sistemi.*
 
 ## 0. SIRADAKİ İŞ (1 Ağu 2026'da devam)
-1. **Temizlik (onay bekliyor):** `kategoriler.urunler` jsonb sütunu artık kullanılmıyor (ürünler kendi tablosunda). Sipariş ekranı yeni menüye bağlandığı için artık çalıştırılabilir: `alter table kategoriler drop column urunler;` — veritabanı şeması değiştiği için Ramazan'ın onayıyla çalıştırılacak.
-2. Sürükle-bırak sıralama (kategori ve ürün).
-3. Ürün kopyalama, ürün kodu/barkod, birim, maliyet, KDV grubu.
 
-*(30-31 Tem'de yapılanlar bölüm 5'te.)*
+*Ramazan seansa "devam edelim" diye giriyor — sıradaki iş bu listenin en üstündeki
+maddedir. Seans sonunda bu liste güncellenir: biten madde silinir, kalanlar
+yukarı kayar, yeni çıkanlar sıraya girer.*
+
+1. **Şema tamamlama (Ramazan'ın onayıyla çalıştırılacak).** Veritabanına tek
+   seferde dokunmak için üç iş birlikte yapılır:
+   - `alter table kategoriler drop column urunler;` — jsonb sütunu artık
+     kullanılmıyor (ürünler kendi tablosunda), sipariş ekranı yeni menüye
+     bağlandığı için silinebilir durumda.
+   - `porsiyonlar` tablosuna eksik alanlar: `birim`, `maliyet`.
+   - **Karar gerekiyor:** porsiyon fiyatı sipariş türüne göre ayrılacak mı
+     (masa / gel al / paket)? Adisyo ayırıyor. Sonradan dönmek pahalı olduğu
+     için şemaya dokunmuşken karara bağlanmalı. *(31 Tem 2026 bulgusu)*
+2. **Sürükle-bırak sıralama** (kategori ve ürün). Adisyo ayrı modalda yapıyor
+   + "A-Z" düğmesi sunuyor; bizim yöntemimiz ayrıca kararlaştırılacak.
+3. **Ürün kopyalama, ürün kodu / barkod.**
+4. **Arayüz eksikleri paketi** (model değişmiyor): satış/mutfak ekranında
+   göster anahtarları, seçenek grubunda "zorunlu", serbest hex renk, kategori
+   adında karakter sayacı, aramada kapsam seçici.
+5. **Toplu ürün işlemleri tablosu** (Excel benzeri tek ekran + tek Kaydet).
+
+*(30-31 Tem'de yapılanlar bölüm 5'te; menü modülünün tam eksik listesi
+bölüm 5'in sonundaki "SONRAKİ ADIMLAR" başlığında.)*
 
 ---
 
