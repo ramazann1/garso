@@ -1,5 +1,6 @@
 import { useEffect, useState } from "react";
 import IndirimModal from "./IndirimModal";
+import OnayModal from "./OnayModal";
 import { odemeTipleriniGetir } from "../adisyonlar";
 import type { OdemeTipi } from "../adisyonlar";
 import type { SepetKalemi, Tahsilat } from "../types";
@@ -22,6 +23,7 @@ export default function TahsilatPanel({ kalemler, toplam, araToplam, indirim, ka
   const [secilen, setSecilen] = useState<Record<number, number>>({});
   const [odemeTipleri, setOdemeTipleri] = useState<OdemeTipi[]>([]);
   const [indirimAcik, setIndirimAcik] = useState(false);
+  const [uyari, setUyari] = useState<string | null>(null);
 
   useEffect(() => {
     odemeTipleriniGetir().then(setOdemeTipleri);
@@ -64,7 +66,7 @@ export default function TahsilatPanel({ kalemler, toplam, araToplam, indirim, ka
   const odemeAl = (tip: string) => {
     const tutar = girilen ? Number(girilen) : kalan;
     if (tutar <= 0) return;
-    if (tutar > kalan) { alert(`Tutar kalandan büyük olamaz (kalan ₺${kalan})`); return; }
+    if (tutar > kalan) { setUyari(`Tutar kalandan büyük olamaz (kalan ₺${kalan})`); return; }
     const secilenKalemler = Object.keys(secilen).length > 0 ? { ...secilen } : undefined;
     const yeni = [...(tahsilatlar ?? []), { tip, tutar, kalemler: secilenKalemler }];
     setTahsilatlar(yeni);
@@ -203,6 +205,8 @@ export default function TahsilatPanel({ kalemler, toplam, araToplam, indirim, ka
           onUygula={(tutar) => { onIndirimDegis(tutar); setIndirimAcik(false); }}
         />
       )}
+
+      {uyari && <OnayModal mesaj={uyari} tekTus onKapat={() => setUyari(null)} />}
     </div>
   );
 }

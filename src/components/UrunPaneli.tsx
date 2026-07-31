@@ -9,12 +9,14 @@ export default function UrunPaneli({
   gruplar,
   onKapat,
   onKaydet,
+  onSil,
 }: {
   urun: MenuUrun;
   kategoriler: MenuKategori[];
   gruplar: MenuSecenekGrubu[];
   onKapat: () => void;
   onKaydet: (u: MenuUrun) => void;
+  onSil?: () => void;
 }) {
   const [ad, setAd] = useState(urun.ad);
   const [renk, setRenk] = useState(urun.renk);
@@ -205,6 +207,9 @@ export default function UrunPaneli({
         </div>
 
         <footer className="modal-aksiyonlar">
+          {urun.id && onSil && (
+            <button className="sil-buton" onClick={onSil}>Ürünü sil</button>
+          )}
           <button className="iptal" onClick={onKapat}>Vazgeç</button>
           <button className="uygula" disabled={!gecerli} onClick={kaydet}>Kaydet</button>
         </footer>

@@ -1,4 +1,5 @@
 import { useState } from "react";
+import OnayModal from "./OnayModal";
 
 type Props = {
   araToplam: number;
@@ -11,6 +12,7 @@ export default function IndirimModal({ araToplam, mevcutIndirim, onKapat, onUygu
   const [mod, setMod] = useState<"yuzde" | "tutar">("tutar");
   const [tutarGirdi, setTutarGirdi] = useState(mevcutIndirim > 0 ? String(mevcutIndirim) : "");
   const [yuzdeGirdi, setYuzdeGirdi] = useState("");
+  const [uyari, setUyari] = useState<string | null>(null);
   const girdi = mod === "tutar" ? tutarGirdi : yuzdeGirdi;
   const setGirdi = (guncelle: (onceki: string) => string) =>
     mod === "tutar" ? setTutarGirdi(guncelle) : setYuzdeGirdi(guncelle);
@@ -24,7 +26,7 @@ export default function IndirimModal({ araToplam, mevcutIndirim, onKapat, onUygu
 
   const uygula = () => {
     const tutar = hesapla();
-    if (tutar > araToplam) { alert("İndirim toplam tutardan büyük olamaz"); return; }
+    if (tutar > araToplam) { setUyari("İndirim toplam tutardan büyük olamaz"); return; }
     onUygula(tutar);
   };
 
@@ -57,6 +59,8 @@ export default function IndirimModal({ araToplam, mevcutIndirim, onKapat, onUygu
           <button className="uygula" onClick={uygula}>Kaydet ve Kapat</button>
         </div>
       </div>
+
+      {uyari && <OnayModal mesaj={uyari} tekTus onKapat={() => setUyari(null)} />}
     </div>
   );
 }

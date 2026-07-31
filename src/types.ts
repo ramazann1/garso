@@ -10,19 +10,6 @@ export type Bolge = {
   ad: string;
   masalar: Masa[];
 };
-export type Urun = {
-  ad: string;
-  fiyat: number;
-  porsiyonlar?: { ad: string; fiyat: number }[];
-  secenekler?: { ad: string; tekli: boolean; liste: string[] }[];
-};
-
-export type Kategori = {
-  id?: number;
-  ad: string;
-  renk: string;
-  urunler: Urun[];
-};
 export type SepetKalemi = {
   ad: string;
   fiyat: number;

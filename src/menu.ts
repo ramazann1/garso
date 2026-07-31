@@ -105,3 +105,35 @@ export async function urunKaydet(u: MenuUrun) {
 export async function urunSil(id: number) {
   await supabase.from("urunler").delete().eq("id", id);
 }
+
+export async function grupKaydet(
+  id: number | undefined,
+  ad: string,
+  tekli: boolean,
+  liste: { ad: string; ekFiyat: number }[]
+) {
+  let grupId = id;
+
+  if (grupId) {
+    await supabase.from("secenek_gruplari").update({ ad, tekli }).eq("id", grupId);
+  } else {
+    const { data } = await supabase
+      .from("secenek_gruplari")
+      .insert({ ad, tekli })
+      .select("id")
+      .single();
+    grupId = data?.id;
+  }
+  if (!grupId) return;
+
+  await supabase.from("secenekler").delete().eq("grup_id", grupId);
+  if (liste.length) {
+    await supabase.from("secenekler").insert(
+      liste.map((s, i) => ({ grup_id: grupId, ad: s.ad, ek_fiyat: s.ekFiyat, sira: i + 1 }))
+    );
+  }
+}
+
+export async function grupSil(id: number) {
+  await supabase.from("secenek_gruplari").delete().eq("id", id);
+}

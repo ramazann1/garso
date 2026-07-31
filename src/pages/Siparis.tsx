@@ -1,23 +1,42 @@
 import { useEffect, useState } from "react";
 import { useNavigate, useParams } from "react-router-dom";
-import { kategoriler } from "../ornekVeri";
+import { menuGetir } from "../menu";
 import { adisyonGetir, adisyonKaydet } from "../adisyonlar";
 import UrunSecim from "../components/UrunSecim";
 import TahsilatPanel from "../components/TahsilatPanel";
 import IndirimModal from "../components/IndirimModal";
-import type { SepetKalemi, Tahsilat, Urun } from "../types";
+import type { MenuKategori, MenuSecenekGrubu, MenuUrun, SepetKalemi, Tahsilat } from "../types";
+
+function anaFiyat(u: MenuUrun) {
+  const p = u.porsiyonlar.find((x) => x.varsayilan) ?? u.porsiyonlar[0];
+  return p?.fiyat ?? 0;
+}
 
 export default function Siparis() {
   const { masaAd } = useParams();
   const navigate = useNavigate();
-  const [secili, setSecili] = useState(kategoriler[0]);
+  const [kategoriler, setKategoriler] = useState<MenuKategori[]>([]);
+  const [urunler, setUrunler] = useState<MenuUrun[]>([]);
+  const [gruplar, setGruplar] = useState<MenuSecenekGrubu[]>([]);
+  const [seciliId, setSeciliId] = useState<number | null>(null);
+  const [menuYukleniyor, setMenuYukleniyor] = useState(true);
   const [sepet, setSepet] = useState<SepetKalemi[]>([]);
   const [indirim, setIndirim] = useState(0);
   const [kayitliTahsilatlar, setKayitliTahsilatlar] = useState<Tahsilat[]>([]);
-  const [secimUrunu, setSecimUrunu] = useState<Urun | null>(null);
+  const [secimUrunu, setSecimUrunu] = useState<MenuUrun | null>(null);
   const [tahsilatAcik, setTahsilatAcik] = useState(false);
   const [indirimAcik, setIndirimAcik] = useState(false);
   const [yukleniyor, setYukleniyor] = useState(true);
+
+  useEffect(() => {
+    menuGetir().then((veri) => {
+      setKategoriler(veri.kategoriler);
+      setUrunler(veri.urunler);
+      setGruplar(veri.gruplar);
+      setSeciliId(veri.kategoriler[0]?.id ?? null);
+      setMenuYukleniyor(false);
+    });
+  }, []);
 
   useEffect(() => {
     setYukleniyor(true);
@@ -28,6 +47,9 @@ export default function Siparis() {
       setYukleniyor(false);
     });
   }, [masaAd]);
+
+  const secili = kategoriler.find((k) => k.id === seciliId) ?? kategoriler[0];
+  const kategoriUrunleri = secili ? urunler.filter((u) => u.kategoriIdler.includes(secili.id)) : [];
 
   const sepeteEkle = (ad: string, fiyat: number, porsiyon?: string, secimler?: string[]) => {
     const anahtar = [ad, porsiyon, ...(secimler ?? [])].join("|");
@@ -61,10 +83,10 @@ export default function Siparis() {
         <nav className="kategori-serit">
           {kategoriler.map((k) => (
             <button
-              key={k.ad}
-              className={k.ad === secili.ad ? "kategori aktif" : "kategori"}
+              key={k.id}
+              className={k.id === secili?.id ? "kategori aktif" : "kategori"}
               style={{ borderColor: k.renk }}
-              onClick={() => setSecili(k)}
+              onClick={() => setSeciliId(k.id)}
             >
               {k.ad}
             </button>
@@ -72,18 +94,25 @@ export default function Siparis() {
         </nav>
 
         <main className="urun-alani">
-          <div className="urun-grid">
-            {secili.urunler.map((u) => (
-              <button
-                key={u.ad}
-                className="urun-kart"
-                onClick={() => u.porsiyonlar || u.secenekler ? setSecimUrunu(u) : sepeteEkle(u.ad, u.fiyat)}
-              >
-                <span>{u.ad}</span>
-                <strong>₺{u.fiyat}</strong>
-              </button>
-            ))}
-          </div>
+          {menuYukleniyor && <div className="yukleniyor"><div className="cember" /></div>}
+          {!menuYukleniyor && (
+            <div className="urun-grid">
+              {kategoriUrunleri.map((u) => (
+                <button
+                  key={u.id}
+                  className="urun-kart"
+                  onClick={() =>
+                    u.porsiyonlar.length > 1 || u.grupIdler.length > 0
+                      ? setSecimUrunu(u)
+                      : sepeteEkle(u.ad, anaFiyat(u))
+                  }
+                >
+                  <span>{u.ad}</span>
+                  <strong>₺{anaFiyat(u)}</strong>
+                </button>
+              ))}
+            </div>
+          )}
         </main>
 
         <aside className="sepet">
@@ -186,6 +215,7 @@ export default function Siparis() {
       {secimUrunu && (
         <UrunSecim
           urun={secimUrunu}
+          gruplar={gruplar}
           onKapat={() => setSecimUrunu(null)}
           onEkle={(porsiyon, fiyat, secimler) => {
             sepeteEkle(secimUrunu.ad, fiyat, porsiyon, secimler);

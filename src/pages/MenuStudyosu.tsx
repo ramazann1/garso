@@ -1,7 +1,17 @@
 import { useEffect, useState } from "react";
 import Duzen from "../components/Duzen";
 import UrunPaneli from "../components/UrunPaneli";
-import { menuGetir, kategoriEkle, kategoriGuncelle, kategoriSil, urunKaydet, urunSil } from "../menu";
+import OnayModal from "../components/OnayModal";
+import {
+  menuGetir,
+  kategoriEkle,
+  kategoriGuncelle,
+  kategoriSil,
+  urunKaydet,
+  urunSil,
+  grupKaydet,
+  grupSil,
+} from "../menu";
 import type { MenuKategori, MenuSecenekGrubu, MenuUrun } from "../types";
 
 const renkler = ["#e8b4b4", "#d4b896", "#a8d5c2", "#9fc5d8", "#c9b8d8", "#e0c9a6", "#b8d4a8", "#d8b8c4"];
@@ -58,6 +68,95 @@ function KategoriPenceresi({
   );
 }
 
+function GrupPaneli({
+  grup,
+  onKapat,
+  onKaydet,
+  onSil,
+}: {
+  grup?: MenuSecenekGrubu;
+  onKapat: () => void;
+  onKaydet: (ad: string, tekli: boolean, liste: { ad: string; ekFiyat: number }[]) => void;
+  onSil?: () => void;
+}) {
+  const [ad, setAd] = useState(grup?.ad ?? "");
+  const [tekli, setTekli] = useState(grup?.tekli ?? true);
+  const [liste, setListe] = useState(
+    grup?.liste.length
+      ? grup.liste.map((s) => ({ ad: s.ad, ekFiyat: s.ekFiyat }))
+      : [{ ad: "", ekFiyat: 0 }]
+  );
+
+  const satirDegis = (i: number, alan: "ad" | "ekFiyat", deger: string) => {
+    setListe((l) =>
+      l.map((s, j) => (j === i ? { ...s, [alan]: alan === "ekFiyat" ? Number(deger) || 0 : deger } : s))
+    );
+  };
+
+  const satirSil = (i: number) => {
+    setListe((l) => l.filter((_, j) => j !== i));
+  };
+
+  const gecerli = ad.trim().length > 0 && liste.some((s) => s.ad.trim());
+
+  const kaydet = () => {
+    onKaydet(ad.trim(), tekli, liste.filter((s) => s.ad.trim()));
+  };
+
+  return (
+    <div className="panel-fon" onClick={onKapat}>
+      <div className="urun-panel" onClick={(e) => e.stopPropagation()}>
+        <header className="panel-ust">
+          <h3>{grup ? "Grubu düzenle" : "Yeni seçenek grubu"}</h3>
+          <button className="panel-kapat" onClick={onKapat}>×</button>
+        </header>
+
+        <div className="panel-govde">
+          <div className="alan">
+            <span>Grup adı</span>
+            <input value={ad} onChange={(e) => setAd(e.target.value)} placeholder="Şeker" autoFocus />
+          </div>
+
+          <div className="mod-sec">
+            <button className={tekli ? "aktif" : ""} onClick={() => setTekli(true)}>Tekli seçim</button>
+            <button className={!tekli ? "aktif" : ""} onClick={() => setTekli(false)}>Çoklu seçim</button>
+          </div>
+
+          <div className="bolum">
+            <div className="ekle-satir">
+              <button onClick={() => setListe([...liste, { ad: "", ekFiyat: 0 }])}>+ Seçenek</button>
+            </div>
+            <p className="ipucu">Ek fiyat boş bırakılırsa ücretsiz sayılır.</p>
+            {liste.map((s, i) => (
+              <div key={i} className="satir-alan">
+                <input value={s.ad} onChange={(e) => satirDegis(i, "ad", e.target.value)} placeholder="Sade" />
+                <input
+                  className="kisa"
+                  value={s.ekFiyat || ""}
+                  onChange={(e) => satirDegis(i, "ekFiyat", e.target.value.replace(/[^0-9.]/g, ""))}
+                  placeholder="₺"
+                  inputMode="decimal"
+                />
+                <button className="satir-sil" onClick={() => satirSil(i)} disabled={liste.length === 1}>
+                  ×
+                </button>
+              </div>
+            ))}
+          </div>
+        </div>
+
+        <footer className="modal-aksiyonlar">
+          {grup && onSil && (
+            <button className="sil-buton" onClick={onSil}>Grubu sil</button>
+          )}
+          <button className="iptal" onClick={onKapat}>Vazgeç</button>
+          <button className="uygula" disabled={!gecerli} onClick={kaydet}>Kaydet</button>
+        </footer>
+      </div>
+    </div>
+  );
+}
+
 export default function MenuStudyosu() {
   const [kategoriler, setKategoriler] = useState<MenuKategori[]>([]);
   const [urunler, setUrunler] = useState<MenuUrun[]>([]);
@@ -66,6 +165,10 @@ export default function MenuStudyosu() {
   const [yukleniyor, setYukleniyor] = useState(true);
   const [pencere, setPencere] = useState<{ kategori?: MenuKategori } | null>(null);
   const [panel, setPanel] = useState<MenuUrun | null>(null);
+  const [gorunum, setGorunum] = useState<"kategoriler" | "gruplar">("kategoriler");
+  const [grupPencere, setGrupPencere] = useState<{ grup?: MenuSecenekGrubu } | null>(null);
+  const [uyari, setUyari] = useState<string | null>(null);
+  const [onaySor, setOnaySor] = useState<{ mesaj: string; devam: () => void } | null>(null);
 
   const yukle = async (ilk = false) => {
     const veri = await menuGetir();
@@ -90,15 +193,19 @@ export default function MenuStudyosu() {
     yukle();
   };
 
-  const kategoriyiSil = async (k: MenuKategori) => {
+  const kategoriyiSil = (k: MenuKategori) => {
     if (sayac(k.id) > 0) {
-      alert("Bu kategoride ürün var. Önce ürünleri başka kategoriye taşı veya sil.");
+      setUyari("Bu kategoride ürün var. Önce ürünleri başka kategoriye taşı veya sil.");
       return;
     }
-    if (!confirm(`"${k.ad}" kategorisi silinsin mi?`)) return;
-    await kategoriSil(k.id);
-    if (seciliId === k.id) setSeciliId(null);
-    yukle();
+    setOnaySor({
+      mesaj: `"${k.ad}" kategorisi silinsin mi?`,
+      devam: async () => {
+        await kategoriSil(k.id);
+        if (seciliId === k.id) setSeciliId(null);
+        yukle();
+      },
+    });
   };
 
   const kaydet = async (u: MenuUrun) => {
@@ -107,10 +214,39 @@ export default function MenuStudyosu() {
     yukle();
   };
 
-  const urunuSil = async (u: MenuUrun) => {
-    if (!u.id || !confirm(`"${u.ad}" silinsin mi?`)) return;
-    await urunSil(u.id);
+  const urunuSil = (u: MenuUrun) => {
+    if (!u.id) return;
+    setOnaySor({
+      mesaj: `"${u.ad}" silinsin mi?`,
+      devam: async () => {
+        await urunSil(u.id!);
+        yukle();
+        setPanel(null);
+      },
+    });
+  };
+
+  const grupSayaci = (id: number) => urunler.filter((u) => u.grupIdler.includes(id)).length;
+
+  const grubuKaydet = async (ad: string, tekli: boolean, liste: { ad: string; ekFiyat: number }[]) => {
+    await grupKaydet(grupPencere?.grup?.id, ad, tekli, liste);
+    setGrupPencere(null);
     yukle();
+  };
+
+  const grubuSil = (g: MenuSecenekGrubu) => {
+    if (grupSayaci(g.id) > 0) {
+      setUyari("Bu grup bir ürüne bağlı. Önce üründen kaldır veya ürünü sil.");
+      return;
+    }
+    setOnaySor({
+      mesaj: `"${g.ad}" grubu silinsin mi?`,
+      devam: async () => {
+        await grupSil(g.id);
+        yukle();
+        setGrupPencere(null);
+      },
+    });
   };
 
   const yeniUrun = (): MenuUrun => ({
@@ -126,10 +262,40 @@ export default function MenuStudyosu() {
       <div className="sayfa">
         <header className="menu-baslik">
           <h1>Menü Stüdyosu</h1>
+          <div className="mod-sec">
+            <button className={gorunum === "kategoriler" ? "aktif" : ""} onClick={() => setGorunum("kategoriler")}>
+              Kategoriler
+            </button>
+            <button className={gorunum === "gruplar" ? "aktif" : ""} onClick={() => setGorunum("gruplar")}>
+              Seçenek Grupları
+            </button>
+          </div>
         </header>
 
         {yukleniyor ? (
           <div className="yukleniyor"><div className="cember" /></div>
+        ) : gorunum === "gruplar" ? (
+          <div className="ms-urunler">
+            <div className="ms-urun-ust">
+              <h2>Seçenek Grupları</h2>
+              <span>{gruplar.length} grup</span>
+              <button className="ms-urun-ekle" onClick={() => setGrupPencere({})}>+ Seçenek Grubu</button>
+            </div>
+
+            <div className="menu-urunler">
+              {gruplar.map((g) => (
+                <div key={g.id} className="menu-urun tiklanir" onClick={() => setGrupPencere({ grup: g })}>
+                  <div className="urun-bilgi">
+                    <span>{g.ad}</span>
+                    <small>{g.tekli ? "tekli" : "çoklu"} · {g.liste.length} seçenek</small>
+                  </div>
+                  <button className="menu-urun-sil" onClick={(e) => { e.stopPropagation(); grubuSil(g); }}>Sil ×</button>
+                </div>
+              ))}
+            </div>
+
+            {gruplar.length === 0 && <p className="bos">Henüz seçenek grubu yok</p>}
+          </div>
         ) : (
           <div className="ms-duzen">
             <div className="ms-kategoriler">
@@ -195,7 +361,7 @@ export default function MenuStudyosu() {
                           </small>
                         </div>
                         <strong>₺{anaFiyat(u)}</strong>
-                        <button className="ms-islem" onClick={(e) => { e.stopPropagation(); urunuSil(u); }}>×</button>
+                        <button className="menu-urun-sil" onClick={(e) => { e.stopPropagation(); urunuSil(u); }}>Sil ×</button>
                       </div>
                     ))}
                   </div>
@@ -217,6 +383,7 @@ export default function MenuStudyosu() {
           gruplar={gruplar}
           onKapat={() => setPanel(null)}
           onKaydet={kaydet}
+          onSil={() => urunuSil(panel)}
         />
       )}
 
@@ -225,6 +392,26 @@ export default function MenuStudyosu() {
           kategori={pencere.kategori}
           onKapat={() => setPencere(null)}
           onKaydet={kategoriKaydet}
+        />
+      )}
+
+      {grupPencere && (
+        <GrupPaneli
+          grup={grupPencere.grup}
+          onKapat={() => setGrupPencere(null)}
+          onKaydet={grubuKaydet}
+          onSil={grupPencere.grup ? () => grubuSil(grupPencere.grup!) : undefined}
+        />
+      )}
+
+      {uyari && <OnayModal mesaj={uyari} tekTus onKapat={() => setUyari(null)} />}
+
+      {onaySor && (
+        <OnayModal
+          mesaj={onaySor.mesaj}
+          tehlikeli
+          onOnay={() => { onaySor.devam(); setOnaySor(null); }}
+          onKapat={() => setOnaySor(null)}
         />
       )}
     </Duzen>
