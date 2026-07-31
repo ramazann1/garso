@@ -189,8 +189,9 @@ Amaç: Yoğun bir restoranın mutfak-servis akışını taşıyabilmeli.
 - Ürün kartında fiyat görünür; ürüne özellik grubu bağlıysa seçim ekranı açılır.
 
 ### Ürün Veri Modeli (ürün formundan birebir)
-`Ürün { kategoriler[], ad, renk, KDV grubu, mutfak grubu (yazıcı/KDS yönlendirme), ürün kodu/barkod, porsiyonlar[] }`
-`Porsiyon { ad (örn. Tam), varsayılan mı, birim, fiyat, maliyet tutarı }`
+`Ürün { kategoriler[], ad, renk, KDV grubu, mutfak grubu (yazıcı/KDS yönlendirme), ürün kodu, porsiyonlar[], stok takibi, menü tanımı }`
+`Porsiyon { ad (birim listesinden), varsayılan mı, fiyat, maliyet tutarı, barkod, reçete, özellik grupları[] }`
+→ **Düzeltme (31 Tem 2026):** barkod, reçete ve özellik grubu bağlama ürün seviyesinde değil, **porsiyon seviyesinde**. Aynı ürünün "Tam" ve "Yarım" porsiyonu ayrı barkod, ayrı reçete, ayrı özellik grubu taşıyabiliyor.
 - Ürün kartı aksiyonları: favori, renk (palette), kopyala.
 - **Özellikler** ayrı modül: `ÖzellikGrubu { ad, seçimTipi: Tekli|Çoklu, özellikler[] }` → ürünlere bağlanıyor. (Bizde örnek: "Kahve Özellikleri" tekli, "AROMALAR" çoklu.)
 - Mutfak Grupları: ürün → grup → hedef KDS ekranı/yazıcı. (Bizde: Mutfak, Bar, Nargile — 3 ayrı KDS.)
@@ -204,6 +205,34 @@ Kategori listesinin üstündeki ⋮ menüsünde gizli — ekranda göze çarpmı
 - **Toplu Ürün İşlemleri:** "seç → toplu aksiyon" değil, **Excel benzeri düzenlenebilir tablo**. Tüm ürünler alt alta; her satırda porsiyon/fiyat (+ "sipariş türüne göre özelleştir"), Ürün KDV Grubu, zorunlu özellik ve porsiyon seçimi, stok takibi, satılabilir, mutfak grubu. Üstte arama + kategori filtresi + **"Tüm Kategorileri Görüntüle"** + "Ürün adına göre sırala". Tek **Kaydet** ile hepsi birden yazılıyor.
 - **Ürünleri İndir / Yükle:** menünün Excel ile dışa/içe aktarımı — ilk kurulumda ve toplu fiyat güncellemede kritik.
 → **Klon için:** zam dönemlerinde tek tek ürün açmak işkence; toplu düzenleme tablosu Menü Stüdyosu'nun en çok işe yarayacak eklentilerinden biri.
+
+### Menü/Ürünler Modülü — Derin Tur (31 Tem 2026)
+*Tüm ⋮ menüleri, dropdown'lar ve kapalı anahtarlar tek tek açılarak çıkarıldı.*
+
+**Kategori seviyesi**
+- **Alt kategori desteği:** kategori formunda opsiyonel "Üst Kategori" alanı, ⋮ menüsünde "Alt Kategori Ekle". Kategoriler düz liste değil, ağaç.
+- **Kategori ⋮ menüsü:** Toplu İşlemler | Ürünleri Sırala | Yeni Ürün Ekle | Alt Kategori Ekle | Düzenle | Kategoriyi Sil.
+- **Kategori bazlı Toplu İşlemler** (Excel tablosundan ayrı): o kategorideki *tüm* ürünlere tek seferde mutfak grubu, KDV grubu, "özellik ve porsiyon seçimi zorunlu", stok takibi, satış ekranında göster uygular. Üstte kırmızı uyarı bandı.
+- Kategori parametreleri: **Satış Ekranında Göster**, **Mutfak Ekranında Göster**.
+- Kategori adı **25 karakter sınırı + canlı sayaç**. Renk: 12 hazır ton + "renksiz" + **serbest hex girişi**.
+- **Sıralama ayrı modal:** sürükle-bırak liste + numaralı sıra + **"A-Z" tek tıkla alfabetik sıralama**. Aynı desen hem kategoriler hem de her kategorinin ürünleri için ("Ürünleri Sırala").
+
+**Ürün seviyesi (ürün detay sayfası)**
+- **Sipariş türüne göre fiyat:** "Sipariş türüne göre özelleştir" linki fiyat alanını dörde bölüyor — **Tek Fiyat / Masa Siparişi / Gel Al Siparişi / Paket Siparişi**, hem de **porsiyon bazında**. Paket servis fiyatı masa fiyatından farklı olabiliyor.
+- Sol paneldeki ürün anahtarları: Favori Ürün, Satış Ekranında Göster, **KDV hariç olsun**, **Özellik ve Porsiyon Otomatik Sorulsun**, **Mutfak Ekranında Göster**.
+- Porsiyon bazlı açılır bölümler: **Reçeteli ürün kullan**, **Barkod Ekle**, **Özellik Tanımlama** (grup seçimi kart+checkbox modalından).
+- Ürün bazlı: **Stok takibi yap**, **Menü Tanımla**.
+- **Menü/kampanya modeli:** menü = "menü kategorisi" grupları. Her grup: menü başlığı + **seçilebilir ürün sayısı** (örn. 1) + satırlar `{ ürün, porsiyon, miktar, ek fiyat, varsayılan mı }`. Bir kategorinin tüm ürünleri tek linkle eklenebiliyor. Menü ürününün **maliyeti içeriğe göre sipariş anında otomatik** hesaplanıyor.
+- Ürün kartı üstünden **panele girmeden hızlı renk değiştirme** (12 ton + renksiz + hex).
+- Arama çubuğunda **kapsam seçici: Tüm Kategoriler / Aktif Kategori**.
+
+**Komşu tanım ekranları**
+- **Birimler** (`Porsiyon/Birim Yönetimi`): merkezi liste — Tam, Yarım, Bir buçuk, AD, Adet, Kg. Porsiyon adı serbest metin değil, **bu listeden seçiliyor**. Böylece aynı ürün farklı porsiyon seçenekleriyle satılabiliyor.
+- **KDV Oranları:** satırlar `{ sıra, tanım adı (örn. Yiyecek/İçecek), oran (%0/%1/%10/%20), varsayılan mı }`, sürükle-bırak sıra, **en fazla 8 tanım**, tek Kaydet.
+- **Mutfak Grupları:** grup adı + **"Pişirme aşaması"** ve **"Paketleme aşaması"** kutuları. Varsayılan durum akışı Hazırlanıyor → Hazırlandı; bu kutularla **her istasyonun KDS akışı ayrı ayrı uzatılabiliyor**.
+- **Özellikler:** grup satırı açılınca özellikler chip olarak, ek fiyatlılar "+₺1,00" rozetiyle. Grup formunda: seçim tipi (Tekli/Çoklu), **Reçeteli ürün kullan**, **Özellik seçimi zorunlu olsun**; özellik satırında ad + ekstra tutar + **Varsayılan** + sıralama tutamacı.
+
+→ **Klon için çıkarımlar:** (1) Sipariş türüne göre fiyat, veri modelinde porsiyon fiyatının tek sayı olmadığı anlamına geliyor — Garso'da baştan düşünülmeli. (2) Barkod/reçete/özelliğin porsiyon bazlı olması stok ve KDS tarafını doğrudan etkiliyor. (3) Birim listesinin merkezi olması yazım tutarlılığı sağlıyor ("Tam" / "tam" / "TAM" karmaşası olmuyor). (4) Mutfak grubu bazlı KDS aşamaları, kanban kolonlarımızın sabit olamayacağını gösteriyor.
 
 ### Yetki Matrisi (6 rol × işlem bazlı onay kutuları)
 Roller: **Garson, Mutfak, Kurye, Kasa, Müdür, Çağrı Merkezi**

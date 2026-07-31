@@ -149,7 +149,7 @@ stock_moves    (id, branch_id, urun/malzeme, tip ENUM('giris','sayim','satis_dus
 ### 📌 SONRAKİ ADIMLAR
 **Menü Stüdyosu'nda kalanlar (Adisyo paritesi hedefi):**
 - `kategoriler.urunler` sütununu veritabanından silmek (yukarıda 0. bölümde, onay bekliyor)
-- Sürükle-bırak sıralama (kategori ve ürün)
+- Sürükle-bırak sıralama (kategori ve ürün) — Adisyo bunu **ayrı sıralama modalında** yapıyor, listeye gömmüyor; modalda ayrıca **"A-Z" tek tıkla alfabetik sıralama** var
 - Ürün kopyalama
 - Ürün kodu / barkod, birim, maliyet, KDV grubu
 - Menü/kampanya ürünü (birden fazla ürün tek fiyata)
@@ -158,6 +158,27 @@ stock_moves    (id, branch_id, urun/malzeme, tip ENUM('giris','sayim','satis_dus
 - **Toplu ürün işlemleri** — Excel benzeri düzenlenebilir tablo: tüm ürünlerin fiyat/KDV/mutfak grubu/satılabilir alanları tek ekranda, tek "Kaydet" ile. Zam döneminde tek tek düzenlemeye göre çok hızlı. *(31 Tem 2026'da Adisyo'da keşfedildi)*
 - **Ürünleri Excel'e aktar / Excel'den içeri al**
 - **"Tüm kategorileri görüntüle"** — ürünleri kategori ayrımı olmadan tek listede görme
+
+**31 Tem 2026 — Adisyo Menü/Ürünler derin turunda çıkan yeni eksikler**
+*(Tüm ⋮ menüleri ve kapalı anahtarlar açılarak bulundu. Ayrıntılı döküm: `pos-yol-haritasi.md` → "Menü/Ürünler Modülü — Derin Tur".)*
+
+*Veri modelini etkileyenler (önce karar, sonra kod):*
+- **Sipariş türüne göre fiyat** — porsiyon fiyatı tek sayı değil: Tek Fiyat / Masa / Gel Al / Paket. Paket servis fiyatı masadan farklı olabiliyor. `porsiyonlar.fiyat` tek sütun olarak kalırsa sonradan dönmek pahalı.
+- **Barkod, reçete ve seçenek grubu bağlama porsiyon bazlı** — bizde seçenek grupları ürüne bağlı (`urun_secenek_gruplari`). Adisyo porsiyona bağlıyor.
+- **Birimler merkezi liste** — porsiyon adı serbest metin değil, ortak `birimler` tablosundan seçiliyor ("Tam" / "tam" / "TAM" karmaşasını önlüyor).
+- **Alt kategori (kategori ağacı)** — kategori formunda opsiyonel üst kategori.
+- **KDV grupları** — `{ ad, oran, varsayılan mı, sıra }`, en fazla 8 tanım.
+- **Mutfak grubunda opsiyonel KDS aşamaları** (Pişirme / Paketleme) — İstasyon ekranındaki kanban kolonları sabit olamaz, gruba göre değişir.
+
+*Arayüz eksikleri (model değişmiyor):*
+- Ürün anahtarları: **Satış Ekranında Göster**, **Mutfak Ekranında Göster**, **KDV hariç olsun**, **Özellik ve Porsiyon Otomatik Sorulsun**, **Stok takibi yap**
+- Kategori anahtarları: Satış Ekranında Göster, Mutfak Ekranında Göster
+- Kategori bazlı **toplu işlem** modalı (kategorideki tüm ürünlere mutfak grubu / KDV / zorunlu seçim / stok / satılabilir uygulama)
+- Seçenek grubunda **"zorunlu"** anahtarı (alan veri modelimizde zaten var, arayüzde yok) + seçenekte **varsayılan** işareti + seçenek sıralama
+- Ürün kartından **panele girmeden hızlı renk değiştirme**; renk seçiminde **serbest hex** girişi
+- Kategori adında **karakter sınırı + sayaç**
+- Aramada **kapsam seçici** (tüm kategoriler / aktif kategori)
+- **Menü/kampanya tanımının yapısı** netleşti: menü grubu = başlık + *seçilebilir ürün sayısı* + satırlar `{ ürün, porsiyon, miktar, ek fiyat, varsayılan }`; maliyet içerikten otomatik hesaplanıyor
 
 **Sonra:**
 - Sipariş ekranı eksikleri — arama, not, ikram/iptal, misafir sayısı, turlar
