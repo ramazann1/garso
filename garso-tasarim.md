@@ -1,23 +1,23 @@
 # GARSO — Teknik Tasarım: Veri Modeli & Ekran Haritası
 *Restoran ve cafe'ler için bulut tabanlı satış ve işletme yönetim sistemi.*
 
-## 0. SIRADAKİ İŞ (1 Ağu 2026 seansı sonunda güncellendi)
+## 0. SIRADAKİ İŞ (1 Ağu 2026 ikinci seansın sonunda güncellendi)
 
 *Ramazan seansa "devam edelim" diye giriyor — sıradaki iş bu listenin en üstündeki
 maddedir. Seans sonunda bu liste güncellenir: biten madde silinir, kalanlar
 yukarı kayar, yeni çıkanlar sıraya girer.*
 
-1. **Sürükle-bırak sıralama** (kategori ve ürün). Adisyo ayrı modalda yapıyor
-   + "A-Z" düğmesi sunuyor; bizim yöntemimiz ayrıca kararlaştırılacak.
-2. **Ürün kopyalama, ürün kodu.** (Barkod porsiyon bazında 1 Ağu'da eklendi.)
-3. **Arayüz eksikleri paketi** (model değişmiyor): satış/mutfak ekranında
-   göster anahtarları, seçenek grubunda "zorunlu", serbest hex renk, kategori
-   adında karakter sayacı, aramada kapsam seçici.
-4. **Toplu ürün işlemleri tablosu** (Excel benzeri tek ekran + tek Kaydet).
-5. **Seçenek gruplarını üründen porsiyona taşı** + reçete alanı. Adisyo ikisini
+1. **Toplu ürün işlemleri tablosu** (Excel benzeri tek ekran + tek Kaydet).
+   Sıfırdan yeni ekran, büyük iş — kendi seansında yapılacak.
+2. **Seçenek gruplarını üründen porsiyona taşı** + reçete alanı. Adisyo ikisini
    de porsiyona bağlıyor; bizde `urun_secenek_gruplari` ürün seviyesinde. Sipariş
    ekranını ve `UrunSecim`'i de değiştirdiği için ayrı görev olarak ayrıldı.
    *(1 Ağu 2026)*
+3. **Seçenekte varsayılan işareti + seçenek sıralama.** Zorunlu anahtarı geldi,
+   sırada grubun kendi içindeki düzen var. `SiralamaModal` hazır, ona bağlanır.
+   *(1 Ağu 2026)*
+4. **Alt kategori (kategori ağacı)** — kategori formunda opsiyonel üst kategori.
+5. **KDV grupları** — `{ ad, oran, varsayılan mı, sıra }`, en fazla 8 tanım.
 
 *(30 Tem – 1 Ağu'da yapılanlar bölüm 5'te; menü modülünün tam eksik listesi
 bölüm 5'in sonundaki "SONRAKİ ADIMLAR" başlığında.)*
@@ -52,16 +52,19 @@ tables         (id, zone_id, ad, sira, aktif)
 
 ### Menü — 30 Tem 2026'da kuruldu, 1 Ağu 2026'da tamamlandı
 ```sql
-kategoriler          (id, ad, renk, sira)
-urunler              (id, ad, renk, kod, favori, aktif, sira)
+kategoriler          (id, ad, renk, sira, satista_gorunur, mutfakta_gorunur)
+urunler              (id, ad, kod UNIQUE*, renk, favori, satista_gorunur, mutfakta_gorunur)
 birimler             (id, ad UNIQUE, sira)            -- Tam, Yarım, Adet, Kg... porsiyon adının tek kaynağı
 porsiyonlar          (id, urun_id, birim_id, fiyat, maliyet, barkod,
                       masa_fiyat, gelal_fiyat, paket_fiyat, varsayilan, sira)
-urun_kategorileri    (urun_id, kategori_id)           -- çoktan-çoğa: ürün birden fazla kategoride
+urun_kategorileri    (urun_id, kategori_id, sira)     -- çoktan-çoğa + ürünün O kategorideki sırası
 secenek_gruplari     (id, ad, tekli, zorunlu, sira)   -- Servis, Şeker, Aroma...
 secenekler           (id, grup_id, ad, ek_fiyat, sira)
 urun_secenek_gruplari(urun_id, grup_id)               -- grup bir kez tanımlanır, ürünlere bağlanır
 ```
+`* kod` benzersizliği kısmi indeksle: `unique ... where kod is not null` — kodsuz
+ürün serbest, kodlu ürünler çakışamaz. `urunler.sira` **silindi**; ürün sırası
+artık kategori bazlı (`urun_kategorileri.sira`).
 `fiyat` = tek fiyat (varsayılan). `masa_fiyat`/`gelal_fiyat`/`paket_fiyat` boşsa o
 sipariş türünde tek fiyat geçerlidir — kural tek yerde: `menu.ts → porsiyonFiyat()`.
 
@@ -184,18 +187,45 @@ stock_moves    (id, branch_id, urun/malzeme, tip ENUM('giris','sayim','satis_dus
 - ✅ Tarayıcı testi (Ramazan): birim ekleme/silme koruması, porsiyon birim seçimi,
   paket fiyatı kaydı, sipariş ekranında masa fiyatının doğru gelmesi — hepsi çalıştı.
 
+### 1 AĞUSTOS (2. seans) — SIRALAMA, KOPYALAMA, GÖRÜNÜRLÜK, ARAMA
+- ✅ **Ürün sırası kategori bazlı oldu:** `urun_kategorileri.sira` eklendi,
+  `urunler.sira` silindi. Bir ürün iki kategorideyse her birinde ayrı sırada
+  durabiliyor. Filtreleme + sıralama tek fonksiyonda: `menu.ts → kategoriUrunleri()`
+  — Sipariş ekranı ve Menü Stüdyosu aynı kaynaktan besleniyor.
+- ✅ **`SiralamaModal.tsx`:** ayrı modalda sürükle-bırak + "A-Z" düğmesi.
+  Sürükleme pointer olaylarıyla yazıldı (tarayıcının `draggable`'ı dokunmatik
+  ekranda çalışmıyor — POS için şart). Kategori ve ürün ikisinde de aynı modal.
+- ✅ **Ürün kopyalama:** porsiyon/kategori/seçenek grupları kopyalanıyor; kod ve
+  barkod kopyalanmıyor (ikisi de benzersiz). Kopya kaynağın **hemen altına**
+  giriyor, panel açılmıyor, kısa süre vurgulanıyor.
+- ✅ **Ürün kodu** (`urunler.kod`) + kısmi benzersizlik indeksi. Çakışırsa panel
+  kapanmıyor, uyarı çıkıyor (`urunKaydet` artık hata mesajı döndürüyor).
+- ✅ **Görünürlük anahtarları:** ürün ve kategoride Satış/Mutfak ekranında göster.
+  Satış anahtarı **gerçekten iş görüyor** — kapalı ürün/kategori sipariş ekranına
+  hiç girmiyor. Menü Stüdyosu'nda `gizli` / `satışta gizli` işaretiyle görünüyor.
+  Mutfak anahtarı saklanıyor, KDS gelince devreye girecek.
+- ✅ **Seçenek grubunda "zorunlu":** `UrunSecim`'de seçim yapılmadan "Ekle" pasif,
+  kırmızı "Önce seçilmeli: …" uyarısı, grup başlığında `zorunlu` rozeti.
+- ✅ **`Anahtar.tsx`** (ortak aç/kapa anahtarı) ve **`RenkSecici.tsx`** (palet +
+  kendi renk çemberimiz) eklendi. Renk seçimi iki panelde tekrar ediyordu, teke indi.
+- ✅ **Kategori adı 25 karakter + canlı sayaç.**
+- ✅ **Ürün arama:** ad **veya ürün kodu** ile; kapsam seçici **Bu kategori /
+  Tüm kategoriler**. "Tüm kategoriler + boş arama" = tüm menü tek listede →
+  "Tüm kategorileri görüntüle" maddesi ayrıca iş gerektirmeden kapandı.
+- ✅ Uzun ürün adı kart taşırma hatası düzeltildi (Menü Stüdyosu'nda kesilir,
+  Sipariş ekranında alta sarar — garson ne seçtiğini görmek zorunda).
+
 ### 📌 SONRAKİ ADIMLAR
 **Menü Stüdyosu'nda kalanlar (Adisyo paritesi hedefi):**
-- Sürükle-bırak sıralama (kategori ve ürün) — Adisyo bunu **ayrı sıralama modalında** yapıyor, listeye gömmüyor; modalda ayrıca **"A-Z" tek tıkla alfabetik sıralama** var
-- Ürün kopyalama
-- Ürün kodu, KDV grubu
+- KDV grubu
 - Seçenek grubu ve reçetenin porsiyon bazına taşınması
 - Menü/kampanya ürünü (birden fazla ürün tek fiyata)
 - Mutfak grubu alanı (anlamı KDS gelince oluşur)
-- Ürün arama, aktif/pasif ürün
 - **Toplu ürün işlemleri** — Excel benzeri düzenlenebilir tablo: tüm ürünlerin fiyat/KDV/mutfak grubu/satılabilir alanları tek ekranda, tek "Kaydet" ile. Zam döneminde tek tek düzenlemeye göre çok hızlı. *(31 Tem 2026'da Adisyo'da keşfedildi)*
 - **Ürünleri Excel'e aktar / Excel'den içeri al**
-- **"Tüm kategorileri görüntüle"** — ürünleri kategori ayrımı olmadan tek listede görme
+
+*(Sürükle-bırak sıralama, ürün kopyalama, ürün kodu, ürün arama, "tüm kategorileri
+görüntüle" ve aktif/pasif ürün — 1 Ağu 2026 ikinci seansında tamamlandı.)*
 
 **31 Tem 2026 — Adisyo Menü/Ürünler derin turunda çıkan yeni eksikler**
 *(Tüm ⋮ menüleri ve kapalı anahtarlar açılarak bulundu. Ayrıntılı döküm: `pos-yol-haritasi.md` → "Menü/Ürünler Modülü — Derin Tur".)*
@@ -208,14 +238,16 @@ stock_moves    (id, branch_id, urun/malzeme, tip ENUM('giris','sayim','satis_dus
 - **KDV grupları** — `{ ad, oran, varsayılan mı, sıra }`, en fazla 8 tanım.
 - **Mutfak grubunda opsiyonel KDS aşamaları** (Pişirme / Paketleme) — İstasyon ekranındaki kanban kolonları sabit olamaz, gruba göre değişir.
 
-*Arayüz eksikleri (model değişmiyor):*
-- Ürün anahtarları: **Satış Ekranında Göster**, **Mutfak Ekranında Göster**, **KDV hariç olsun**, **Özellik ve Porsiyon Otomatik Sorulsun**, **Stok takibi yap**
-- Kategori anahtarları: Satış Ekranında Göster, Mutfak Ekranında Göster
+*Arayüz eksikleri:*
+- ~~Ürün ve kategoride **Satış / Mutfak Ekranında Göster**~~ ✅ 1 Ağu (2. seans)
+- ~~Seçenek grubunda **"zorunlu"** anahtarı~~ ✅ 1 Ağu (2. seans)
+- ~~Serbest renk girişi~~ ✅ 1 Ağu (2. seans) — hex yerine **kendi renk çemberimiz**
+- ~~Kategori adında **karakter sınırı + sayaç**~~ ✅ 1 Ağu (2. seans)
+- ~~Aramada **kapsam seçici**~~ ✅ 1 Ağu (2. seans)
+- Kalan ürün anahtarları: **KDV hariç olsun**, **Özellik ve Porsiyon Otomatik Sorulsun**, **Stok takibi yap**
 - Kategori bazlı **toplu işlem** modalı (kategorideki tüm ürünlere mutfak grubu / KDV / zorunlu seçim / stok / satılabilir uygulama)
-- Seçenek grubunda **"zorunlu"** anahtarı (alan veri modelimizde zaten var, arayüzde yok) + seçenekte **varsayılan** işareti + seçenek sıralama
-- Ürün kartından **panele girmeden hızlı renk değiştirme**; renk seçiminde **serbest hex** girişi
-- Kategori adında **karakter sınırı + sayaç**
-- Aramada **kapsam seçici** (tüm kategoriler / aktif kategori)
+- Seçenekte **varsayılan** işareti + seçenek sıralama
+- Ürün kartından **panele girmeden hızlı renk değiştirme**
 - **Menü/kampanya tanımının yapısı** netleşti: menü grubu = başlık + *seçilebilir ürün sayısı* + satırlar `{ ürün, porsiyon, miktar, ek fiyat, varsayılan }`; maliyet içerikten otomatik hesaplanıyor
 
 **Sonra:**
@@ -237,12 +269,19 @@ stock_moves    (id, branch_id, urun/malzeme, tip ENUM('giris','sayim','satis_dus
 9. **Dolu kategori silinemez.** Yanlışlıkla menü kaybını önler; önce ürünler taşınır veya silinir. *(30 Tem 2026)*
 10. **Uzun formlarda bölümler katlanır.** Ürün panelinde porsiyon/kategori/seçenek blokları açılıp kapanır; varsayılan olarak yalnızca porsiyonlar açık. *(30 Tem 2026)*
 11. **İngilizce ad alanı yapılmayacak.** Kullanıcının Adisyo'daki iki dilli menüsü deneme amaçlıydı, gerçek ihtiyaç değil. *(30 Tem 2026)*
-12. **Silme aksiyonları her zaman görünür, hover'a bağlı değil.** Liste satırlarında "Sil ×" yazı+ikon olarak duruyor; düzenleme panellerinde ayrı kırmızı kutulu bir "Sil" butonu var. *(31 Tem 2026)*
+12. **Kart listelerinde aksiyon simgesi hep görünür, etiketi üstüne gelince çıkar.** Ürün/grup kartlarında `⧉` ve `×` simgeleri her zaman duruyor; fareyle üstüne gelince simgenin üstünde küçük balonda adı beliriyor (kopyalama koyu, silme **kırmızı** — tehlike renkten anlaşılsın). Düzenleme panellerindeki kırmızı kutulu "Sil" butonu ise yazılı kalıyor. *(31 Tem 2026, 1 Ağu'da balon ipucuyla güncellendi)*
 13. **Onay/uyarı için tarayıcının `confirm()`/`alert()`'i kullanılmaz.** Her zaman kendi `OnayModal.tsx` bileşenimiz kullanılır — stillenemeyen, siteye yabancı duran native popup'lar yasak. *(31 Tem 2026)*
 14. **Porsiyonun adı yoktur, birimi vardır.** Porsiyon adı serbest metin değil, merkezi `birimler` tablosundan seçilir; aynı şeyin farklı yazımı (Tam/tam/TAM) şemadan engellenir. Kullanımdaki birim silinemez — dolu kategori kuralının aynısı. *(1 Ağu 2026)*
 15. **Fiyat = tek fiyat + isteğe bağlı tür fiyatları.** Porsiyonda `fiyat` her zaman doludur; masa/gel al/paket sütunları boşsa tek fiyat geçerlidir. Fiyat okuma tek fonksiyondan geçer (`porsiyonFiyat`), ekranlar kendi kuralını yazmaz. *(1 Ağu 2026)*
 16. **Menüyle ilgili her tanım Menü Stüdyosu'nda.** Adisyo birimleri ayrı sol menü maddesine koymuş; bizde sekme olarak aynı ekranda (Kategoriler / Seçenek Grupları / Birimler). Gezinme sığ kalıyor. *(1 Ağu 2026)*
 17. **Nadir kullanılan alanlar katlanır detayda durur.** Porsiyon satırında maliyet, barkod ve tür fiyatları kapalı başlar; tek fiyatlı ürün ekleyen kullanıcı onları hiç görmez. *(1 Ağu 2026)*
+18. **Ürün sırası kategori bazlıdır.** Sıra `urun_kategorileri.sira`'da; bir ürün iki kategorideyse her birinde ayrı yerde durabilir. Global `urunler.sira` silindi — iki sıra kaynağı olsaydı hangisinin geçerli olduğu belirsiz kalırdı. *(1 Ağu 2026)*
+19. **Sıralama ayrı modalda yapılır, listeye gömülmez.** Liste satırına tıklamanın kendi anlamı var (kategori seçme, panel açma); sürüklemeyle çakışırsa yanlışlıkla sıra bozulur. Modalda ayrıca "A-Z" var. Sürükleme pointer olaylarıyla yazıldı — tarayıcının `draggable` özelliği dokunmatik ekranda çalışmıyor, POS'ta bu kabul edilemez. *(1 Ağu 2026)*
+20. **Yeni gelen kayıt kısa süre vurgulanır.** Kopyalanan ürün kaynağının hemen altında beliriyor, açılma animasyonu + ~2 sn mercan halka alıyor; panel açılmıyor ki arka arkaya kopya çıkarmak akışı kesmesin. Aynı desen yeni kategori/birim eklemede de kullanılacak. *(1 Ağu 2026)*
+21. **Benzersiz alanlar kopyalanmaz.** Ürün kopyalanırken kod ve barkod boş gelir; çakışan benzersiz alan sessizce kaydı düşürür. Çakışma olursa panel kapanmaz, kullanıcıya sebebi söylenir. *(1 Ağu 2026)*
+22. **Renk seçimi kendi çemberimizle yapılır.** Kullanıcı hex kodu bilmek zorunda değil: `＋` kutusu bizim çizdiğimiz renk çemberini açar (açı = renk, merkeze uzaklık = canlılık, altında açıklık kaydırıcısı). Tarayıcının sistem renk penceresi kullanılmaz — `confirm()` yasağının aynı gerekçesi. *(1 Ağu 2026)*
+23. **Görünürlük anahtarı gerçekten uygulanır.** "Satış ekranında göster" kapalıysa ürün/kategori sipariş ekranına hiç girmez; ama Menü Stüdyosu'nda `gizli` işaretiyle görünmeye devam eder — kullanıcı kapattığını unutup "ürünüm kayboldu" demesin diye. *(1 Ağu 2026)*
+24. **Filtrelenmiş listede sıralama yapılamaz.** Arama açıkken veya "Tüm kategoriler" kapsamındayken ⇅ Sırala pasif — görünen sırayı kaydetmek gerçek sırayı bozardı. *(1 Ağu 2026)*
 
 ## 7. KOD PAYLAŞIM DÜZENİ
 - Kod GitHub'da: `github.com/ramazann1/garso` (şimdilik Public — final'de Private yapılacak)

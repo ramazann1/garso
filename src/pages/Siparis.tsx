@@ -1,6 +1,6 @@
 import { useEffect, useState } from "react";
 import { useNavigate, useParams } from "react-router-dom";
-import { menuGetir, porsiyonFiyat } from "../menu";
+import { menuGetir, kategoriUrunleri as kategorininUrunleri, porsiyonFiyat } from "../menu";
 import { adisyonGetir, adisyonKaydet } from "../adisyonlar";
 import UrunSecim from "../components/UrunSecim";
 import TahsilatPanel from "../components/TahsilatPanel";
@@ -31,10 +31,12 @@ export default function Siparis() {
 
   useEffect(() => {
     menuGetir().then((veri) => {
-      setKategoriler(veri.kategoriler);
-      setUrunler(veri.urunler);
+      // Satışta gizlenen kategori ve ürünler sipariş ekranına hiç girmiyor.
+      const acikKategoriler = veri.kategoriler.filter((k) => k.satistaGorunur);
+      setKategoriler(acikKategoriler);
+      setUrunler(veri.urunler.filter((u) => u.satistaGorunur));
       setGruplar(veri.gruplar);
-      setSeciliId(veri.kategoriler[0]?.id ?? null);
+      setSeciliId(acikKategoriler[0]?.id ?? null);
       setMenuYukleniyor(false);
     });
   }, []);
@@ -50,7 +52,7 @@ export default function Siparis() {
   }, [masaAd]);
 
   const secili = kategoriler.find((k) => k.id === seciliId) ?? kategoriler[0];
-  const kategoriUrunleri = secili ? urunler.filter((u) => u.kategoriIdler.includes(secili.id)) : [];
+  const kategoriUrunleri = secili ? kategorininUrunleri(urunler, secili.id) : [];
 
   const sepeteEkle = (ad: string, fiyat: number, porsiyon?: string, secimler?: string[]) => {
     const anahtar = [ad, porsiyon, ...(secimler ?? [])].join("|");

@@ -1,7 +1,7 @@
 import { useState } from "react";
+import Anahtar from "./Anahtar";
+import RenkSecici from "./RenkSecici";
 import type { MenuBirim, MenuKategori, MenuPorsiyon, MenuSecenekGrubu, MenuUrun } from "../types";
-
-const renkler = ["#e8b4b4", "#d4b896", "#a8d5c2", "#9fc5d8", "#c9b8d8", "#e0c9a6", "#b8d4a8", "#d8b8c4"];
 
 // Boş bırakılan para alanı 0 değil, "tanımsız" demektir — tür fiyatında bu ayrım önemli.
 const paraCevir = (deger: string) => {
@@ -34,8 +34,11 @@ export default function UrunPaneli({
   });
 
   const [ad, setAd] = useState(urun.ad);
+  const [kod, setKod] = useState(urun.kod ?? "");
   const [renk, setRenk] = useState(urun.renk);
   const [favori, setFavori] = useState(urun.favori);
+  const [satistaGorunur, setSatistaGorunur] = useState(urun.satistaGorunur);
+  const [mutfaktaGorunur, setMutfaktaGorunur] = useState(urun.mutfaktaGorunur);
   const [porsiyonlar, setPorsiyonlar] = useState<MenuPorsiyon[]>(
     urun.porsiyonlar.length ? urun.porsiyonlar : [yeniPorsiyon(true)]
   );
@@ -85,8 +88,11 @@ export default function UrunPaneli({
     onKaydet({
       ...urun,
       ad: ad.trim(),
+      kod: kod.trim() || undefined,
       renk,
       favori,
+      satistaGorunur,
+      mutfaktaGorunur,
       porsiyonlar: porsiyonlar.filter((p) => p.birimId),
       kategoriIdler,
       grupIdler,
@@ -108,29 +114,30 @@ export default function UrunPaneli({
           </div>
 
           <div className="alan">
+            <span>Ürün kodu</span>
+            <input value={kod} onChange={(e) => setKod(e.target.value)} placeholder="Zorunlu değil" />
+          </div>
+
+          <div className="alan">
             <span>Kart rengi</span>
-            <div className="renk-secim">
-              <button
-                className={!renk ? "renk-kutu bos secili" : "renk-kutu bos"}
-                onClick={() => setRenk(undefined)}
-                title="Renksiz"
-              >
-                —
-              </button>
-              {renkler.map((r) => (
-                <button
-                  key={r}
-                  className={r === renk ? "renk-kutu secili" : "renk-kutu"}
-                  style={{ background: r }}
-                  onClick={() => setRenk(r)}
-                />
-              ))}
-            </div>
+            <RenkSecici renk={renk} degistir={setRenk} renksizOlur />
           </div>
 
           <button className={favori ? "favori-tus aktif" : "favori-tus"} onClick={() => setFavori(!favori)}>
             {favori ? "★ Favori üründe" : "☆ Favorilere ekle"}
           </button>
+
+          <Anahtar
+            etiket="Satış ekranında göster"
+            ipucu="Kapalıysa sipariş ekranında çıkmaz"
+            acik={satistaGorunur}
+            degistir={setSatistaGorunur}
+          />
+          <Anahtar
+            etiket="Mutfak ekranında göster"
+            acik={mutfaktaGorunur}
+            degistir={setMutfaktaGorunur}
+          />
 
           <div className="bolum">
             <button className="bolum-basi" onClick={() => katla("porsiyon")}>

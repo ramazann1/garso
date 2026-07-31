@@ -41,6 +41,9 @@ export default function UrunSecim({ urun, gruplar, onEkle, onKapat }: Props) {
 
   const fiyat = (porsiyon ? porsiyonFiyat(porsiyon, "masa") : 0) + ekToplam;
 
+  // Zorunlu gruptan seçim yapılmadan ürün sepete eklenemez.
+  const eksikler = urunGruplari.filter((g) => g.zorunlu && !(secilenler[g.id] ?? []).length);
+
   return (
     <div className="perde" onClick={onKapat}>
       <div className="pencere" onClick={(e) => e.stopPropagation()}>
@@ -65,7 +68,10 @@ export default function UrunSecim({ urun, gruplar, onEkle, onKapat }: Props) {
 
         {urunGruplari.map((grup) => (
           <div className="grup" key={grup.id}>
-            <span className="grup-ad">{grup.ad}</span>
+            <span className="grup-ad">
+              {grup.ad}
+              {grup.zorunlu && <em className="zorunlu-im">zorunlu</em>}
+            </span>
             <div className="secim-liste">
               {grup.liste.map((secenek) => (
                 <button
@@ -81,7 +87,15 @@ export default function UrunSecim({ urun, gruplar, onEkle, onKapat }: Props) {
           </div>
         ))}
 
-        <button className="kaydet" onClick={() => onEkle(porsiyon?.ad, fiyat, secimAdlari)}>
+        {eksikler.length > 0 && (
+          <p className="secim-uyari">Önce seçilmeli: {eksikler.map((g) => g.ad).join(", ")}</p>
+        )}
+
+        <button
+          className="kaydet"
+          disabled={eksikler.length > 0}
+          onClick={() => onEkle(porsiyon?.ad, fiyat, secimAdlari)}
+        >
           Ekle
         </button>
       </div>

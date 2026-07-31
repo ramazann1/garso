@@ -205,6 +205,7 @@ Kategori listesinin üstündeki ⋮ menüsünde gizli — ekranda göze çarpmı
 - **Toplu Ürün İşlemleri:** "seç → toplu aksiyon" değil, **Excel benzeri düzenlenebilir tablo**. Tüm ürünler alt alta; her satırda porsiyon/fiyat (+ "sipariş türüne göre özelleştir"), Ürün KDV Grubu, zorunlu özellik ve porsiyon seçimi, stok takibi, satılabilir, mutfak grubu. Üstte arama + kategori filtresi + **"Tüm Kategorileri Görüntüle"** + "Ürün adına göre sırala". Tek **Kaydet** ile hepsi birden yazılıyor.
 - **Ürünleri İndir / Yükle:** menünün Excel ile dışa/içe aktarımı — ilk kurulumda ve toplu fiyat güncellemede kritik.
 → **Klon için:** zam dönemlerinde tek tek ürün açmak işkence; toplu düzenleme tablosu Menü Stüdyosu'nun en çok işe yarayacak eklentilerinden biri.
+→ **Garso durumu (1 Ağu 2026):** "Kategorileri Sırala" ve "Ürünleri Sırala" karşılığı `SiralamaModal` ile yapıldı (sürükle-bırak + A-Z). **"Tüm Kategorileri Görüntüle"** arama kapsam seçicisinin bir modu olarak geldi. Kalan: toplu düzenleme tablosu ve Excel indir/yükle.
 
 ### Menü/Ürünler Modülü — Derin Tur (31 Tem 2026)
 *Tüm ⋮ menüleri, dropdown'lar ve kapalı anahtarlar tek tek açılarak çıkarıldı.*
@@ -233,6 +234,8 @@ Kategori listesinin üstündeki ⋮ menüsünde gizli — ekranda göze çarpmı
 - **Özellikler:** grup satırı açılınca özellikler chip olarak, ek fiyatlılar "+₺1,00" rozetiyle. Grup formunda: seçim tipi (Tekli/Çoklu), **Reçeteli ürün kullan**, **Özellik seçimi zorunlu olsun**; özellik satırında ad + ekstra tutar + **Varsayılan** + sıralama tutamacı.
 
 → **Klon için çıkarımlar:** (1) Sipariş türüne göre fiyat, veri modelinde porsiyon fiyatının tek sayı olmadığı anlamına geliyor — Garso'da baştan düşünülmeli. (2) Barkod/reçete/özelliğin porsiyon bazlı olması stok ve KDS tarafını doğrudan etkiliyor. (3) Birim listesinin merkezi olması yazım tutarlılığı sağlıyor ("Tam" / "tam" / "TAM" karmaşası olmuyor). (4) Mutfak grubu bazlı KDS aşamaları, kanban kolonlarımızın sabit olamayacağını gösteriyor.
+
+→ **Garso durumu (1 Ağu 2026, 2. seans):** Bu bölümdeki maddelerden şunlar karşılandı — ürün kodu, ürün kopyalama, kategori/ürün sıralama modalı, kategori adı 25 karakter + sayaç, serbest renk (Adisyo hex kutusu veriyor, biz **renk çemberi** yaptık — kullanıcının kod bilmesi gerekmiyor), ürün ve kategoride satış/mutfak görünürlük anahtarları, seçenek grubunda zorunlu, arama + kapsam seçici. Ürün sırasını Adisyo global tutuyor; biz **kategori bazlı** yaptık (bir ürün iki kategoride farklı sırada durabiliyor). Kalan büyük başlıklar: alt kategori ağacı, KDV grupları, mutfak grupları + KDS aşamaları, menü/kampanya ürünü, reçete ve seçenek grubunun porsiyon bazına inmesi.
 
 ### Yetki Matrisi (6 rol × işlem bazlı onay kutuları)
 Roller: **Garson, Mutfak, Kurye, Kasa, Müdür, Çağrı Merkezi**

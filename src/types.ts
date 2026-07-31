@@ -32,6 +32,8 @@ export type MenuKategori = {
   ad: string;
   renk: string;
   sira: number;
+  satistaGorunur: boolean;
+  mutfaktaGorunur: boolean;
 };
 
 export type MenuBirim = {
@@ -64,15 +66,20 @@ export type MenuSecenekGrubu = {
   id: number;
   ad: string;
   tekli: boolean;
+  zorunlu: boolean;
   liste: MenuSecenek[];
 };
 
 export type MenuUrun = {
   id?: number;
   ad: string;
+  kod?: string;
   renk?: string;
   favori: boolean;
+  satistaGorunur: boolean;
+  mutfaktaGorunur: boolean;
   porsiyonlar: MenuPorsiyon[];
   kategoriIdler: number[];
+  kategoriSira: Record<number, number>; // ürünün her kategorideki kendi sırası
   grupIdler: number[];
 };
