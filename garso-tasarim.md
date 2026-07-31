@@ -155,6 +155,9 @@ stock_moves    (id, branch_id, urun/malzeme, tip ENUM('giris','sayim','satis_dus
 - Menü/kampanya ürünü (birden fazla ürün tek fiyata)
 - Mutfak grubu alanı (anlamı KDS gelince oluşur)
 - Ürün arama, aktif/pasif ürün
+- **Toplu ürün işlemleri** — Excel benzeri düzenlenebilir tablo: tüm ürünlerin fiyat/KDV/mutfak grubu/satılabilir alanları tek ekranda, tek "Kaydet" ile. Zam döneminde tek tek düzenlemeye göre çok hızlı. *(31 Tem 2026'da Adisyo'da keşfedildi)*
+- **Ürünleri Excel'e aktar / Excel'den içeri al**
+- **"Tüm kategorileri görüntüle"** — ürünleri kategori ayrımı olmadan tek listede görme
 
 **Sonra:**
 - Sipariş ekranı eksikleri — arama, not, ikram/iptal, misafir sayısı, turlar

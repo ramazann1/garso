@@ -198,6 +198,13 @@ Amaç: Yoğun bir restoranın mutfak-servis akışını taşıyabilmeli.
 - Ödenmezler: kişi listesi (Ad, Unvan) — protokol/personel hesabı yemeyen kişiler.
 - İndirimler: ad + tür + tutar tablosu (ön tanımlı indirimler).
 
+### Toplu Ürün İşlemleri (31 Tem 2026'da keşfedildi)
+Kategori listesinin üstündeki ⋮ menüsünde gizli — ekranda göze çarpmıyor, ilk turda kaçmış. Dört madde:
+**Toplu Ürün İşlemleri | Kategorileri Sırala | Ürünleri İndir | Ürünleri Yükle**
+- **Toplu Ürün İşlemleri:** "seç → toplu aksiyon" değil, **Excel benzeri düzenlenebilir tablo**. Tüm ürünler alt alta; her satırda porsiyon/fiyat (+ "sipariş türüne göre özelleştir"), Ürün KDV Grubu, zorunlu özellik ve porsiyon seçimi, stok takibi, satılabilir, mutfak grubu. Üstte arama + kategori filtresi + **"Tüm Kategorileri Görüntüle"** + "Ürün adına göre sırala". Tek **Kaydet** ile hepsi birden yazılıyor.
+- **Ürünleri İndir / Yükle:** menünün Excel ile dışa/içe aktarımı — ilk kurulumda ve toplu fiyat güncellemede kritik.
+→ **Klon için:** zam dönemlerinde tek tek ürün açmak işkence; toplu düzenleme tablosu Menü Stüdyosu'nun en çok işe yarayacak eklentilerinden biri.
+
 ### Yetki Matrisi (6 rol × işlem bazlı onay kutuları)
 Roller: **Garson, Mutfak, Kurye, Kasa, Müdür, Çağrı Merkezi**
 Yetki kategorileri ve örnek izinler:
