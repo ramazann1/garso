@@ -1,25 +1,28 @@
 # GARSO — Teknik Tasarım: Veri Modeli & Ekran Haritası
 *Restoran ve cafe'ler için bulut tabanlı satış ve işletme yönetim sistemi.*
 
-## 0. SIRADAKİ İŞ (1 Ağu 2026 ikinci seansın sonunda güncellendi)
+## 0. SIRADAKİ İŞ (2 Ağu 2026 seansının sonunda güncellendi)
 
 *Ramazan seansa "devam edelim" diye giriyor — sıradaki iş bu listenin en üstündeki
 maddedir. Seans sonunda bu liste güncellenir: biten madde silinir, kalanlar
 yukarı kayar, yeni çıkanlar sıraya girer.*
 
-1. **Toplu ürün işlemleri tablosu** (Excel benzeri tek ekran + tek Kaydet).
-   Sıfırdan yeni ekran, büyük iş — kendi seansında yapılacak.
-2. **Seçenek gruplarını üründen porsiyona taşı** + reçete alanı. Adisyo ikisini
+1. **Seçenek gruplarını üründen porsiyona taşı** + reçete alanı. Adisyo ikisini
    de porsiyona bağlıyor; bizde `urun_secenek_gruplari` ürün seviyesinde. Sipariş
    ekranını ve `UrunSecim`'i de değiştirdiği için ayrı görev olarak ayrıldı.
    *(1 Ağu 2026)*
-3. **Seçenekte varsayılan işareti + seçenek sıralama.** Zorunlu anahtarı geldi,
+2. **Seçenekte varsayılan işareti + seçenek sıralama.** Zorunlu anahtarı geldi,
    sırada grubun kendi içindeki düzen var. `SiralamaModal` hazır, ona bağlanır.
    *(1 Ağu 2026)*
+3. **Ürün panelinde kuruşlu fiyat girilemiyor** — küçük hata. `UrunPaneli`'nde
+   para alanı her tuşta sayıya çevrilip geri yazıldığı için "12.5" yazarken nokta
+   siliniyor. Çözümü `TopluDuzenle`'de var: taslakta metin tut, kaydederken çevir.
+   *(2 Ağu 2026)*
 4. **Alt kategori (kategori ağacı)** — kategori formunda opsiyonel üst kategori.
 5. **KDV grupları** — `{ ad, oran, varsayılan mı, sıra }`, en fazla 8 tanım.
+   Geldiğinde Toplu Düzenle tablosuna da sütun olarak eklenecek.
 
-*(30 Tem – 1 Ağu'da yapılanlar bölüm 5'te; menü modülünün tam eksik listesi
+*(30 Tem – 2 Ağu'da yapılanlar bölüm 5'te; menü modülünün tam eksik listesi
 bölüm 5'in sonundaki "SONRAKİ ADIMLAR" başlığında.)*
 
 ---
@@ -215,13 +218,36 @@ stock_moves    (id, branch_id, urun/malzeme, tip ENUM('giris','sayim','satis_dus
 - ✅ Uzun ürün adı kart taşırma hatası düzeltildi (Menü Stüdyosu'nda kesilir,
   Sipariş ekranında alta sarar — garson ne seçtiğini görmek zorunda).
 
+### 2 AĞUSTOS — TOPLU DÜZENLEME TABLOSU
+- ✅ **Menü Stüdyosu'na dördüncü sekme: Toplu Düzenle** (`TopluDuzenle.tsx`).
+  Excel benzeri tablo: her satır bir **porsiyon**, ürün adı/kodu/kategorisi ve
+  anahtarlar porsiyonlar boyunca birleşik hücrede (`rowSpan`). Düzenlenebilen
+  alanlar: ürün adı, kod, birim, fiyat, maliyet, Masa/Gel Al/Paket fiyatları,
+  satışta göster, mutfakta göster, favori.
+- ✅ **Tek Kaydet, sadece değişenler yazılıyor** (`menu.ts → topluKaydet`).
+  Dokunulan hücre kaydedilene kadar mercan çerçeveli duruyor; altta "N üründe
+  değişiklik var" sayacı, yanında Vazgeç. 200 ürünlük menüde tek tuş 200 istek
+  atmıyor.
+- ✅ **Üst çubuk:** arama (ad/kod), kategori seçici, "A-Z" ve "Tür fiyatları"
+  düğmeleri. Tür fiyatları kapalıyken tablo dar kalıyor.
+- ✅ **`porsiyonlar.id` modele girdi** (`MenuPorsiyon.id`) — tek porsiyon satırını
+  güncelleyebilmek için. Ürün paneli hâlâ sil-yeniden yaz yöntemiyle çalışıyor.
+- ✅ **Kaydetmeden çıkış koruması:** `cikisKilidi.ts` — ekran kendini kaydediyor,
+  `Duzen` sol menüden sayfa değiştirmeden önce soruyor. Sekme değişimi de aynı
+  şekilde korunuyor.
+- ✅ **`Bildirim.tsx`** (toast) eklendi: sağ altta yeşil ✓, ~2,6 sn sonra kendi
+  kapanıyor. "3 üründeki değişiklik kaydedildi."
+- ✅ **Doğrulamalar:** boş ürün adı, aynı ürün kodu iki üründe, aynı ürünün iki
+  porsiyonunda aynı birim — hepsi kaydetmeden önce uyarıyla durduruluyor.
+
 ### 📌 SONRAKİ ADIMLAR
 **Menü Stüdyosu'nda kalanlar (Adisyo paritesi hedefi):**
 - KDV grubu
 - Seçenek grubu ve reçetenin porsiyon bazına taşınması
 - Menü/kampanya ürünü (birden fazla ürün tek fiyata)
 - Mutfak grubu alanı (anlamı KDS gelince oluşur)
-- **Toplu ürün işlemleri** — Excel benzeri düzenlenebilir tablo: tüm ürünlerin fiyat/KDV/mutfak grubu/satılabilir alanları tek ekranda, tek "Kaydet" ile. Zam döneminde tek tek düzenlemeye göre çok hızlı. *(31 Tem 2026'da Adisyo'da keşfedildi)*
+- ~~**Toplu ürün işlemleri**~~ ✅ 2 Ağu 2026 — Toplu Düzenle sekmesi. KDV/mutfak
+  grubu/stok sütunları o alanlar veri modeline girince eklenecek.
 - **Ürünleri Excel'e aktar / Excel'den içeri al**
 
 *(Sürükle-bırak sıralama, ürün kopyalama, ürün kodu, ürün arama, "tüm kategorileri
@@ -282,6 +308,20 @@ görüntüle" ve aktif/pasif ürün — 1 Ağu 2026 ikinci seansında tamamland�
 22. **Renk seçimi kendi çemberimizle yapılır.** Kullanıcı hex kodu bilmek zorunda değil: `＋` kutusu bizim çizdiğimiz renk çemberini açar (açı = renk, merkeze uzaklık = canlılık, altında açıklık kaydırıcısı). Tarayıcının sistem renk penceresi kullanılmaz — `confirm()` yasağının aynı gerekçesi. *(1 Ağu 2026)*
 23. **Görünürlük anahtarı gerçekten uygulanır.** "Satış ekranında göster" kapalıysa ürün/kategori sipariş ekranına hiç girmez; ama Menü Stüdyosu'nda `gizli` işaretiyle görünmeye devam eder — kullanıcı kapattığını unutup "ürünüm kayboldu" demesin diye. *(1 Ağu 2026)*
 24. **Filtrelenmiş listede sıralama yapılamaz.** Arama açıkken veya "Tüm kategoriler" kapsamındayken ⇅ Sırala pasif — görünen sırayı kaydetmek gerçek sırayı bozardı. *(1 Ağu 2026)*
+25. **Toplu düzenleme tablosunda bir satır = bir porsiyon.** Fiyat porsiyonda
+   durduğu için satırın birimi porsiyondur; ürüne ait alanlar (ad, kod, kategori,
+   anahtarlar) porsiyonlar boyunca birleşik hücrede tek kez görünür. Tablodan
+   porsiyon **eklenip silinemez** — yeni porsiyon fiyat/varsayılan/barkod kararı
+   gerektirir, o ürün panelinin işi. *(2 Ağu 2026)*
+26. **Düzenlenirken para alanı metin olarak tutulur.** Her tuşta sayıya çevirip
+   geri yazmak "12.5"in noktasını siliyor, kuruş girilemiyor. Taslakta metin,
+   kaydederken sayı. *(2 Ağu 2026)*
+27. **Kaydedilmemiş değişiklik varken sayfadan çıkış sorulur.** Ekran kendini
+   `cikisKilidi.ts`'e kaydeder, sol menü geçmeden önce oraya bakar. Tek ortak
+   kilit — sonraki ekranlar aynı yerden faydalanır. *(2 Ağu 2026)*
+28. **Biten işlem bildirimle söylenir, onay modalıyla değil.** Sağ altta kendi
+   kapanan `Bildirim.tsx`; "Tamam"a bastırmak akışı boşuna keser. Modal yalnızca
+   karar ve uyarı için. *(2 Ağu 2026)*
 
 ## 7. KOD PAYLAŞIM DÜZENİ
 - Kod GitHub'da: `github.com/ramazann1/garso` (şimdilik Public — final'de Private yapılacak)

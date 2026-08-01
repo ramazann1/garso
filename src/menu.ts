@@ -32,7 +32,7 @@ export async function menuGetir() {
     supabase
       .from("urunler")
       .select(
-        "id, ad, kod, renk, favori, satista_gorunur, mutfakta_gorunur, porsiyonlar(birim_id, fiyat, maliyet, barkod, masa_fiyat, gelal_fiyat, paket_fiyat, varsayilan, sira), urun_kategorileri(kategori_id, sira), urun_secenek_gruplari(grup_id)"
+        "id, ad, kod, renk, favori, satista_gorunur, mutfakta_gorunur, porsiyonlar(id, birim_id, fiyat, maliyet, barkod, masa_fiyat, gelal_fiyat, paket_fiyat, varsayilan, sira), urun_kategorileri(kategori_id, sira), urun_secenek_gruplari(grup_id)"
       ),
     supabase
       .from("secenek_gruplari")
@@ -63,6 +63,7 @@ export async function menuGetir() {
       .slice()
       .sort((a: any, b: any) => a.sira - b.sira)
       .map((p: any) => ({
+        id: p.id,
         birimId: p.birim_id ?? undefined,
         ad: birimler.find((b) => b.id === p.birim_id)?.ad ?? "",
         fiyat: Number(p.fiyat),
@@ -270,6 +271,60 @@ export async function urunSirala(kategoriId: number, urunIdler: number[]) {
         .eq("urun_id", urunId)
     )
   );
+}
+
+export type TopluUrun = {
+  id: number;
+  ad: string;
+  kod?: string;
+  favori: boolean;
+  satistaGorunur: boolean;
+  mutfaktaGorunur: boolean;
+};
+
+export type TopluPorsiyon = {
+  id: number;
+  birimId?: number;
+  fiyat: number;
+  maliyet?: number;
+  masaFiyat?: number;
+  gelalFiyat?: number;
+  paketFiyat?: number;
+};
+
+// Toplu düzenleme tablosu yalnızca dokunulan satırları gönderir — 200 ürünlük
+// menüde tek "Kaydet" tuşu 200 istek atmasın diye.
+export async function topluKaydet(urunler: TopluUrun[], porsiyonlar: TopluPorsiyon[]) {
+  const sonuclar = await Promise.all([
+    ...urunler.map((u) =>
+      supabase
+        .from("urunler")
+        .update({
+          ad: u.ad,
+          kod: u.kod?.trim() || null,
+          favori: u.favori,
+          satista_gorunur: u.satistaGorunur,
+          mutfakta_gorunur: u.mutfaktaGorunur,
+        })
+        .eq("id", u.id)
+    ),
+    ...porsiyonlar.map((p) =>
+      supabase
+        .from("porsiyonlar")
+        .update({
+          birim_id: p.birimId ?? null,
+          fiyat: p.fiyat,
+          maliyet: p.maliyet ?? null,
+          masa_fiyat: p.masaFiyat ?? null,
+          gelal_fiyat: p.gelalFiyat ?? null,
+          paket_fiyat: p.paketFiyat ?? null,
+        })
+        .eq("id", p.id)
+    ),
+  ]);
+
+  const hata = sonuclar.find((s) => s.error)?.error;
+  if (hata) return yazmaHatasi(hata);
 }
 
 export async function grupKaydet(

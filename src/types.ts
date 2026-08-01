@@ -45,6 +45,7 @@ export type MenuBirim = {
 export type SiparisTuru = "masa" | "gelal" | "paket";
 
 export type MenuPorsiyon = {
+  id?: number;
   birimId?: number;
   ad: string;
   fiyat: number;

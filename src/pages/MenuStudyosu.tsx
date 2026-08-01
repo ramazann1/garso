@@ -2,7 +2,9 @@ import { useEffect, useState } from "react";
 import Duzen from "../components/Duzen";
 import UrunPaneli from "../components/UrunPaneli";
 import OnayModal from "../components/OnayModal";
+import Bildirim from "../components/Bildirim";
 import SiralamaModal from "../components/SiralamaModal";
+import TopluDuzenle from "../components/TopluDuzenle";
 import Anahtar from "../components/Anahtar";
 import RenkSecici, { renkler } from "../components/RenkSecici";
 import {
@@ -19,9 +21,11 @@ import {
   grupKaydet,
   grupSil,
   birimleriKaydet,
+  topluKaydet,
   porsiyonFiyat,
 } from "../menu";
-import type { KategoriAlanlari } from "../menu";
+import type { KategoriAlanlari, TopluPorsiyon, TopluUrun } from "../menu";
+import { kilitKaldir, kilitKur } from "../cikisKilidi";
 import type { MenuBirim, MenuKategori, MenuSecenekGrubu, MenuUrun } from "../types";
 
 const adSiniri = 25;
@@ -282,13 +286,17 @@ export default function MenuStudyosu() {
   const [yukleniyor, setYukleniyor] = useState(true);
   const [pencere, setPencere] = useState<{ kategori?: MenuKategori } | null>(null);
   const [panel, setPanel] = useState<MenuUrun | null>(null);
-  const [gorunum, setGorunum] = useState<"kategoriler" | "gruplar" | "birimler">("kategoriler");
+  const [gorunum, setGorunum] = useState<"kategoriler" | "gruplar" | "birimler" | "toplu">(
+    "kategoriler"
+  );
+  const [topluDegisiklik, setTopluDegisiklik] = useState(0);
   const [grupPencere, setGrupPencere] = useState<{ grup?: MenuSecenekGrubu } | null>(null);
   const [arama, setArama] = useState("");
   const [kapsam, setKapsam] = useState<"kategori" | "tumu">("kategori");
   const [siralama, setSiralama] = useState<"kategori" | "urun" | null>(null);
   const [vurgulu, setVurgulu] = useState<number | null>(null);
   const [uyari, setUyari] = useState<string | null>(null);
+  const [bildirim, setBildirim] = useState<string | null>(null);
   const [onaySor, setOnaySor] = useState<{ mesaj: string; devam: () => void } | null>(null);
 
   const yukle = async (ilk = false) => {
@@ -303,6 +311,12 @@ export default function MenuStudyosu() {
   useEffect(() => {
     yukle(true).then(() => setYukleniyor(false));
   }, []);
+
+  // Toplu düzenlemede kaydedilmemiş taslak varsa sol menüden çıkış da sorsun.
+  useEffect(() => {
+    kilitKur(() => topluDegisiklik > 0);
+    return kilitKaldir;
+  }, [topluDegisiklik]);
 
   const secili = kategoriler.find((k) => k.id === seciliId) ?? kategoriler[0];
 
@@ -419,6 +433,28 @@ export default function MenuStudyosu() {
     yukle();
   };
 
+  const topluYaz = async (u: TopluUrun[], p: TopluPorsiyon[]) => {
+    const hata = await topluKaydet(u, p);
+    if (!hata) await yukle();
+    return hata;
+  };
+
+  // Toplu düzenleme sekmesi kapanınca taslak kaybolur — önce sorulur.
+  const gorunumDegis = (yeni: typeof gorunum) => {
+    if (gorunum === "toplu" && topluDegisiklik > 0) {
+      setOnaySor({
+        mesaj: `${topluDegisiklik} üründe kaydedilmemiş değişiklik var. Vazgeçilsin mi?`,
+        devam: () => {
+          setTopluDegisiklik(0);
+          setGorunum(yeni);
+        },
+      });
+      return;
+    }
+    setTopluDegisiklik(0);
+    setGorunum(yeni);
+  };
+
   const yeniUrun = (): MenuUrun => ({
     ad: "",
     favori: false,
@@ -432,24 +468,37 @@ export default function MenuStudyosu() {
 
   return (
     <Duzen>
-      <div className="sayfa">
+      <div className={gorunum === "toplu" ? "sayfa genis" : "sayfa"}>
         <header className="menu-baslik">
           <h1>Menü Stüdyosu</h1>
           <div className="mod-sec">
-            <button className={gorunum === "kategoriler" ? "aktif" : ""} onClick={() => setGorunum("kategoriler")}>
+            <button className={gorunum === "kategoriler" ? "aktif" : ""} onClick={() => gorunumDegis("kategoriler")}>
               Kategoriler
             </button>
-            <button className={gorunum === "gruplar" ? "aktif" : ""} onClick={() => setGorunum("gruplar")}>
+            <button className={gorunum === "gruplar" ? "aktif" : ""} onClick={() => gorunumDegis("gruplar")}>
               Seçenek Grupları
             </button>
-            <button className={gorunum === "birimler" ? "aktif" : ""} onClick={() => setGorunum("birimler")}>
+            <button className={gorunum === "birimler" ? "aktif" : ""} onClick={() => gorunumDegis("birimler")}>
               Birimler
+            </button>
+            <button className={gorunum === "toplu" ? "aktif" : ""} onClick={() => gorunumDegis("toplu")}>
+              Toplu Düzenle
             </button>
           </div>
         </header>
 
         {yukleniyor ? (
           <div className="yukleniyor"><div className="cember" /></div>
+        ) : gorunum === "toplu" ? (
+          <TopluDuzenle
+            urunler={urunler}
+            kategoriler={kategoriler}
+            birimler={birimler}
+            onKaydet={topluYaz}
+            onUyari={setUyari}
+            onBildirim={setBildirim}
+            onDegisiklik={setTopluDegisiklik}
+          />
         ) : gorunum === "birimler" ? (
           <BirimlerSekmesi
             key={birimler.map((b) => `${b.id}:${b.ad}`).join("|")}
@@ -677,6 +726,8 @@ export default function MenuStudyosu() {
           onKaydet={siralamaKaydet}
         />
       )}
+
+      {bildirim && <Bildirim mesaj={bildirim} onKapat={() => setBildirim(null)} />}
 
       {uyari && <OnayModal mesaj={uyari} tekTus onKapat={() => setUyari(null)} />}
 

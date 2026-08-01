@@ -1,5 +1,7 @@
 import { useState } from "react";
 import { useLocation, useNavigate } from "react-router-dom";
+import OnayModal from "./OnayModal";
+import { kilitKaldir, kilitliMi } from "../cikisKilidi";
 
 const baglantilar = [
   { yol: "/", ad: "Salon", ikon: "salon" },
@@ -26,8 +28,16 @@ function Ikon({ tip }: { tip: string }) {
 
 export default function Duzen({ children }: { children: React.ReactNode }) {
   const [acik, setAcik] = useState(false);
+  const [cikisYolu, setCikisYolu] = useState<string | null>(null);
   const navigate = useNavigate();
   const { pathname } = useLocation();
+
+  // Açık ekranda kaydedilmemiş değişiklik varsa sayfa değiştirmeden önce sorulur.
+  const git = (yol: string) => {
+    if (yol === pathname) return;
+    if (kilitliMi()) setCikisYolu(yol);
+    else navigate(yol);
+  };
 
   return (
     <div className="duzen">
@@ -44,7 +54,7 @@ export default function Duzen({ children }: { children: React.ReactNode }) {
             <button
               key={b.yol}
               className={pathname === b.yol ? "menu-baglanti aktif" : "menu-baglanti"}
-              onClick={() => navigate(b.yol)}
+              onClick={() => git(b.yol)}
             >
               <Ikon tip={b.ikon} />
               <span>{b.ad}</span>
@@ -54,6 +64,20 @@ export default function Duzen({ children }: { children: React.ReactNode }) {
       </aside>
 
       <div className="icerik">{children}</div>
+
+      {cikisYolu && (
+        <OnayModal
+          mesaj="Kaydedilmemiş değişiklikler var. Sayfadan çıkılsın mı?"
+          tehlikeli
+          onayMetni="Evet, çık"
+          onOnay={() => {
+            kilitKaldir();
+            navigate(cikisYolu);
+            setCikisYolu(null);
+          }}
+          onKapat={() => setCikisYolu(null)}
+        />
+      )}
     </div>
   );
 }

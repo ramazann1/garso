@@ -206,6 +206,7 @@ Kategori listesinin üstündeki ⋮ menüsünde gizli — ekranda göze çarpmı
 - **Ürünleri İndir / Yükle:** menünün Excel ile dışa/içe aktarımı — ilk kurulumda ve toplu fiyat güncellemede kritik.
 → **Klon için:** zam dönemlerinde tek tek ürün açmak işkence; toplu düzenleme tablosu Menü Stüdyosu'nun en çok işe yarayacak eklentilerinden biri.
 → **Garso durumu (1 Ağu 2026):** "Kategorileri Sırala" ve "Ürünleri Sırala" karşılığı `SiralamaModal` ile yapıldı (sürükle-bırak + A-Z). **"Tüm Kategorileri Görüntüle"** arama kapsam seçicisinin bir modu olarak geldi. Kalan: toplu düzenleme tablosu ve Excel indir/yükle.
+→ **Garso durumu (2 Ağu 2026):** Toplu düzenleme tablosu yapıldı — Adisyo'da ⋮ menüsünde gizliyken bizde Menü Stüdyosu'nun dördüncü sekmesi (**Toplu Düzenle**). Satır = porsiyon; ad, kod, birim, fiyat, maliyet, tür fiyatları ve görünürlük anahtarları tabloda. Kategori bazlı toplu işlem modalı ayrı iş olarak duruyor — o alanların (KDV, mutfak grubu, stok) veri modeli henüz yok. Kalan: Excel indir/yükle.
 
 ### Menü/Ürünler Modülü — Derin Tur (31 Tem 2026)
 *Tüm ⋮ menüleri, dropdown'lar ve kapalı anahtarlar tek tek açılarak çıkarıldı.*
