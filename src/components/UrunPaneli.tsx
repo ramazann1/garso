@@ -1,13 +1,52 @@
 import { useState } from "react";
 import Anahtar from "./Anahtar";
 import RenkSecici from "./RenkSecici";
+import { paraMetin, paraSayi, paraYaz } from "../para";
 import type { MenuBirim, MenuKategori, MenuPorsiyon, MenuSecenekGrubu, MenuUrun } from "../types";
 
-// Boş bırakılan para alanı 0 değil, "tanımsız" demektir — tür fiyatında bu ayrım önemli.
-const paraCevir = (deger: string) => {
-  const temiz = deger.replace(/[^0-9.]/g, "");
-  return temiz === "" ? undefined : Number(temiz) || 0;
+// Para alanları taslakta metin, kaydederken sayı. Boş bırakılan alan 0 değil
+// "tanımsız" demektir — tür fiyatında bu ayrım önemli.
+type PorsiyonTaslak = {
+  id?: number;
+  birimId?: number;
+  ad: string;
+  fiyat: string;
+  maliyet: string;
+  barkod: string;
+  masaFiyat: string;
+  gelalFiyat: string;
+  paketFiyat: string;
+  varsayilan: boolean;
+  grupIdler: number[];
 };
+
+const taslakYap = (p: MenuPorsiyon): PorsiyonTaslak => ({
+  id: p.id,
+  birimId: p.birimId,
+  ad: p.ad,
+  fiyat: paraMetin(p.fiyat),
+  maliyet: paraMetin(p.maliyet),
+  barkod: p.barkod ?? "",
+  masaFiyat: paraMetin(p.masaFiyat),
+  gelalFiyat: paraMetin(p.gelalFiyat),
+  paketFiyat: paraMetin(p.paketFiyat),
+  varsayilan: p.varsayilan,
+  grupIdler: p.grupIdler,
+});
+
+const porsiyonYap = (t: PorsiyonTaslak): MenuPorsiyon => ({
+  id: t.id,
+  birimId: t.birimId,
+  ad: t.ad,
+  fiyat: paraSayi(t.fiyat) ?? 0,
+  maliyet: paraSayi(t.maliyet),
+  barkod: t.barkod.trim() || undefined,
+  masaFiyat: paraSayi(t.masaFiyat),
+  gelalFiyat: paraSayi(t.gelalFiyat),
+  paketFiyat: paraSayi(t.paketFiyat),
+  varsayilan: t.varsayilan,
+  grupIdler: t.grupIdler,
+});
 
 export default function UrunPaneli({
   urun,
@@ -26,11 +65,17 @@ export default function UrunPaneli({
   onKaydet: (u: MenuUrun) => void;
   onSil?: () => void;
 }) {
-  const yeniPorsiyon = (varsayilan: boolean): MenuPorsiyon => ({
+  const yeniPorsiyon = (varsayilan: boolean): PorsiyonTaslak => ({
     birimId: birimler[0]?.id,
     ad: birimler[0]?.ad ?? "",
-    fiyat: 0,
+    fiyat: "",
+    maliyet: "",
+    barkod: "",
+    masaFiyat: "",
+    gelalFiyat: "",
+    paketFiyat: "",
     varsayilan,
+    grupIdler: [],
   });
 
   const [ad, setAd] = useState(urun.ad);
@@ -39,11 +84,10 @@ export default function UrunPaneli({
   const [favori, setFavori] = useState(urun.favori);
   const [satistaGorunur, setSatistaGorunur] = useState(urun.satistaGorunur);
   const [mutfaktaGorunur, setMutfaktaGorunur] = useState(urun.mutfaktaGorunur);
-  const [porsiyonlar, setPorsiyonlar] = useState<MenuPorsiyon[]>(
-    urun.porsiyonlar.length ? urun.porsiyonlar : [yeniPorsiyon(true)]
+  const [porsiyonlar, setPorsiyonlar] = useState<PorsiyonTaslak[]>(
+    urun.porsiyonlar.length ? urun.porsiyonlar.map(taslakYap) : [yeniPorsiyon(true)]
   );
   const [kategoriIdler, setKategoriIdler] = useState<number[]>(urun.kategoriIdler);
-  const [grupIdler, setGrupIdler] = useState<number[]>(urun.grupIdler);
   const [acik, setAcik] = useState<string[]>(["porsiyon"]);
   const [detayli, setDetayli] = useState<number[]>([]);
 
@@ -53,13 +97,22 @@ export default function UrunPaneli({
   const detayKatla = (i: number) =>
     setDetayli((l) => (l.includes(i) ? l.filter((x) => x !== i) : [...l, i]));
 
-  const porsiyonDegis = (i: number, degisim: Partial<MenuPorsiyon>) => {
+  const porsiyonDegis = (i: number, degisim: Partial<PorsiyonTaslak>) => {
     setPorsiyonlar((liste) => liste.map((p, j) => (j === i ? { ...p, ...degisim } : p)));
   };
 
   const birimSec = (i: number, birimId: number) => {
     const birim = birimler.find((b) => b.id === birimId);
     porsiyonDegis(i, { birimId, ad: birim?.ad ?? "" });
+  };
+
+  const grupDegis = (i: number, grupId: number) => {
+    const mevcut = porsiyonlar[i].grupIdler;
+    porsiyonDegis(i, {
+      grupIdler: mevcut.includes(grupId)
+        ? mevcut.filter((x) => x !== grupId)
+        : [...mevcut, grupId],
+    });
   };
 
   const varsayilanSec = (i: number) => {
@@ -93,9 +146,8 @@ export default function UrunPaneli({
       favori,
       satistaGorunur,
       mutfaktaGorunur,
-      porsiyonlar: porsiyonlar.filter((p) => p.birimId),
+      porsiyonlar: porsiyonlar.filter((p) => p.birimId).map(porsiyonYap),
       kategoriIdler,
-      grupIdler,
     });
   };
 
@@ -179,8 +231,8 @@ export default function UrunPaneli({
                       </select>
                       <input
                         className="kisa"
-                        value={p.fiyat || ""}
-                        onChange={(e) => porsiyonDegis(i, { fiyat: paraCevir(e.target.value) ?? 0 })}
+                        value={p.fiyat}
+                        onChange={(e) => porsiyonDegis(i, { fiyat: paraYaz(e.target.value) })}
                         placeholder="₺"
                         inputMode="decimal"
                       />
@@ -190,7 +242,12 @@ export default function UrunPaneli({
                     </div>
 
                     <button className="detay-tus" onClick={() => detayKatla(i)}>
-                      {detayli.includes(i) ? "− Detayı gizle" : "+ Maliyet, barkod, sipariş türü fiyatı"}
+                      {detayli.includes(i)
+                        ? "− Detayı gizle"
+                        : "+ Maliyet, barkod, seçenekler, sipariş türü fiyatı"}
+                      {!detayli.includes(i) && p.grupIdler.length > 0 && (
+                        <em className="detay-rozet">{p.grupIdler.length} seçenek</em>
+                      )}
                     </button>
 
                     {detayli.includes(i) && (
@@ -199,8 +256,8 @@ export default function UrunPaneli({
                           <label>
                             <span>Maliyet</span>
                             <input
-                              value={p.maliyet ?? ""}
-                              onChange={(e) => porsiyonDegis(i, { maliyet: paraCevir(e.target.value) })}
+                              value={p.maliyet}
+                              onChange={(e) => porsiyonDegis(i, { maliyet: paraYaz(e.target.value) })}
                               placeholder="₺"
                               inputMode="decimal"
                             />
@@ -208,7 +265,7 @@ export default function UrunPaneli({
                           <label className="genis">
                             <span>Barkod</span>
                             <input
-                              value={p.barkod ?? ""}
+                              value={p.barkod}
                               onChange={(e) => porsiyonDegis(i, { barkod: e.target.value })}
                               placeholder="—"
                             />
@@ -222,8 +279,8 @@ export default function UrunPaneli({
                           <label>
                             <span>Masa</span>
                             <input
-                              value={p.masaFiyat ?? ""}
-                              onChange={(e) => porsiyonDegis(i, { masaFiyat: paraCevir(e.target.value) })}
+                              value={p.masaFiyat}
+                              onChange={(e) => porsiyonDegis(i, { masaFiyat: paraYaz(e.target.value) })}
                               placeholder={`₺${p.fiyat || 0}`}
                               inputMode="decimal"
                             />
@@ -231,8 +288,8 @@ export default function UrunPaneli({
                           <label>
                             <span>Gel Al</span>
                             <input
-                              value={p.gelalFiyat ?? ""}
-                              onChange={(e) => porsiyonDegis(i, { gelalFiyat: paraCevir(e.target.value) })}
+                              value={p.gelalFiyat}
+                              onChange={(e) => porsiyonDegis(i, { gelalFiyat: paraYaz(e.target.value) })}
                               placeholder={`₺${p.fiyat || 0}`}
                               inputMode="decimal"
                             />
@@ -240,13 +297,34 @@ export default function UrunPaneli({
                           <label>
                             <span>Paket</span>
                             <input
-                              value={p.paketFiyat ?? ""}
-                              onChange={(e) => porsiyonDegis(i, { paketFiyat: paraCevir(e.target.value) })}
+                              value={p.paketFiyat}
+                              onChange={(e) => porsiyonDegis(i, { paketFiyat: paraYaz(e.target.value) })}
                               placeholder={`₺${p.fiyat || 0}`}
                               inputMode="decimal"
                             />
                           </label>
                         </div>
+
+                        <p className="ipucu">
+                          Seçenek grupları bu porsiyona bağlanır — "Tam" ve "Yarım" farklı
+                          seçenek taşıyabilir.
+                        </p>
+                        {gruplar.length === 0 ? (
+                          <p className="ipucu">Henüz seçenek grubu yok.</p>
+                        ) : (
+                          <div className="cipler">
+                            {gruplar.map((g) => (
+                              <button
+                                key={g.id}
+                                className={p.grupIdler.includes(g.id) ? "cip secili" : "cip"}
+                                onClick={() => grupDegis(i, g.id)}
+                              >
+                                {g.ad}
+                                <small>{g.tekli ? "tekli" : "çoklu"} · {g.liste.length}</small>
+                              </button>
+                            ))}
+                          </div>
+                        )}
                       </div>
                     )}
                   </div>
@@ -281,32 +359,6 @@ export default function UrunPaneli({
             )}
           </div>
 
-          <div className="bolum">
-            <button className="bolum-basi" onClick={() => katla("secenek")}>
-              <span>Seçenek grupları</span>
-              <small>{grupIdler.length} bağlı</small>
-              <em className={acik.includes("secenek") ? "ok acik" : "ok"}>›</em>
-            </button>
-
-            {acik.includes("secenek") && (
-              <>
-                <p className="ipucu">Bir kez tanımlanır, istediğin ürüne bağlanır.</p>
-                <div className="cipler">
-                  {gruplar.length === 0 && <p className="ipucu">Henüz seçenek grubu yok.</p>}
-                  {gruplar.map((g) => (
-                    <button
-                      key={g.id}
-                      className={grupIdler.includes(g.id) ? "cip secili" : "cip"}
-                      onClick={() => secimDegis(grupIdler, setGrupIdler, g.id)}
-                    >
-                      {g.ad}
-                      <small>{g.tekli ? "tekli" : "çoklu"} · {g.liste.length}</small>
-                    </button>
-                  ))}
-                </div>
-              </>
-            )}
-          </div>
         </div>
 
         <footer className="modal-aksiyonlar">

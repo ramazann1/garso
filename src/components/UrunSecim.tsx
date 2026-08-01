@@ -15,7 +15,14 @@ export default function UrunSecim({ urun, gruplar, onEkle, onKapat }: Props) {
   );
   const [secilenler, setSecilenler] = useState<Record<number, number[]>>({});
 
-  const urunGruplari = gruplar.filter((g) => urun.grupIdler.includes(g.id));
+  const urunGruplari = gruplar.filter((g) => porsiyon?.grupIdler.includes(g.id));
+
+  // Seçim hiçbir zaman hazır gelmez — garson yoğunlukta sormadan Ekle'ye basmasın.
+  // Porsiyon değişince eski seçimler geçersiz olduğu için sıfırlanıyor.
+  const porsiyonSec = (p: MenuPorsiyon) => {
+    setPorsiyon(p);
+    setSecilenler({});
+  };
 
   const sec = (grup: MenuSecenekGrubu, secenekId: number) => {
     setSecilenler((s) => {
@@ -57,7 +64,7 @@ export default function UrunSecim({ urun, gruplar, onEkle, onKapat }: Props) {
                 <button
                   key={p.birimId}
                   className={porsiyon?.birimId === p.birimId ? "secim aktif" : "secim"}
-                  onClick={() => setPorsiyon(p)}
+                  onClick={() => porsiyonSec(p)}
                 >
                   {p.ad} · ₺{porsiyonFiyat(p, "masa")}
                 </button>

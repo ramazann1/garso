@@ -1,16 +1,8 @@
 import { useEffect, useMemo, useState } from "react";
 import { kategoriUrunleri } from "../menu";
+import { paraMetin, paraSayi, paraYaz } from "../para";
 import type { TopluPorsiyon, TopluUrun } from "../menu";
 import type { MenuBirim, MenuKategori, MenuPorsiyon, MenuUrun } from "../types";
-
-// Para alanları taslakta metin olarak tutuluyor: sayıya çevirip geri yazsaydık
-// "12." yazarken nokta silinir, kuruşlu fiyat girilemezdi.
-const paraMetin = (v?: number) => (v == null ? "" : String(v));
-const paraSayi = (s: string) => {
-  const temiz = s.replace(",", ".").trim();
-  return temiz === "" ? undefined : Number(temiz) || 0;
-};
-const paraYaz = (s: string) => s.replace(/[^0-9.,]/g, "");
 
 type PorsiyonTaslak = {
   id?: number;

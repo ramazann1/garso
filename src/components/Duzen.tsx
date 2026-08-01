@@ -5,7 +5,7 @@ import { kilitKaldir, kilitliMi } from "../cikisKilidi";
 
 const baglantilar = [
   { yol: "/", ad: "Salon", ikon: "salon" },
-  { yol: "/menu", ad: "Menü", ikon: "menu" },
+  { yol: "/menu", ad: "Menü Stüdyosu", ikon: "menu" },
 ];
 
 function Ikon({ tip }: { tip: string }) {

@@ -105,7 +105,7 @@ export default function Siparis() {
                   key={u.id}
                   className="urun-kart"
                   onClick={() =>
-                    u.porsiyonlar.length > 1 || u.grupIdler.length > 0
+                    u.porsiyonlar.length > 1 || u.porsiyonlar.some((p) => p.grupIdler.length > 0)
                       ? setSecimUrunu(u)
                       : sepeteEkle(u.ad, anaFiyat(u))
                   }

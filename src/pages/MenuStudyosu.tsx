@@ -23,6 +23,7 @@ import {
   birimleriKaydet,
   topluKaydet,
   porsiyonFiyat,
+  urunGrupIdleri,
 } from "../menu";
 import type { KategoriAlanlari, TopluPorsiyon, TopluUrun } from "../menu";
 import { kilitKaldir, kilitKur } from "../cikisKilidi";
@@ -102,6 +103,8 @@ function KategoriPenceresi({
   );
 }
 
+type SecenekSatiri = { ad: string; ekFiyat: number };
+
 function GrupPaneli({
   grup,
   onKapat,
@@ -114,18 +117,19 @@ function GrupPaneli({
     ad: string,
     tekli: boolean,
     zorunlu: boolean,
-    liste: { ad: string; ekFiyat: number }[]
+    liste: SecenekSatiri[]
   ) => void;
   onSil?: () => void;
 }) {
   const [ad, setAd] = useState(grup?.ad ?? "");
   const [tekli, setTekli] = useState(grup?.tekli ?? true);
   const [zorunlu, setZorunlu] = useState(grup?.zorunlu ?? false);
-  const [liste, setListe] = useState(
+  const [liste, setListe] = useState<SecenekSatiri[]>(
     grup?.liste.length
       ? grup.liste.map((s) => ({ ad: s.ad, ekFiyat: s.ekFiyat }))
       : [{ ad: "", ekFiyat: 0 }]
   );
+  const [siralama, setSiralama] = useState(false);
 
   const satirDegis = (i: number, alan: "ad" | "ekFiyat", deger: string) => {
     setListe((l) =>
@@ -171,6 +175,12 @@ function GrupPaneli({
 
           <div className="bolum">
             <div className="ekle-satir">
+              <button
+                disabled={liste.length < 2}
+                onClick={() => setSiralama(true)}
+              >
+                ⇅ Sırala
+              </button>
               <button onClick={() => setListe([...liste, { ad: "", ekFiyat: 0 }])}>+ Seçenek</button>
             </div>
             <p className="ipucu">Ek fiyat boş bırakılırsa ücretsiz sayılır.</p>
@@ -191,6 +201,18 @@ function GrupPaneli({
             ))}
           </div>
         </div>
+
+        {siralama && (
+          <SiralamaModal
+            baslik="Seçenekleri sırala"
+            satirlar={liste.map((s, i) => ({ id: i, ad: s.ad.trim() || "(adsız)" }))}
+            onKapat={() => setSiralama(false)}
+            onKaydet={(sira) => {
+              setListe(sira.map((i) => liste[i]));
+              setSiralama(false);
+            }}
+          />
+        )}
 
         <footer className="modal-aksiyonlar">
           {grup && onSil && (
@@ -397,13 +419,14 @@ export default function MenuStudyosu() {
     });
   };
 
-  const grupSayaci = (id: number) => urunler.filter((u) => u.grupIdler.includes(id)).length;
+  const grupSayaci = (id: number) =>
+    urunler.filter((u) => u.porsiyonlar.some((p) => p.grupIdler.includes(id))).length;
 
   const grubuKaydet = async (
     ad: string,
     tekli: boolean,
     zorunlu: boolean,
-    liste: { ad: string; ekFiyat: number }[]
+    liste: SecenekSatiri[]
   ) => {
     await grupKaydet(grupPencere?.grup?.id, ad, tekli, zorunlu, liste);
     setGrupPencere(null);
@@ -463,26 +486,25 @@ export default function MenuStudyosu() {
     porsiyonlar: [],
     kategoriIdler: secili ? [secili.id] : [],
     kategoriSira: {},
-    grupIdler: [],
   });
 
   return (
     <Duzen>
-      <div className={gorunum === "toplu" ? "sayfa genis" : "sayfa"}>
+      <div className="sayfa">
         <header className="menu-baslik">
           <h1>Menü Stüdyosu</h1>
-          <div className="mod-sec">
+          <div className="ms-sekmeler">
             <button className={gorunum === "kategoriler" ? "aktif" : ""} onClick={() => gorunumDegis("kategoriler")}>
-              Kategoriler
+              Kategori ve Ürünler
+            </button>
+            <button className={gorunum === "toplu" ? "aktif" : ""} onClick={() => gorunumDegis("toplu")}>
+              Toplu Düzenle
             </button>
             <button className={gorunum === "gruplar" ? "aktif" : ""} onClick={() => gorunumDegis("gruplar")}>
               Seçenek Grupları
             </button>
             <button className={gorunum === "birimler" ? "aktif" : ""} onClick={() => gorunumDegis("birimler")}>
               Birimler
-            </button>
-            <button className={gorunum === "toplu" ? "aktif" : ""} onClick={() => gorunumDegis("toplu")}>
-              Toplu Düzenle
             </button>
           </div>
         </header>
@@ -652,7 +674,7 @@ export default function MenuStudyosu() {
                             {[
                               !u.satistaGorunur && "satışta gizli",
                               u.porsiyonlar.length > 1 && `${u.porsiyonlar.length} porsiyon`,
-                              u.grupIdler.length > 0 && `${u.grupIdler.length} seçenek`,
+                              urunGrupIdleri(u).length > 0 && `${urunGrupIdleri(u).length} seçenek`,
                               u.kategoriIdler.length > 1 && `${u.kategoriIdler.length} kategori`,
                             ].filter(Boolean).join(" · ")}
                           </small>

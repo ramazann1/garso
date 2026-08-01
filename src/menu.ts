@@ -14,6 +14,11 @@ export function porsiyonFiyat(p: MenuPorsiyon, tur: SiparisTuru = "masa") {
   return ozel ?? p.fiyat;
 }
 
+// Seçenek grupları porsiyona bağlı; ürün seviyesindeki sayaç ve rozetler için birleştirilir.
+export function urunGrupIdleri(u: MenuUrun) {
+  return [...new Set(u.porsiyonlar.flatMap((p) => p.grupIdler))];
+}
+
 // Bir kategorinin ürünleri — filtreleme ve sıralama tek yerde.
 export function kategoriUrunleri(urunler: MenuUrun[], kategoriId: number) {
   return urunler
@@ -32,7 +37,7 @@ export async function menuGetir() {
     supabase
       .from("urunler")
       .select(
-        "id, ad, kod, renk, favori, satista_gorunur, mutfakta_gorunur, porsiyonlar(id, birim_id, fiyat, maliyet, barkod, masa_fiyat, gelal_fiyat, paket_fiyat, varsayilan, sira), urun_kategorileri(kategori_id, sira), urun_secenek_gruplari(grup_id)"
+        "id, ad, kod, renk, favori, satista_gorunur, mutfakta_gorunur, porsiyonlar(id, birim_id, fiyat, maliyet, barkod, masa_fiyat, gelal_fiyat, paket_fiyat, varsayilan, sira, porsiyon_secenek_gruplari(grup_id)), urun_kategorileri(kategori_id, sira)"
       ),
     supabase
       .from("secenek_gruplari")
@@ -73,12 +78,12 @@ export async function menuGetir() {
         gelalFiyat: say(p.gelal_fiyat),
         paketFiyat: say(p.paket_fiyat),
         varsayilan: p.varsayilan,
+        grupIdler: (p.porsiyon_secenek_gruplari ?? []).map((x: any) => x.grup_id),
       })),
     kategoriIdler: (u.urun_kategorileri ?? []).map((x: any) => x.kategori_id),
     kategoriSira: Object.fromEntries(
       (u.urun_kategorileri ?? []).map((x: any) => [x.kategori_id, x.sira])
     ),
-    grupIdler: (u.urun_secenek_gruplari ?? []).map((x: any) => x.grup_id),
   }));
 
   const gruplar: MenuSecenekGrubu[] = (grp.data ?? []).map((g: any) => ({
@@ -122,8 +127,8 @@ export async function kategoriSil(id: number) {
 }
 
 // Barkod benzersiz olmak zorunda — kopyalanan üründe boş bırakılır.
-function porsiyonSatirlari(urunId: number, porsiyonlar: MenuPorsiyon[], barkodlar = true) {
-  return porsiyonlar.map((p, i) => ({
+function porsiyonSatiri(urunId: number, p: MenuPorsiyon, sira: number, barkodlar = true) {
+  return {
     urun_id: urunId,
     birim_id: p.birimId ?? null,
     fiyat: p.fiyat,
@@ -133,8 +138,17 @@ function porsiyonSatirlari(urunId: number, porsiyonlar: MenuPorsiyon[], barkodla
     gelal_fiyat: p.gelalFiyat ?? null,
     paket_fiyat: p.paketFiyat ?? null,
     varsayilan: p.varsayilan,
-    sira: i + 1,
-  }));
+    sira,
+  };
+}
+
+async function porsiyonGruplariYaz(porsiyonId: number, grupIdler: number[]) {
+  await supabase.from("porsiyon_secenek_gruplari").delete().eq("porsiyon_id", porsiyonId);
+  if (grupIdler.length) {
+    await supabase
+      .from("porsiyon_secenek_gruplari")
+      .insert(grupIdler.map((g) => ({ porsiyon_id: porsiyonId, grup_id: g })));
+  }
 }
 
 // Hata varsa mesajını döndürür — ürün kodu benzersiz, çakışırsa kullanıcıya söylenmeli.
@@ -165,9 +179,33 @@ export async function urunKaydet(u: MenuUrun) {
   }
   if (!id) return;
 
-  await supabase.from("porsiyonlar").delete().eq("urun_id", id);
-  if (u.porsiyonlar.length) {
-    await supabase.from("porsiyonlar").insert(porsiyonSatirlari(id, u.porsiyonlar));
+  // Porsiyonlar silinip yeniden yazılmaz, id'leriyle güncellenir — seçenek grupları
+  // porsiyon id'sine bağlı, silinen porsiyonla birlikte bağlantıları da giderdi.
+  const { data: eskiPorsiyonlar } = await supabase
+    .from("porsiyonlar")
+    .select("id")
+    .eq("urun_id", id);
+  const kalanlar = u.porsiyonlar.map((p) => p.id).filter(Boolean);
+  const silinecek = (eskiPorsiyonlar ?? [])
+    .map((p: any) => p.id as number)
+    .filter((pid) => !kalanlar.includes(pid));
+  if (silinecek.length) {
+    await supabase.from("porsiyonlar").delete().in("id", silinecek);
+  }
+
+  for (const [i, p] of u.porsiyonlar.entries()) {
+    let porsiyonId = p.id;
+    if (porsiyonId) {
+      await supabase.from("porsiyonlar").update(porsiyonSatiri(id, p, i + 1)).eq("id", porsiyonId);
+    } else {
+      const { data } = await supabase
+        .from("porsiyonlar")
+        .insert(porsiyonSatiri(id, p, i + 1))
+        .select("id")
+        .single();
+      porsiyonId = data?.id;
+    }
+    if (porsiyonId) await porsiyonGruplariYaz(porsiyonId, p.grupIdler);
   }
 
   // Kategori bağlantıları silinip yeniden yazılıyor; ürünün eski sırası korunur,
@@ -191,12 +229,6 @@ export async function urunKaydet(u: MenuUrun) {
     await supabase.from("urun_kategorileri").insert(baglar);
   }
 
-  await supabase.from("urun_secenek_gruplari").delete().eq("urun_id", id);
-  if (u.grupIdler.length) {
-    await supabase
-      .from("urun_secenek_gruplari")
-      .insert(u.grupIdler.map((g) => ({ urun_id: id, grup_id: g })));
-  }
 }
 
 // Kopya, kaynağın bulunduğu her kategoride onun hemen ardına yerleşir.
@@ -218,14 +250,15 @@ export async function urunKopyala(kaynak: MenuUrun, hepsi: MenuUrun[]) {
   const id = data?.id as number | undefined;
   if (!id) return;
 
-  if (kaynak.porsiyonlar.length) {
-    await supabase.from("porsiyonlar").insert(porsiyonSatirlari(id, kaynak.porsiyonlar, false));
-  }
-
-  if (kaynak.grupIdler.length) {
-    await supabase
-      .from("urun_secenek_gruplari")
-      .insert(kaynak.grupIdler.map((g) => ({ urun_id: id, grup_id: g })));
+  for (const [i, p] of kaynak.porsiyonlar.entries()) {
+    const { data: yeni } = await supabase
+      .from("porsiyonlar")
+      .insert(porsiyonSatiri(id, p, i + 1, false))
+      .select("id")
+      .single();
+    if (yeni?.id && p.grupIdler.length) {
+      await porsiyonGruplariYaz(yeni.id, p.grupIdler);
+    }
   }
 
   for (const kategoriId of kaynak.kategoriIdler) {

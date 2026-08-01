@@ -1,26 +1,21 @@
 # GARSO — Teknik Tasarım: Veri Modeli & Ekran Haritası
 *Restoran ve cafe'ler için bulut tabanlı satış ve işletme yönetim sistemi.*
 
-## 0. SIRADAKİ İŞ (2 Ağu 2026 seansının sonunda güncellendi)
+## 0. SIRADAKİ İŞ (2 Ağu 2026 ikinci seansının sonunda güncellendi)
 
 *Ramazan seansa "devam edelim" diye giriyor — sıradaki iş bu listenin en üstündeki
 maddedir. Seans sonunda bu liste güncellenir: biten madde silinir, kalanlar
 yukarı kayar, yeni çıkanlar sıraya girer.*
 
-1. **Seçenek gruplarını üründen porsiyona taşı** + reçete alanı. Adisyo ikisini
-   de porsiyona bağlıyor; bizde `urun_secenek_gruplari` ürün seviyesinde. Sipariş
-   ekranını ve `UrunSecim`'i de değiştirdiği için ayrı görev olarak ayrıldı.
-   *(1 Ağu 2026)*
-2. **Seçenekte varsayılan işareti + seçenek sıralama.** Zorunlu anahtarı geldi,
-   sırada grubun kendi içindeki düzen var. `SiralamaModal` hazır, ona bağlanır.
-   *(1 Ağu 2026)*
-3. **Ürün panelinde kuruşlu fiyat girilemiyor** — küçük hata. `UrunPaneli`'nde
-   para alanı her tuşta sayıya çevrilip geri yazıldığı için "12.5" yazarken nokta
-   siliniyor. Çözümü `TopluDuzenle`'de var: taslakta metin tut, kaydederken çevir.
-   *(2 Ağu 2026)*
-4. **Alt kategori (kategori ağacı)** — kategori formunda opsiyonel üst kategori.
-5. **KDV grupları** — `{ ad, oran, varsayılan mı, sıra }`, en fazla 8 tanım.
+1. **Alt kategori (kategori ağacı)** — kategori formunda opsiyonel üst kategori.
+2. **KDV grupları** — `{ ad, oran, varsayılan mı, sıra }`, en fazla 8 tanım.
    Geldiğinde Toplu Düzenle tablosuna da sütun olarak eklenecek.
+3. **Menü/kampanya ürünü** — yapısı netleşti: menü grubu = başlık + seçilebilir
+   ürün sayısı + satırlar `{ ürün, porsiyon, miktar, ek fiyat, varsayılan }`;
+   maliyet içerikten otomatik.
+
+*Reçete bilinçli olarak ertelendi: malzeme/stok tablosu olmadan boş bir alandan
+ibaret kalırdı, stok modülüyle (Faz 3) birlikte yapılacak. (2 Ağu 2026)*
 
 *(30 Tem – 2 Ağu'da yapılanlar bölüm 5'te; menü modülünün tam eksik listesi
 bölüm 5'in sonundaki "SONRAKİ ADIMLAR" başlığında.)*
@@ -63,7 +58,7 @@ porsiyonlar          (id, urun_id, birim_id, fiyat, maliyet, barkod,
 urun_kategorileri    (urun_id, kategori_id, sira)     -- çoktan-çoğa + ürünün O kategorideki sırası
 secenek_gruplari     (id, ad, tekli, zorunlu, sira)   -- Servis, Şeker, Aroma...
 secenekler           (id, grup_id, ad, ek_fiyat, sira)
-urun_secenek_gruplari(urun_id, grup_id)               -- grup bir kez tanımlanır, ürünlere bağlanır
+porsiyon_secenek_gruplari(porsiyon_id, grup_id)       -- grup bir kez tanımlanır, PORSİYONA bağlanır
 ```
 `* kod` benzersizliği kısmi indeksle: `unique ... where kod is not null` — kodsuz
 ürün serbest, kodlu ürünler çakışamaz. `urunler.sira` **silindi**; ürün sırası
@@ -122,7 +117,7 @@ stock_moves    (id, branch_id, urun/malzeme, tip ENUM('giris','sayim','satis_dus
 | 9 | Cari | **Veresiye Defteri** | Müşteri + protokol tek modül, bakiye yaşlandırma göstergesi |
 | 10 | Kasa | **Kasa Defteri** | Açılış/kapanış + gider + zayi tek akış |
 
-**Gezinme (30 Tem 2026 kararı):** Sol dikey şerit, daralt/genişlet düğmesiyle 66px ↔ 190px. Kapalıyken sadece ikon, açıkken ikon + yazı. Adisyo'nun içeriği karartıp kapatan 312px overlay çekmecesi kullanılmıyor — Garso'nun şeridi içeriği hiç kapatmaz. Sipariş ekranında şerit gizlenir (tam ekran odak).
+**Gezinme (30 Tem 2026 kararı, 2 Ağu'da genişletildi):** Sol dikey şerit, daralt/genişlet düğmesiyle 80px ↔ 205px. Kapalıyken sadece ikon, açıkken ikon + yazı. Adisyo'nun içeriği karartıp kapatan 312px overlay çekmecesi kullanılmıyor — Garso'nun şeridi içeriği hiç kapatmaz. Sipariş ekranında şerit gizlenir (tam ekran odak).
 
 **Kimlik farklılaşması:** Garso'nun kendi renk paleti — AYDINLIK TEMA (kesinleşti): krem zemin #faf7f2, kart beyazı #ffffff, mercan vurgu #ff7a59, yumuşak yeşil (onay) #2ecc9a, metin #2d3436, soluk metin #8a9296. Koyu tema kullanılmayacak (kullanıcı kararı), kendi ikon seti, kendi terminolojisi (Adisyon→Hesap/Check, Ödenmezler→Protokol, Özellikler→Seçenekler, Gün Sonu→Kasa Kapanışı).
 
@@ -231,7 +226,8 @@ stock_moves    (id, branch_id, urun/malzeme, tip ENUM('giris','sayim','satis_dus
 - ✅ **Üst çubuk:** arama (ad/kod), kategori seçici, "A-Z" ve "Tür fiyatları"
   düğmeleri. Tür fiyatları kapalıyken tablo dar kalıyor.
 - ✅ **`porsiyonlar.id` modele girdi** (`MenuPorsiyon.id`) — tek porsiyon satırını
-  güncelleyebilmek için. Ürün paneli hâlâ sil-yeniden yaz yöntemiyle çalışıyor.
+  güncelleyebilmek için. *(Ürün panelindeki sil-yeniden yaz yöntemi 2 Ağu ikinci
+  seansında kaldırıldı.)*
 - ✅ **Kaydetmeden çıkış koruması:** `cikisKilidi.ts` — ekran kendini kaydediyor,
   `Duzen` sol menüden sayfa değiştirmeden önce soruyor. Sekme değişimi de aynı
   şekilde korunuyor.
@@ -240,10 +236,38 @@ stock_moves    (id, branch_id, urun/malzeme, tip ENUM('giris','sayim','satis_dus
 - ✅ **Doğrulamalar:** boş ürün adı, aynı ürün kodu iki üründe, aynı ürünün iki
   porsiyonunda aynı birim — hepsi kaydetmeden önce uyarıyla durduruluyor.
 
+### 2 AĞUSTOS (2. seans) — SEÇENEKLER PORSİYONA TAŞINDI, MENÜ STÜDYOSU ÜST DÜZENİ
+- ✅ **Seçenek grupları artık porsiyona bağlı:** `urun_secenek_gruplari` silindi,
+  yerine `porsiyon_secenek_gruplari` kuruldu; mevcut bağlantılar her ürünün tüm
+  porsiyonlarına kopyalanarak taşındı. Aynı ürünün "Tam" ve "Yarım" porsiyonu
+  farklı seçenek taşıyabiliyor. Grup seçimi ürün panelinin altından çıkıp her
+  porsiyonun katlanır detayına girdi; detay kapalıyken satırda "2 seçenek" rozeti.
+- ✅ **Ürün kaydetme id bazlı oldu:** porsiyonlar silinip yeniden yazılmıyor,
+  var olan güncelleniyor / yeni eklenen insert ediliyor / çıkarılan siliniyor.
+  Zorunluydu — seçenek bağlantıları porsiyon id'sine asılı, eski yöntem her
+  kayıtta hepsini uçururdu.
+- ✅ **Seçenek sıralama:** grup panelinde "⇅ Sırala" → `SiralamaModal`. Sıra
+  grup kaydedilirken yazılıyor, ayrı kaydetme adımı yok.
+- ❌ **Seçenekte varsayılan işareti yapıldı ve geri alındı** (Ramazan'ın kararı):
+  hazır seçili gelen seçenek, garsonun yoğun saatte asıl sorması gerekeni sormadan
+  "Ekle"ye basmasına yol açıyor — zorunlu grup korumasını fiilen etkisiz kılıyordu.
+  `secenekler.varsayilan` sütunu da düşürüldü.
+- ✅ **Kuruşlu fiyat hatası düzeldi:** para kuralları `para.ts`'e alındı
+  (`paraMetin`/`paraSayi`/`paraYaz`); `UrunPaneli` ve `TopluDuzenle` aynı kaynaktan
+  besleniyor. Virgül de kabul ediliyor ("12,5" = "12.5").
+- ✅ **Menü Stüdyosu üst düzeni:** dört ayrı kutu yerine tek sekme şeridi
+  (`.ms-sekmeler`), başlığın altında sola dayalı, yazılar tek satır. Sekme sırası
+  Kategori ve Ürünler → Toplu Düzenle → Seçenek Grupları → Birimler; ilk sekmenin
+  adı artık yaptığı işi söylüyor. Toplu Düzenle'ye geçince sayfa genişliğinin
+  1100→1500px atlaması kaldırıldı (tablo zaten kendi içinde yana kayıyor).
+- ✅ Sol gezinme şeridi genişledi (66→80px, açıkken 190→205px); menü bağlantısının
+  adı "Menü" değil **"Menü Stüdyosu"**.
+
 ### 📌 SONRAKİ ADIMLAR
 **Menü Stüdyosu'nda kalanlar (Adisyo paritesi hedefi):**
 - KDV grubu
-- Seçenek grubu ve reçetenin porsiyon bazına taşınması
+- ~~Seçenek grubunun porsiyon bazına taşınması~~ ✅ 2 Ağu 2026 (2. seans).
+  Reçete stok modülüne bırakıldı.
 - Menü/kampanya ürünü (birden fazla ürün tek fiyata)
 - Mutfak grubu alanı (anlamı KDS gelince oluşur)
 - ~~**Toplu ürün işlemleri**~~ ✅ 2 Ağu 2026 — Toplu Düzenle sekmesi. KDV/mutfak
@@ -259,7 +283,7 @@ görüntüle" ve aktif/pasif ürün — 1 Ağu 2026 ikinci seansında tamamland�
 *Veri modelini etkileyenler (önce karar, sonra kod):*
 - ~~**Sipariş türüne göre fiyat**~~ ✅ 1 Ağu'da yapıldı (tek fiyat + üç opsiyonel tür fiyatı).
 - ~~**Birimler merkezi liste**~~ ✅ 1 Ağu'da yapıldı (`birimler` tablosu + Birimler sekmesi).
-- **Reçete ve seçenek grubu bağlama porsiyon bazlı** — bizde seçenek grupları hâlâ ürüne bağlı (`urun_secenek_gruplari`). Adisyo porsiyona bağlıyor. (Barkod 1 Ağu'da porsiyona eklendi.)
+- ~~**Seçenek grubu bağlama porsiyon bazlı**~~ ✅ 2 Ağu (2. seans). Reçete, malzeme/stok tablosu gelene kadar bekliyor.
 - **Alt kategori (kategori ağacı)** — kategori formunda opsiyonel üst kategori.
 - **KDV grupları** — `{ ad, oran, varsayılan mı, sıra }`, en fazla 8 tanım.
 - **Mutfak grubunda opsiyonel KDS aşamaları** (Pişirme / Paketleme) — İstasyon ekranındaki kanban kolonları sabit olamaz, gruba göre değişir.
@@ -272,7 +296,7 @@ görüntüle" ve aktif/pasif ürün — 1 Ağu 2026 ikinci seansında tamamland�
 - ~~Aramada **kapsam seçici**~~ ✅ 1 Ağu (2. seans)
 - Kalan ürün anahtarları: **KDV hariç olsun**, **Özellik ve Porsiyon Otomatik Sorulsun**, **Stok takibi yap**
 - Kategori bazlı **toplu işlem** modalı (kategorideki tüm ürünlere mutfak grubu / KDV / zorunlu seçim / stok / satılabilir uygulama)
-- Seçenekte **varsayılan** işareti + seçenek sıralama
+- ~~Seçenek sıralama~~ ✅ 2 Ağu (2. seans). Seçenekte **varsayılan işareti bilinçli olarak yapılmadı** — gerekçe bölüm 6, karar 30.
 - Ürün kartından **panele girmeden hızlı renk değiştirme**
 - **Menü/kampanya tanımının yapısı** netleşti: menü grubu = başlık + *seçilebilir ürün sayısı* + satırlar `{ ürün, porsiyon, miktar, ek fiyat, varsayılan }`; maliyet içerikten otomatik hesaplanıyor
 
@@ -315,13 +339,25 @@ görüntüle" ve aktif/pasif ürün — 1 Ağu 2026 ikinci seansında tamamland�
    gerektirir, o ürün panelinin işi. *(2 Ağu 2026)*
 26. **Düzenlenirken para alanı metin olarak tutulur.** Her tuşta sayıya çevirip
    geri yazmak "12.5"in noktasını siliyor, kuruş girilemiyor. Taslakta metin,
-   kaydederken sayı. *(2 Ağu 2026)*
+   kaydederken sayı. Kural tek dosyada: `para.ts` (`paraMetin`/`paraSayi`/
+   `paraYaz`); virgül de kabul edilir. *(2 Ağu 2026)*
 27. **Kaydedilmemiş değişiklik varken sayfadan çıkış sorulur.** Ekran kendini
    `cikisKilidi.ts`'e kaydeder, sol menü geçmeden önce oraya bakar. Tek ortak
    kilit — sonraki ekranlar aynı yerden faydalanır. *(2 Ağu 2026)*
 28. **Biten işlem bildirimle söylenir, onay modalıyla değil.** Sağ altta kendi
    kapanan `Bildirim.tsx`; "Tamam"a bastırmak akışı boşuna keser. Modal yalnızca
    karar ve uyarı için. *(2 Ağu 2026)*
+29. **Seçenek grupları porsiyona bağlanır, ürüne değil.** Fiyat, barkod ve seçenek
+   aynı yerde — porsiyonda — duruyor. Bunun bedeli, ürün kaydederken porsiyonların
+   silinip yeniden yazılamamasıdır: bağlantılar porsiyon id'sine asılı, id her
+   kayıtta değişemez. *(2 Ağu 2026)*
+30. **Sipariş ekranında hiçbir seçenek hazır seçili gelmez.** "Varsayılan seçenek"
+   yapıldı ve geri alındı: yoğun saatte hazır seçim, garsonun asıl sorması gerekeni
+   sormadan "Ekle"ye basmasına yol açıyor ve zorunlu grup korumasını etkisiz
+   kılıyor. Bir tıklık kazanç, yanlış giden siparişten ucuz değil. *(2 Ağu 2026)*
+31. **Sekme değiştirmek sayfanın ölçüsünü değiştirmez.** Toplu Düzenle'ye geçince
+   sayfa 1100→1500px genişliyordu, içerik ortalandığı için her şey kayıyordu. Geniş
+   içerik kendi kutusunda yana kayar; çerçeve sabit kalır. *(2 Ağu 2026)*
 
 ## 7. KOD PAYLAŞIM DÜZENİ
 - Kod GitHub'da: `github.com/ramazann1/garso` (şimdilik Public — final'de Private yapılacak)

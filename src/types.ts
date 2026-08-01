@@ -55,6 +55,7 @@ export type MenuPorsiyon = {
   gelalFiyat?: number;
   paketFiyat?: number;
   varsayilan: boolean;
+  grupIdler: number[]; // seçenek grupları porsiyona bağlıdır
 };
 
 export type MenuSecenek = {
@@ -82,5 +83,4 @@ export type MenuUrun = {
   porsiyonlar: MenuPorsiyon[];
   kategoriIdler: number[];
   kategoriSira: Record<number, number>; // ürünün her kategorideki kendi sırası
-  grupIdler: number[];
 };
