@@ -351,7 +351,7 @@ export default function UrunPaneli({
                       onClick={() => secimDegis(kategoriIdler, setKategoriIdler, k.id)}
                     >
                       <span className="renk-nokta" style={{ background: k.renk }} />
-                      {k.ad}
+                      {k.ustId ? `↳ ${k.ad}` : k.ad}
                     </button>
                   ))}
                 </div>

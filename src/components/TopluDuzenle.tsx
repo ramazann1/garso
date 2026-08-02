@@ -275,7 +275,7 @@ export default function TopluDuzenle({
         >
           <option value="tumu">Tüm kategoriler</option>
           {kategoriler.map((k) => (
-            <option key={k.id} value={k.id}>{k.ad}</option>
+            <option key={k.id} value={k.id}>{k.ustId ? `↳ ${k.ad}` : k.ad}</option>
           ))}
         </select>
 

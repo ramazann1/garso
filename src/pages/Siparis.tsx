@@ -1,6 +1,6 @@
 import { useEffect, useState } from "react";
 import { useNavigate, useParams } from "react-router-dom";
-import { menuGetir, kategoriUrunleri as kategorininUrunleri, porsiyonFiyat } from "../menu";
+import { menuGetir, agacUrunleri, altKategoriler, porsiyonFiyat } from "../menu";
 import { adisyonGetir, adisyonKaydet } from "../adisyonlar";
 import UrunSecim from "../components/UrunSecim";
 import TahsilatPanel from "../components/TahsilatPanel";
@@ -36,7 +36,7 @@ export default function Siparis() {
       setKategoriler(acikKategoriler);
       setUrunler(veri.urunler.filter((u) => u.satistaGorunur));
       setGruplar(veri.gruplar);
-      setSeciliId(acikKategoriler[0]?.id ?? null);
+      setSeciliId(acikKategoriler.find((k) => !k.ustId)?.id ?? acikKategoriler[0]?.id ?? null);
       setMenuYukleniyor(false);
     });
   }, []);
@@ -51,8 +51,16 @@ export default function Siparis() {
     });
   }, [masaAd]);
 
-  const secili = kategoriler.find((k) => k.id === seciliId) ?? kategoriler[0];
-  const kategoriUrunleri = secili ? kategorininUrunleri(urunler, secili.id) : [];
+  // Şeritte ana kategoriler durur; alt kategoriler yalnızca seçili olanın altında
+  // açılır. Üstü satışta gizliyse alt kategori şeride ana kategori gibi girer.
+  const anaKategoriler = kategoriler.filter(
+    (k) => !k.ustId || !kategoriler.some((x) => x.id === k.ustId)
+  );
+  const secili = kategoriler.find((k) => k.id === seciliId) ?? anaKategoriler[0];
+  const acikUstId = secili?.ustId ?? secili?.id;
+  // Üst kategoriye basınca altındakilerin ürünleri de geliyor — garson tek dokunuşta
+  // hepsini görsün; alt kategoriye basınca liste ona daralıyor.
+  const kategoriUrunleri = secili ? agacUrunleri(urunler, kategoriler, secili.id) : [];
 
   const sepeteEkle = (ad: string, fiyat: number, porsiyon?: string, secimler?: string[]) => {
     const anahtar = [ad, porsiyon, ...(secimler ?? [])].join("|");
@@ -84,20 +92,35 @@ export default function Siparis() {
 
       <div className="siparis-govde">
         <nav className="kategori-serit">
-          {kategoriler.map((k) => (
-            <button
-              key={k.id}
-              className={k.id === secili?.id ? "kategori aktif" : "kategori"}
-              style={{ borderColor: k.renk }}
-              onClick={() => setSeciliId(k.id)}
-            >
-              {k.ad}
-            </button>
+          {anaKategoriler.map((k) => (
+            <div key={k.id} className="kategori-grup">
+              <button
+                className={k.id === secili?.id ? "kategori aktif" : "kategori"}
+                style={{ borderColor: k.renk }}
+                onClick={() => setSeciliId(k.id)}
+              >
+                {k.ad}
+              </button>
+
+              {k.id === acikUstId &&
+                altKategoriler(kategoriler, k.id).map((a) => (
+                  <button
+                    key={a.id}
+                    className={a.id === secili?.id ? "kategori alt aktif" : "kategori alt"}
+                    style={{ borderColor: a.renk }}
+                    onClick={() => setSeciliId(a.id)}
+                  >
+                    <em className="dal" />
+                    {a.ad}
+                  </button>
+                ))}
+            </div>
           ))}
         </nav>
 
         <main className="urun-alani">
           {menuYukleniyor && <div className="yukleniyor"><div className="cember" /></div>}
+
           {!menuYukleniyor && (
             <div className="urun-grid">
               {kategoriUrunleri.map((u) => (

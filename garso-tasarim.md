@@ -1,18 +1,19 @@
 # GARSO — Teknik Tasarım: Veri Modeli & Ekran Haritası
 *Restoran ve cafe'ler için bulut tabanlı satış ve işletme yönetim sistemi.*
 
-## 0. SIRADAKİ İŞ (2 Ağu 2026 ikinci seansının sonunda güncellendi)
+## 0. SIRADAKİ İŞ (2 Ağu 2026 üçüncü seansının sonunda güncellendi)
 
 *Ramazan seansa "devam edelim" diye giriyor — sıradaki iş bu listenin en üstündeki
 maddedir. Seans sonunda bu liste güncellenir: biten madde silinir, kalanlar
 yukarı kayar, yeni çıkanlar sıraya girer.*
 
-1. **Alt kategori (kategori ağacı)** — kategori formunda opsiyonel üst kategori.
-2. **KDV grupları** — `{ ad, oran, varsayılan mı, sıra }`, en fazla 8 tanım.
+1. **KDV grupları** — `{ ad, oran, varsayılan mı, sıra }`, en fazla 8 tanım.
    Geldiğinde Toplu Düzenle tablosuna da sütun olarak eklenecek.
-3. **Menü/kampanya ürünü** — yapısı netleşti: menü grubu = başlık + seçilebilir
+2. **Menü/kampanya ürünü** — yapısı netleşti: menü grubu = başlık + seçilebilir
    ürün sayısı + satırlar `{ ürün, porsiyon, miktar, ek fiyat, varsayılan }`;
    maliyet içerikten otomatik.
+3. **Ürünün kategorisini listeden taşıma** — ürünü panele girmeden başka
+   kategoriye/alt kategoriye alma (alt kategori gelince ihtiyaç belirginleşti).
 
 *Reçete bilinçli olarak ertelendi: malzeme/stok tablosu olmadan boş bir alandan
 ibaret kalırdı, stok modülüyle (Faz 3) birlikte yapılacak. (2 Ağu 2026)*
@@ -50,7 +51,7 @@ tables         (id, zone_id, ad, sira, aktif)
 
 ### Menü — 30 Tem 2026'da kuruldu, 1 Ağu 2026'da tamamlandı
 ```sql
-kategoriler          (id, ad, renk, sira, satista_gorunur, mutfakta_gorunur)
+kategoriler          (id, ad, renk, sira, ust_id NULL, satista_gorunur, mutfakta_gorunur)
 urunler              (id, ad, kod UNIQUE*, renk, favori, satista_gorunur, mutfakta_gorunur)
 birimler             (id, ad UNIQUE, sira)            -- Tam, Yarım, Adet, Kg... porsiyon adının tek kaynağı
 porsiyonlar          (id, urun_id, birim_id, fiyat, maliyet, barkod,
@@ -60,6 +61,9 @@ secenek_gruplari     (id, ad, tekli, zorunlu, sira)   -- Servis, Şeker, Aroma..
 secenekler           (id, grup_id, ad, ek_fiyat, sira)
 porsiyon_secenek_gruplari(porsiyon_id, grup_id)       -- grup bir kez tanımlanır, PORSİYONA bağlanır
 ```
+`ust_id` kategorinin kendine bağlı: boşsa ana kategori, doluysa alt kategori
+(ağaç iki seviye). `sira` **kardeşler arasında** geçerlidir — ana kategoriler kendi
+arasında, bir üstün altındakiler kendi arasında 1'den başlar.
 `* kod` benzersizliği kısmi indeksle: `unique ... where kod is not null` — kodsuz
 ürün serbest, kodlu ürünler çakışamaz. `urunler.sira` **silindi**; ürün sırası
 artık kategori bazlı (`urun_kategorileri.sira`).
@@ -263,6 +267,30 @@ stock_moves    (id, branch_id, urun/malzeme, tip ENUM('giris','sayim','satis_dus
 - ✅ Sol gezinme şeridi genişledi (66→80px, açıkken 190→205px); menü bağlantısının
   adı "Menü" değil **"Menü Stüdyosu"**.
 
+### 2 AĞUSTOS (3. seans) — ALT KATEGORİ (KATEGORİ AĞACI)
+- ✅ **`kategoriler.ust_id` eklendi** (kendine bağlı, boş olabilir). Ağaç iki
+  seviye: ana kategori → alt kategori, daha derini yok. Kategori formunda
+  "Üst kategori" açılır listesi; kendini ve altında kategori olanı seçemiyor.
+- ✅ **Sıra kardeşler arasında** — `kardesSonSira()` ile yeni kayıt kendi
+  seviyesinin sonuna giriyor; üst kategori değiştirilirse kayıt yeni
+  kardeşlerinin sonuna alınıyor (eski sıra orada çakışırdı).
+- ✅ **`menu.ts` yardımcıları:** `altKategoriler`, `kategoriAgaci` (liste sırası:
+  her ana kategori + kendi altları; üstü silinmiş/gizlenmiş alt kategori kök
+  sayılır), `agacUrunleri` (üst + altların ürünleri, tekrarsız).
+- ✅ **Silme kuralı genişledi:** altında kategori olan kategori silinemiyor —
+  "dolu kategori silinemez" kuralının aynısı.
+- ✅ **Arayüz iki kez elendi.** Önce hepsi girintili tek liste (karışık), sonra
+  ürünlerin üstünde "Tümü + alt kategori çipleri" şeridi (daha da karışık: çip
+  içinde ✎/×, ikinci "kendi ürünleri" çipi, şeritte ayrı ⇅). İkisi de Ramazan
+  tarafından reddedildi. Kalan çözüm: **alt kategoriler yalnızca üstü seçiliyken
+  onun altında açılıyor**, yeni kavram yok — düzenleme/silme/sıralama eskisi
+  gibi kendi satırında. Aynı desen sipariş ekranındaki kategori şeridinde de var.
+- ✅ **Alt satırın görünümü:** daha dar kutu (girinti 18px, iç boşluk 7px, yazı
+  13px, renk noktası 9px) + `↳` karakteri yerine CSS ile çizilmiş mercan dirsek
+  (seçiliyken beyaz). Karakter yazı tipine göre kayıyordu.
+- ✅ **Sıralama modalında A-Z düzeltildi:** uzun başlık ("… — alt kategori sırası")
+  butonu eziyordu; buton artık daralmıyor, başlık alt satıra iniyor.
+
 ### 📌 SONRAKİ ADIMLAR
 **Menü Stüdyosu'nda kalanlar (Adisyo paritesi hedefi):**
 - KDV grubu
@@ -284,7 +312,8 @@ görüntüle" ve aktif/pasif ürün — 1 Ağu 2026 ikinci seansında tamamland�
 - ~~**Sipariş türüne göre fiyat**~~ ✅ 1 Ağu'da yapıldı (tek fiyat + üç opsiyonel tür fiyatı).
 - ~~**Birimler merkezi liste**~~ ✅ 1 Ağu'da yapıldı (`birimler` tablosu + Birimler sekmesi).
 - ~~**Seçenek grubu bağlama porsiyon bazlı**~~ ✅ 2 Ağu (2. seans). Reçete, malzeme/stok tablosu gelene kadar bekliyor.
-- **Alt kategori (kategori ağacı)** — kategori formunda opsiyonel üst kategori.
+- ~~**Alt kategori (kategori ağacı)**~~ ✅ 2 Ağu (3. seans) — iki seviye, üstü
+  seçiliyken açılan liste.
 - **KDV grupları** — `{ ad, oran, varsayılan mı, sıra }`, en fazla 8 tanım.
 - **Mutfak grubunda opsiyonel KDS aşamaları** (Pişirme / Paketleme) — İstasyon ekranındaki kanban kolonları sabit olamaz, gruba göre değişir.
 
@@ -358,6 +387,17 @@ görüntüle" ve aktif/pasif ürün — 1 Ağu 2026 ikinci seansında tamamland�
 31. **Sekme değiştirmek sayfanın ölçüsünü değiştirmez.** Toplu Düzenle'ye geçince
    sayfa 1100→1500px genişliyordu, içerik ortalandığı için her şey kayıyordu. Geniş
    içerik kendi kutusunda yana kayar; çerçeve sabit kalır. *(2 Ağu 2026)*
+32. **Kategori ağacı iki seviye ve aynı anda tek dal açık.** Alt kategoriler her
+   zaman görünse liste uzuyor, ayrı bir çip şeridine alınsa yeni kavram (Tümü,
+   kendi ürünleri, çip içi düzenleme) geliyordu — ikisi de denendi, ikisi de
+   karışık bulundu. Şimdi yalnızca **seçili kategorinin** altları girintili
+   açılıyor; düzenleme, silme ve sıralama satırın kendi yerinde kalıyor. Ekranda
+   yeni hiçbir öğe yok, sadece bir satır grubu açılıp kapanıyor. *(2 Ağu 2026)*
+33. **Menü Stüdyosu'nda her satır kendi ürünlerini gösterir; sipariş ekranında üst
+   kategori altındakileri de gösterir.** Menüyü düzenlerken karışık liste sırayı
+   bozar (sıralama tek kategoride yapılabiliyor); satış yaparken ise garson tek
+   dokunuşta hepsini görmeli. Kategori satırındaki sayı da listelenen ürün
+   sayısıyla birebir aynı — sayı 24 deyip liste 6 ürün göstermez. *(2 Ağu 2026)*
 
 ## 7. KOD PAYLAŞIM DÜZENİ
 - Kod GitHub'da: `github.com/ramazann1/garso` (şimdilik Public — final'de Private yapılacak)

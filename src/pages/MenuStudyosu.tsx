@@ -14,6 +14,7 @@ import {
   kategoriSil,
   kategoriSirala,
   kategoriUrunleri,
+  altKategoriler,
   urunKaydet,
   urunKopyala,
   urunSil,
@@ -38,17 +39,25 @@ function anaFiyat(u: MenuUrun) {
 
 function KategoriPenceresi({
   kategori,
+  kategoriler,
   onKapat,
   onKaydet,
 }: {
   kategori?: MenuKategori;
+  kategoriler: MenuKategori[];
   onKapat: () => void;
   onKaydet: (k: KategoriAlanlari) => void;
 }) {
   const [ad, setAd] = useState(kategori?.ad ?? "");
   const [renk, setRenk] = useState(kategori?.renk ?? renkler[0]);
+  const [ustId, setUstId] = useState<number | undefined>(kategori?.ustId);
   const [satistaGorunur, setSatistaGorunur] = useState(kategori?.satistaGorunur ?? true);
   const [mutfaktaGorunur, setMutfaktaGorunur] = useState(kategori?.mutfaktaGorunur ?? true);
+
+  // Ağaç iki seviye: üst olabilecekler yalnızca ana kategoriler, kendisi hariç.
+  // Altında kategori olan bir kategori kendisi alt kategori olamaz.
+  const cocukluMu = kategori ? kategoriler.some((k) => k.ustId === kategori.id) : false;
+  const ustAdaylari = kategoriler.filter((k) => !k.ustId && k.id !== kategori?.id);
 
   return (
     <div className="modal-fon" onClick={onKapat}>
@@ -69,6 +78,26 @@ function KategoriPenceresi({
             placeholder="Sıcak İçecekler"
             autoFocus
           />
+        </div>
+
+        <div className="alan">
+          <span>Üst kategori</span>
+          <select
+            className="ust-secim"
+            value={ustId ?? ""}
+            disabled={cocukluMu}
+            onChange={(e) => setUstId(e.target.value ? Number(e.target.value) : undefined)}
+          >
+            <option value="">— Ana kategori —</option>
+            {ustAdaylari.map((k) => (
+              <option key={k.id} value={k.id}>{k.ad}</option>
+            ))}
+          </select>
+          {cocukluMu && (
+            <p className="ipucu">
+              Bu kategorinin altında kategori var; kendisi alt kategori olamaz.
+            </p>
+          )}
         </div>
 
         <div className="alan">
@@ -93,7 +122,7 @@ function KategoriPenceresi({
           <button
             className="uygula"
             disabled={!ad.trim()}
-            onClick={() => onKaydet({ ad: ad.trim(), renk, satistaGorunur, mutfaktaGorunur })}
+            onClick={() => onKaydet({ ad: ad.trim(), renk, ustId, satistaGorunur, mutfaktaGorunur })}
           >
             Kaydet
           </button>
@@ -340,7 +369,11 @@ export default function MenuStudyosu() {
     return kilitKaldir;
   }, [topluDegisiklik]);
 
-  const secili = kategoriler.find((k) => k.id === seciliId) ?? kategoriler[0];
+  // Listede ana kategoriler durur; alt kategoriler yalnızca kendi üstü seçiliyken
+  // altında açılır — hepsi birden görünürse liste uzuyor ve ekran karışıyor.
+  const anaKategoriler = kategoriler.filter((k) => !k.ustId);
+  const secili = kategoriler.find((k) => k.id === seciliId) ?? anaKategoriler[0];
+  const acikUstId = secili?.ustId ?? secili?.id;
 
   // Arama ürün adına ve ürün koduna bakar; kapsam tüm menüye açılabilir.
   const aranan = arama.trim().toLocaleLowerCase("tr");
@@ -355,16 +388,28 @@ export default function MenuStudyosu() {
       : secili
         ? kategoriUrunleri(urunler, secili.id).filter(esler)
         : [];
+  // Her satır kendi ürünlerini listeler, yandaki sayı da kendi ürün sayısıdır —
+  // alt kategorininki üstünkine karışmaz.
   const sayac = (id: number) => urunler.filter((u) => u.kategoriIdler.includes(id)).length;
+
+  // Sıralama seçili kategorinin bulunduğu seviyede yapılır — kardeşler kendi arasında.
+  const siralamaKardesleri = kategoriler.filter((k) => k.ustId === secili?.ustId);
+  const siralamaBasligi = secili?.ustId
+    ? `${kategoriler.find((k) => k.id === secili.ustId)?.ad} — alt kategori sırası`
+    : "Kategorileri sırala";
 
   const kategoriKaydet = async (k: KategoriAlanlari) => {
     if (pencere?.kategori) await kategoriGuncelle(pencere.kategori.id, k);
-    else await kategoriEkle(k, kategoriler.length + 1);
+    else await kategoriEkle(k);
     setPencere(null);
     yukle();
   };
 
   const kategoriyiSil = (k: MenuKategori) => {
+    if (altKategoriler(kategoriler, k.id).length > 0) {
+      setUyari("Bu kategorinin altında kategori var. Önce alt kategorileri taşı veya sil.");
+      return;
+    }
     if (sayac(k.id) > 0) {
       setUyari("Bu kategoride ürün var. Önce ürünleri başka kategoriye taşı veya sil.");
       return;
@@ -373,7 +418,7 @@ export default function MenuStudyosu() {
       mesaj: `"${k.ad}" kategorisi silinsin mi?`,
       devam: async () => {
         await kategoriSil(k.id);
-        if (seciliId === k.id) setSeciliId(null);
+        if (seciliId === k.id) setSeciliId(k.ustId ?? null);
         yukle();
       },
     });
@@ -564,40 +609,72 @@ export default function MenuStudyosu() {
                 <button className="ms-ekle" onClick={() => setPencere({})}>+ Kategori</button>
                 <button
                   className="ms-sirala"
-                  title="Kategorileri sırala"
-                  disabled={kategoriler.length < 2}
+                  title={siralamaBasligi}
+                  disabled={siralamaKardesleri.length < 2}
                   onClick={() => setSiralama("kategori")}
                 >
                   ⇅
                 </button>
               </div>
 
-              {kategoriler.map((k) => (
-                <div
-                  key={k.id}
-                  className={k.id === secili?.id ? "ms-kategori aktif" : "ms-kategori"}
-                  onClick={() => setSeciliId(k.id)}
-                >
-                  <span className="renk-nokta" style={{ background: k.renk }} />
-                  <span className="ms-ad">
-                    {k.ad}
-                    {!k.satistaGorunur && <em className="gizli-im" title="Satışta gizli">gizli</em>}
-                  </span>
-                  <span className="ms-sayi">{sayac(k.id)}</span>
-                  <button
-                    className="ms-islem"
-                    title="Düzenle"
-                    onClick={(e) => { e.stopPropagation(); setPencere({ kategori: k }); }}
+              {anaKategoriler.map((k) => (
+                <div key={k.id} className="ms-dal-grup">
+                  <div
+                    className={k.id === secili?.id ? "ms-kategori aktif" : "ms-kategori"}
+                    onClick={() => setSeciliId(k.id)}
                   >
-                    ✎
-                  </button>
-                  <button
-                    className="ms-islem"
-                    title="Sil"
-                    onClick={(e) => { e.stopPropagation(); kategoriyiSil(k); }}
-                  >
-                    ×
-                  </button>
+                    <span className="renk-nokta" style={{ background: k.renk }} />
+                    <span className="ms-ad">
+                      {k.ad}
+                      {!k.satistaGorunur && <em className="gizli-im" title="Satışta gizli">gizli</em>}
+                    </span>
+                    <span className="ms-sayi">{sayac(k.id)}</span>
+                    <button
+                      className="ms-islem"
+                      title="Düzenle"
+                      onClick={(e) => { e.stopPropagation(); setPencere({ kategori: k }); }}
+                    >
+                      ✎
+                    </button>
+                    <button
+                      className="ms-islem"
+                      title="Sil"
+                      onClick={(e) => { e.stopPropagation(); kategoriyiSil(k); }}
+                    >
+                      ×
+                    </button>
+                  </div>
+
+                  {k.id === acikUstId &&
+                    altKategoriler(kategoriler, k.id).map((a) => (
+                      <div
+                        key={a.id}
+                        className={a.id === secili?.id ? "ms-kategori alt aktif" : "ms-kategori alt"}
+                        onClick={() => setSeciliId(a.id)}
+                      >
+                        <span className="ms-dal" />
+                        <span className="renk-nokta" style={{ background: a.renk }} />
+                        <span className="ms-ad">
+                          {a.ad}
+                          {!a.satistaGorunur && <em className="gizli-im" title="Satışta gizli">gizli</em>}
+                        </span>
+                        <span className="ms-sayi">{sayac(a.id)}</span>
+                        <button
+                          className="ms-islem"
+                          title="Düzenle"
+                          onClick={(e) => { e.stopPropagation(); setPencere({ kategori: a }); }}
+                        >
+                          ✎
+                        </button>
+                        <button
+                          className="ms-islem"
+                          title="Sil"
+                          onClick={(e) => { e.stopPropagation(); kategoriyiSil(a); }}
+                        >
+                          ×
+                        </button>
+                      </div>
+                    ))}
                 </div>
               ))}
 
@@ -722,6 +799,7 @@ export default function MenuStudyosu() {
       {pencere && (
         <KategoriPenceresi
           kategori={pencere.kategori}
+          kategoriler={kategoriler}
           onKapat={() => setPencere(null)}
           onKaydet={kategoriKaydet}
         />
@@ -738,10 +816,10 @@ export default function MenuStudyosu() {
 
       {siralama && (
         <SiralamaModal
-          baslik={siralama === "kategori" ? "Kategorileri sırala" : `${secili?.ad} — ürün sırası`}
+          baslik={siralama === "kategori" ? siralamaBasligi : `${secili?.ad} — ürün sırası`}
           satirlar={
             siralama === "kategori"
-              ? kategoriler.map((k) => ({ id: k.id, ad: k.ad }))
+              ? siralamaKardesleri.map((k) => ({ id: k.id, ad: k.ad }))
               : listelenenUrunler.map((u) => ({ id: u.id!, ad: u.ad }))
           }
           onKapat={() => setSiralama(null)}

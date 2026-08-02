@@ -26,13 +26,42 @@ export function kategoriUrunleri(urunler: MenuUrun[], kategoriId: number) {
     .sort((a, b) => (a.kategoriSira[kategoriId] ?? 0) - (b.kategoriSira[kategoriId] ?? 0));
 }
 
+export function altKategoriler(hepsi: MenuKategori[], ustId: number) {
+  return hepsi.filter((k) => k.ustId === ustId).sort((a, b) => a.sira - b.sira);
+}
+
+// Liste sırası: her ana kategori, hemen ardından kendi alt kategorileri.
+// Üstü silinmiş/gizlenmiş bir alt kategori ortada kalmasın diye kök sayılır.
+export function kategoriAgaci(hepsi: MenuKategori[]) {
+  const kokler = hepsi
+    .filter((k) => !k.ustId || !hepsi.some((x) => x.id === k.ustId))
+    .sort((a, b) => a.sira - b.sira);
+  return kokler.flatMap((k) => [k, ...altKategoriler(hepsi, k.id)]);
+}
+
+// Üst kategoriye basınca alt kategorilerin ürünleri de gelir — sipariş ekranında
+// hiçbir ürün erişilemez kalmasın diye. Aynı ürün iki yerdeyse bir kez listelenir.
+export function agacUrunleri(urunler: MenuUrun[], kategoriler: MenuKategori[], kategoriId: number) {
+  const idler = [kategoriId, ...altKategoriler(kategoriler, kategoriId).map((k) => k.id)];
+  const gorulen = new Set<number>();
+  const liste: MenuUrun[] = [];
+  for (const id of idler) {
+    for (const u of kategoriUrunleri(urunler, id)) {
+      if (u.id && gorulen.has(u.id)) continue;
+      if (u.id) gorulen.add(u.id);
+      liste.push(u);
+    }
+  }
+  return liste;
+}
+
 const say = (v: any) => (v == null ? undefined : Number(v));
 
 export async function menuGetir() {
   const [kat, urn, grp, brm] = await Promise.all([
     supabase
       .from("kategoriler")
-      .select("id, ad, renk, sira, satista_gorunur, mutfakta_gorunur")
+      .select("id, ad, renk, sira, satista_gorunur, mutfakta_gorunur, ust_id")
       .order("sira"),
     supabase
       .from("urunler")
@@ -46,14 +75,17 @@ export async function menuGetir() {
     supabase.from("birimler").select("id, ad, sira").order("sira"),
   ]);
 
-  const kategoriler: MenuKategori[] = (kat.data ?? []).map((k: any) => ({
-    id: k.id,
-    ad: k.ad,
-    renk: k.renk,
-    sira: k.sira,
-    satistaGorunur: k.satista_gorunur,
-    mutfaktaGorunur: k.mutfakta_gorunur,
-  }));
+  const kategoriler: MenuKategori[] = kategoriAgaci(
+    (kat.data ?? []).map((k: any) => ({
+      id: k.id,
+      ad: k.ad,
+      renk: k.renk,
+      sira: k.sira,
+      ustId: k.ust_id ?? undefined,
+      satistaGorunur: k.satista_gorunur,
+      mutfaktaGorunur: k.mutfakta_gorunur,
+    }))
+  );
   const birimler = (brm.data ?? []) as MenuBirim[];
 
   const urunler: MenuUrun[] = (urn.data ?? []).map((u: any) => ({
@@ -103,6 +135,7 @@ export async function menuGetir() {
 export type KategoriAlanlari = {
   ad: string;
   renk: string;
+  ustId?: number;
   satistaGorunur: boolean;
   mutfaktaGorunur: boolean;
 };
@@ -110,16 +143,38 @@ export type KategoriAlanlari = {
 const kategoriSatiri = (k: KategoriAlanlari) => ({
   ad: k.ad,
   renk: k.renk,
+  ust_id: k.ustId ?? null,
   satista_gorunur: k.satistaGorunur,
   mutfakta_gorunur: k.mutfaktaGorunur,
 });
 
-export async function kategoriEkle(k: KategoriAlanlari, sira: number) {
+// Sıra kardeşler arasında geçerli: ana kategoriler kendi arasında, bir üstün
+// altındakiler kendi arasında 1'den başlar.
+async function kardesSonSira(ustId?: number) {
+  const temel = supabase.from("kategoriler").select("sira");
+  const suzulmus = ustId ? temel.eq("ust_id", ustId) : temel.is("ust_id", null);
+  const { data } = await suzulmus.order("sira", { ascending: false }).limit(1).maybeSingle();
+  return data?.sira ?? 0;
+}
+
+export async function kategoriEkle(k: KategoriAlanlari) {
+  const sira = (await kardesSonSira(k.ustId)) + 1;
   await supabase.from("kategoriler").insert({ ...kategoriSatiri(k), sira });
 }
 
 export async function kategoriGuncelle(id: number, k: KategoriAlanlari) {
-  await supabase.from("kategoriler").update(kategoriSatiri(k)).eq("id", id);
+  // Üst kategori değiştiyse eski sıra yeni kardeşlerin arasında çakışır — sona alınır.
+  const { data: eski } = await supabase
+    .from("kategoriler")
+    .select("ust_id")
+    .eq("id", id)
+    .maybeSingle();
+  const tasindi = (eski?.ust_id ?? undefined) !== k.ustId;
+  const satir = tasindi
+    ? { ...kategoriSatiri(k), sira: (await kardesSonSira(k.ustId)) + 1 }
+    : kategoriSatiri(k);
+
+  await supabase.from("kategoriler").update(satir).eq("id", id);
 }
 
 export async function kategoriSil(id: number) {

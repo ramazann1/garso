@@ -32,6 +32,7 @@ export type MenuKategori = {
   ad: string;
   renk: string;
   sira: number;
+  ustId?: number; // doluysa alt kategori; sıra kardeşler arasında geçerli
   satistaGorunur: boolean;
   mutfaktaGorunur: boolean;
 };
