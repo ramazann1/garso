@@ -1,19 +1,21 @@
 # GARSO — Teknik Tasarım: Veri Modeli & Ekran Haritası
 *Restoran ve cafe'ler için bulut tabanlı satış ve işletme yönetim sistemi.*
 
-## 0. SIRADAKİ İŞ (2 Ağu 2026 üçüncü seansının sonunda güncellendi)
+## 0. SIRADAKİ İŞ (3 Ağu 2026 seansının sonunda güncellendi)
 
 *Ramazan seansa "devam edelim" diye giriyor — sıradaki iş bu listenin en üstündeki
 maddedir. Seans sonunda bu liste güncellenir: biten madde silinir, kalanlar
 yukarı kayar, yeni çıkanlar sıraya girer.*
 
-1. **KDV grupları** — `{ ad, oran, varsayılan mı, sıra }`, en fazla 8 tanım.
-   Geldiğinde Toplu Düzenle tablosuna da sütun olarak eklenecek.
-2. **Menü/kampanya ürünü** — yapısı netleşti: menü grubu = başlık + seçilebilir
-   ürün sayısı + satırlar `{ ürün, porsiyon, miktar, ek fiyat, varsayılan }`;
-   maliyet içerikten otomatik.
-3. **Ürünün kategorisini listeden taşıma** — ürünü panele girmeden başka
-   kategoriye/alt kategoriye alma (alt kategori gelince ihtiyaç belirginleşti).
+1. **Ürünleri Excel'e aktar / Excel'den içeri al** — 200 ürünlük menüyü tek tek
+   girmek yerine tabloyla; Adisyo'dan geçişi de kolaylaştırır.
+2. **Kategori bazlı toplu işlem** — "bu kategorideki tüm ürünlere şu KDV'yi
+   uygula" gibi. KDV geldiği için artık içi doldu.
+3. **KDV'nin fiyata uygulanması** — "KDV hariç olsun" anahtarı, tahsilatta ve
+   raporda KDV dökümü. Tanım tarafı bitti, hesap tarafı duruyor.
+
+*Ürünün kategorisini listeden taşıma maddesi 3 Ağu'da Ramazan tarafından
+"gerek yok" denerek listeden çıkarıldı.*
 
 *Reçete bilinçli olarak ertelendi: malzeme/stok tablosu olmadan boş bir alandan
 ibaret kalırdı, stok modülüyle (Faz 3) birlikte yapılacak. (2 Ağu 2026)*
@@ -52,11 +54,14 @@ tables         (id, zone_id, ad, sira, aktif)
 ### Menü — 30 Tem 2026'da kuruldu, 1 Ağu 2026'da tamamlandı
 ```sql
 kategoriler          (id, ad, renk, sira, ust_id NULL, satista_gorunur, mutfakta_gorunur)
-urunler              (id, ad, kod UNIQUE*, renk, favori, satista_gorunur, mutfakta_gorunur)
-birimler             (id, ad UNIQUE, sira)            -- Tam, Yarım, Adet, Kg... porsiyon adının tek kaynağı
+urunler              (id, ad, kod UNIQUE*, kdv_id NULL, renk, favori, satista_gorunur, mutfakta_gorunur)
+birimler             (id, ad UNIQUE, sira, varsayilan)  -- Tam, Yarım, Adet, Kg... porsiyon adının tek kaynağı
 porsiyonlar          (id, urun_id, birim_id, fiyat, maliyet, barkod,
                       masa_fiyat, gelal_fiyat, paket_fiyat, varsayilan, sira)
 urun_kategorileri    (urun_id, kategori_id, sira)     -- çoktan-çoğa + ürünün O kategorideki sırası
+kdv_gruplari         (id, ad, oran, varsayilan, sira) -- en fazla 8 tanım
+menu_gruplari        (id, urun_id, baslik, secilebilir_adet, sira)   -- kampanyalı menü
+menu_satirlari       (id, grup_id, urun_id, porsiyon_id, miktar, ek_fiyat, varsayilan, sira)
 secenek_gruplari     (id, ad, tekli, zorunlu, sira)   -- Servis, Şeker, Aroma...
 secenekler           (id, grup_id, ad, ek_fiyat, sira)
 porsiyon_secenek_gruplari(porsiyon_id, grup_id)       -- grup bir kez tanımlanır, PORSİYONA bağlanır
@@ -70,7 +75,16 @@ artık kategori bazlı (`urun_kategorileri.sira`).
 `fiyat` = tek fiyat (varsayılan). `masa_fiyat`/`gelal_fiyat`/`paket_fiyat` boşsa o
 sipariş türünde tek fiyat geçerlidir — kural tek yerde: `menu.ts → porsiyonFiyat()`.
 
-Kalıcı modelde ayrıca gelecek: `stations` (Mutfak/Bar/Nargile — KDS ve yazıcı hedefi), `tax_groups` (KDV oranları), menü/kampanya ürünü, reçete.
+`kdv_gruplari` 3 Ağu 2026'da geldi: ürünün `kdv_id`'si boşsa **varsayılan işaretli
+grup** geçerli — kural tek yerde: `menu.ts → urunKdv()`. `birimler.varsayilan` da
+aynı mantık: yeni ürünün ilk porsiyonu **yıldızlı birim → yoksa "Tam" → yoksa
+listedeki ilk birim** (`varsayilanBirim()`).
+
+**Kampanyalı menü** = `menu_gruplari` dolu olan bir üründür; ayrı bir tablo değil.
+Böylece fiyat, satış ve adisyon akışı normal üründen ayrışmıyor. Menünün satış
+fiyatı tek porsiyonunda tutulur, maliyeti içeriğinden hesaplanır.
+
+Kalıcı modelde ayrıca gelecek: `stations` (Mutfak/Bar/Nargile — KDS ve yazıcı hedefi), reçete.
 
 ### Satış Çekirdeği — Garso'nun kalbi
 ```sql
@@ -291,12 +305,36 @@ stock_moves    (id, branch_id, urun/malzeme, tip ENUM('giris','sayim','satis_dus
 - ✅ **Sıralama modalında A-Z düzeltildi:** uzun başlık ("… — alt kategori sırası")
   butonu eziyordu; buton artık daralmıyor, başlık alt satıra iniyor.
 
+### 3 Ağu 2026 — KDV grupları, kampanyalı menü, birim varsayılanı
+- ✅ **Birimlerde varsayılan işareti.** Yeni ürünün ilk porsiyonu listedeki ilk
+  birimi alıyordu ("Double" gibi alakasız bir birim gelebiliyordu). Artık yıldızlı
+  birim → yoksa "Tam" → yoksa ilk birim. Yıldıza tekrar basmak işareti kaldırıyor.
+  Birimler kaydedilince bildirim çıkıyor (eskiden sessizdi).
+- ✅ **KDV grupları** — `kdv_gruplari` tablosu, Menü Stüdyosu'nda KDV sekmesi
+  (en fazla 8 tanım, yıldızlı olan varsayılan), ürün panelinde KDV seçimi ve
+  Toplu Düzenle'de KDV sütunu. Silinen grubu kullanan ürünler varsayılana döner.
+- ✅ **Kampanyalı menü** — `menu_gruplari` + `menu_satirlari`; Menü Stüdyosu'nda
+  kendi sekmesi, sipariş ekranında şeridin tepesinde kendi maddesi ve seçim
+  penceresi (yıldızlı seçim hazır gelir, ek fiyatlar toplanır, eksik seçimle
+  eklenemez).
+- ✅ **Ürün panelinde düzen değişti:** fiyat/porsiyon bölümü en üste alındı; kod,
+  KDV, renk ve anahtarlar aşağı indi. Kategori seçimi çip yığını yerine katlanır
+  ağaç oldu (panel açılırken kapalı, üstünde seçili alt kategori sayacı).
+- ✅ **Hesap hataları düzeltildi (tarayıcıda test edilerek bulundu):** grupta
+  "2 seç" yazsa bile yalnızca yıldızlı satır sayılıyordu; maliyet girilmemiş
+  ürünlerde "₺0" yazıyordu; menü pahalıyken "kazanç ₺0" görünüyordu.
+- ⚠️ **Sessiz hata dersi:** kategori seçimi kaldırılırken kaydedilen nesneden
+  `kategoriIdler` düştü, `as MenuUrun` zorlaması da bunu derlemede gizledi —
+  "Kaydet'e basınca hiçbir şey olmuyor" haline geldi. Tip zorlaması kaldırıldı.
+
 ### 📌 SONRAKİ ADIMLAR
 **Menü Stüdyosu'nda kalanlar (Adisyo paritesi hedefi):**
-- KDV grubu
+- ~~KDV grubu~~ ✅ 3 Ağu 2026 — tanım + ürüne bağlama. Fiyata uygulanması (KDV
+  hariç anahtarı, tahsilatta döküm) ayrı madde olarak sıraya girdi.
 - ~~Seçenek grubunun porsiyon bazına taşınması~~ ✅ 2 Ağu 2026 (2. seans).
   Reçete stok modülüne bırakıldı.
-- Menü/kampanya ürünü (birden fazla ürün tek fiyata)
+- ~~Menü/kampanya ürünü~~ ✅ 3 Ağu 2026 — kendi sekmesinde, indirimden hesaplanan
+  fiyatla; sipariş ekranında seçim penceresiyle birlikte.
 - Mutfak grubu alanı (anlamı KDS gelince oluşur)
 - ~~**Toplu ürün işlemleri**~~ ✅ 2 Ağu 2026 — Toplu Düzenle sekmesi. KDV/mutfak
   grubu/stok sütunları o alanlar veri modeline girince eklenecek.
@@ -327,7 +365,7 @@ görüntüle" ve aktif/pasif ürün — 1 Ağu 2026 ikinci seansında tamamland�
 - Kategori bazlı **toplu işlem** modalı (kategorideki tüm ürünlere mutfak grubu / KDV / zorunlu seçim / stok / satılabilir uygulama)
 - ~~Seçenek sıralama~~ ✅ 2 Ağu (2. seans). Seçenekte **varsayılan işareti bilinçli olarak yapılmadı** — gerekçe bölüm 6, karar 30.
 - Ürün kartından **panele girmeden hızlı renk değiştirme**
-- **Menü/kampanya tanımının yapısı** netleşti: menü grubu = başlık + *seçilebilir ürün sayısı* + satırlar `{ ürün, porsiyon, miktar, ek fiyat, varsayılan }`; maliyet içerikten otomatik hesaplanıyor
+- ~~**Menü/kampanya tanımı**~~ ✅ 3 Ağu 2026 — yapıldı; ayrıntı bölüm 6, kararlar 34-38.
 
 **Sonra:**
 - Sipariş ekranı eksikleri — arama, not, ikram/iptal, misafir sayısı, turlar
@@ -398,6 +436,28 @@ görüntüle" ve aktif/pasif ürün — 1 Ağu 2026 ikinci seansında tamamland�
    bozar (sıralama tek kategoride yapılabiliyor); satış yaparken ise garson tek
    dokunuşta hepsini görmeli. Kategori satırındaki sayı da listelenen ürün
    sayısıyla birebir aynı — sayı 24 deyip liste 6 ürün göstermez. *(2 Ağu 2026)*
+
+34. **Kampanyalı menü ayrı bir sekmede yönetilir, ürün panelinde değil.** Önce
+   ürün paneline "Menü içeriği" bölümü olarak yapıldı; panel şişti ve normal ürün
+   düzenlerken göz yoruyordu. Menü ayrı bir kavram olduğu için Menü Stüdyosu'nda
+   kendi sekmesine alındı (sol liste + sağ düzenleme). Ürün paneli eski sadeliğine
+   döndü. *(3 Ağu 2026)*
+35. **Kampanyalı menünün kategorisi yoktur.** Satış ekranında kategori şeridinin
+   en üstündeki kendi maddesinde duruyor; ayrıca bir kategoriye bağlansa aynı şey
+   iki yerde görünürdü. Hiç kampanya yoksa madde de görünmez. Aynı sebeple
+   kampanyalar Toplu Düzenle tablosuna da girmiyor. *(3 Ağu 2026)*
+36. **Kampanya fiyatı elle girilmez, indirimden hesaplanır.** Menü kurulduktan
+   sonra yüzde ya da tutar olarak indirim girilir; satış fiyatı = içeriğin normal
+   toplamı − indirim. İndirimsiz ya da normal toplamdan pahalı menü kaydedilemez —
+   kampanya tanımı gereği ucuz olmalı. Karşılaştırma "tipik seçim" üzerinden
+   yapılır: her gruptan önce yıldızlılar, sayı yetmiyorsa kalan satırlar
+   (`grubunVarsayilanSecimi()`). *(3 Ağu 2026)*
+37. **Menü içine menü konulamaz.** İçerik listesinde kampanyalı menüler ve ürünün
+   kendisi görünmez; iç içe menü fiyat ve maliyet hesabını belirsizleştirirdi.
+   *(3 Ağu 2026)*
+38. **Bilinmeyen maliyet 0 değildir.** İçerik ürünlerinde maliyet girilmemişse
+   özet kutusunda "₺0" değil "—" gösterilir ve menüye maliyet yazılmaz; 0 yazmak
+   "maliyetsiz ürün" gibi okunup kâr raporunu bozardı. *(3 Ağu 2026)*
 
 ## 7. KOD PAYLAŞIM DÜZENİ
 - Kod GitHub'da: `github.com/ramazann1/garso` (şimdilik Public — final'de Private yapılacak)

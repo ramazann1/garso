@@ -41,6 +41,15 @@ export type MenuBirim = {
   id: number;
   ad: string;
   sira: number;
+  varsayilan: boolean;
+};
+
+export type MenuKdv = {
+  id: number;
+  ad: string;
+  oran: number; // yüzde: 10, 20...
+  varsayilan: boolean;
+  sira: number;
 };
 
 export type SiparisTuru = "masa" | "gelal" | "paket";
@@ -73,15 +82,34 @@ export type MenuSecenekGrubu = {
   liste: MenuSecenek[];
 };
 
+// Menü/kampanya ürünü: ürünün içinde gruplar, her grupta seçilebilir satırlar.
+export type MenuIcerikSatiri = {
+  id?: number;
+  urunId: number;
+  porsiyonId?: number;
+  miktar: number;
+  ekFiyat: number;
+  varsayilan: boolean;
+};
+
+export type MenuIcerikGrubu = {
+  id?: number;
+  baslik: string;
+  secilebilir: number; // müşteri bu gruptan kaç satır seçebilir
+  satirlar: MenuIcerikSatiri[];
+};
+
 export type MenuUrun = {
   id?: number;
   ad: string;
   kod?: string;
+  kdvId?: number; // boşsa varsayılan KDV grubu geçerli
   renk?: string;
   favori: boolean;
   satistaGorunur: boolean;
   mutfaktaGorunur: boolean;
   porsiyonlar: MenuPorsiyon[];
+  menuGruplari: MenuIcerikGrubu[]; // boşsa normal ürün
   kategoriIdler: number[];
   kategoriSira: Record<number, number>; // ürünün her kategorideki kendi sırası
 };

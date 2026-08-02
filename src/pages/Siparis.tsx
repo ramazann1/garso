@@ -3,6 +3,7 @@ import { useNavigate, useParams } from "react-router-dom";
 import { menuGetir, agacUrunleri, altKategoriler, porsiyonFiyat } from "../menu";
 import { adisyonGetir, adisyonKaydet } from "../adisyonlar";
 import UrunSecim from "../components/UrunSecim";
+import KampanyaSecim from "../components/KampanyaSecim";
 import TahsilatPanel from "../components/TahsilatPanel";
 import IndirimModal from "../components/IndirimModal";
 import type { MenuKategori, MenuSecenekGrubu, MenuUrun, SepetKalemi, Tahsilat } from "../types";
@@ -18,6 +19,8 @@ export default function Siparis() {
   const navigate = useNavigate();
   const [kategoriler, setKategoriler] = useState<MenuKategori[]>([]);
   const [urunler, setUrunler] = useState<MenuUrun[]>([]);
+  // Menü içeriğindeki ürünler satışta gizli olabilir; adları yine de gösterilmeli.
+  const [tumUrunler, setTumUrunler] = useState<MenuUrun[]>([]);
   const [gruplar, setGruplar] = useState<MenuSecenekGrubu[]>([]);
   const [seciliId, setSeciliId] = useState<number | null>(null);
   const [menuYukleniyor, setMenuYukleniyor] = useState(true);
@@ -25,6 +28,8 @@ export default function Siparis() {
   const [indirim, setIndirim] = useState(0);
   const [kayitliTahsilatlar, setKayitliTahsilatlar] = useState<Tahsilat[]>([]);
   const [secimUrunu, setSecimUrunu] = useState<MenuUrun | null>(null);
+  const [kampanyaUrunu, setKampanyaUrunu] = useState<MenuUrun | null>(null);
+  const [kampanyaAcik, setKampanyaAcik] = useState(false);
   const [tahsilatAcik, setTahsilatAcik] = useState(false);
   const [indirimAcik, setIndirimAcik] = useState(false);
   const [yukleniyor, setYukleniyor] = useState(true);
@@ -35,6 +40,7 @@ export default function Siparis() {
       const acikKategoriler = veri.kategoriler.filter((k) => k.satistaGorunur);
       setKategoriler(acikKategoriler);
       setUrunler(veri.urunler.filter((u) => u.satistaGorunur));
+      setTumUrunler(veri.urunler);
       setGruplar(veri.gruplar);
       setSeciliId(acikKategoriler.find((k) => !k.ustId)?.id ?? acikKategoriler[0]?.id ?? null);
       setMenuYukleniyor(false);
@@ -58,9 +64,18 @@ export default function Siparis() {
   );
   const secili = kategoriler.find((k) => k.id === seciliId) ?? anaKategoriler[0];
   const acikUstId = secili?.ustId ?? secili?.id;
+
+  // Kampanyalı menüler şeridin en üstünde kendi maddesinde toplanır; hiç yoksa
+  // madde de görünmez.
+  const kampanyalar = urunler.filter((u) => u.menuGruplari.length > 0);
+
   // Üst kategoriye basınca altındakilerin ürünleri de geliyor — garson tek dokunuşta
   // hepsini görsün; alt kategoriye basınca liste ona daralıyor.
-  const kategoriUrunleri = secili ? agacUrunleri(urunler, kategoriler, secili.id) : [];
+  const listelenen = kampanyaAcik
+    ? kampanyalar
+    : secili
+      ? agacUrunleri(urunler, kategoriler, secili.id).filter((u) => !u.menuGruplari.length)
+      : [];
 
   const sepeteEkle = (ad: string, fiyat: number, porsiyon?: string, secimler?: string[]) => {
     const anahtar = [ad, porsiyon, ...(secimler ?? [])].join("|");
@@ -92,12 +107,21 @@ export default function Siparis() {
 
       <div className="siparis-govde">
         <nav className="kategori-serit">
+          {kampanyalar.length > 0 && (
+            <button
+              className={kampanyaAcik ? "kategori kampanya aktif" : "kategori kampanya"}
+              onClick={() => setKampanyaAcik(true)}
+            >
+              Kampanyalı Menüler
+            </button>
+          )}
+
           {anaKategoriler.map((k) => (
             <div key={k.id} className="kategori-grup">
               <button
-                className={k.id === secili?.id ? "kategori aktif" : "kategori"}
+                className={!kampanyaAcik && k.id === secili?.id ? "kategori aktif" : "kategori"}
                 style={{ borderColor: k.renk }}
-                onClick={() => setSeciliId(k.id)}
+                onClick={() => { setKampanyaAcik(false); setSeciliId(k.id); }}
               >
                 {k.ad}
               </button>
@@ -106,9 +130,11 @@ export default function Siparis() {
                 altKategoriler(kategoriler, k.id).map((a) => (
                   <button
                     key={a.id}
-                    className={a.id === secili?.id ? "kategori alt aktif" : "kategori alt"}
+                    className={
+                      !kampanyaAcik && a.id === secili?.id ? "kategori alt aktif" : "kategori alt"
+                    }
                     style={{ borderColor: a.renk }}
-                    onClick={() => setSeciliId(a.id)}
+                    onClick={() => { setKampanyaAcik(false); setSeciliId(a.id); }}
                   >
                     <em className="dal" />
                     {a.ad}
@@ -123,14 +149,16 @@ export default function Siparis() {
 
           {!menuYukleniyor && (
             <div className="urun-grid">
-              {kategoriUrunleri.map((u) => (
+              {listelenen.map((u) => (
                 <button
                   key={u.id}
-                  className="urun-kart"
+                  className={u.menuGruplari.length ? "urun-kart kampanya" : "urun-kart"}
                   onClick={() =>
-                    u.porsiyonlar.length > 1 || u.porsiyonlar.some((p) => p.grupIdler.length > 0)
-                      ? setSecimUrunu(u)
-                      : sepeteEkle(u.ad, anaFiyat(u))
+                    u.menuGruplari.length
+                      ? setKampanyaUrunu(u)
+                      : u.porsiyonlar.length > 1 || u.porsiyonlar.some((p) => p.grupIdler.length > 0)
+                        ? setSecimUrunu(u)
+                        : sepeteEkle(u.ad, anaFiyat(u))
                   }
                 >
                   <span>{u.ad}</span>
@@ -235,6 +263,18 @@ export default function Siparis() {
           mevcutIndirim={indirim}
           onKapat={() => setIndirimAcik(false)}
           onUygula={(tutar: number) => { setIndirim(tutar); setIndirimAcik(false); }}
+        />
+      )}
+
+      {kampanyaUrunu && (
+        <KampanyaSecim
+          urun={kampanyaUrunu}
+          urunler={tumUrunler}
+          onKapat={() => setKampanyaUrunu(null)}
+          onEkle={(fiyat, secimler) => {
+            sepeteEkle(kampanyaUrunu.ad, fiyat, undefined, secimler);
+            setKampanyaUrunu(null);
+          }}
         />
       )}
 

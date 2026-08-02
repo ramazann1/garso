@@ -2,6 +2,9 @@ import { supabase } from "./supabase";
 import type {
   MenuBirim,
   MenuKategori,
+  MenuIcerikGrubu,
+  MenuIcerikSatiri,
+  MenuKdv,
   MenuPorsiyon,
   MenuSecenekGrubu,
   MenuUrun,
@@ -24,6 +27,61 @@ export function kategoriUrunleri(urunler: MenuUrun[], kategoriId: number) {
   return urunler
     .filter((u) => u.kategoriIdler.includes(kategoriId))
     .sort((a, b) => (a.kategoriSira[kategoriId] ?? 0) - (b.kategoriSira[kategoriId] ?? 0));
+}
+
+// Yeni ürünün ilk porsiyonu hangi birimle açılsın: işaretli varsayılan →
+// yoksa "Tam" → o da yoksa listedeki ilk birim.
+export function varsayilanBirim(birimler: MenuBirim[]) {
+  return (
+    birimler.find((b) => b.varsayilan) ??
+    birimler.find((b) => b.ad.toLocaleLowerCase("tr") === "tam") ??
+    birimler[0]
+  );
+}
+
+// Bir grubun "tipik" seçimi: önce yıldızlılar, sayı yetmiyorsa kalan satırlardan
+// tamamlanır. Maliyet ve karşılaştırma hesapları bunun üzerinden yürür.
+export function grubunVarsayilanSecimi(g: MenuIcerikGrubu) {
+  const yildizli = g.satirlar.filter((s) => s.varsayilan);
+  const digerleri = g.satirlar.filter((s) => !s.varsayilan);
+  return [...yildizli, ...digerleri].slice(0, g.secilebilir);
+}
+
+// Menü içindeki satırın hangi porsiyonu kullandığı — porsiyon seçilmemişse
+// ürünün varsayılanı geçerli.
+export function icerikPorsiyonu(s: MenuIcerikSatiri, urunler: MenuUrun[]) {
+  const urun = urunler.find((u) => u.id === s.urunId);
+  return (
+    urun?.porsiyonlar.find((p) => p.id === s.porsiyonId) ??
+    urun?.porsiyonlar.find((p) => p.varsayilan) ??
+    urun?.porsiyonlar[0]
+  );
+}
+
+// Menü ürününün maliyeti içindekilerden çıkar, elle girilmez.
+export function menuMaliyeti(gruplar: MenuIcerikGrubu[], urunler: MenuUrun[]) {
+  let toplam = 0;
+  for (const g of gruplar) {
+    for (const s of grubunVarsayilanSecimi(g)) {
+      toplam += (icerikPorsiyonu(s, urunler)?.maliyet ?? 0) * s.miktar;
+    }
+  }
+  return toplam;
+}
+
+// İçerik ürünlerinin hepsinde maliyet girili mi — girili değilse "₺0" yanıltıcı olur.
+export function maliyetEksikMi(gruplar: MenuIcerikGrubu[], urunler: MenuUrun[]) {
+  return gruplar.some((g) =>
+    grubunVarsayilanSecimi(g).some((s) => icerikPorsiyonu(s, urunler)?.maliyet == null)
+  );
+}
+
+// En fazla bu kadar KDV grubu tanımlanabilir — Adisyo'da da liste kısa tutulmuş.
+export const KDV_SINIRI = 8;
+
+// Ürünün KDV grubu: kendi seçtiği → yoksa varsayılan işaretli grup.
+export function urunKdv(u: MenuUrun, kdvler: MenuKdv[]) {
+  return kdvler.find((k) => k.id === u.kdvId) ?? kdvler.find((k) => k.varsayilan);
 }
 
 export function altKategoriler(hepsi: MenuKategori[], ustId: number) {
@@ -58,7 +116,7 @@ export function agacUrunleri(urunler: MenuUrun[], kategoriler: MenuKategori[], k
 const say = (v: any) => (v == null ? undefined : Number(v));
 
 export async function menuGetir() {
-  const [kat, urn, grp, brm] = await Promise.all([
+  const [kat, urn, grp, brm, kdv] = await Promise.all([
     supabase
       .from("kategoriler")
       .select("id, ad, renk, sira, satista_gorunur, mutfakta_gorunur, ust_id")
@@ -66,13 +124,14 @@ export async function menuGetir() {
     supabase
       .from("urunler")
       .select(
-        "id, ad, kod, renk, favori, satista_gorunur, mutfakta_gorunur, porsiyonlar(id, birim_id, fiyat, maliyet, barkod, masa_fiyat, gelal_fiyat, paket_fiyat, varsayilan, sira, porsiyon_secenek_gruplari(grup_id)), urun_kategorileri(kategori_id, sira)"
+        "id, ad, kod, kdv_id, renk, favori, satista_gorunur, mutfakta_gorunur, porsiyonlar(id, birim_id, fiyat, maliyet, barkod, masa_fiyat, gelal_fiyat, paket_fiyat, varsayilan, sira, porsiyon_secenek_gruplari(grup_id)), urun_kategorileri(kategori_id, sira), menu_gruplari(id, baslik, secilebilir_adet, sira, menu_satirlari(id, urun_id, porsiyon_id, miktar, ek_fiyat, varsayilan, sira))"
       ),
     supabase
       .from("secenek_gruplari")
       .select("id, ad, tekli, zorunlu, sira, secenekler(id, ad, ek_fiyat, sira)")
       .order("sira"),
-    supabase.from("birimler").select("id, ad, sira").order("sira"),
+    supabase.from("birimler").select("id, ad, sira, varsayilan").order("sira"),
+    supabase.from("kdv_gruplari").select("id, ad, oran, varsayilan, sira").order("sira"),
   ]);
 
   const kategoriler: MenuKategori[] = kategoriAgaci(
@@ -87,11 +146,13 @@ export async function menuGetir() {
     }))
   );
   const birimler = (brm.data ?? []) as MenuBirim[];
+  const kdvler: MenuKdv[] = (kdv.data ?? []).map((k: any) => ({ ...k, oran: Number(k.oran) }));
 
   const urunler: MenuUrun[] = (urn.data ?? []).map((u: any) => ({
     id: u.id,
     ad: u.ad,
     kod: u.kod ?? undefined,
+    kdvId: u.kdv_id ?? undefined,
     renk: u.renk ?? undefined,
     favori: u.favori,
     satistaGorunur: u.satista_gorunur,
@@ -112,6 +173,25 @@ export async function menuGetir() {
         varsayilan: p.varsayilan,
         grupIdler: (p.porsiyon_secenek_gruplari ?? []).map((x: any) => x.grup_id),
       })),
+    menuGruplari: (u.menu_gruplari ?? [])
+      .slice()
+      .sort((a: any, b: any) => a.sira - b.sira)
+      .map((g: any) => ({
+        id: g.id,
+        baslik: g.baslik,
+        secilebilir: g.secilebilir_adet,
+        satirlar: (g.menu_satirlari ?? [])
+          .slice()
+          .sort((a: any, b: any) => a.sira - b.sira)
+          .map((s: any) => ({
+            id: s.id,
+            urunId: s.urun_id,
+            porsiyonId: s.porsiyon_id ?? undefined,
+            miktar: Number(s.miktar),
+            ekFiyat: Number(s.ek_fiyat),
+            varsayilan: s.varsayilan,
+          })),
+      })),
     kategoriIdler: (u.urun_kategorileri ?? []).map((x: any) => x.kategori_id),
     kategoriSira: Object.fromEntries(
       (u.urun_kategorileri ?? []).map((x: any) => [x.kategori_id, x.sira])
@@ -129,7 +209,7 @@ export async function menuGetir() {
       .map((s: any) => ({ id: s.id, ad: s.ad, ekFiyat: Number(s.ek_fiyat) })),
   }));
 
-  return { kategoriler, urunler, gruplar, birimler };
+  return { kategoriler, urunler, gruplar, birimler, kdvler };
 }
 
 export type KategoriAlanlari = {
@@ -218,6 +298,7 @@ export async function urunKaydet(u: MenuUrun) {
   const alanlar = {
     ad: u.ad,
     kod: u.kod?.trim() || null,
+    kdv_id: u.kdvId ?? null,
     renk: u.renk ?? null,
     favori: u.favori,
     satista_gorunur: u.satistaGorunur,
@@ -284,6 +365,39 @@ export async function urunKaydet(u: MenuUrun) {
     await supabase.from("urun_kategorileri").insert(baglar);
   }
 
+  await menuGruplariYaz(id, u.menuGruplari);
+}
+
+// Menü grupları silinip yeniden yazılıyor — satırlara bağlı başka kayıt yok,
+// sipariş kalemleri ürüne bağlı.
+async function menuGruplariYaz(urunId: number, gruplar: MenuIcerikGrubu[]) {
+  await supabase.from("menu_gruplari").delete().eq("urun_id", urunId);
+
+  for (const [i, g] of gruplar.entries()) {
+    const { data } = await supabase
+      .from("menu_gruplari")
+      .insert({
+        urun_id: urunId,
+        baslik: g.baslik,
+        secilebilir_adet: g.secilebilir,
+        sira: i + 1,
+      })
+      .select("id")
+      .single();
+
+    if (!data?.id || !g.satirlar.length) continue;
+    await supabase.from("menu_satirlari").insert(
+      g.satirlar.map((s, j) => ({
+        grup_id: data.id,
+        urun_id: s.urunId,
+        porsiyon_id: s.porsiyonId ?? null,
+        miktar: s.miktar,
+        ek_fiyat: s.ekFiyat,
+        varsayilan: s.varsayilan,
+        sira: j + 1,
+      }))
+    );
+  }
 }
 
 // Kopya, kaynağın bulunduğu her kategoride onun hemen ardına yerleşir.
@@ -294,6 +408,7 @@ export async function urunKopyala(kaynak: MenuUrun, hepsi: MenuUrun[]) {
     .insert({
       ad: `${kaynak.ad} (kopya)`,
       kod: null,
+      kdv_id: kaynak.kdvId ?? null,
       renk: kaynak.renk ?? null,
       favori: kaynak.favori,
       satista_gorunur: kaynak.satistaGorunur,
@@ -315,6 +430,8 @@ export async function urunKopyala(kaynak: MenuUrun, hepsi: MenuUrun[]) {
       await porsiyonGruplariYaz(yeni.id, p.grupIdler);
     }
   }
+
+  await menuGruplariYaz(id, kaynak.menuGruplari);
 
   for (const kategoriId of kaynak.kategoriIdler) {
     const sirali = kategoriUrunleri(hepsi, kategoriId).map((u) => u.id!);
@@ -365,6 +482,7 @@ export type TopluUrun = {
   id: number;
   ad: string;
   kod?: string;
+  kdvId?: number;
   favori: boolean;
   satistaGorunur: boolean;
   mutfaktaGorunur: boolean;
@@ -390,6 +508,7 @@ export async function topluKaydet(urunler: TopluUrun[], porsiyonlar: TopluPorsiy
         .update({
           ad: u.ad,
           kod: u.kod?.trim() || null,
+          kdv_id: u.kdvId ?? null,
           favori: u.favori,
           satista_gorunur: u.satistaGorunur,
           mutfakta_gorunur: u.mutfaktaGorunur,
@@ -448,7 +567,10 @@ export async function grupSil(id: number) {
   await supabase.from("secenek_gruplari").delete().eq("id", id);
 }
 
-export async function birimleriKaydet(liste: { id?: number; ad: string }[], silinenler: number[]) {
+export async function birimleriKaydet(
+  liste: { id?: number; ad: string; varsayilan?: boolean }[],
+  silinenler: number[]
+) {
   if (silinenler.length) {
     await supabase.from("birimler").delete().in("id", silinenler);
   }
@@ -456,11 +578,48 @@ export async function birimleriKaydet(liste: { id?: number; ad: string }[], sili
   const yeniler = liste.filter((b) => !b.id);
   if (yeniler.length) {
     await supabase.from("birimler").insert(
-      yeniler.map((b) => ({ ad: b.ad, sira: liste.indexOf(b) + 1 }))
+      yeniler.map((b) => ({
+        ad: b.ad,
+        sira: liste.indexOf(b) + 1,
+        varsayilan: !!b.varsayilan,
+      }))
     );
   }
 
   for (const [i, b] of liste.entries()) {
-    if (b.id) await supabase.from("birimler").update({ ad: b.ad, sira: i + 1 }).eq("id", b.id);
+    if (b.id)
+      await supabase
+        .from("birimler")
+        .update({ ad: b.ad, sira: i + 1, varsayilan: !!b.varsayilan })
+        .eq("id", b.id);
+  }
+}
+export type KdvSatiri = { id?: number; ad: string; oran: number; varsayilan: boolean };
+
+export async function kdvKaydet(liste: KdvSatiri[], silinenler: number[]) {
+  if (silinenler.length) {
+    // Silinen grubu kullanan ürünler varsayılana düşer.
+    await supabase.from("urunler").update({ kdv_id: null }).in("kdv_id", silinenler);
+    await supabase.from("kdv_gruplari").delete().in("id", silinenler);
+  }
+
+  const yeniler = liste.filter((k) => !k.id);
+  if (yeniler.length) {
+    await supabase.from("kdv_gruplari").insert(
+      yeniler.map((k) => ({
+        ad: k.ad,
+        oran: k.oran,
+        varsayilan: k.varsayilan,
+        sira: liste.indexOf(k) + 1,
+      }))
+    );
+  }
+
+  for (const [i, k] of liste.entries()) {
+    if (k.id)
+      await supabase
+        .from("kdv_gruplari")
+        .update({ ad: k.ad, oran: k.oran, varsayilan: k.varsayilan, sira: i + 1 })
+        .eq("id", k.id);
   }
 }

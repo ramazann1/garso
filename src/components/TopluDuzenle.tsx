@@ -2,7 +2,7 @@ import { useEffect, useMemo, useState } from "react";
 import { kategoriUrunleri } from "../menu";
 import { paraMetin, paraSayi, paraYaz } from "../para";
 import type { TopluPorsiyon, TopluUrun } from "../menu";
-import type { MenuBirim, MenuKategori, MenuPorsiyon, MenuUrun } from "../types";
+import type { MenuBirim, MenuKategori, MenuKdv, MenuPorsiyon, MenuUrun } from "../types";
 
 type PorsiyonTaslak = {
   id?: number;
@@ -18,19 +18,22 @@ type UrunTaslak = {
   id: number;
   ad: string;
   kod: string;
+  kdvId?: number;
   favori: boolean;
   satistaGorunur: boolean;
   mutfaktaGorunur: boolean;
   porsiyonlar: PorsiyonTaslak[];
 };
 
+// Kampanyalı menüler burada düzenlenmez — kendi sekmesinde yönetiliyor.
 const taslakYap = (urunler: MenuUrun[]): UrunTaslak[] =>
   urunler
-    .filter((u) => u.id)
+    .filter((u) => u.id && !u.menuGruplari.length)
     .map((u) => ({
       id: u.id!,
       ad: u.ad,
       kod: u.kod ?? "",
+      kdvId: u.kdvId,
       favori: u.favori,
       satistaGorunur: u.satistaGorunur,
       mutfaktaGorunur: u.mutfaktaGorunur,
@@ -48,6 +51,7 @@ const taslakYap = (urunler: MenuUrun[]): UrunTaslak[] =>
 const urunFarki = (t: UrunTaslak, a: MenuUrun) =>
   t.ad.trim() !== a.ad ||
   t.kod.trim() !== (a.kod ?? "") ||
+  t.kdvId !== a.kdvId ||
   t.favori !== a.favori ||
   t.satistaGorunur !== a.satistaGorunur ||
   t.mutfaktaGorunur !== a.mutfaktaGorunur;
@@ -64,6 +68,7 @@ export default function TopluDuzenle({
   urunler,
   kategoriler,
   birimler,
+  kdvler,
   onKaydet,
   onUyari,
   onBildirim,
@@ -72,6 +77,7 @@ export default function TopluDuzenle({
   urunler: MenuUrun[];
   kategoriler: MenuKategori[];
   birimler: MenuBirim[];
+  kdvler: MenuKdv[];
   onKaydet: (u: TopluUrun[], p: TopluPorsiyon[]) => Promise<string | undefined>;
   onUyari: (mesaj: string) => void;
   onBildirim: (mesaj: string) => void;
@@ -87,6 +93,8 @@ export default function TopluDuzenle({
   useEffect(() => setTaslak(taslakYap(urunler)), [urunler]);
 
   const asil = useMemo(() => new Map(urunler.filter((u) => u.id).map((u) => [u.id!, u])), [urunler]);
+
+  const varsayilanKdv = kdvler.find((k) => k.varsayilan);
 
   const kategoriAdlari = (u: MenuUrun) =>
     kategoriler.filter((k) => u.kategoriIdler.includes(k.id)).map((k) => k.ad).join(", ");
@@ -134,6 +142,7 @@ export default function TopluDuzenle({
           id: t.id,
           ad: t.ad.trim(),
           kod: t.kod.trim() || undefined,
+          kdvId: t.kdvId,
           favori: t.favori,
           satistaGorunur: t.satistaGorunur,
           mutfaktaGorunur: t.mutfaktaGorunur,
@@ -303,6 +312,7 @@ export default function TopluDuzenle({
               <th className="sol">Ürün</th>
               <th>Kod</th>
               {kategoriId === "tumu" && <th>Kategori</th>}
+              {!!kdvler.length && <th>KDV</th>}
               <th>Porsiyon</th>
               <th className="sag">Fiyat</th>
               <th className="sag">Maliyet</th>
@@ -344,6 +354,26 @@ export default function TopluDuzenle({
                   {kategoriId === "tumu" && (
                     <td className="toplu-kategori-ad" rowSpan={satirSayisi}>
                       {kategoriAdlari(a) || "—"}
+                    </td>
+                  )}
+                  {!!kdvler.length && (
+                    <td className="toplu-kdv" rowSpan={satirSayisi}>
+                      <select
+                        className={t.kdvId !== a.kdvId ? "degisti" : ""}
+                        value={t.kdvId ?? ""}
+                        onChange={(e) =>
+                          urunDegis(t.id, {
+                            kdvId: e.target.value ? Number(e.target.value) : undefined,
+                          })
+                        }
+                      >
+                        <option value="">
+                          {varsayilanKdv ? `%${varsayilanKdv.oran} (varsayılan)` : "Varsayılan"}
+                        </option>
+                        {kdvler.map((k) => (
+                          <option key={k.id} value={k.id}>%{k.oran} · {k.ad}</option>
+                        ))}
+                      </select>
                     </td>
                   )}
                 </>

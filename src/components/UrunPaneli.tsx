@@ -2,7 +2,15 @@ import { useState } from "react";
 import Anahtar from "./Anahtar";
 import RenkSecici from "./RenkSecici";
 import { paraMetin, paraSayi, paraYaz } from "../para";
-import type { MenuBirim, MenuKategori, MenuPorsiyon, MenuSecenekGrubu, MenuUrun } from "../types";
+import { altKategoriler, varsayilanBirim } from "../menu";
+import type {
+  MenuBirim,
+  MenuKategori,
+  MenuKdv,
+  MenuPorsiyon,
+  MenuSecenekGrubu,
+  MenuUrun,
+} from "../types";
 
 // Para alanları taslakta metin, kaydederken sayı. Boş bırakılan alan 0 değil
 // "tanımsız" demektir — tür fiyatında bu ayrım önemli.
@@ -48,11 +56,13 @@ const porsiyonYap = (t: PorsiyonTaslak): MenuPorsiyon => ({
   grupIdler: t.grupIdler,
 });
 
+
 export default function UrunPaneli({
   urun,
   kategoriler,
   gruplar,
   birimler,
+  kdvler,
   onKapat,
   onKaydet,
   onSil,
@@ -61,13 +71,14 @@ export default function UrunPaneli({
   kategoriler: MenuKategori[];
   gruplar: MenuSecenekGrubu[];
   birimler: MenuBirim[];
+  kdvler: MenuKdv[];
   onKapat: () => void;
   onKaydet: (u: MenuUrun) => void;
   onSil?: () => void;
 }) {
   const yeniPorsiyon = (varsayilan: boolean): PorsiyonTaslak => ({
-    birimId: birimler[0]?.id,
-    ad: birimler[0]?.ad ?? "",
+    birimId: varsayilanBirim(birimler)?.id,
+    ad: varsayilanBirim(birimler)?.ad ?? "",
     fiyat: "",
     maliyet: "",
     barkod: "",
@@ -80,6 +91,7 @@ export default function UrunPaneli({
 
   const [ad, setAd] = useState(urun.ad);
   const [kod, setKod] = useState(urun.kod ?? "");
+  const [kdvId, setKdvId] = useState(urun.kdvId);
   const [renk, setRenk] = useState(urun.renk);
   const [favori, setFavori] = useState(urun.favori);
   const [satistaGorunur, setSatistaGorunur] = useState(urun.satistaGorunur);
@@ -90,6 +102,17 @@ export default function UrunPaneli({
   const [kategoriIdler, setKategoriIdler] = useState<number[]>(urun.kategoriIdler);
   const [acik, setAcik] = useState<string[]>(["porsiyon"]);
   const [detayli, setDetayli] = useState<number[]>([]);
+
+  const varsayilanKdv = kdvler.find((k) => k.varsayilan);
+  // Alt kategoriler panel açılırken kapalı gelir; üstündeki rozet kaç alt
+  // kategorinin seçili olduğunu gösterir, seçim gizli kalmasın diye.
+  const anaKategoriler = kategoriler.filter(
+    (k) => !k.ustId || !kategoriler.some((x) => x.id === k.ustId)
+  );
+  const [altAcik, setAltAcik] = useState<number[]>([]);
+  const altKatla = (id: number) =>
+    setAltAcik((l) => (l.includes(id) ? l.filter((x) => x !== id) : [...l, id]));
+
 
   const katla = (bolum: string) =>
     setAcik((l) => (l.includes(bolum) ? l.filter((x) => x !== bolum) : [...l, bolum]));
@@ -142,6 +165,7 @@ export default function UrunPaneli({
       ...urun,
       ad: ad.trim(),
       kod: kod.trim() || undefined,
+      kdvId,
       renk,
       favori,
       satistaGorunur,
@@ -164,32 +188,6 @@ export default function UrunPaneli({
             <span>Ürün adı</span>
             <input value={ad} onChange={(e) => setAd(e.target.value)} placeholder="Türk Kahvesi" autoFocus />
           </div>
-
-          <div className="alan">
-            <span>Ürün kodu</span>
-            <input value={kod} onChange={(e) => setKod(e.target.value)} placeholder="Zorunlu değil" />
-          </div>
-
-          <div className="alan">
-            <span>Kart rengi</span>
-            <RenkSecici renk={renk} degistir={setRenk} renksizOlur />
-          </div>
-
-          <button className={favori ? "favori-tus aktif" : "favori-tus"} onClick={() => setFavori(!favori)}>
-            {favori ? "★ Favori üründe" : "☆ Favorilere ekle"}
-          </button>
-
-          <Anahtar
-            etiket="Satış ekranında göster"
-            ipucu="Kapalıysa sipariş ekranında çıkmaz"
-            acik={satistaGorunur}
-            degistir={setSatistaGorunur}
-          />
-          <Anahtar
-            etiket="Mutfak ekranında göster"
-            acik={mutfaktaGorunur}
-            degistir={setMutfaktaGorunur}
-          />
 
           <div className="bolum">
             <button className="bolum-basi" onClick={() => katla("porsiyon")}>
@@ -343,21 +341,98 @@ export default function UrunPaneli({
             {acik.includes("kategori") && (
               <>
                 <p className="ipucu">Ürün birden fazla kategoride görünebilir.</p>
-                <div className="cipler">
-                  {kategoriler.map((k) => (
-                    <button
-                      key={k.id}
-                      className={kategoriIdler.includes(k.id) ? "cip secili" : "cip"}
-                      onClick={() => secimDegis(kategoriIdler, setKategoriIdler, k.id)}
-                    >
-                      <span className="renk-nokta" style={{ background: k.renk }} />
-                      {k.ustId ? `↳ ${k.ad}` : k.ad}
-                    </button>
-                  ))}
+                <div className="kategori-agac">
+                  {anaKategoriler.map((k) => {
+                    const altlar = altKategoriler(kategoriler, k.id);
+                    const seciliAlt = altlar.filter((a) => kategoriIdler.includes(a.id)).length;
+                    return (
+                      <div key={k.id}>
+                        <div className="agac-satir">
+                          <button
+                            className={kategoriIdler.includes(k.id) ? "agac-ad secili" : "agac-ad"}
+                            onClick={() => secimDegis(kategoriIdler, setKategoriIdler, k.id)}
+                          >
+                            <span className="renk-nokta" style={{ background: k.renk }} />
+                            {k.ad}
+                          </button>
+                          {altlar.length > 0 && (
+                            <button
+                              className="agac-ok"
+                              onClick={() => altKatla(k.id)}
+                              title="Alt kategoriler"
+                            >
+                              {seciliAlt > 0 && <em className="agac-rozet">{seciliAlt}</em>}
+                              <em className={altAcik.includes(k.id) ? "ok acik" : "ok"}>›</em>
+                            </button>
+                          )}
+                        </div>
+
+                        {altAcik.includes(k.id) &&
+                          altlar.map((a) => (
+                            <button
+                              key={a.id}
+                              className={
+                                kategoriIdler.includes(a.id) ? "agac-ad alt secili" : "agac-ad alt"
+                              }
+                              onClick={() => secimDegis(kategoriIdler, setKategoriIdler, a.id)}
+                            >
+                              <span className="renk-nokta" style={{ background: a.renk }} />
+                              {a.ad}
+                            </button>
+                          ))}
+                      </div>
+                    );
+                  })}
                 </div>
               </>
             )}
           </div>
+
+          <div className="alan">
+            <span>Ürün kodu</span>
+            <input value={kod} onChange={(e) => setKod(e.target.value)} placeholder="Zorunlu değil" />
+          </div>
+
+          <div className="alan">
+            <span>KDV grubu</span>
+            <select
+              value={kdvId ?? ""}
+              onChange={(e) => setKdvId(e.target.value ? Number(e.target.value) : undefined)}
+              disabled={!kdvler.length}
+            >
+              <option value="">
+                {varsayilanKdv
+                  ? `Varsayılan (${varsayilanKdv.ad} %${varsayilanKdv.oran})`
+                  : "Varsayılan"}
+              </option>
+              {kdvler.map((k) => (
+                <option key={k.id} value={k.id}>
+                  {k.ad} — %{k.oran}
+                </option>
+              ))}
+            </select>
+          </div>
+
+          <div className="alan">
+            <span>Kart rengi</span>
+            <RenkSecici renk={renk} degistir={setRenk} renksizOlur />
+          </div>
+
+          <button className={favori ? "favori-tus aktif" : "favori-tus"} onClick={() => setFavori(!favori)}>
+            {favori ? "★ Favori üründe" : "☆ Favorilere ekle"}
+          </button>
+
+          <Anahtar
+            etiket="Satış ekranında göster"
+            ipucu="Kapalıysa sipariş ekranında çıkmaz"
+            acik={satistaGorunur}
+            degistir={setSatistaGorunur}
+          />
+          <Anahtar
+            etiket="Mutfak ekranında göster"
+            acik={mutfaktaGorunur}
+            degistir={setMutfaktaGorunur}
+          />
 
         </div>
 

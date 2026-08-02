@@ -1243,6 +1243,27 @@ body {
   border-color: var(--mercan);
 }
 
+/* Panel içindeki seçim kutusu, yanındaki metin alanlarıyla aynı görünsün. */
+.alan select {
+  width: 100%;
+  padding: 11px 12px;
+  border: 1px solid #eee6dc;
+  border-radius: 11px;
+  font-size: 15px;
+  font-family: inherit;
+  color: var(--metin);
+  background: var(--zemin);
+  cursor: pointer;
+  transition: border-color 0.15s ease, box-shadow 0.15s ease, background 0.15s ease;
+}
+
+.alan select:focus {
+  outline: none;
+  background: var(--kart);
+  border-color: var(--mercan);
+  box-shadow: 0 0 0 3px rgba(255, 122, 89, 0.16);
+}
+
 .renk-secim {
   display: flex;
   flex-wrap: wrap;
@@ -1666,6 +1687,275 @@ body {
 .cip small {
   font-size: 11px;
   opacity: 0.7;
+}
+
+/* Kampanyalı Menü sekmesi — solda liste, sağda düzenleme. */
+
+.kampanya-sekme {
+  display: grid;
+  grid-template-columns: 260px 1fr;
+  gap: 18px;
+  align-items: start;
+}
+
+.kampanya-liste {
+  background: var(--kart);
+  border: 1px solid #f2e9df;
+  border-radius: 16px;
+  padding: 14px;
+}
+
+.kampanya-satir {
+  display: flex;
+  flex-direction: column;
+  gap: 3px;
+  width: 100%;
+  padding: 10px 12px;
+  margin-bottom: 6px;
+  border: 1px solid #eee6dc;
+  border-radius: 11px;
+  background: var(--zemin);
+  color: var(--metin);
+  font-family: inherit;
+  font-size: 14px;
+  text-align: left;
+  cursor: pointer;
+}
+
+.kampanya-satir small {
+  font-size: 12px;
+  color: var(--soluk);
+}
+
+.kampanya-satir.secili {
+  background: var(--mercan);
+  border-color: var(--mercan);
+  color: #fff;
+}
+
+.kampanya-satir.secili small {
+  color: rgba(255, 255, 255, 0.85);
+}
+
+.kampanya-duzen {
+  background: var(--kart);
+  border: 1px solid #f2e9df;
+  border-radius: 16px;
+  padding: 18px;
+}
+
+.kampanya-baslik {
+  display: grid;
+  grid-template-columns: 2fr 1fr;
+  gap: 12px;
+}
+
+.kampanya-ozet {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 18px;
+  padding: 14px;
+  margin: 14px 0;
+  border-radius: 13px;
+  background: var(--zemin);
+}
+
+.kampanya-ozet div {
+  display: flex;
+  flex-direction: column;
+  gap: 3px;
+}
+
+.kampanya-ozet span {
+  font-size: 12px;
+  color: var(--soluk);
+}
+
+.kampanya-ozet .kazanc strong {
+  color: var(--mercan);
+}
+
+.kampanya-ozet .pahali strong {
+  color: #c2410c;
+}
+
+/* İndirim bölümü — gruplar kurulduktan sonra, fiyat buradan çıkıyor. */
+
+.kampanya-indirim {
+  border: 1px solid #f2e9df;
+  border-radius: 13px;
+  padding: 14px;
+  margin-top: 6px;
+}
+
+.kampanya-indirim .bolum-ad {
+  display: block;
+  font-size: 14px;
+  font-weight: 600;
+  margin-bottom: 4px;
+}
+
+.indirim-satir {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  flex-wrap: wrap;
+}
+
+.indirim-satir .mod-sec {
+  flex: 0 0 auto;
+  margin: 0;
+}
+
+.indirim-satir input {
+  flex: 0 0 96px;
+  padding: 9px 11px;
+  border: 1px solid #eee6dc;
+  border-radius: 9px;
+  font-size: 14px;
+  font-family: inherit;
+  text-align: right;
+  color: var(--metin);
+  background: var(--zemin);
+}
+
+.indirim-satir input:focus {
+  outline: none;
+  border-color: var(--mercan);
+}
+
+.indirim-satir input.hatali {
+  border-color: #c2410c;
+  background: #fff3ef;
+}
+
+.indirim-sonuc {
+  display: flex;
+  align-items: baseline;
+  gap: 7px;
+  font-size: 15px;
+}
+
+.indirim-sonuc em {
+  font-style: normal;
+  font-size: 12px;
+  color: var(--mercan);
+}
+
+/* Sipariş ekranında kampanya maddesi ve kartı. */
+
+.kategori.kampanya {
+  border-color: var(--mercan);
+  font-weight: 600;
+}
+
+.urun-kart.kampanya {
+  border-color: var(--mercan);
+}
+
+@media (max-width: 900px) {
+  .kampanya-sekme {
+    grid-template-columns: 1fr;
+  }
+}
+
+/* Menü/kampanya ürünü — grup kutusu ve içindeki satırlar. */
+
+.menu-grup {
+  border: 1px solid #f2e9df;
+  border-radius: 13px;
+  padding: 12px;
+  margin-bottom: 10px;
+  background: var(--zemin);
+}
+
+.menu-satir select {
+  flex: 1;
+  min-width: 0;
+  padding: 8px 9px;
+  border: 1px solid #eee6dc;
+  border-radius: 9px;
+  background: var(--kart);
+  font-size: 13px;
+  font-family: inherit;
+  color: var(--metin);
+  cursor: pointer;
+}
+
+.menu-satir select:focus {
+  outline: none;
+  border-color: var(--mercan);
+}
+
+/* Ürün panelinde kategori seçimi — ana kategori, altındakiler katlanır. */
+
+.kategori-agac {
+  display: flex;
+  flex-direction: column;
+  gap: 4px;
+}
+
+.agac-satir {
+  display: flex;
+  align-items: center;
+  gap: 4px;
+}
+
+.agac-ad {
+  flex: 1;
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  padding: 9px 12px;
+  border: 1px solid #eee6dc;
+  border-radius: 11px;
+  background: var(--kart);
+  color: var(--metin);
+  font-size: 14px;
+  font-family: inherit;
+  text-align: left;
+  cursor: pointer;
+  transition: border-color 0.15s ease, background 0.15s ease;
+}
+
+.agac-ad:hover {
+  border-color: #f6c9bb;
+}
+
+.agac-ad.secili {
+  background: var(--mercan);
+  border-color: var(--mercan);
+  color: #fff;
+}
+
+.agac-ad.alt {
+  width: calc(100% - 18px);
+  margin-left: 18px;
+  padding: 7px 11px;
+  font-size: 13px;
+}
+
+.agac-ad.alt .renk-nokta {
+  width: 9px;
+  height: 9px;
+}
+
+.agac-ok {
+  flex: 0 0 auto;
+  display: flex;
+  align-items: center;
+  gap: 5px;
+  padding: 9px 10px;
+  border: 1px solid #eee6dc;
+  border-radius: 11px;
+  background: var(--zemin);
+  cursor: pointer;
+}
+
+.agac-rozet {
+  font-size: 11px;
+  font-style: normal;
+  color: var(--mercan);
 }
 
 .varsayilan-tus {
@@ -2551,6 +2841,7 @@ body {
 
 .toplu-ad { min-width: 190px; }
 .toplu-kod { width: 110px; }
+.toplu-kdv { width: 132px; }
 
 .toplu-kategori-ad {
   max-width: 180px;

@@ -5,6 +5,7 @@ import OnayModal from "../components/OnayModal";
 import Bildirim from "../components/Bildirim";
 import SiralamaModal from "../components/SiralamaModal";
 import TopluDuzenle from "../components/TopluDuzenle";
+import KampanyaSekmesi from "../components/KampanyaSekmesi";
 import Anahtar from "../components/Anahtar";
 import RenkSecici, { renkler } from "../components/RenkSecici";
 import {
@@ -22,13 +23,15 @@ import {
   grupKaydet,
   grupSil,
   birimleriKaydet,
+  kdvKaydet,
+  KDV_SINIRI,
   topluKaydet,
   porsiyonFiyat,
   urunGrupIdleri,
 } from "../menu";
-import type { KategoriAlanlari, TopluPorsiyon, TopluUrun } from "../menu";
+import type { KategoriAlanlari, KdvSatiri, TopluPorsiyon, TopluUrun } from "../menu";
 import { kilitKaldir, kilitKur } from "../cikisKilidi";
-import type { MenuBirim, MenuKategori, MenuSecenekGrubu, MenuUrun } from "../types";
+import type { MenuBirim, MenuKategori, MenuKdv, MenuSecenekGrubu, MenuUrun } from "../types";
 
 const adSiniri = 25;
 
@@ -263,13 +266,21 @@ function BirimlerSekmesi({
 }: {
   birimler: MenuBirim[];
   kullanim: (id: number) => number;
-  onKaydet: (liste: { id?: number; ad: string }[], silinenler: number[]) => void;
+  onKaydet: (
+    liste: { id?: number; ad: string; varsayilan: boolean }[],
+    silinenler: number[]
+  ) => void;
   onUyari: (mesaj: string) => void;
 }) {
-  const [liste, setListe] = useState<{ id?: number; ad: string }[]>(
-    birimler.map((b) => ({ id: b.id, ad: b.ad }))
+  const [liste, setListe] = useState<{ id?: number; ad: string; varsayilan: boolean }[]>(
+    birimler.map((b) => ({ id: b.id, ad: b.ad, varsayilan: b.varsayilan }))
   );
   const [silinenler, setSilinenler] = useState<number[]>([]);
+
+  // Varsayılan tektir — birine basınca diğerleri iner; yıldızlıya tekrar
+  // basmak işareti kaldırır (o zaman "Tam" kuralı devreye girer).
+  const varsayilanSec = (i: number) =>
+    setListe((l) => l.map((x, j) => ({ ...x, varsayilan: j === i && !x.varsayilan })));
 
   const satirSil = (i: number) => {
     const satir = liste[i];
@@ -296,16 +307,29 @@ function BirimlerSekmesi({
       <div className="ms-urun-ust">
         <h2>Birimler</h2>
         <span>{liste.length} birim</span>
-        <button className="ms-urun-ekle" onClick={() => setListe([...liste, { ad: "" }])}>+ Birim</button>
+        <button
+          className="ms-urun-ekle"
+          onClick={() => setListe([...liste, { ad: "", varsayilan: false }])}
+        >
+          + Birim
+        </button>
       </div>
 
       <p className="ipucu">
-        Porsiyon adları bu listeden seçilir — "Tam" ile "tam" karmaşası olmasın diye tek yerde tutuluyor.
+        Porsiyon adları bu listeden seçilir — "Tam" ile "tam" karmaşası olmasın diye tek yerde
+        tutuluyor. Yıldızlı birim, yeni ürünün ilk porsiyonunda hazır gelir.
       </p>
 
       <div className="birim-liste">
         {liste.map((b, i) => (
           <div key={b.id ?? `yeni-${i}`} className="satir-alan">
+            <button
+              className={b.varsayilan ? "varsayilan-tus aktif" : "varsayilan-tus"}
+              onClick={() => varsayilanSec(i)}
+              title="Yeni üründe hazır gelen birim"
+            >
+              {b.varsayilan ? "★" : "☆"}
+            </button>
             <input
               value={b.ad}
               onChange={(e) =>
@@ -328,16 +352,125 @@ function BirimlerSekmesi({
   );
 }
 
+function KdvSekmesi({
+  kdvler,
+  kullanim,
+  onKaydet,
+  onUyari,
+}: {
+  kdvler: MenuKdv[];
+  kullanim: (id: number) => number;
+  onKaydet: (liste: KdvSatiri[], silinenler: number[]) => void;
+  onUyari: (mesaj: string) => void;
+}) {
+  // Oran taslakta metin: kullanıcı silip yeniden yazarken alan boş kalabilmeli.
+  const [liste, setListe] = useState<(KdvSatiri & { oranMetin: string })[]>(
+    kdvler.map((k) => ({ ...k, oranMetin: String(k.oran) }))
+  );
+  const [silinenler, setSilinenler] = useState<number[]>([]);
+
+  const degis = (i: number, degisim: Partial<KdvSatiri & { oranMetin: string }>) =>
+    setListe((l) => l.map((x, j) => (j === i ? { ...x, ...degisim } : x)));
+
+  const varsayilanSec = (i: number) =>
+    setListe((l) => l.map((x, j) => ({ ...x, varsayilan: j === i && !x.varsayilan })));
+
+  const satirSil = (i: number) => {
+    const satir = liste[i];
+    if (satir.id) setSilinenler((s) => [...s, satir.id!]);
+    setListe((l) => l.filter((_, j) => j !== i));
+  };
+
+  const kaydet = () => {
+    const dolu = liste.filter((k) => k.ad.trim()).map((k) => ({ ...k, ad: k.ad.trim() }));
+    const adlar = dolu.map((k) => k.ad.toLocaleLowerCase("tr"));
+    if (new Set(adlar).size !== adlar.length) {
+      onUyari("Aynı isimde iki KDV grubu olamaz.");
+      return;
+    }
+    if (dolu.some((k) => k.oran < 0 || k.oran > 100)) {
+      onUyari("KDV oranı 0 ile 100 arasında olmalı.");
+      return;
+    }
+    onKaydet(
+      dolu.map(({ id, ad, oran, varsayilan }) => ({ id, ad, oran, varsayilan })),
+      silinenler
+    );
+  };
+
+  return (
+    <div className="ms-urunler">
+      <div className="ms-urun-ust">
+        <h2>KDV Grupları</h2>
+        <span>{liste.length} grup</span>
+        <button
+          className="ms-urun-ekle"
+          disabled={liste.length >= KDV_SINIRI}
+          onClick={() =>
+            setListe([...liste, { ad: "", oran: 0, varsayilan: false, oranMetin: "" }])
+          }
+        >
+          + KDV Grubu
+        </button>
+      </div>
+
+      <p className="ipucu">
+        En fazla {KDV_SINIRI} grup tanımlanır. Yıldızlı grup, kendi KDV'si seçilmemiş
+        ürünlerde geçerlidir. Silinen grubu kullanan ürünler varsayılana döner.
+      </p>
+
+      <div className="birim-liste">
+        {liste.map((k, i) => (
+          <div key={k.id ?? `yeni-${i}`} className="satir-alan">
+            <button
+              className={k.varsayilan ? "varsayilan-tus aktif" : "varsayilan-tus"}
+              onClick={() => varsayilanSec(i)}
+              title="Varsayılan KDV grubu"
+            >
+              {k.varsayilan ? "★" : "☆"}
+            </button>
+            <input
+              value={k.ad}
+              onChange={(e) => degis(i, { ad: e.target.value })}
+              placeholder="Yiyecek"
+            />
+            <input
+              className="kisa"
+              value={k.oranMetin}
+              onChange={(e) => {
+                const metin = e.target.value.replace(/[^0-9]/g, "");
+                degis(i, { oranMetin: metin, oran: Number(metin || 0) });
+              }}
+              placeholder="10"
+            />
+            <span className="birim-sayac">%{k.id ? ` · ${kullanim(k.id)} ürün` : " · yeni"}</span>
+            <button className="satir-sil" onClick={() => satirSil(i)}>×</button>
+          </div>
+        ))}
+      </div>
+
+      {liste.length === 0 && <p className="bos">Henüz KDV grubu yok</p>}
+
+      <div className="birim-aksiyon">
+        <button className="birim-kaydet" onClick={kaydet}>Kaydet</button>
+      </div>
+    </div>
+  );
+}
+
 export default function MenuStudyosu() {
   const [kategoriler, setKategoriler] = useState<MenuKategori[]>([]);
   const [urunler, setUrunler] = useState<MenuUrun[]>([]);
   const [gruplar, setGruplar] = useState<MenuSecenekGrubu[]>([]);
   const [birimler, setBirimler] = useState<MenuBirim[]>([]);
+  const [kdvler, setKdvler] = useState<MenuKdv[]>([]);
   const [seciliId, setSeciliId] = useState<number | null>(null);
   const [yukleniyor, setYukleniyor] = useState(true);
   const [pencere, setPencere] = useState<{ kategori?: MenuKategori } | null>(null);
   const [panel, setPanel] = useState<MenuUrun | null>(null);
-  const [gorunum, setGorunum] = useState<"kategoriler" | "gruplar" | "birimler" | "toplu">(
+  const [gorunum, setGorunum] = useState<
+    "kategoriler" | "gruplar" | "birimler" | "kdv" | "toplu" | "kampanya"
+  >(
     "kategoriler"
   );
   const [topluDegisiklik, setTopluDegisiklik] = useState(0);
@@ -356,6 +489,7 @@ export default function MenuStudyosu() {
     setUrunler(veri.urunler);
     setGruplar(veri.gruplar);
     setBirimler(veri.birimler);
+    setKdvler(veri.kdvler);
     if (ilk) setSeciliId(veri.kategoriler[0]?.id ?? null);
   };
 
@@ -496,9 +630,31 @@ export default function MenuStudyosu() {
   const birimKullanimi = (id: number) =>
     urunler.reduce((t, u) => t + u.porsiyonlar.filter((p) => p.birimId === id).length, 0);
 
-  const birimleriYaz = async (liste: { id?: number; ad: string }[], silinenler: number[]) => {
+  const birimleriYaz = async (
+    liste: { id?: number; ad: string; varsayilan: boolean }[],
+    silinenler: number[]
+  ) => {
     await birimleriKaydet(liste, silinenler);
-    yukle();
+    await yukle();
+    setBildirim("Birimler kaydedildi");
+  };
+
+  const kampanyaKaydet = async (u: MenuUrun) => {
+    const hata = await urunKaydet(u);
+    if (hata) {
+      setUyari(hata);
+      return;
+    }
+    await yukle();
+    setBildirim("Kampanyalı menü kaydedildi");
+  };
+
+  const kdvKullanimi = (id: number) => urunler.filter((u) => u.kdvId === id).length;
+
+  const kdvYaz = async (liste: KdvSatiri[], silinenler: number[]) => {
+    await kdvKaydet(liste, silinenler);
+    await yukle();
+    setBildirim("KDV grupları kaydedildi");
   };
 
   const topluYaz = async (u: TopluUrun[], p: TopluPorsiyon[]) => {
@@ -529,6 +685,7 @@ export default function MenuStudyosu() {
     satistaGorunur: true,
     mutfaktaGorunur: true,
     porsiyonlar: [],
+    menuGruplari: [],
     kategoriIdler: secili ? [secili.id] : [],
     kategoriSira: {},
   });
@@ -545,11 +702,17 @@ export default function MenuStudyosu() {
             <button className={gorunum === "toplu" ? "aktif" : ""} onClick={() => gorunumDegis("toplu")}>
               Toplu Düzenle
             </button>
+            <button className={gorunum === "kampanya" ? "aktif" : ""} onClick={() => gorunumDegis("kampanya")}>
+              Kampanyalı Menü
+            </button>
             <button className={gorunum === "gruplar" ? "aktif" : ""} onClick={() => gorunumDegis("gruplar")}>
               Seçenek Grupları
             </button>
             <button className={gorunum === "birimler" ? "aktif" : ""} onClick={() => gorunumDegis("birimler")}>
               Birimler
+            </button>
+            <button className={gorunum === "kdv" ? "aktif" : ""} onClick={() => gorunumDegis("kdv")}>
+              KDV
             </button>
           </div>
         </header>
@@ -561,6 +724,7 @@ export default function MenuStudyosu() {
             urunler={urunler}
             kategoriler={kategoriler}
             birimler={birimler}
+            kdvler={kdvler}
             onKaydet={topluYaz}
             onUyari={setUyari}
             onBildirim={setBildirim}
@@ -568,10 +732,27 @@ export default function MenuStudyosu() {
           />
         ) : gorunum === "birimler" ? (
           <BirimlerSekmesi
-            key={birimler.map((b) => `${b.id}:${b.ad}`).join("|")}
+            key={birimler.map((b) => `${b.id}:${b.ad}:${b.varsayilan}`).join("|")}
             birimler={birimler}
             kullanim={birimKullanimi}
             onKaydet={birimleriYaz}
+            onUyari={setUyari}
+          />
+        ) : gorunum === "kampanya" ? (
+          <KampanyaSekmesi
+            key={urunler.map((u) => `${u.id}:${u.menuGruplari.length}`).join("|")}
+            urunler={urunler}
+            birimler={birimler}
+            onKaydet={kampanyaKaydet}
+            onSil={urunuSil}
+            onUyari={setUyari}
+          />
+        ) : gorunum === "kdv" ? (
+          <KdvSekmesi
+            key={kdvler.map((k) => `${k.id}:${k.ad}:${k.oran}:${k.varsayilan}`).join("|")}
+            kdvler={kdvler}
+            kullanim={kdvKullanimi}
+            onKaydet={kdvYaz}
             onUyari={setUyari}
           />
         ) : gorunum === "gruplar" ? (
@@ -750,6 +931,7 @@ export default function MenuStudyosu() {
                           <small>
                             {[
                               !u.satistaGorunur && "satışta gizli",
+                              u.menuGruplari.length > 0 && "menü",
                               u.porsiyonlar.length > 1 && `${u.porsiyonlar.length} porsiyon`,
                               urunGrupIdleri(u).length > 0 && `${urunGrupIdleri(u).length} seçenek`,
                               u.kategoriIdler.length > 1 && `${u.kategoriIdler.length} kategori`,
@@ -790,6 +972,8 @@ export default function MenuStudyosu() {
           kategoriler={kategoriler}
           gruplar={gruplar}
           birimler={birimler}
+          kdvler={kdvler}
+
           onKapat={() => setPanel(null)}
           onKaydet={kaydet}
           onSil={() => urunuSil(panel)}
