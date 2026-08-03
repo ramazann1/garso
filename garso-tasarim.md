@@ -1,19 +1,47 @@
 # GARSO — Teknik Tasarım: Veri Modeli & Ekran Haritası
 *Restoran ve cafe'ler için bulut tabanlı satış ve işletme yönetim sistemi.*
 
-## 0. SIRADAKİ İŞ (3 Ağu 2026, 2. seansın sonunda güncellendi)
+## 0. SIRADAKİ İŞ (4 Ağu 2026'da güncellendi)
 
 *Ramazan seansa "devam edelim" diye giriyor — sıradaki iş bu listenin en üstündeki
 maddedir. Seans sonunda bu liste güncellenir: biten madde silinir, kalanlar
 yukarı kayar, yeni çıkanlar sıraya girer.*
 
-1. **Kategori bazlı toplu işlem** — "bu kategorideki tüm ürünlere şu KDV'yi
-   uygula" gibi. KDV geldiği için artık içi doldu.
-2. **KDV'nin fiyata uygulanması** — "KDV hariç olsun" anahtarı, tahsilatta ve
-   raporda KDV dökümü. Tanım tarafı bitti, hesap tarafı duruyor.
-3. **Kategorisiz ürün temizliği** — menüde 6 adet eski deneme ürünü kategorisiz
-   duruyor (id 27–32). Bugünkü kodla oluşmaları mümkün değil, kalıntılar.
-   Menü Stüdyosu → "Tüm kategoriler" kapsamından silinecek.
+**Menü modülü bitti; sıra satış çekirdeğinde.** Eksik envanteri bölüm 6'da,
+Adisyo'nun canlı turu `pos-yol-haritasi.md` bölüm 7'de.
+
+1. **Adisyon veri modeli** — `masa_ad` + tek jsonb yapısından gerçek tablolara
+   (`adisyonlar` / `turlar` / `adisyon_kalemleri` / `tahsilatlar`). Tek başına
+   6.1'deki 1, 3, 4, 5 numaralı hataları kapatıyor; turlar, ikram, kapanan
+   adisyon ve masa taşımanın önünü açan zorunlu ilk adım.
+2. **Hızlı kazançlar** — sipariş ekranında ürün arama, favoriler şeridi, ürün
+   kartında adisyondaki adet rozeti, sepetten çıkarma hatasının düzeltilmesi,
+   kaydetmeden çıkış koruması. (1'den bağımsız, tek tek yapılabilir.)
+3. **Kalem işlemleri** — kaleme dokununca sağdan panel: adet, birim fiyat,
+   ürün notu, porsiyon değiştirme, ikram, iptal, başka adisyona taşıma.
+4. **Masa ve bölgeler veritabanına** + İşletme Ayarları ekranının açılması;
+   ardından masa taşıma / birleştirme / adisyon aktarma. **Salon ekranının
+   yeniden tasarımı bu maddeye dahil** — masalar koda gömülüyken tasarım
+   yapılırsa veri gelince ikinci kez elden geçmesi gerekir. Ramazan'ın
+   şikâyeti (4 Ağu): giriş ekranı hoşuna gitmiyor; "Garso / Salon Görünümü"
+   başlığı uygulama adını tekrar ediyor, bölgeler uzun bloklar halinde akıyor,
+   masa kartı sadece dolu/boş söylüyor — garson, adisyon adı, masa etiketi ve
+   durum rengi yok.
+5. **Tahsilat zenginleştirme** — Hızlı Öde, bahşiş (üstünü tamamla), ödeme tipi
+   ÖKC/klasik ayrımı, ürün bazlı 1/n, ürün bazlı indirim.
+6. **Gel Al / Paket akışı** — fiyat altyapısı hazır, akış yok. Pakette ödeme
+   tipi önden seçiliyor.
+7. **Fiyatlar KDV hariç ayarı** — işletme geneli tek ayar, varsayılan "dahil".
+   İşletme Ayarları ekranı açılınca oraya girecek (4. maddeye bağlı).
+**İkon seti** ayrı madde değil — 4. maddeyle **eşzamanlı** yapılır (Ramazan'ın
+kararı, 4 Ağu): set Salon'un yeniden tasarımı sırasında kurulur ve önce oraya
+tam uygulanır, diğer ekranlar da elimiz değdikçe karakterden ikona geçer.
+Karar: **`lucide-react`** — ince çizgili modern set, React bileşeni, rengi ve
+çizgi kalınlığı CSS'ten yönetiliyor, yalnız kullanılan ikon pakete giriyor,
+internetten yüklenmediği için çevrimdışı kasada da çalışır. Material Symbols
+bilinçli olarak elendi: Adisyo onu kullanıyor, Garso'nun kendi kimliği olsun.
+Bugün her yerde karakter var (`⇅`, `×`, `⧉`, `★`, `⌫`); yazı tipine göre
+kayıyorlar ve amatör duruyorlar.
 
 *Ürünün kategorisini listeden taşıma maddesi 3 Ağu'da Ramazan tarafından
 "gerek yok" denerek listeden çıkarıldı.*
@@ -507,3 +535,108 @@ görüntüle" ve aktif/pasif ürün — 1 Ağu 2026 ikinci seansında tamamland�
 - Her seans sonunda kullanıcı: `git add .` → `git commit -m "aciklama"` → `git push`
 - VS Code'da dosya yanındaki **M** işareti = henüz push edilmemiş değişiklik.
 - `node_modules` `.gitignore` ile hariç (normal)
+
+---
+
+## 6. SATIŞ ÇEKİRDEĞİ — EKSİK ENVANTERİ (4 Ağu 2026)
+*Adisyo satış ekranı canlı gezildi (`pos-yol-haritasi.md` → bölüm 7), ardından
+kendi kodumuz baştan sona okundu. Menü modülü için yaptığımızın satış tarafındaki
+karşılığı. Uyarlama ilkesi: **işlevi alıyoruz, arayüzü kendimiz kuruyoruz.***
+
+### 6.1 Bizde BOZUK olanlar (eksik değil, hatalı)
+1. **Masa süresi her kayıtta sıfırlanıyor.** `Siparis.tsx` kaydederken `acilis`
+   göndermiyor; `adisyonlar.ts` boş gelince `new Date()` yazıyor. Salon'daki
+   açık kalma süresi fiilen çalışmıyor.
+2. **Sepetten çıkarma ada göre.** `sepettenCikar(ad)` aynı ürünün farklı
+   porsiyonunda yanlış satırı azaltıyor; sepet satırının React anahtarı da
+   (`key={k.ad}`) çakışıyor.
+3. **Ödenmiş kalem takibi kayabiliyor.** `Tahsilat.kalemler` sepet **indeksine**
+   bağlı; ödeme sonrası kalem silinirse "ödendi" işareti başka ürüne geçiyor.
+4. **Kapanan adisyon siliniyor** (`adisyonKaydet` → `delete`). Gün sonu ve
+   denetim raporu bu yapıyla yapılamaz.
+5. **Adisyon masa adına bağlı** (`masa_ad` metni) — masa taşıma/birleştirme imkânsız.
+6. **Sipariş ekranında çıkış koruması yok** (Menü Stüdyosu'nda var).
+7. **Garson adı kodda sabit** ("Ramazan").
+
+### 6.2 Bizde HİÇ olmayanlar
+- **Kalem düzeyi:** adet artırma, birim fiyat düzenleme, ürün notu, porsiyon
+  değiştirme, **ikram**, kalem iptali, başka adisyona taşıma.
+- **Adisyon düzeyi:** adisyon no, adisyona serbest isim, kişi sayısı, adisyon
+  notu, müşteri, servis grubu (kurs), **turlar (saat damgalı gruplama)**, durum.
+- **Ürün bulma:** arama, barkod, favoriler, kartta adisyondaki adet rozeti.
+- **Masa:** taşıma, birleştirme, adisyon aktarma, masa iptali, yazdırma;
+  bölge/masa tanımları hâlâ `ornekVeri.ts` içinde koda gömülü.
+- **Sipariş türü:** Gel Al ve Paket akışı (fiyat altyapısı hazır, akış yok).
+- **Tahsilat:** Hızlı Öde, Öde-ve-Kapat/Yazdır, bahşiş (üstünü tamamla),
+  ürün bazlı 1/n, ürün bazlı indirim, ÖKC/klasik ayrımı, kalem bazlı Ödenen/Kalan.
+- **Genel:** kapanmış adisyonlar listesi, ekran kilidi, canlı yenileme.
+
+### 6.3 Bizde olup Adisyo'da olmayan (koruyacağız)
+Tahsilatta KDV dökümü · kampanyalı menü seçim penceresi · kategori ağacının
+sipariş şeridinde açılması · kendi onay modalımız.
+
+### 6.4 Uyarlama kararları (Adisyo'yu kopyalamıyoruz)
+- **Kalem detayı** ortadaki kutu değil, bizim **sağdan panel** desenimiz.
+- **Tur başlığında garson adı** — Adisyo her kalemin altında tekrar ediyor,
+  bir turu genelde tek kişi girdiği için gürültü.
+- **Favoriler**, sol dikey şeridin tepesinde kampanyalı menülerin üstüne girer;
+  yeni kavram değil, var olan desenin devamı.
+- **Ödeme tipleri** iki başlık halinde değil tek liste + ÖKC olanlarda küçük
+  işaret; ÖKC'siz işletmede ayrım hiç görünmez.
+- **Hızlı Öde** aynen alınır (operasyon gerçeği, tasarım tercihi değil).
+- **Bahşiş "üstünü tamamla"** fikri alınır, yerleşim bizim panelimize göre.
+- **Alınmayacaklar:** üst bardaki 7 ikonluk kalabalık (takvim ikonu "sipariş
+  açıklaması" çıkıyor), kategori sekmelerinin sayfalara bölünmesi, "Çoklu Seçim"
+  gibi hiçbir şey anlatmayan başlıklar.
+- **Terminoloji bizim:** Özellik→Seçenek, Misafir Sayısı→Kişi Sayısı,
+  Sipariş Grubu→Servis, Ödenmezler→Protokol.
+
+---
+
+## 7. SEANS GÜNLÜĞÜ — 4 AĞU 2026
+
+### Yapılanlar
+- ✅ **Toplu Düzenle'ye "Hepsine uygula" şeridi.** Ayrı bir "kategori toplu işlem"
+  penceresi açmak yerine var olan sekme genişletildi — o sekme zaten aynı alanları
+  (KDV, satışta/mutfakta göster, favori) düzenliyordu, eksik olan tek şey hepsini
+  tek hamlede ayarlamaktı. Şerit **süzülmüş** ürünlere işliyor (kategori seçici +
+  arama neyi gösteriyorsa o), değişiklik taslakta kalıyor, alttaki tek Kaydet ile
+  yazılıyor, Vazgeç geri alıyor.
+- ✅ **KDV hesabı satışa girdi** (`kdv.ts`): `kdvAyir` (dahil fiyatın içinden
+  vergiyi çıkarır), `kdvDokumu` (adisyonu oran oran toplar). İndirim kalemlere
+  tutarları oranında dağıtılıyor — yoksa tahsil edilmemiş ciro üzerinden vergi
+  yazılırdı; yuvarlama artığı en büyük satıra yazılıyor ki döküm toplamı adisyon
+  toplamını tutsun. **KDV oranı satış anında kaleme yazılıyor**
+  (`SepetKalemi.kdvOran`) — ürünün grubu sonradan değişse bile kesilmiş adisyonun
+  dökümü oynamıyor. Oranı olmayan eski adisyonlar varsayılan gruba düşüyor.
+- ✅ **`KdvDokum.tsx`** — adisyon özetinde ve tahsilat panelinde aynı bileşen.
+  Üç deneme sonunda son hâli: kutu değil, diğer özet satırlarıyla aynı hizada tek
+  soluk satır (`KDV (dahil) ⌄  ₺158,78`), üstüne basınca oran dökümü açılıyor.
+  İlk iki hâl (kenarlıklı kutu, mercan renkli tutarlar) Ramazan tarafından
+  "KDV en önemli şey gibi duruyor" denerek reddedildi. Satır sırası da değişti:
+  Ara Toplam → İndirim → KDV → Ödenen → Kalan → Toplam; üst blok hesabın neyden
+  oluştuğunu, alt blok ne kadarının tahsil edildiğini anlatıyor.
+- ✅ **Kategorisiz ürün görünürlüğü.** Ürün satırına "kategorisiz" işareti,
+  kapsam seçicisine üçüncü düğme: `Kategorisiz (N)` — yalnız öylesi varken
+  görünüyor, sonuncusu silinince kapsam kendiliğinden "Bu kategori"ye dönüyor.
+  (Ramazan'ın 6 kalıntı ürünü bu seanstan önce zaten silmişti; iş, ürünü satın
+  alacak işletmecinin Excel'den yanlışlıkla açtığı kategorisiz ürünü bulabilmesi
+  için yapıldı — öyle bir ürün sipariş ekranında hiçbir yerde görünmüyor.)
+- ✅ **Adisyo satış ekranı canlı gezildi** ve iki dosyaya işlendi:
+  `pos-yol-haritasi.md` bölüm 7 (ne gördük) ve bu dosyada bölüm 6 (bizde ne eksik,
+  neyi nasıl uyarlayacağız). Kendi satış kodumuz da baştan sona okundu; çıkan
+  **7 gerçek hata** 6.1'de.
+
+### Kararlar
+- **KDV dahil/hariç ürün bazında değil işletme geneli tek ayar olacak**
+  (Ramazan'ın kararı). Şimdilik her şey "dahil" kabul ediliyor, anahtar
+  İşletme Ayarları ekranıyla gelecek — o ekran henüz yok.
+- **Adisyo kopyalanmayacak:** işlev alınır, arayüz bizim. Ayrıntılı uyarlama
+  kararları 6.4'te.
+- **Salon ekranının yeniden tasarımı masa/bölge tanımlarıyla aynı maddede**
+  yapılacak; masalar koda gömülüyken tasarım yapmak iki kez iş demek.
+- **İkon seti (lucide-react) Salon tasarımıyla eşzamanlı** giriyor, ayrı madde değil.
+
+### Not
+Bu seansta Adisyo'nun canlı sisteminde hiçbir kayıt değiştirilmedi: denenen
+"Grup Ekle" ve sepete eklenen ürün kaydedilmeden geri alındı, ödeme alınmadı.

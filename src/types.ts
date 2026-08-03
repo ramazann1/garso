@@ -16,6 +16,7 @@ export type SepetKalemi = {
   adet: number;
   porsiyon?: string;
   secimler?: string[];
+  kdvOran?: number; // satış anındaki oran; eski adisyonlarda boş, varsayılana düşer
 };
 export type Tahsilat = {
   tip: string;

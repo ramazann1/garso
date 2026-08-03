@@ -478,7 +478,7 @@ export default function MenuStudyosu() {
   const [topluDegisiklik, setTopluDegisiklik] = useState(0);
   const [grupPencere, setGrupPencere] = useState<{ grup?: MenuSecenekGrubu } | null>(null);
   const [arama, setArama] = useState("");
-  const [kapsam, setKapsam] = useState<"kategori" | "tumu">("kategori");
+  const [kapsam, setKapsam] = useState<"kategori" | "tumu" | "kategorisiz">("kategori");
   const [siralama, setSiralama] = useState<"kategori" | "urun" | null>(null);
   const [vurgulu, setVurgulu] = useState<number | null>(null);
   const [uyari, setUyari] = useState<string | null>(null);
@@ -518,12 +518,23 @@ export default function MenuStudyosu() {
     u.ad.toLocaleLowerCase("tr").includes(aranan) ||
     (u.kod ?? "").toLocaleLowerCase("tr").includes(aranan);
 
+  // Kategorisiz ürün sipariş ekranında hiçbir yerde çıkmaz; kaybolmasın diye
+  // kapsam seçicide kendi seçeneği var — yalnızca öylesi varken görünüyor.
+  const kategorisizler = urunler.filter((u) => !u.kategoriIdler.length);
+
+  // Sonuncusu da silinince kapsam boş listede takılı kalmasın.
+  useEffect(() => {
+    if (kapsam === "kategorisiz" && !kategorisizler.length && !yukleniyor) setKapsam("kategori");
+  }, [kapsam, kategorisizler.length, yukleniyor]);
+
   const listelenenUrunler =
     kapsam === "tumu"
       ? urunler.filter(esler).sort((a, b) => a.ad.localeCompare(b.ad, "tr"))
-      : secili
-        ? kategoriUrunleri(urunler, secili.id).filter(esler)
-        : [];
+      : kapsam === "kategorisiz"
+        ? kategorisizler.filter(esler).sort((a, b) => a.ad.localeCompare(b.ad, "tr"))
+        : secili
+          ? kategoriUrunleri(urunler, secili.id).filter(esler)
+          : [];
   // Her satır kendi ürünlerini listeler, yandaki sayı da kendi ürün sayısıdır —
   // alt kategorininki üstünkine karışmaz.
   const sayac = (id: number) => urunler.filter((u) => u.kategoriIdler.includes(id)).length;
@@ -935,21 +946,21 @@ export default function MenuStudyosu() {
             </div>
 
             <div className="ms-urunler">
-              {secili || kapsam === "tumu" ? (
+              {secili || kapsam !== "kategori" ? (
                 <>
                   <div className="ms-urun-ust">
-                    <h2>{kapsam === "tumu" ? "Tüm ürünler" : secili.ad}</h2>
+                    <h2>{kapsam === "tumu" ? "Tüm ürünler" : kapsam === "kategorisiz" ? "Kategorisiz ürünler" : secili.ad}</h2>
                     <span>
                       {listelenenUrunler.length} {aranan ? "sonuç" : "ürün"}
                     </span>
                     <button
                       className="ms-sirala urun"
                       title={
-                        kapsam === "tumu" || aranan
+                        kapsam !== "kategori" || aranan
                           ? "Sıralama tek kategoride ve arama kapalıyken yapılır"
                           : "Ürünleri sırala"
                       }
-                      disabled={listelenenUrunler.length < 2 || kapsam === "tumu" || !!aranan}
+                      disabled={listelenenUrunler.length < 2 || kapsam !== "kategori" || !!aranan}
                       onClick={() => setSiralama("urun")}
                     >
                       ⇅ Sırala
@@ -984,6 +995,15 @@ export default function MenuStudyosu() {
                       >
                         Tüm kategoriler
                       </button>
+                      {kategorisizler.length > 0 && (
+                        <button
+                          className={kapsam === "kategorisiz" ? "aktif" : ""}
+                          onClick={() => setKapsam("kategorisiz")}
+                          title="Hiçbir kategoriye bağlı olmayan ürünler — sipariş ekranında görünmezler"
+                        >
+                          Kategorisiz ({kategorisizler.length})
+                        </button>
+                      )}
                     </div>
                   </div>
 
@@ -1002,6 +1022,7 @@ export default function MenuStudyosu() {
                           </span>
                           <small>
                             {[
+                              !u.kategoriIdler.length && "kategorisiz",
                               !u.satistaGorunur && "satışta gizli",
                               u.menuGruplari.length > 0 && "menü",
                               u.porsiyonlar.length > 1 && `${u.porsiyonlar.length} porsiyon`,

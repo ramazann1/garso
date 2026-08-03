@@ -669,6 +669,47 @@ body {
   color: var(--metin);
   font-weight: 600;
 }
+.kdv-ozet {
+  display: flex;
+  justify-content: space-between;
+  width: 100%;
+  padding: 4px 0;
+  border: 0;
+  background: none;
+  font-family: inherit;
+  font-size: 15px;
+  color: var(--soluk);
+  cursor: pointer;
+}
+.kdv-ozet em {
+  font-style: normal;
+  font-size: 12px;
+}
+.kdv-ok {
+  display: inline-block;
+  width: 5px;
+  height: 5px;
+  margin-left: 7px;
+  border-right: 1.5px solid currentColor;
+  border-bottom: 1.5px solid currentColor;
+  transform: translateY(-2px) rotate(45deg);
+  transition: transform 0.15s ease;
+}
+.kdv-ok.acik {
+  transform: translateY(1px) rotate(-135deg);
+}
+.kdv-satir {
+  display: grid;
+  grid-template-columns: 46px 1fr 1fr;
+  gap: 10px;
+  padding: 2px 0 2px 10px;
+  font-size: 13px;
+  color: var(--soluk);
+  font-variant-numeric: tabular-nums;
+}
+.kdv-satir .sag {
+  text-align: right;
+}
 .tahsilat-gecmis {
   background: var(--zemin);
   border-radius: 10px;
@@ -2778,6 +2819,79 @@ body {
   background: var(--mercan);
   border-color: var(--mercan);
   color: #fff;
+}
+
+.toplu-hepsi {
+  display: flex;
+  align-items: center;
+  flex-wrap: wrap;
+  gap: 8px 18px;
+  margin-bottom: 12px;
+  padding: 12px 14px;
+  border: 1px solid #f2d8cd;
+  border-radius: 13px;
+  background: #fff6f2;
+}
+
+.toplu-hepsi strong {
+  font-size: 13px;
+  font-weight: 600;
+}
+
+.toplu-hepsi label {
+  display: flex;
+  align-items: center;
+  gap: 7px;
+  font-size: 13px;
+  color: var(--soluk);
+}
+
+.toplu-hepsi select {
+  padding: 7px 10px;
+  border: 1px solid #eee6dc;
+  border-radius: 9px;
+  background: var(--kart);
+  font-size: 13px;
+  font-family: inherit;
+  color: var(--metin);
+  cursor: pointer;
+}
+
+.hepsi-ikili {
+  display: flex;
+  align-items: center;
+  gap: 6px;
+  font-size: 13px;
+  color: var(--soluk);
+}
+
+.hepsi-ikili button {
+  padding: 6px 12px;
+  border: 1px solid #eee6dc;
+  border-radius: 9px;
+  background: var(--kart);
+  font-size: 13px;
+  font-family: inherit;
+  color: var(--metin);
+  cursor: pointer;
+  transition: background 0.15s ease, border-color 0.15s ease;
+}
+
+.hepsi-ikili button:hover:not(:disabled) {
+  border-color: var(--mercan);
+  color: var(--mercan);
+}
+
+.toplu-hepsi button:disabled,
+.toplu-hepsi select:disabled {
+  opacity: 0.45;
+  cursor: default;
+}
+
+.toplu-hepsi small {
+  flex-basis: 100%;
+  font-size: 12px;
+  color: var(--soluk);
 }
 
 .toplu-sar {

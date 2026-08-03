@@ -1,8 +1,10 @@
 import { useEffect, useState } from "react";
 import IndirimModal from "./IndirimModal";
 import OnayModal from "./OnayModal";
+import KdvDokum from "./KdvDokum";
 import { odemeTipleriniGetir } from "../adisyonlar";
 import type { OdemeTipi } from "../adisyonlar";
+import type { KdvSatiri } from "../kdv";
 import type { SepetKalemi, Tahsilat } from "../types";
 
 type Props = {
@@ -10,6 +12,7 @@ type Props = {
   toplam: number;
   araToplam: number;
   indirim: number;
+  kdvSatirlari: KdvSatiri[];
   kayitliTahsilatlar: Tahsilat[];
   onKaydet: (tahsilatlar: Tahsilat[]) => void;
   onIndirimDegis: (tutar: number) => void;
@@ -17,7 +20,7 @@ type Props = {
   onOdendi: () => void;
 };
 
-export default function TahsilatPanel({ kalemler, toplam, araToplam, indirim, kayitliTahsilatlar, onKaydet, onIndirimDegis, onKapat, onOdendi }: Props) {
+export default function TahsilatPanel({ kalemler, toplam, araToplam, indirim, kdvSatirlari, kayitliTahsilatlar, onKaydet, onIndirimDegis, onKapat, onOdendi }: Props) {
   const [tahsilatlar, setTahsilatlar] = useState<Tahsilat[]>(kayitliTahsilatlar ?? []);
   const [girilen, setGirilen] = useState("");
   const [secilen, setSecilen] = useState<Record<number, number>>({});
@@ -144,6 +147,7 @@ export default function TahsilatPanel({ kalemler, toplam, araToplam, indirim, ka
                   <span>İndirim</span><span>−₺{indirim}</span>
                 </div>
               )}
+              <KdvDokum satirlar={kdvSatirlari} />
               {odenen > 0 && (
                 <div className="tutar-satir odendi">
                   <span>Ödenen</span><span>₺{odenen}</span>

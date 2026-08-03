@@ -88,6 +88,7 @@ export default function TopluDuzenle({
   const [kategoriId, setKategoriId] = useState<number | "tumu">("tumu");
   const [adaGore, setAdaGore] = useState(false);
   const [turFiyat, setTurFiyat] = useState(false);
+  const [hepsiAcik, setHepsiAcik] = useState(false);
 
   // Kaydetten sonra menü yeniden okunuyor; taslak da kaydedilmiş haline döner.
   useEffect(() => setTaslak(taslakYap(urunler)), [urunler]);
@@ -183,6 +184,13 @@ export default function TopluDuzenle({
           : t
       )
     );
+  };
+
+  // Şeritteki ayar, tabloda o an görünen (süzülmüş) ürünlerin hepsine işlenir.
+  // Yazma değil taslak değişikliği — sonuç tabloda görünür, alttaki Kaydet ile gider.
+  const hepsineUygula = (degisim: Partial<UrunTaslak>) => {
+    const idler = new Set(gorunenler.map((t) => t.id));
+    setTaslak((l) => l.map((t) => (idler.has(t.id) ? { ...t, ...degisim } : t)));
   };
 
   const kaydet = async () => {
@@ -303,7 +311,61 @@ export default function TopluDuzenle({
         >
           Tür fiyatları
         </button>
+
+        <button
+          className={hepsiAcik ? "toplu-tus aktif" : "toplu-tus"}
+          onClick={() => setHepsiAcik(!hepsiAcik)}
+          title="Listedeki tüm ürünlere tek hamlede aynı ayarı uygula"
+        >
+          Hepsine uygula
+        </button>
       </div>
+
+      {hepsiAcik && (
+        <div className="toplu-hepsi">
+          <strong>
+            Listedeki {gorunenler.length} ürünün hepsine:
+          </strong>
+
+          {!!kdvler.length && (
+            <label>
+              KDV
+              <select
+                value=""
+                disabled={!gorunenler.length}
+                onChange={(e) =>
+                  hepsineUygula({ kdvId: e.target.value ? Number(e.target.value) : undefined })
+                }
+              >
+                <option value="">Seç…</option>
+                {kdvler.map((k) => (
+                  <option key={k.id} value={k.id}>%{k.oran} · {k.ad}</option>
+                ))}
+              </select>
+            </label>
+          )}
+
+          {(
+            [
+              ["Satışta", "satistaGorunur"],
+              ["Mutfakta", "mutfaktaGorunur"],
+              ["Favori", "favori"],
+            ] as const
+          ).map(([baslik, alan]) => (
+            <div key={alan} className="hepsi-ikili">
+              <span>{baslik}</span>
+              <button disabled={!gorunenler.length} onClick={() => hepsineUygula({ [alan]: true })}>
+                Aç
+              </button>
+              <button disabled={!gorunenler.length} onClick={() => hepsineUygula({ [alan]: false })}>
+                Kapat
+              </button>
+            </div>
+          ))}
+
+          <small>Değişiklik tabloda işaretlenir, kaydetmeden önce Vazgeç ile geri alınabilir.</small>
+        </div>
+      )}
 
       <div className="toplu-sar">
         <table className="toplu-tablo">

@@ -1,12 +1,14 @@
 import { useEffect, useState } from "react";
 import { useNavigate, useParams } from "react-router-dom";
-import { menuGetir, agacUrunleri, altKategoriler, porsiyonFiyat } from "../menu";
+import { menuGetir, agacUrunleri, altKategoriler, porsiyonFiyat, urunKdv } from "../menu";
 import { adisyonGetir, adisyonKaydet } from "../adisyonlar";
 import UrunSecim from "../components/UrunSecim";
 import KampanyaSecim from "../components/KampanyaSecim";
 import TahsilatPanel from "../components/TahsilatPanel";
 import IndirimModal from "../components/IndirimModal";
-import type { MenuKategori, MenuSecenekGrubu, MenuUrun, SepetKalemi, Tahsilat } from "../types";
+import KdvDokum from "../components/KdvDokum";
+import { kdvDokumu } from "../kdv";
+import type { MenuKategori, MenuKdv, MenuSecenekGrubu, MenuUrun, SepetKalemi, Tahsilat } from "../types";
 
 // Masa siparişi ekranı — fiyat kuralı tek yerden (porsiyonFiyat) geçiyor.
 function anaFiyat(u: MenuUrun) {
@@ -22,6 +24,7 @@ export default function Siparis() {
   // Menü içeriğindeki ürünler satışta gizli olabilir; adları yine de gösterilmeli.
   const [tumUrunler, setTumUrunler] = useState<MenuUrun[]>([]);
   const [gruplar, setGruplar] = useState<MenuSecenekGrubu[]>([]);
+  const [kdvler, setKdvler] = useState<MenuKdv[]>([]);
   const [seciliId, setSeciliId] = useState<number | null>(null);
   const [menuYukleniyor, setMenuYukleniyor] = useState(true);
   const [sepet, setSepet] = useState<SepetKalemi[]>([]);
@@ -42,6 +45,7 @@ export default function Siparis() {
       setUrunler(veri.urunler.filter((u) => u.satistaGorunur));
       setTumUrunler(veri.urunler);
       setGruplar(veri.gruplar);
+      setKdvler(veri.kdvler);
       setSeciliId(acikKategoriler.find((k) => !k.ustId)?.id ?? acikKategoriler[0]?.id ?? null);
       setMenuYukleniyor(false);
     });
@@ -77,12 +81,21 @@ export default function Siparis() {
       ? agacUrunleri(urunler, kategoriler, secili.id).filter((u) => !u.menuGruplari.length)
       : [];
 
-  const sepeteEkle = (ad: string, fiyat: number, porsiyon?: string, secimler?: string[]) => {
+  // KDV oranı satış anında kaleme yazılır — sonradan ürünün grubu değişse bile
+  // kesilmiş adisyonun dökümü oynamasın.
+  const sepeteEkle = (
+    urun: MenuUrun,
+    fiyat: number,
+    porsiyon?: string,
+    secimler?: string[]
+  ) => {
+    const ad = urun.ad;
+    const kdvOran = urunKdv(urun, kdvler)?.oran;
     const anahtar = [ad, porsiyon, ...(secimler ?? [])].join("|");
     setSepet((s) => {
       const var_mi = s.find((k) => [k.ad, k.porsiyon, ...(k.secimler ?? [])].join("|") === anahtar);
       if (var_mi) return s.map((k) => (k === var_mi ? { ...k, adet: k.adet + 1 } : k));
-      return [...s, { ad, fiyat, adet: 1, porsiyon, secimler }];
+      return [...s, { ad, fiyat, adet: 1, porsiyon, secimler, kdvOran }];
     });
   };
 
@@ -92,6 +105,7 @@ export default function Siparis() {
 
   const araToplam = sepet.reduce((t, k) => t + k.fiyat * k.adet, 0);
   const toplam = Math.max(0, araToplam - indirim);
+  const kdvSatirlari = kdvDokumu(sepet, indirim, kdvler.find((k) => k.varsayilan)?.oran);
 
   const kaydet = async () => {
     await adisyonKaydet(masaAd ?? "", { sepet, indirim, tahsilatlar: kayitliTahsilatlar });
@@ -158,7 +172,7 @@ export default function Siparis() {
                       ? setKampanyaUrunu(u)
                       : u.porsiyonlar.length > 1 || u.porsiyonlar.some((p) => p.grupIdler.length > 0)
                         ? setSecimUrunu(u)
-                        : sepeteEkle(u.ad, anaFiyat(u))
+                        : sepeteEkle(u, anaFiyat(u))
                   }
                 >
                   <span>{u.ad}</span>
@@ -202,6 +216,7 @@ export default function Siparis() {
                   <span>−₺{indirim}</span>
                 </div>
               )}
+              <KdvDokum satirlar={kdvSatirlari} />
               {kayitliTahsilatlar.length > 0 && (
                 <>
                   <div className="ozet-satir odendi">
@@ -246,6 +261,7 @@ export default function Siparis() {
           toplam={toplam}
           araToplam={araToplam}
           indirim={indirim}
+          kdvSatirlari={kdvSatirlari}
           kayitliTahsilatlar={kayitliTahsilatlar}
           onKaydet={(t) => setKayitliTahsilatlar(t)}
           onIndirimDegis={(tutar) => setIndirim(tutar)}
@@ -272,7 +288,7 @@ export default function Siparis() {
           urunler={tumUrunler}
           onKapat={() => setKampanyaUrunu(null)}
           onEkle={(fiyat, secimler) => {
-            sepeteEkle(kampanyaUrunu.ad, fiyat, undefined, secimler);
+            sepeteEkle(kampanyaUrunu, fiyat, undefined, secimler);
             setKampanyaUrunu(null);
           }}
         />
@@ -284,7 +300,7 @@ export default function Siparis() {
           gruplar={gruplar}
           onKapat={() => setSecimUrunu(null)}
           onEkle={(porsiyon, fiyat, secimler) => {
-            sepeteEkle(secimUrunu.ad, fiyat, porsiyon, secimler);
+            sepeteEkle(secimUrunu, fiyat, porsiyon, secimler);
             setSecimUrunu(null);
           }}
         />

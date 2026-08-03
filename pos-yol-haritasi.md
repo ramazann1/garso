@@ -353,3 +353,84 @@ Yetki kategorileri ve örnek izinler:
 4. Ürün grid yoğunluğu kullanıcı tercihi (2'li/3'lü) — cihaz bazlı ayar.
 5. Mobilde yazıcı yönetimi de var → garson cihazından bile yazıcı tanımlanabiliyor.
 6. Rol bazlı sekme görünürlüğü + ayrı Patron uygulaması → klonda tek PWA içinde role göre şekillenen navigasyon (tercihimiz) veya iki ayrı paket.
+
+---
+
+## 7. SATIŞ EKRANI — CANLI DERİN TUR (4 Ağu 2026)
+*Adisyo 3.0 web POS'unda Kontrol → Sipariş → Ödeme ekranları bütün menüler,
+üç nokta düğmeleri ve gizli modlar açılarak birebir gezildi. Canlı sistemde
+hiçbir kayıt değiştirilmedi (açılan grup ve denenen ürün kaydedilmeden geri alındı).*
+
+### Kontrol (Salon) ekranı
+- Üst sekmeler **Bölgeler | Siparişler**. Bölge tabı = kısa kod + doluluk (`B 2/20`).
+- Dolu masa kartında dört bilgi: **adisyon adı** (serbest metin, örn. "polısler"),
+  garson adı, **masa etiketi** ("Tembel Masa"), tutar ve açık kalma süresi.
+- Masa üç nokta menüsü: **Öde · Hızlı Öde · İptal · Yazdır · Masayı Değiştir ·
+  Masaları Birleştir · Adisyon Aktar**.
+- Sol kenarda **Gel Al** ve **Paket** kısayolları (masasız adisyon).
+- **Siparişler sekmesi bir kanban:** Entegrasyon Siparişleri · Hazırlanıyor ·
+  Bekleyen · Teslimata Çıkanlar · Açık Siparişler · **Tamamlanan (46)**.
+  Kartta "Geciken Sipariş" rozeti, sipariş no (#101), saat, tutar, kart üstünde
+  hızlı ikonlar (aç/yazdır/öde/servis). Tamamlanan kartlarda ödeme tipi yazıyor —
+  **kapanan adisyon silinmiyor, listede kalıyor.**
+- Üst araçlar: Yaklaşan Ödeme (Adisyo'nun kendi abonelik hatırlatması),
+  **ÖKC cihaz eşleme** (bilgisayar başına, "Bu bilgisayarda ÖKC kullan" anahtarı),
+  yayın, çağrı, yenile, ekran kilidi.
+
+### Sipariş ekranı
+- Sol panel başlığı: **Adisyon no** + **Sipariş Durumu: Hazırlanıyor** (KDS'ten geliyor).
+- Kalemler **saat damgalı tur başlıkları** altında gruplu (23:34 / 19:34 / 19:17).
+- Kalem satırı: adet · ürün adı · porsiyon · **siparişi giren kişi** · tutar · üç nokta.
+- **Kalem detay penceresi:** − adet + · **Birim Fiyatı** (düzenlenebilir) ·
+  **Sipariş Grubu** açılır listesi · **Ürünü Sil** · **İkram et** ·
+  **Ürünü Farklı Siparişe Taşı** · **Ürün Notu** (serbest metin) ·
+  **Porsiyonlar** (kart olarak, seçilince fiyat güncellenir).
+- Üst bar (soldan): geri · adisyon adı + **kalem ikonu = adı düzenle** · sil ·
+  **Grup Ekle** · yazdır · **müşteri** (arama + ad/soyad/2 telefon/tanımlı adresler) ·
+  sağda **misafir sayısı** (− sayı +) ve **sipariş açıklaması** (takvim ikonu, yanıltıcı).
+- **Grup Ekle** adisyon içine "Grup No: 1 — Toplam ₺0,00" satırı açıyor; grubun
+  kendi düzenle/yazdır/sil düğmeleri var (kurs ayrımı + grup bazlı fiş).
+- Orta: **Ürün adı veya barkod ile arama** — kategoriden bağımsız, tüm menüde.
+- Kategori sekmeleri renk kodlu, yatay, **2 sayfa** (ok ile geçiş); ilk sekme
+  **FAVORİ ÜRÜNLER**.
+- **Ürün kartı adisyondaki adedi rozet olarak gösteriyor** (ÇAY → 5).
+- Karta basınca kartın üstünde **+ / adet / −** mini sayacı beliriyor.
+- Yeni eklenen kalem sepetin en üstünde vurgulu, yanında hızlı **+** ve **çöp**.
+- **Kaydedilmemiş değişiklik varken ÖDE / HIZLI ÖDE gizleniyor**, sadece KAYDET kalıyor.
+- Seçim penceresi ("Çoklu Seçim"): Porsiyonlar ve Özellikler katlanır bölümler,
+  grup başlığında kural yazılı ("SULAR — Min. 1 Seçim"), seçenekler kart,
+  ücretsizler "Ücretsiz" etiketli. Sağ üstte iki görünüm modu düğmesi.
+- Alt aksiyonlar: indirim etiketi · **ÖDE ₺tutar** · **HIZLI ÖDE** · KAYDET.
+- **Gel Al**: aynı ekran, "Adisyon: 0", sağ üstte Vazgeç, HIZLI ÖDE yok.
+- **Paket**: alt düğme ÖDE değil **"ÖDEME TİPİ"** — kuryeye hangi tiple gideceği
+  önden seçiliyor, tahsilat teslimatta kapanıyor.
+
+### Ödeme ekranı
+- Üstte **Masa Adı + Garson**, aksiyonlar tek sırada: Kaydet · **Öde ve Kapat** ·
+  **Öde ve Yazdır** · **Öde, Yazdır ve Kapat** · Ödeme Ekranını Kapat.
+- Sol sütun "PARÇALI ÖDE": her kalemde ürün + tutar + **Ödenen / Kalan** alt satırı
+  + dokunma ikonu. Altta iki mod düğmesi:
+  - **Ürün Bazlı 1/n** → her kalemin yanına 1/n düğmesi (tek ürünü n kişiye bölme).
+  - **Ürün Bazlı İndirim** → kalemlerin yanına onay kutusu, seçilene indirim.
+- Orta sütun: TOPLAM · **TAHSİLAT GEÇMİŞİ** · Ödenecek Tutar · numpad
+  (rakamlar + **Tüm**, **1/n**, **İndirim**, geri sil).
+- Sağ sütun iki sekme: **Ödeme Tipleri** ve **Bahşiş ekle**.
+  - Ödeme tipleri iki başlık: **ÖKC** (Nakit, Kredi Kartı, Edenred, Pluxee/Sodexo,
+    Multinet, SetCard, Metropol, Paye, Havale) ve **Klasik** (Nakit, Kredi Kartı,
+    Multinet, **Açık Hesap**).
+  - Bahşiş: **Serbest Tutar** veya **Üstünü Tamamla** — sipariş toplamına göre
+    hazır yuvarlama kartları (₺2.760 / ₺2.800 / ₺3.000, altında bahşiş tutarı).
+- İndirim penceresi: Yüzde | Tutar sekmeleri + numpad (bizimkiyle aynı).
+
+### Bu turda çıkan yeni çıkarımlar
+1. **Kapanan adisyon silinmiyor** — "Tamamlanan Siparişler" listesi gün sonu
+   raporunun ekrandaki karşılığı. Bizim `delete` yaklaşımımız yanlış.
+2. **Ürün kartındaki adet rozeti** küçük ama garsonun "kaç çay söylemiştim"
+   sorusunu ekrana bakmadan çözüyor.
+3. **Paket akışında ödeme tipi önden seçiliyor** — paket siparişin tahsilatı
+   teslimatta kapandığı için ayrı bir durum; veri modelinde ödeme "planlanmış"
+   olabilmeli.
+4. **Kaydedilmemiş değişikliğe ödeme kapatılıyor** — yarım kalmış sepetle
+   tahsilat alınmasını engelleyen basit ve doğru kural.
+5. Adisyona **serbest isim** verilebilmesi ("polısler") masa adından bağımsız bir
+   ihtiyaç: aynı masada iki grup, ya da isimle çağrılan müdavim.
