@@ -6,6 +6,7 @@ import Bildirim from "../components/Bildirim";
 import SiralamaModal from "../components/SiralamaModal";
 import TopluDuzenle from "../components/TopluDuzenle";
 import KampanyaSekmesi from "../components/KampanyaSekmesi";
+import AktarSekmesi from "../components/AktarSekmesi";
 import Anahtar from "../components/Anahtar";
 import RenkSecici, { renkler } from "../components/RenkSecici";
 import {
@@ -30,6 +31,7 @@ import {
   urunGrupIdleri,
 } from "../menu";
 import type { KategoriAlanlari, KdvSatiri, TopluPorsiyon, TopluUrun } from "../menu";
+import type { AktarimPlani } from "../aktarim";
 import { kilitKaldir, kilitKur } from "../cikisKilidi";
 import type { MenuBirim, MenuKategori, MenuKdv, MenuSecenekGrubu, MenuUrun } from "../types";
 
@@ -469,7 +471,7 @@ export default function MenuStudyosu() {
   const [pencere, setPencere] = useState<{ kategori?: MenuKategori } | null>(null);
   const [panel, setPanel] = useState<MenuUrun | null>(null);
   const [gorunum, setGorunum] = useState<
-    "kategoriler" | "gruplar" | "birimler" | "kdv" | "toplu" | "kampanya"
+    "kategoriler" | "gruplar" | "birimler" | "kdv" | "toplu" | "kampanya" | "aktarim"
   >(
     "kategoriler"
   );
@@ -657,6 +659,64 @@ export default function MenuStudyosu() {
     setBildirim("KDV grupları kaydedildi");
   };
 
+  // Önce dosyada geçen yeni kategoriler açılıyor, sonra ürünler yazılıyor —
+  // ürünün bağlanacağı kategorinin id'si ancak açıldıktan sonra belli oluyor.
+  // Ürünler tek tek gidiyor: urunKaydet porsiyon, kategori ve sıra işlerini
+  // zaten hallediyor, aynı işi ikinci kez yazmaya gerek yok.
+  const aktarimYaz = async (plan: AktarimPlani, ilerle: (yapilan: number) => void) => {
+    let yapilan = 0;
+    const adim = () => ilerle(++yapilan);
+
+    const yeniKategori = (ad: string, sira: number, ustId?: number) =>
+      kategoriEkle({
+        ad,
+        renk: renkler[(kategoriler.length + sira) % renkler.length],
+        ustId,
+        satistaGorunur: true,
+        mutfaktaGorunur: true,
+      });
+
+    const yeniAnalar = plan.yeniKategoriler.filter((y) => !y.alt);
+    const yeniAltlar = plan.yeniKategoriler.filter((y) => y.alt);
+
+    for (const [i, y] of yeniAnalar.entries()) {
+      await yeniKategori(y.ana, i);
+      adim();
+    }
+
+    if (yeniAltlar.length) {
+      const ara = await menuGetir();
+      for (const [i, y] of yeniAltlar.entries()) {
+        const ust = ara.kategoriler.find((k) => !k.ustId && k.ad === y.ana);
+        await yeniKategori(y.alt, yeniAnalar.length + i, ust?.id);
+        adim();
+      }
+    }
+
+    const guncel = await menuGetir();
+    const kategoriId = (ana: string, alt: string) => {
+      const ust = guncel.kategoriler.find((k) => !k.ustId && k.ad === ana);
+      if (!alt) return ust?.id;
+      return guncel.kategoriler.find((k) => k.ustId === ust?.id && k.ad === alt)?.id;
+    };
+
+    for (const { urun, yerler } of plan.urunler) {
+      const idler = yerler.map((y) => kategoriId(y.ana, y.alt)).filter((id) => id != null);
+      const hata = await urunKaydet({ ...urun, kategoriIdler: idler });
+      if (hata) {
+        await yukle();
+        return hata;
+      }
+      adim();
+    }
+
+    await yukle();
+    const kategoriNotu = plan.yeniKategoriler.length
+      ? `, ${plan.yeniKategoriler.length} kategori açıldı`
+      : "";
+    setBildirim(`${plan.urunler.length} ürün yazıldı${kategoriNotu}`);
+  };
+
   const topluYaz = async (u: TopluUrun[], p: TopluPorsiyon[]) => {
     const hata = await topluKaydet(u, p);
     if (!hata) await yukle();
@@ -714,6 +774,9 @@ export default function MenuStudyosu() {
             <button className={gorunum === "kdv" ? "aktif" : ""} onClick={() => gorunumDegis("kdv")}>
               KDV
             </button>
+            <button className={gorunum === "aktarim" ? "aktif" : ""} onClick={() => gorunumDegis("aktarim")}>
+              İçe/Dışa Aktar
+            </button>
           </div>
         </header>
 
@@ -745,6 +808,15 @@ export default function MenuStudyosu() {
             birimler={birimler}
             onKaydet={kampanyaKaydet}
             onSil={urunuSil}
+            onUyari={setUyari}
+          />
+        ) : gorunum === "aktarim" ? (
+          <AktarSekmesi
+            urunler={urunler}
+            kategoriler={kategoriler}
+            birimler={birimler}
+            kdvler={kdvler}
+            onKaydet={aktarimYaz}
             onUyari={setUyari}
           />
         ) : gorunum === "kdv" ? (

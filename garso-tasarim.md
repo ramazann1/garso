@@ -1,18 +1,19 @@
 # GARSO — Teknik Tasarım: Veri Modeli & Ekran Haritası
 *Restoran ve cafe'ler için bulut tabanlı satış ve işletme yönetim sistemi.*
 
-## 0. SIRADAKİ İŞ (3 Ağu 2026 seansının sonunda güncellendi)
+## 0. SIRADAKİ İŞ (3 Ağu 2026, 2. seansın sonunda güncellendi)
 
 *Ramazan seansa "devam edelim" diye giriyor — sıradaki iş bu listenin en üstündeki
 maddedir. Seans sonunda bu liste güncellenir: biten madde silinir, kalanlar
 yukarı kayar, yeni çıkanlar sıraya girer.*
 
-1. **Ürünleri Excel'e aktar / Excel'den içeri al** — 200 ürünlük menüyü tek tek
-   girmek yerine tabloyla; Adisyo'dan geçişi de kolaylaştırır.
-2. **Kategori bazlı toplu işlem** — "bu kategorideki tüm ürünlere şu KDV'yi
+1. **Kategori bazlı toplu işlem** — "bu kategorideki tüm ürünlere şu KDV'yi
    uygula" gibi. KDV geldiği için artık içi doldu.
-3. **KDV'nin fiyata uygulanması** — "KDV hariç olsun" anahtarı, tahsilatta ve
+2. **KDV'nin fiyata uygulanması** — "KDV hariç olsun" anahtarı, tahsilatta ve
    raporda KDV dökümü. Tanım tarafı bitti, hesap tarafı duruyor.
+3. **Kategorisiz ürün temizliği** — menüde 6 adet eski deneme ürünü kategorisiz
+   duruyor (id 27–32). Bugünkü kodla oluşmaları mümkün değil, kalıntılar.
+   Menü Stüdyosu → "Tüm kategoriler" kapsamından silinecek.
 
 *Ürünün kategorisini listeden taşıma maddesi 3 Ağu'da Ramazan tarafından
 "gerek yok" denerek listeden çıkarıldı.*
@@ -327,6 +328,39 @@ stock_moves    (id, branch_id, urun/malzeme, tip ENUM('giris','sayim','satis_dus
   `kategoriIdler` düştü, `as MenuUrun` zorlaması da bunu derlemede gizledi —
   "Kaydet'e basınca hiçbir şey olmuyor" haline geldi. Tip zorlaması kaldırıldı.
 
+### 3 Ağu 2026 (2. seans) — Excel'e aktar / Excel'den içeri al
+- ✅ **Menü Stüdyosu'na "İçe/Dışa Aktar" sekmesi.** Gerçek `.xlsx` dosyası
+  (`write-excel-file` / `read-excel-file`, ikisi de yalnız bu sekme açılınca
+  yükleniyor — ana paket büyümedi). Önce CSV yapılmıştı; LibreOffice her açılışta
+  içe aktarma penceresi sorduğu için xlsx'e geçildi.
+- ✅ **Sütunlar:** Ürün No · Ana Kategori · Alt Kategori · Ürün Adı · Ürün Kodu ·
+  Barkod · Birim · KDV Oranı · Fiyat · Masa · Gel-Al · Paket · Maliyet.
+  Satır = ürün × kategori × porsiyon. Kampanyalı menüler tabloya girmiyor.
+- ✅ **Ürün No = kimlik.** Adisyo'nun indirdiği dosyada aynı iş "entegrasyon kodu"
+  sütunuyla yapılıyor (canlı hesaba bakılarak doğrulandı; Adisyo'nun boş
+  şablonunda bu sütun yok, indirilen menüde var). Bu sütun sayesinde Excel'den
+  ürün adı değiştirilebiliyor — yoksa program yeni ürün açardı.
+  No boşsa sırayla ürün kodu → ürün adı; ad iki ürüne uyuyorsa satır atlanır.
+- ✅ **Kategori Excel'den açılabiliyor** (Ramazan'ın kararı). Menüde olmayan ad
+  yeni kategori olur, alt kategori de öyle. Yazım hatasına karşı onay ekranında
+  "açılacak kategoriler" listesi var; liste yalnızca gerçekten yazılacak
+  satırlardan çıkıyor.
+- ✅ **Değişmemiş ürün yazılmıyor.** İlk hâlde tek fiyat için 17 ürün baştan
+  yazılıyordu; `urunKaydet` ürün başına on küsur istek attığı için işlem
+  dakikalarca sürüyordu. Artık dosyadaki hâli menüdekiyle birebir aynı olan
+  ürün atlanıyor, özette "değişmemiş" sayısı gösteriliyor.
+- ✅ **Çakışma kontrolü (A yolu).** Ürün birden fazla kategorideyse satırları da
+  birden fazla; o satırlar farklı fiyat/ad/KDV söylerse ürün yazılmaz, çelişki
+  satır numaralarıyla gösterilir. Alternatifler (tekrar satırını boş bırakmak,
+  tek kategori göstermek, değişeni otomatik seçmek) tartışılıp elendi.
+- ✅ **Silme tek yönlü:** dosyadan satır silmek ürünü/porsiyonu silmez, ama
+  kategori bağını kaldırır — "ürünü bu kategoriden çıkar" demenin başka yolu yok.
+- ✅ Yazma sırasında ilerleme çubuğu (kategoriler de birer adım), yazarken
+  Vazgeç kapalı. Tablo sırası menü sırası: kategoriler soldaki listedeki
+  sırayla, içlerinde ürünler kendi sırasıyla, kategorisizler en sonda.
+- ⚠️ **Test durumu:** indirme, sıra, yeni kategori açma ve ilerleme çubuğu
+  Ramazan tarafından denendi. Son eklenen çakışma kontrolü henüz denenmedi.
+
 ### 📌 SONRAKİ ADIMLAR
 **Menü Stüdyosu'nda kalanlar (Adisyo paritesi hedefi):**
 - ~~KDV grubu~~ ✅ 3 Ağu 2026 — tanım + ürüne bağlama. Fiyata uygulanması (KDV
@@ -338,7 +372,8 @@ stock_moves    (id, branch_id, urun/malzeme, tip ENUM('giris','sayim','satis_dus
 - Mutfak grubu alanı (anlamı KDS gelince oluşur)
 - ~~**Toplu ürün işlemleri**~~ ✅ 2 Ağu 2026 — Toplu Düzenle sekmesi. KDV/mutfak
   grubu/stok sütunları o alanlar veri modeline girince eklenecek.
-- **Ürünleri Excel'e aktar / Excel'den içeri al**
+- ~~**Ürünleri Excel'e aktar / Excel'den içeri al**~~ ✅ 3 Ağu 2026 (2. seans) —
+  İçe/Dışa Aktar sekmesi, gerçek xlsx, Ürün No kimliğiyle.
 
 *(Sürükle-bırak sıralama, ürün kopyalama, ürün kodu, ürün arama, "tüm kategorileri
 görüntüle" ve aktif/pasif ürün — 1 Ağu 2026 ikinci seansında tamamlandı.)*
