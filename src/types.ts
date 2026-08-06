@@ -17,6 +17,8 @@ export type Bolge = {
   id: number;
   ad: string;
   sira: number;
+  // Salon ekranı bu bölgeyi çizilen plan olarak mı göstersin, ızgara olarak mı.
+  planModu: boolean;
   masalar: Masa[];
 };
 

@@ -1,4 +1,5 @@
 import { useState } from "react";
+import { Check, Delete, Percent } from "lucide-react";
 import OnayModal from "./OnayModal";
 
 type Props = {
@@ -40,7 +41,10 @@ export default function IndirimModal({ araToplam, mevcutIndirim, onKapat, onUygu
   return (
     <div className="modal-fon" onClick={onKapat}>
       <div className="indirim-modal" onClick={(e) => e.stopPropagation()}>
-        <h3>İndirim Uygula</h3>
+        <h3 className="modal-baslik">
+          <Percent size={18} />
+          İndirim Uygula
+        </h3>
         <div className="mod-sec">
           <button className={mod === "tutar" ? "aktif" : ""} onClick={() => setMod("tutar")}>Tutar</button>
           <button className={mod === "yuzde" ? "aktif" : ""} onClick={() => setMod("yuzde")}>Yüzde</button>
@@ -51,12 +55,17 @@ export default function IndirimModal({ araToplam, mevcutIndirim, onKapat, onUygu
         </div>
         <div className="numpad">
           {["7","8","9","4","5","6","1","2","3",".","0","←"].map((t) => (
-            <button key={t} onClick={() => numpadTus(t)}>{t}</button>
+            <button key={t} onClick={() => numpadTus(t)}>
+              {t === "←" ? <Delete size={19} /> : t}
+            </button>
           ))}
         </div>
         <div className="modal-aksiyonlar">
           <button className="iptal" onClick={onKapat}>Kapat</button>
-          <button className="uygula" onClick={uygula}>Kaydet ve Kapat</button>
+          <button className="uygula" onClick={uygula}>
+            <Check size={17} />
+            Kaydet ve Kapat
+          </button>
         </div>
       </div>
 

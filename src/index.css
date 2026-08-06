@@ -133,6 +133,9 @@ body {
 }
 
 .masa-garson {
+  overflow: hidden;
+  white-space: nowrap;
+  text-overflow: ellipsis;
   font-size: 13px;
   font-weight: 500;
   letter-spacing: 0.04em;
@@ -152,12 +155,14 @@ body {
   justify-content: space-between;
   gap: 10px;
   margin-top: 4px;
+  min-width: 0;
 }
 
 .masa-sure {
   display: inline-flex;
   align-items: center;
   gap: 4px;
+  white-space: nowrap;
   font-size: 13px;
   font-weight: 500;
   color: #ffe4d9;
@@ -434,118 +439,6 @@ body {
   color: var(--metin);
 }
 
-/* Kalem paneli */
-.panel-alt-baslik {
-  display: block;
-  margin-top: 3px;
-  font-style: normal;
-  font-size: 13px;
-  font-weight: 500;
-  color: var(--mercan);
-}
-
-.kalem-ikili {
-  display: grid;
-  grid-template-columns: 1fr 1fr;
-  gap: 14px;
-}
-
-.para-alan {
-  display: flex;
-  align-items: center;
-  gap: 6px;
-  padding: 0 12px;
-  border: 1px solid #e6ddd2;
-  border-radius: 10px;
-  background: var(--kart);
-}
-.para-alan em {
-  font-style: normal;
-  font-size: 15px;
-  color: var(--soluk);
-}
-.para-alan input {
-  border: none;
-  background: none;
-  padding: 11px 0;
-  width: 100%;
-  font-size: 15px;
-  font-variant-numeric: tabular-nums;
-}
-.para-alan input:focus {
-  outline: none;
-}
-
-.kalem-toplam {
-  display: flex;
-  justify-content: space-between;
-  align-items: center;
-  padding: 12px 14px;
-  margin-top: 14px;
-  border-radius: 10px;
-  background: var(--zemin);
-  font-size: 15px;
-}
-.kalem-toplam strong {
-  font-size: 17px;
-  color: var(--mercan);
-  font-variant-numeric: tabular-nums;
-}
-
-/* Kalem paneli: adet kutusu ve porsiyon seçimi */
-.adet-kutu {
-  display: flex;
-  align-items: center;
-  gap: 8px;
-}
-.adet-kutu button {
-  width: 40px;
-  height: 40px;
-  border: 1px solid #e6ddd2;
-  border-radius: 10px;
-  background: var(--zemin);
-  color: var(--metin);
-  display: flex;
-  align-items: center;
-  justify-content: center;
-  cursor: pointer;
-}
-.adet-kutu input {
-  flex: 1;
-  min-width: 0;
-  text-align: center;
-  font-variant-numeric: tabular-nums;
-}
-
-.porsiyon-secim {
-  display: flex;
-  flex-wrap: wrap;
-  gap: 8px;
-}
-.porsiyon-tus {
-  display: flex;
-  align-items: center;
-  gap: 6px;
-  padding: 9px 12px;
-  border: 1px solid #e6ddd2;
-  border-radius: 10px;
-  background: var(--zemin);
-  color: var(--metin);
-  font-size: 14px;
-  cursor: pointer;
-}
-.porsiyon-tus.secili {
-  background: var(--mercan);
-  border-color: var(--mercan);
-  color: #fff;
-}
-.porsiyon-tus em {
-  font-style: normal;
-  font-size: 13px;
-  opacity: 0.75;
-  font-variant-numeric: tabular-nums;
-}
-
 /* Satırın tıklanabilir olduğunu simge ve zemin belli eder */
 .sepet-satir {
   cursor: pointer;
@@ -559,18 +452,6 @@ body {
   align-items: center;
   color: var(--mercan);
   flex-shrink: 0;
-}
-
-.iptali-geri-al {
-  width: 100%;
-  padding: 12px;
-  border: 1px solid var(--yesil);
-  border-radius: 10px;
-  background: transparent;
-  color: var(--yesil);
-  font-size: 15px;
-  font-weight: 600;
-  cursor: pointer;
 }
 
 /* İkram ve iptal edilen kalemler adisyonda kalır ama hesaba girmez */
@@ -4118,4 +3999,877 @@ body {
 
 .ayar-onizleme strong {
   color: var(--metin);
+}
+
+/* Masa işlemleri: üç nokta menüsü ve hedef masa seçici */
+
+.masa-sarmal {
+  position: relative;
+  display: flex;
+}
+
+.masa-sarmal .masa-kart {
+  flex: 1;
+  min-width: 0;
+}
+
+.masa-menu-tus {
+  position: absolute;
+  top: 10px;
+  right: 10px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  width: 30px;
+  height: 30px;
+  border: none;
+  border-radius: 9px;
+  background: rgba(255, 255, 255, 0.2);
+  color: #fff9f6;
+  cursor: pointer;
+  transition: background 0.16s ease;
+}
+
+/* Dokunmatik kasada "üstüne gelme" diye bir şey yok — düğme hep duruyor. */
+.masa-menu-tus:hover,
+.masa-menu-tus.acik {
+  background: rgba(255, 255, 255, 0.34);
+}
+
+.masa-menu {
+  position: absolute;
+  top: 44px;
+  right: 10px;
+  z-index: 20;
+  min-width: 186px;
+  padding: 6px;
+  border-radius: 14px;
+  background: var(--kart);
+  box-shadow: 0 10px 30px rgba(45, 52, 54, 0.2);
+}
+
+.masa-menu button {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  width: 100%;
+  padding: 10px 12px;
+  border: none;
+  border-radius: 10px;
+  background: none;
+  color: var(--metin);
+  font-size: 14px;
+  font-weight: 500;
+  text-align: left;
+  cursor: pointer;
+}
+
+.masa-menu button:hover {
+  background: #fff1ec;
+  color: var(--mercan);
+}
+
+.masa-secim {
+  width: 560px;
+  max-width: calc(100vw - 32px);
+  max-height: calc(100vh - 64px);
+  overflow-y: auto;
+  padding: 22px;
+  border-radius: 18px;
+  background: var(--kart);
+  box-shadow: 0 12px 40px rgba(0, 0, 0, 0.18);
+}
+
+.masa-secim header {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 12px;
+  margin-bottom: 14px;
+}
+
+.masa-secim h3 {
+  font-size: 19px;
+  font-weight: 600;
+}
+
+.masa-secim-kapat {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  width: 32px;
+  height: 32px;
+  border: none;
+  border-radius: 9px;
+  background: var(--zemin);
+  color: var(--metin);
+  cursor: pointer;
+}
+
+.masa-secim-kapat:hover {
+  background: #f1e7db;
+}
+
+.masa-secim-bolge {
+  margin-top: 18px;
+}
+
+.masa-secim-bolge h4 {
+  font-size: 15px;
+  font-weight: 600;
+  color: var(--metin);
+  margin-bottom: 9px;
+}
+
+.masa-secim-grid {
+  display: grid;
+  grid-template-columns: repeat(auto-fill, minmax(118px, 1fr));
+  gap: 9px;
+}
+
+.masa-secim-kart {
+  display: flex;
+  flex-direction: column;
+  gap: 3px;
+  padding: 12px 13px;
+  border: 1px solid #eee6dc;
+  border-radius: 13px;
+  background: var(--kart);
+  text-align: left;
+  cursor: pointer;
+  transition: border-color 0.16s ease, background 0.16s ease;
+}
+
+.masa-secim-kart:hover {
+  border-color: var(--mercan);
+  background: #fff5f1;
+}
+
+.masa-secim-ad {
+  font-size: 15px;
+  font-weight: 600;
+  color: var(--metin);
+}
+
+/* Seçilemeyen masa silikleştirilmiyor — kilit işaretiyle ve çizgili zeminle
+   belirtiliyor ki yazısı okunur kalsın. */
+.masa-secim-kart.kilitli {
+  background: var(--zemin);
+  border-style: dashed;
+  cursor: not-allowed;
+}
+
+.masa-secim-durum {
+  display: inline-flex;
+  align-items: center;
+  gap: 4px;
+  font-size: 13px;
+  font-weight: 500;
+  color: var(--soluk);
+}
+
+.masa-secim-bos {
+  margin-top: 18px;
+  padding: 18px;
+  border-radius: 13px;
+  background: var(--zemin);
+  font-size: 14px;
+  color: var(--metin);
+  text-align: center;
+}
+
+/* ---- Kalem paneli ----
+   Tutar başlıkta duruyor, alanlar "etiket solda / kontrol sağda" satırlarında.
+   Kalemi adisyondan çıkaran işler ayrı bölümde toplanıyor. */
+
+.kp-ust {
+  padding: 20px 24px 18px;
+  border-radius: 22px 0 0 0;
+  background: linear-gradient(150deg, #fb8a69 0%, #f9805f 60%, #ef7050 100%);
+  color: #fff9f6;
+}
+
+.kp-ust-satir {
+  display: flex;
+  align-items: flex-start;
+  gap: 12px;
+}
+
+.kp-ust h3 {
+  flex: 1;
+  font-size: 20px;
+  font-weight: 600;
+  letter-spacing: -0.2px;
+  line-height: 1.3;
+  color: #fff9f6;
+}
+
+.kp-ust .panel-kapat {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  flex-shrink: 0;
+  width: 32px;
+  height: 32px;
+  border: none;
+  border-radius: 50%;
+  background: rgba(255, 255, 255, 0.2);
+  color: #fff9f6;
+  cursor: pointer;
+  transition: background 0.15s ease;
+}
+
+.kp-ust .panel-kapat:hover {
+  background: rgba(255, 255, 255, 0.34);
+}
+
+.kp-rozetler {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 6px;
+  margin-top: 10px;
+  min-height: 1px;
+}
+
+.kp-rozet {
+  padding: 4px 11px 5px;
+  border-radius: 999px;
+  background: rgba(255, 255, 255, 0.22);
+  font-size: 13px;
+  font-weight: 600;
+  color: #fff9f6;
+}
+
+.kp-rozet.ikram {
+  background: #fff9f6;
+  color: #d85a38;
+}
+
+.kp-rozet.iptal {
+  background: rgba(45, 52, 54, 0.42);
+}
+
+.kp-tutar {
+  display: flex;
+  align-items: baseline;
+  justify-content: space-between;
+  gap: 12px;
+  margin-top: 16px;
+  padding-top: 14px;
+  border-top: 1px solid rgba(255, 255, 255, 0.28);
+}
+
+.kp-tutar span {
+  font-size: 14px;
+  font-weight: 500;
+  color: #ffe4d9;
+}
+
+.kp-tutar strong {
+  font-size: 27px;
+  font-weight: 700;
+  letter-spacing: -0.5px;
+  color: #fff9f6;
+  font-variant-numeric: tabular-nums;
+}
+
+.kp-govde {
+  display: flex;
+  flex-direction: column;
+}
+
+/* Etiket solda, kontrol sağda; satırlar ince çizgiyle ayrılıyor. */
+.kp-satir {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 14px;
+  padding: 13px 0;
+  border-bottom: 1px solid #f4ece2;
+}
+
+.kp-satir:first-child {
+  padding-top: 0;
+}
+
+.kp-satir label,
+.kp-blok label {
+  font-size: 15px;
+  font-weight: 500;
+  color: var(--metin);
+}
+
+.kp-adet {
+  display: flex;
+  align-items: center;
+  border: 1px solid #e6ddd2;
+  border-radius: 11px;
+  overflow: hidden;
+  background: var(--kart);
+}
+
+.kp-adet button {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  width: 42px;
+  height: 44px;
+  border: none;
+  background: var(--zemin);
+  color: var(--metin);
+  cursor: pointer;
+  transition: background 0.14s ease, color 0.14s ease;
+}
+
+.kp-adet button:hover:not(:disabled) {
+  background: var(--mercan);
+  color: #fff;
+}
+
+.kp-adet button:disabled {
+  color: #c3bcb4;
+  cursor: default;
+}
+
+.kp-adet input {
+  width: 58px;
+  height: 44px;
+  border: none;
+  border-left: 1px solid #f0e8de;
+  border-right: 1px solid #f0e8de;
+  background: none;
+  text-align: center;
+  font-size: 17px;
+  font-weight: 600;
+  color: var(--metin);
+  font-variant-numeric: tabular-nums;
+}
+
+.kp-adet input:focus {
+  outline: none;
+  background: #fff5f1;
+}
+
+/* Sayı okunun tuşları daralttığı görüntüyü almıyoruz; artı-eksi zaten var. */
+.kp-adet input::-webkit-outer-spin-button,
+.kp-adet input::-webkit-inner-spin-button {
+  appearance: none;
+  margin: 0;
+}
+
+.kp-adet input[type="number"] {
+  appearance: textfield;
+  -moz-appearance: textfield;
+}
+
+.kp-para {
+  display: flex;
+  align-items: center;
+  gap: 5px;
+  width: 142px;
+  padding: 0 13px;
+  border: 1px solid #e6ddd2;
+  border-radius: 11px;
+  background: var(--kart);
+  transition: border-color 0.14s ease;
+}
+
+.kp-para:focus-within {
+  border-color: var(--mercan);
+}
+
+.kp-para em {
+  font-style: normal;
+  font-size: 16px;
+  font-weight: 500;
+  color: var(--soluk);
+}
+
+.kp-para input {
+  width: 100%;
+  min-width: 0;
+  padding: 12px 0;
+  border: none;
+  background: none;
+  font-size: 16px;
+  font-weight: 600;
+  color: var(--metin);
+  text-align: right;
+  font-variant-numeric: tabular-nums;
+}
+
+.kp-para input:focus {
+  outline: none;
+}
+
+.kp-blok {
+  padding: 15px 0;
+  border-bottom: 1px solid #f4ece2;
+}
+
+.kp-blok label {
+  display: block;
+  margin-bottom: 10px;
+}
+
+.kp-porsiyonlar {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 8px;
+}
+
+.kp-porsiyon {
+  display: flex;
+  align-items: center;
+  gap: 7px;
+  padding: 10px 14px;
+  border: 1px solid #e6ddd2;
+  border-radius: 11px;
+  background: var(--kart);
+  color: var(--metin);
+  font-size: 14px;
+  font-weight: 500;
+  cursor: pointer;
+  transition: border-color 0.14s ease, background 0.14s ease;
+}
+
+.kp-porsiyon:hover {
+  border-color: var(--mercan);
+  background: #fff5f1;
+}
+
+.kp-porsiyon.secili {
+  background: var(--mercan);
+  border-color: var(--mercan);
+  color: #fff;
+}
+
+.kp-porsiyon em {
+  font-style: normal;
+  font-size: 14px;
+  font-weight: 600;
+  color: var(--mercan);
+  font-variant-numeric: tabular-nums;
+}
+
+.kp-porsiyon.secili em {
+  color: #fff;
+}
+
+.kp-not {
+  width: 100%;
+  padding: 12px 14px;
+  border: 1px solid #e6ddd2;
+  border-radius: 11px;
+  background: var(--kart);
+  font-size: 15px;
+  color: var(--metin);
+}
+
+.kp-not:focus {
+  outline: none;
+  border-color: var(--mercan);
+}
+
+.kp-not::placeholder {
+  color: var(--soluk);
+}
+
+.kp-islemler {
+  display: flex;
+  flex-direction: column;
+  gap: 8px;
+  padding: 16px 0 4px;
+}
+
+.kp-islem {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  width: 100%;
+  padding: 13px 15px;
+  border: 1px solid #e6ddd2;
+  border-radius: 11px;
+  background: var(--kart);
+  color: var(--metin);
+  font-size: 15px;
+  font-weight: 500;
+  text-align: left;
+  cursor: pointer;
+  transition: border-color 0.14s ease, background 0.14s ease, color 0.14s ease;
+}
+
+.kp-islem svg {
+  flex-shrink: 0;
+  color: var(--soluk);
+}
+
+/* Düğmenin ne yaptığını anlatan kısa not — sağa yaslı, okunur tonda. */
+.kp-islem em {
+  margin-left: auto;
+  font-style: normal;
+  font-size: 14px;
+  font-weight: 500;
+  color: var(--soluk);
+}
+
+.kp-islem:hover:not(:disabled) em {
+  color: var(--mercan);
+}
+
+.kp-islem:hover:not(:disabled) {
+  border-color: var(--mercan);
+  background: #fff5f1;
+  color: var(--mercan);
+}
+
+.kp-islem:hover:not(:disabled) svg {
+  color: var(--mercan);
+}
+
+/* Ödemesi işlenmiş kalemde taşıma kapalı — yazı okunur kalıyor, sebebi
+   altındaki bilgi kutusunda yazıyor. */
+.kp-islem:disabled {
+  background: var(--zemin);
+  border-style: dashed;
+  cursor: not-allowed;
+}
+
+.kp-islem.tehlikeli:hover {
+  border-color: #e74c3c;
+  background: #fdf0ee;
+  color: #c0392b;
+}
+
+.kp-islem.tehlikeli:hover svg {
+  color: #c0392b;
+}
+
+.kp-islem.geri-al {
+  border-color: var(--yesil);
+  color: #17997a;
+}
+
+.kp-islem.geri-al svg {
+  color: #17997a;
+}
+
+.kp-islem.geri-al:hover {
+  background: #eafaf5;
+  border-color: var(--yesil);
+  color: #17997a;
+}
+
+.kp-alt {
+  display: flex;
+  gap: 10px;
+  padding: 14px 24px 20px;
+  border-top: 1px solid #f0e8de;
+  background: var(--kart);
+  border-radius: 0 0 0 22px;
+}
+
+.kp-alt .iptal {
+  flex: 1;
+  padding: 14px;
+  border: 1px solid #eee6dc;
+  border-radius: 12px;
+  background: var(--kart);
+  color: var(--metin);
+  font-size: 15px;
+  font-weight: 500;
+  cursor: pointer;
+}
+
+.kp-alt .iptal:hover {
+  background: var(--zemin);
+}
+
+.kp-alt .uygula {
+  flex: 2;
+  padding: 14px;
+  border: none;
+  border-radius: 12px;
+  background: var(--mercan);
+  color: #fff;
+  font-size: 15px;
+  font-weight: 600;
+  cursor: pointer;
+  box-shadow: 0 4px 14px rgba(255, 122, 89, 0.32);
+}
+
+.kp-alt .uygula:hover {
+  background: #f46f4c;
+}
+
+/* ---- İkonlu düğmeler ----
+   Ödeme, indirim ve kaydetme düğmelerinin hepsi ikonla geliyor; hizalama tek
+   yerden veriliyor ki her düğmede ayrı ayrı uğraşılmasın. */
+
+.geri,
+.kaydet,
+.sepet-aksiyonlar .ode,
+.sepet-aksiyonlar .indirim-btn,
+.odeme-tip-btn,
+.tahsilat-alt-butonlar .tahsilat-kaydet,
+.tahsilat-alt-butonlar .tahsilat-kapat-btn,
+.bolme-kisayol .indirim-kisayol,
+.modal-aksiyonlar .uygula,
+.numpad-tus,
+.numpad button,
+.tahsilat-ust .kapat,
+.gecmis-sil {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  gap: 8px;
+}
+
+.geri {
+  gap: 6px;
+}
+
+.gecmis-tip {
+  display: inline-flex;
+  align-items: center;
+  gap: 7px;
+}
+
+.gecmis-tip svg {
+  color: var(--soluk);
+  flex-shrink: 0;
+}
+
+/* Ödeme tipi düğmeleri renkli zeminde; ikon yazıyla aynı tonda kalıyor. */
+.odeme-tip-btn svg {
+  flex-shrink: 0;
+  opacity: 0.92;
+}
+
+.bolme-kisayol .indirim-kisayol {
+  gap: 5px;
+}
+
+/* Sağdaki tik ikonu tutar yazısıyla aynı hizada dursun. */
+.kalem-sec > span:last-child {
+  display: inline-flex;
+  align-items: center;
+  gap: 6px;
+}
+
+.modal-baslik {
+  display: flex;
+  align-items: center;
+  gap: 9px;
+}
+
+.modal-baslik svg {
+  color: var(--mercan);
+}
+
+/* ---- Salon planı ----
+   Sabit oranlı tuval: masaların birbirine göre yeri her ekranda aynı kalıyor. */
+
+.masa-plani {
+  position: relative;
+  width: 100%;
+  aspect-ratio: 1000 / 640;
+  border-radius: 18px;
+  background: var(--kart);
+  box-shadow: inset 0 0 0 1px #efe6db;
+  touch-action: none;
+}
+
+/* Salt okunur planda taşma açık kalıyor: masanın üç nokta menüsü tuvalin
+   kenarına yakın masalarda kesilmesin. Düzenleme kipinde sürükleme zaten
+   tuval içine sınırlı. */
+.masa-plani.duzenlenebilir {
+  overflow: hidden;
+}
+
+/* Düzenleme kipinde ızgara görünüyor — masanın nereye oturduğu belli olsun. */
+.masa-plani.duzenlenebilir {
+  background-color: #fffdfa;
+  background-image:
+    linear-gradient(#f1e7db 1px, transparent 1px),
+    linear-gradient(90deg, #f1e7db 1px, transparent 1px);
+  background-size: 5% 7.8125%;
+  cursor: default;
+}
+
+.plan-masa {
+  position: absolute;
+  padding: 4px;
+}
+
+.masa-plani.duzenlenebilir .plan-masa {
+  cursor: grab;
+}
+
+.plan-masa.tasiniyor {
+  z-index: 5;
+  cursor: grabbing;
+  filter: drop-shadow(0 10px 22px rgba(45, 52, 54, 0.22));
+}
+
+/* Kart tuvaldeki kutunun tamamını dolduruyor. */
+.plan-masa > .masa-sarmal,
+.plan-masa > .ayar-masa {
+  width: 100%;
+  height: 100%;
+}
+
+.plan-masa .masa-kart {
+  height: 100%;
+  min-height: 0;
+}
+
+.plan-masa .ayar-masa.planda {
+  min-height: 0;
+  padding: 10px;
+}
+
+/* Sürükleme sırasında yazı seçilmesin, masa adı maviye boyanmasın. */
+.masa-plani.duzenlenebilir .plan-masa * {
+  user-select: none;
+}
+
+.plan-tutamac {
+  position: absolute;
+  right: 0;
+  bottom: 0;
+  width: 22px;
+  height: 22px;
+  border-radius: 0 0 14px 0;
+  background: var(--mercan);
+  cursor: nwse-resize;
+  box-shadow: -1px -1px 0 2px #fff;
+}
+
+.plan-tutamac::after {
+  content: "";
+  position: absolute;
+  right: 5px;
+  bottom: 5px;
+  width: 7px;
+  height: 7px;
+  border-right: 2px solid #fff;
+  border-bottom: 2px solid #fff;
+}
+
+/* Liste / Plan geçişi */
+.gorunum-sec {
+  display: inline-flex;
+  gap: 3px;
+  margin-left: auto;
+  padding: 3px;
+  border-radius: 12px;
+  background: #f3ebe1;
+}
+
+.gorunum-sec button {
+  display: inline-flex;
+  align-items: center;
+  gap: 6px;
+  padding: 8px 14px;
+  border: none;
+  border-radius: 9px;
+  background: none;
+  color: var(--metin);
+  font-size: 14px;
+  font-weight: 500;
+  cursor: pointer;
+}
+
+.gorunum-sec button.aktif {
+  background: var(--kart);
+  font-weight: 600;
+  box-shadow: 0 1px 3px rgba(45, 52, 54, 0.12);
+}
+
+/* Plandaki masa kartı: kutu boyutu işletmecinin çizdiği kadar, içerik ona
+   uyuyor. Izgaradaki ferah ölçüler burada taşmaya yol açıyordu. */
+.plan-masa .masa-kart {
+  padding: 11px 13px;
+  gap: 2px;
+  overflow: hidden;
+}
+
+.plan-masa .masa-kart.dolu {
+  justify-content: space-between;
+}
+
+.plan-masa .masa-ad {
+  overflow: hidden;
+  white-space: nowrap;
+  text-overflow: ellipsis;
+}
+
+.plan-masa .masa-tutar {
+  font-size: 19px;
+}
+
+.plan-masa .masa-satir {
+  margin-top: 0;
+}
+
+/* Dar masalarda süre ile tutar yan yana sığmıyor; süre gizlenip tutar
+   kalıyor — garsonun bakacağı rakam o. */
+.plan-masa .masa-sure {
+  flex-shrink: 1;
+  overflow: hidden;
+}
+
+.plan-masa .masa-ust {
+  min-height: 0;
+}
+
+/* Üç nokta düğmesi kartın köşesinden taşmasın diye plana özel biraz içeride. */
+.plan-masa .masa-menu-tus {
+  top: 8px;
+  right: 8px;
+  width: 27px;
+  height: 27px;
+}
+
+/* Bölgenin salon ekranındaki görünümünü belirleyen anahtar; plan tuvalinin
+   hemen üstünde duruyor ki çizim ile sonucu arasındaki bağ görünsün. */
+.plan-anahtar {
+  padding: 4px 16px;
+  margin-bottom: 14px;
+  border-radius: 12px;
+  background: var(--kart);
+  box-shadow: 0 1px 3px rgba(45, 52, 54, 0.07);
+}
+
+/* Menü Stüdyosu'ndaki düz karakter simgeleri ikona geçti; kutu ölçüleri punto
+   yerine ikona göre hizalanıyor. */
+.menu-urun-sil,
+.menu-urun-kopya,
+.ms-islem,
+.satir-sil,
+.arama-temizle,
+.ms-sirala,
+.ms-ekle,
+.ms-urun-ekle,
+.ms-urun-sirala,
+.ekle-satir button,
+.detay-tus,
+.birim-ekle {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  gap: 7px;
+}
+
+.satir-sil {
+  padding: 4px 6px;
+}
+
+/* İpucu balonu ikonun üstünde açılıyor; düğme artık esnek kutu olduğu için
+   konumlandırmanın dayanağı korunuyor. */
+.menu-urun-sil,
+.menu-urun-kopya,
+.ms-islem {
+  position: relative;
 }

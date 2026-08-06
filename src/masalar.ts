@@ -22,7 +22,7 @@ function masayaCevir(m: any): Masa {
 
 export async function bolgeleriGetir(): Promise<Bolge[]> {
   const [blg, msa] = await Promise.all([
-    supabase.from("bolgeler").select("id, ad, sira").order("sira"),
+    supabase.from("bolgeler").select("id, ad, sira, plan_modu").order("sira"),
     supabase.from("masalar").select(MASA_ALANLARI).order("sira"),
   ]);
 
@@ -31,6 +31,7 @@ export async function bolgeleriGetir(): Promise<Bolge[]> {
     id: b.id,
     ad: b.ad,
     sira: b.sira,
+    planModu: b.plan_modu ?? false,
     masalar: masalar.filter((m) => m.bolgeId === b.id),
   }));
 }
@@ -45,7 +46,10 @@ export async function bolgeEkle(ad: string, sira: number): Promise<number> {
   return (data as any).id;
 }
 
-export async function bolgeGuncelle(id: number, alanlar: Partial<{ ad: string; sira: number }>) {
+export async function bolgeGuncelle(
+  id: number,
+  alanlar: Partial<{ ad: string; sira: number; plan_modu: boolean }>
+) {
   await supabase.from("bolgeler").update(alanlar).eq("id", id);
 }
 
@@ -61,7 +65,36 @@ type MasaAlanlari = {
   kapasite: number | null;
   sekil: string;
   bolge_id: number;
+  konum_x: number;
+  konum_y: number;
+  genislik: number;
+  yukseklik: number;
 };
+
+// Salon planındaki yer: tuval birimi cinsinden konum ve boyut.
+export type Yerlesim = {
+  konumX: number;
+  konumY: number;
+  genislik: number;
+  yukseklik: number;
+};
+
+export async function yerlesimKaydet(id: number, y: Yerlesim) {
+  await supabase
+    .from("masalar")
+    .update({
+      konum_x: Math.round(y.konumX),
+      konum_y: Math.round(y.konumY),
+      genislik: Math.round(y.genislik),
+      yukseklik: Math.round(y.yukseklik),
+    })
+    .eq("id", id);
+}
+
+/** Otomatik dizmede ve ilk açılışta çok masa birden yazılıyor. */
+export async function yerlesimTopluKaydet(kayitlar: (Yerlesim & { id: number })[]) {
+  await Promise.all(kayitlar.map(({ id, ...y }) => yerlesimKaydet(id, y)));
+}
 
 export async function masaEkle(bolgeId: number, alanlar: Partial<MasaAlanlari> & { ad: string }) {
   const { data } = await supabase

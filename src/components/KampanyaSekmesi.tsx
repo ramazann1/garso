@@ -1,4 +1,5 @@
 import { useState } from "react";
+import { Plus, X } from "lucide-react";
 import Bilgi from "./Bilgi";
 import {
   grubunVarsayilanSecimi,
@@ -180,7 +181,7 @@ export default function KampanyaSekmesi({
         <div className="ms-urun-ust">
           <h2>Kampanyalı Menüler</h2>
           <span>{kampanyalar.length}</span>
-          <button className="ms-urun-ekle" onClick={() => yukle(undefined)}>+ Menü</button>
+          <button className="ms-urun-ekle" onClick={() => yukle(undefined)}><Plus size={15} /> Menü</button>
         </div>
 
         {kampanyalar.map((u) => (
@@ -223,7 +224,7 @@ export default function KampanyaSekmesi({
               <button
                 onClick={() => setGruplar([...gruplar, { baslik: "", secilebilir: 1, satirlar: [] }])}
               >
-                + Grup
+                <Plus size={14} /> Grup
               </button>
             </div>
 
@@ -245,7 +246,7 @@ export default function KampanyaSekmesi({
                     className="satir-sil"
                     onClick={() => setGruplar(gruplar.filter((_, j) => j !== gi))}
                   >
-                    ×
+                    <X size={15} />
                   </button>
                 </div>
                 <Bilgi>
@@ -312,7 +313,7 @@ export default function KampanyaSekmesi({
                           grupDegis(gi, { satirlar: g.satirlar.filter((_, j) => j !== si) })
                         }
                       >
-                        ×
+                        <X size={15} />
                       </button>
                     </div>
                   );
@@ -320,7 +321,7 @@ export default function KampanyaSekmesi({
 
                 <div className="ekle-satir">
                   <button onClick={() => satirEkle(gi)} disabled={!icerikAdaylari.length}>
-                    + Ürün
+                    <Plus size={14} /> Ürün
                   </button>
                 </div>
               </div>

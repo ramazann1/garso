@@ -1,45 +1,41 @@
 # GARSO — Teknik Tasarım: Veri Modeli & Ekran Haritası
 *Restoran ve cafe'ler için bulut tabanlı satış ve işletme yönetim sistemi.*
 
-## 0. SIRADAKİ İŞ (6 Ağu 2026 ikinci oturumda güncellendi)
+## 0. SIRADAKİ İŞ (7 Ağu 2026 oturumunda güncellendi)
 
 *Ramazan seansa "devam edelim" diye giriyor — sıradaki iş bu listenin en üstündeki
 maddedir. Seans sonunda bu liste güncellenir: biten madde silinir, kalanlar
 yukarı kayar, yeni çıkanlar sıraya girer.*
 
-**Menü modülü ve masa/bölge tanımları bitti; salon çekirdeği sürüyor.** Eksik
-envanteri bölüm 6'da, Adisyo turları `pos-yol-haritasi.md` bölüm 7 ve 8'de.
+**Menü modülü, masa/bölge tanımları ve salon çekirdeği bitti; sırada tahsilat
+derinleşmesi var.** Eksik envanteri bölüm 6'da, Adisyo turları
+`pos-yol-haritasi.md` bölüm 7 ve 8'de.
 
-1. **Masa taşıma / birleştirme / adisyon aktarma** — masa kartında üç nokta
-   menüsü. Veri tarafı hazır (masalar tabloda, adisyon `masa_id` ile bağlı).
-2. **Kalemi başka adisyona taşıma** — kalem panelinde yeri hazır (1. maddeyle
-   aynı akışın parçası).
-3. **Masa yerleşim editörü** — masaları salon planı gibi sürükleyip
-   boyutlandırma. Kolonlar açıldı (`konum_x`, `konum_y`, `genislik`,
-   `yukseklik`), editör yok. Ramazan istedi: "olsun, zararı ne".
-4. **Tahsilat zenginleştirme** — Hızlı Öde, bahşiş (üstünü tamamla), ödeme tipi
+1. **Tahsilat zenginleştirme** — Hızlı Öde, bahşiş (üstünü tamamla), ödeme tipi
    ÖKC/klasik ayrımı, ürün bazlı 1/n, ürün bazlı indirim.
-5. **Gel Al / Paket akışı** — fiyat altyapısı hazır, akış yok. Salon ekranının
+2. **Gel Al / Paket akışı** — fiyat altyapısı hazır, akış yok. Salon ekranının
    solunda kısayol olacak (Adisyo'daki gibi).
-6. **Fiyatlar KDV hariç ayarı** — işletme geneli tek ayar, varsayılan "dahil".
+3. **Fiyatlar KDV hariç ayarı** — işletme geneli tek ayar, varsayılan "dahil".
    İşletme Ayarları ekranı açıldı, oraya girecek.
-7. **Ön tanımlı indirimler** — ad + tip + değer; satışta serbest tutar yerine
+4. **Ön tanımlı indirimler** — ad + tip + değer; satışta serbest tutar yerine
    listeden seçim. (Adisyo Tanımlamalar turu, 6 Ağu)
-8. **Seçenek grubunda zorunlu seçim sayısı ve varsayılan seçenek** — bizde
+5. **Seçenek grubunda zorunlu seçim sayısı ve varsayılan seçenek** — bizde
    tekli/çoklu ve zorunlu var, "en az kaç tane" ile "önceden işaretli" yok.
-9. **Turların arayüze çıkması** — `turlar` tablosu doluyor, sepet hâlâ düz liste.
+6. **Turların arayüze çıkması** — `turlar` tablosu doluyor, sepet hâlâ düz liste.
    Adisyonda "1. tur / 14:20" başlıkları görünecek.
-10. **Adisyon düzeyi alanlar** — adisyon no, serbest isim, kişi sayısı, adisyon
-    notu, müşteri. Tabloda `adisyon_no` var, ekranda kullanılmıyor.
-11. **Kapanmış adisyonlar listesi** — kapanan adisyon `durum = kapali` olarak
-    duruyor; onları gösteren ekran yok.
+7. **Adisyon düzeyi alanlar** — adisyon no, serbest isim, kişi sayısı, adisyon
+   notu, müşteri. Tabloda `adisyon_no` var, ekranda kullanılmıyor.
+8. **Kapanmış adisyonlar listesi** — kapanan adisyon `durum = kapali` olarak
+   duruyor; onları gösteren ekran yok.
+9. **Masa yazdırma ve adisyon iptali** — masa üç nokta menüsünde yerleri boş
+   duruyor; yazdırma yazıcı altyapısına, iptal kapanmış adisyon ekranına bağlı.
 
 **Ödenmezler** ve **Kuver/Garsoniye** Faz 2'ye yazıldı (yol haritası bölüm 8);
 bu listeye satış çekirdeği bitince girecekler.
 
-**İkon seti:** `lucide-react` kullanılıyor. Salon, İşletme Ayarları, kalem
-paneli ve Menü Stüdyosu'nun bir kısmı geçti; birkaç ekranda hâlâ düz karakter
-simgeleri (çarpı, kopyala, sırala) duruyor, elimiz değdikçe ikona çevriliyor.
+**İkon seti:** `lucide-react`. 7 Ağu 2026'da **tüm ekranlar geçti** — düz
+karakter simgesi (× ← ✓ ⌫ ⧉ ⇅ ✎) kalmadı. Bundan sonra her yeni düğme, başlık
+ve durum işareti ikonuyla yazılıyor (karar 51).
 
 ## 1. TEKNOLOJİ KARARLARI
 - **Veritabanı:** PostgreSQL 16 (para alanları `BIGINT` kuruş, asla float)
@@ -555,6 +551,29 @@ görüntüle" ve aktif/pasif ürün — 1 Ağu 2026 ikinci seansında tamamland�
    kullan"). Renk seçici yalnızca kategori/ürün gibi kullanıcının kendi
    etiketlediği yerlerde kalır. Salonda dolu masa dolgun mercan, boş masa
    beyaz — durum farkı renk yoğunluğundan okunur. *(6 Ağu 2026)*
+51. **Her düğme, başlık ve durum işareti ikon taşır.** `lucide-react`; düz
+   karakter simgeleri (× ← ✓ ⌫ ⧉ ⇅ ✎) kullanılmaz. İkon yazının soluna gelir,
+   hizalama `index.css`'te "İkonlu düğmeler" bölümünde toplu durur — her düğmeye
+   ayrı yazılmaz. Kullanıcının kendi tanımladığı kayıtlarda (ödeme tipleri) sabit
+   liste olmaz: ada bakıp eşleştirilir, tanınmayan için nötr varsayılan verilir
+   (`src/odemeIkon.tsx`). Kayıtlı bir kaydı silen düğme çöp kutusu, formdaki
+   kaydedilmemiş satırı çıkaran düğme X. *(7 Ağu 2026)*
+52. **Salon planı bölge bazlı ve işletmecinin açtığı bir seçenektir.**
+   `bolgeler.plan_modu` varsayılan kapalı; masaya konum yazılmış olması tek başına
+   görünümü değiştirmez. Ayarlardaki plan görünümü bir çalışma tezgâhıdır, düzen
+   çizilir ve beğenilirse anahtarla yayına alınır. Kapalıyken masalar ızgarada
+   dizilir. *(7 Ağu 2026 — Ramazan planı otomatik açılınca "masalarım neden
+   bozuldu" dedi; karar kullanıcının olmalı.)*
+53. **Masa birleştirme ve adisyon aktarma tek maddedir.** Adisyo'da "Masaları
+   Birleştir" ve "Adisyon Aktar" ayrı iki menü maddesi ama ikisi de aynı işi
+   yapıyor; Garso'da menü iki satır: "Masayı taşı" (boş masaya) ve "Adisyonu
+   birleştir" (dolu masaya). *(7 Ağu 2026)*
+54. **İkram ve iptal anahtar değil, düğmedir.** Kalem panelinde basar basmaz
+   uygulanır; "Uygula" yalnız adet, fiyat, porsiyon ve notu yazar, kalemin
+   durumuna dokunmaz. Geri alma da kendi düğmesiyle. *(7 Ağu 2026)*
+55. **Panelde tek açıklama satırı durur.** Kalem panelinde üç bilgi kutusu üst
+   üste diziliyordu, panel ders kitabına dönüyordu. Duruma göre en gerekli olan
+   tek kutu çıkar, hiçbiri geçerli değilse hiç çıkmaz. *(7 Ağu 2026)*
 
 ## 7. KOD PAYLAŞIM DÜZENİ
 - Kod GitHub'da: `github.com/ramazann1/garso` (şimdilik Public — final'de Private yapılacak)
@@ -757,3 +776,49 @@ ana ekranlarda tek vurgu rengi. Silik yazı kuralı ayrıca CLAUDE.md'ye
 ### Sonraki seansın ilk işi
 Salon ekranının kalan parçaları: masa taşıma / birleştirme / adisyon aktarma
 (üç nokta menüsü) ve masa yerleşim editörü.
+
+## 10. SEANS GÜNLÜĞÜ — 7 AĞU 2026
+
+### Yapılanlar
+- ✅ **Masa taşıma / birleştirme** — dolu masa kartında üç nokta menüsü
+  (`components/MasaSecim.tsx` yeni). `masaTasi` adisyonun `masa_id`'sini
+  değiştiriyor; `masaBirlestir` kaynağın **turlarını** hedef adisyona bağlıyor,
+  tur sıraları hedefin sonundan devam ediyor, tahsilatlar taşınıyor, indirimler
+  toplanıyor, boşalan adisyon siliniyor. Kalem kimlikleri kaymadığı için ödeme
+  eşleşmeleri bozulmuyor.
+- ✅ **Kalemi başka adisyona taşıma** — `kalemTasi`. Kalem hedefte yeni bir tura
+  giriyor, kısmi adet destekli, hedef masa boşsa orada adisyon açılıyor, kaynak
+  boşalırsa siliniyor. Taşımadan önce adisyon sessizce kaydediliyor (ekrandaki
+  yeni kalemin diskte karşılığı olmadan taşınamaz). **Ödemesi işlenmiş kalem
+  taşınmaz** — düğme kapalı, gerekçesi yazıyor.
+- ✅ **Masa yerleşim editörü** (`components/MasaPlani.tsx` yeni) — 1000×640
+  birimlik sabit oranlı tuval, pointer olaylarıyla sürükleme ve sağ alt köşeden
+  boyutlandırma (fare + dokunmatik aynı kod), 10 birimlik ızgaraya oturma,
+  bırakışta kaydetme. İşletme Ayarları'nda **Liste / Plan** geçişi, "Otomatik
+  diz" düğmesi, ilk açılışta konumsuz masaların dizilmesi. Salon salt okunur
+  modda aynı bileşeni kullanıyor ve tuvali kullanılan alana göre kırpıyor.
+- ✅ **Kalem paneli yeniden tasarlandı** — tutar mercan başlığa çıktı (adet/fiyat
+  değiştikçe canlı), alanlar "etiket solda / kontrol sağda" satırlarına döndü,
+  adet seçici birleşik parça oldu, ikram/taşı/iptal ayrı işlem bölümünde
+  toplandı, üç bilgi kutusu bire indi.
+- ✅ **Bütün arayüz ikona geçti** — kalem paneli, tahsilat paneli (ödeme tipleri
+  ada göre eşleşen ikonlarla, `src/odemeIkon.tsx` yeni), indirim penceresi,
+  sipariş alt barı, Menü Stüdyosu (kopyala/sil/düzenle/sırala/ekle), Birimler,
+  KDV, aktarım sekmesi, bildirim. Düz karakter simgesi kalmadı.
+
+### Veritabanı
+- `sql/2026-08-07-bolge-plan.sql`: `bolgeler.plan_modu boolean not null default false`.
+
+### Denenip vazgeçilenler
+- **Yerleşimi otomatik yayına almak:** "masaların hepsinde konum varsa Salon plan
+  çizsin" kuralı, ayarlarda plana bakmak Salon'u değiştirdiği için reddedildi.
+  Yerine bölge bazlı açık anahtar geldi (karar 52).
+
+### Kararlar
+Bölüm 6'ya **51-55** numaralarıyla işlendi: her yerde ikon, bölge bazlı plan
+modu, birleştirme/aktarma tek madde, ikram-iptal düğme oldu, panelde tek
+açıklama satırı. "Her yerde ikon" kuralı Claude'un kalıcı hafızasına da yazıldı.
+
+### Sonraki seansın ilk işi
+Tahsilat zenginleştirme: Hızlı Öde, bahşiş (üstünü tamamla), ödeme tipi
+ÖKC/klasik ayrımı, ürün bazlı 1/n ve ürün bazlı indirim.

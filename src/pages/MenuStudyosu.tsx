@@ -1,5 +1,5 @@
 import { useEffect, useState } from "react";
-import { ChevronDown } from "lucide-react";
+import { ArrowUpDown, ChevronDown, Copy, Pencil, Plus, Trash2, X } from "lucide-react";
 import Duzen from "../components/Duzen";
 import Bilgi from "../components/Bilgi";
 import UrunPaneli from "../components/UrunPaneli";
@@ -188,7 +188,7 @@ function GrupPaneli({
       <div className="urun-panel" onClick={(e) => e.stopPropagation()}>
         <header className="panel-ust">
           <h3>{grup ? "Grubu düzenle" : "Yeni seçenek grubu"}</h3>
-          <button className="panel-kapat" onClick={onKapat}>×</button>
+          <button className="panel-kapat" onClick={onKapat}><X size={19} /></button>
         </header>
 
         <div className="panel-govde">
@@ -215,9 +215,9 @@ function GrupPaneli({
                 disabled={liste.length < 2}
                 onClick={() => setSiralama(true)}
               >
-                ⇅ Sırala
+                <ArrowUpDown size={15} /> Sırala
               </button>
-              <button onClick={() => setListe([...liste, { ad: "", ekFiyat: 0 }])}>+ Seçenek</button>
+              <button onClick={() => setListe([...liste, { ad: "", ekFiyat: 0 }])}><Plus size={14} /> Seçenek</button>
             </div>
             <Bilgi>Ek fiyat boş bırakılırsa ücretsiz sayılır.</Bilgi>
             {liste.map((s, i) => (
@@ -231,7 +231,7 @@ function GrupPaneli({
                   inputMode="decimal"
                 />
                 <button className="satir-sil" onClick={() => satirSil(i)} disabled={liste.length === 1}>
-                  ×
+                  <X size={15} />
                 </button>
               </div>
             ))}
@@ -315,7 +315,7 @@ function BirimlerSekmesi({
           className="ms-urun-ekle"
           onClick={() => setListe([...liste, { ad: "", varsayilan: false }])}
         >
-          + Birim
+          <Plus size={15} /> Birim
         </button>
       </div>
 
@@ -342,7 +342,7 @@ function BirimlerSekmesi({
               placeholder="Tam"
             />
             <span className="birim-sayac">{b.id ? `${kullanim(b.id)} porsiyon` : "yeni"}</span>
-            <button className="satir-sil" onClick={() => satirSil(i)}>×</button>
+            <button className="satir-sil" title="Sil" onClick={() => satirSil(i)}><Trash2 size={15} /></button>
           </div>
         ))}
       </div>
@@ -414,7 +414,7 @@ function KdvSekmesi({
             setListe([...liste, { ad: "", oran: 0, varsayilan: false, oranMetin: "" }])
           }
         >
-          + KDV Grubu
+          <Plus size={15} /> KDV Grubu
         </button>
       </div>
 
@@ -448,7 +448,7 @@ function KdvSekmesi({
               placeholder="10"
             />
             <span className="birim-sayac">%{k.id ? ` · ${kullanim(k.id)} ürün` : " · yeni"}</span>
-            <button className="satir-sil" onClick={() => satirSil(i)}>×</button>
+            <button className="satir-sil" title="Sil" onClick={() => satirSil(i)}><Trash2 size={15} /></button>
           </div>
         ))}
       </div>
@@ -846,7 +846,7 @@ export default function MenuStudyosu() {
             <div className="ms-urun-ust">
               <h2>Seçenek Grupları</h2>
               <span>{gruplar.length} grup</span>
-              <button className="ms-urun-ekle" onClick={() => setGrupPencere({})}>+ Seçenek Grubu</button>
+              <button className="ms-urun-ekle" onClick={() => setGrupPencere({})}><Plus size={15} /> Seçenek Grubu</button>
             </div>
 
             <div className="menu-urunler">
@@ -861,7 +861,7 @@ export default function MenuStudyosu() {
                     </small>
                   </div>
                   <button className="menu-urun-sil" onClick={(e) => { e.stopPropagation(); grubuSil(g); }}>
-                    ×<span>Sil</span>
+                    <Trash2 size={14} /><span>Sil</span>
                   </button>
                 </div>
               ))}
@@ -873,14 +873,14 @@ export default function MenuStudyosu() {
           <div className="ms-duzen">
             <div className="ms-kategoriler">
               <div className="ms-kat-ust">
-                <button className="ms-ekle" onClick={() => setPencere({})}>+ Kategori</button>
+                <button className="ms-ekle" onClick={() => setPencere({})}><Plus size={15} /> Kategori</button>
                 <button
                   className="ms-sirala"
                   title={siralamaBasligi}
                   disabled={siralamaKardesleri.length < 2}
                   onClick={() => setSiralama("kategori")}
                 >
-                  ⇅
+                  <ArrowUpDown size={16} />
                 </button>
               </div>
 
@@ -902,14 +902,14 @@ export default function MenuStudyosu() {
                       title="Düzenle"
                       onClick={(e) => { e.stopPropagation(); setPencere({ kategori: k }); }}
                     >
-                      ✎
+                      <Pencil size={13} />
                     </button>
                     <button
                       className="ms-islem"
                       title="Sil"
                       onClick={(e) => { e.stopPropagation(); kategoriyiSil(k); }}
                     >
-                      ×
+                      <X size={15} />
                     </button>
                     {altlar.length > 0 && (
                       <span
@@ -943,14 +943,14 @@ export default function MenuStudyosu() {
                           title="Düzenle"
                           onClick={(e) => { e.stopPropagation(); setPencere({ kategori: a }); }}
                         >
-                          ✎
+                          <Pencil size={13} />
                         </button>
                         <button
                           className="ms-islem"
                           title="Sil"
                           onClick={(e) => { e.stopPropagation(); kategoriyiSil(a); }}
                         >
-                          ×
+                          <X size={15} />
                         </button>
                       </div>
                     ))}
@@ -979,9 +979,9 @@ export default function MenuStudyosu() {
                       disabled={listelenenUrunler.length < 2 || kapsam !== "kategori" || !!aranan}
                       onClick={() => setSiralama("urun")}
                     >
-                      ⇅ Sırala
+                      <ArrowUpDown size={15} /> Sırala
                     </button>
-                    <button className="ms-urun-ekle" onClick={() => setPanel(yeniUrun())}>+ Ürün</button>
+                    <button className="ms-urun-ekle" onClick={() => setPanel(yeniUrun())}><Plus size={15} /> Ürün</button>
                   </div>
 
                   <div className="ms-arama">
@@ -993,7 +993,7 @@ export default function MenuStudyosu() {
                       />
                       {arama && (
                         <button className="arama-temizle" onClick={() => setArama("")} title="Temizle">
-                          ×
+                          <X size={15} />
                         </button>
                       )}
                     </div>
@@ -1052,10 +1052,10 @@ export default function MenuStudyosu() {
                           className="menu-urun-kopya"
                           onClick={(e) => { e.stopPropagation(); urunuKopyala(u); }}
                         >
-                          ⧉<span>Kopyala</span>
+                          <Copy size={14} /><span>Kopyala</span>
                         </button>
                         <button className="menu-urun-sil" onClick={(e) => { e.stopPropagation(); urunuSil(u); }}>
-                          ×<span>Sil</span>
+                          <Trash2 size={14} /><span>Sil</span>
                         </button>
                       </div>
                     ))}

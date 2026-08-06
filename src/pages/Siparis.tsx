@@ -1,8 +1,8 @@
 import { useEffect, useState } from "react";
 import { useNavigate, useParams } from "react-router-dom";
-import { ChevronDown, SlidersHorizontal, Star } from "lucide-react";
+import { ArrowLeft, Check, ChevronDown, Percent, SlidersHorizontal, Star, Wallet, X } from "lucide-react";
 import { menuGetir, agacUrunleri, altKategoriler, porsiyonFiyat, urunKdv } from "../menu";
-import { adisyonGetir, adisyonKaydet, yeniKalemId } from "../adisyonlar";
+import { adisyonGetir, adisyonKaydet, kalemTasi, yeniKalemId } from "../adisyonlar";
 import { masaGetir } from "../masalar";
 import UrunSecim from "../components/UrunSecim";
 import KampanyaSecim from "../components/KampanyaSecim";
@@ -78,6 +78,7 @@ export default function Siparis() {
   const [kayitliImza, setKayitliImza] = useState("");
   const [cikisSorusu, setCikisSorusu] = useState(false);
   const [seciliKalem, setSeciliKalem] = useState<SepetKalemi | null>(null);
+  const [tasimaUyarisi, setTasimaUyarisi] = useState<string | null>(null);
 
   useEffect(() => {
     menuGetir().then((veri) => {
@@ -201,6 +202,35 @@ export default function Siparis() {
     return kilitKaldir;
   }, [kirli]);
 
+  // Adisyonu tazeleyip kirli imzayı da sıfırlar; taşıma gibi doğrudan diske
+  // yazan işlemlerden sonra ekran veritabanıyla aynı hizaya geliyor.
+  const adisyonuTazele = async () => {
+    const veri = await adisyonGetir(masaId);
+    setSepet(veri.sepet);
+    setIndirim(veri.indirim);
+    setKayitliTahsilatlar(veri.tahsilatlar);
+    setKayitliImza(adisyonImzasi(veri.sepet, veri.indirim, veri.tahsilatlar));
+  };
+
+  // Taşıma veritabanı üstünde çalışıyor: ekrandaki henüz kaydedilmemiş kalemin
+  // karşılığı diskte olmadığı için önce adisyon yazılıyor.
+  const kalemiTasi = async (kalem: SepetKalemi, hedefMasaId: number, adet: number) => {
+    setSeciliKalem(null);
+    try {
+      const kayitli = await adisyonKaydet(masaId, { sepet, indirim, tahsilatlar: kayitliTahsilatlar });
+      const guncel = kayitli.sepet.find(
+        (k) => k.id === kalem.id || (kalem.id && kalem.id < 0 && k.ad === kalem.ad)
+      );
+      if (!guncel?.id) throw new Error("Kalem kaydedilemedi, taşıma yapılmadı.");
+
+      await kalemTasi(masaId, hedefMasaId, guncel.id, adet);
+      await adisyonuTazele();
+    } catch (e) {
+      await adisyonuTazele();
+      setTasimaUyarisi(e instanceof Error ? e.message : "Kalem taşınamadı.");
+    }
+  };
+
   const kaydet = async () => {
     await adisyonKaydet(masaId, { sepet, indirim, tahsilatlar: kayitliTahsilatlar });
     kilitKaldir();
@@ -215,7 +245,10 @@ export default function Siparis() {
   return (
     <div className="siparis-sayfa">
       <header className="siparis-ust">
-        <button className="geri" onClick={salonaDon}>← Salon</button>
+        <button className="geri" onClick={salonaDon}>
+          <ArrowLeft size={17} />
+          Salon
+        </button>
         <h1>{masaAdi}</h1>
       </header>
 
@@ -292,7 +325,7 @@ export default function Siparis() {
               onChange={(e) => setArama(e.target.value)}
             />
             {arama && (
-              <button className="arama-temizle" onClick={() => setArama("")}>×</button>
+              <button className="arama-temizle" onClick={() => setArama("")}><X size={15} /></button>
             )}
           </div>
 
@@ -402,6 +435,7 @@ export default function Siparis() {
                 disabled={sepet.length === 0}
                 onClick={() => setIndirimAcik(true)}
               >
+                <Percent size={17} />
                 İndirim
               </button>
               <button
@@ -409,10 +443,14 @@ export default function Siparis() {
                 disabled={sepet.length === 0}
                 onClick={() => setTahsilatAcik(true)}
               >
+                <Wallet size={18} />
                 Öde
               </button>
             </div>
-            <button className="kaydet" onClick={kaydet}>Kaydet</button>
+            <button className="kaydet" onClick={kaydet}>
+              <Check size={18} />
+              Kaydet
+            </button>
           </footer>
         </aside>
       </div>
@@ -474,6 +512,9 @@ export default function Siparis() {
         <KalemPaneli
           kalem={seciliKalem}
           urun={tumUrunler.find((u) => u.id === seciliKalem.urunId || u.ad === seciliKalem.ad)}
+          masaId={masaId}
+          odenmis={odenmisIdler.has(seciliKalem.id ?? 0)}
+          onTasi={(hedefMasaId, adet) => kalemiTasi(seciliKalem, hedefMasaId, adet)}
           onKapat={() => setSeciliKalem(null)}
           onUygula={(yeniler) => {
             // Satır bölündüyse eskisinin yerine birden fazla satır geçer; aynı
@@ -487,6 +528,10 @@ export default function Siparis() {
             setSeciliKalem(null);
           }}
         />
+      )}
+
+      {tasimaUyarisi && (
+        <OnayModal mesaj={tasimaUyarisi} tekTus onKapat={() => setTasimaUyarisi(null)} />
       )}
 
       {cikisSorusu && (

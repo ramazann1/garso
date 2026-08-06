@@ -1,4 +1,5 @@
 import { useEffect, useRef } from "react";
+import { Check } from "lucide-react";
 
 // Kısa süre görünüp kendi kapanan bilgi kutusu — işlem bitti demek için onay
 // modalı açmak akışı gereksiz kesiyor.
@@ -23,7 +24,7 @@ export default function Bildirim({
 
   return (
     <div className="bildirim" onClick={onKapat}>
-      <span className="bildirim-im">✓</span>
+      <span className="bildirim-im"><Check size={15} /></span>
       {mesaj}
     </div>
   );

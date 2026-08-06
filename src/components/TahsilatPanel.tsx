@@ -1,4 +1,6 @@
 import { useEffect, useState } from "react";
+import { Check, CircleCheckBig, Delete, Percent, Save, X } from "lucide-react";
+import { OdemeIkon } from "../odemeIkon";
 import IndirimModal from "./IndirimModal";
 import OnayModal from "./OnayModal";
 import KdvDokum from "./KdvDokum";
@@ -97,7 +99,7 @@ export default function TahsilatPanel({ kalemler, toplam, araToplam, indirim, kd
       <aside className="tahsilat-panel genis" onClick={(e) => e.stopPropagation()}>
         <header className="tahsilat-ust">
           <h2>Tahsilat — Toplam ₺{toplam} / Kalan ₺{kalan}</h2>
-          <button className="kapat" onClick={onKapat}>×</button>
+          <button className="kapat" onClick={onKapat}><X size={20} /></button>
         </header>
 
         <div className="tahsilat-iki-sutun">
@@ -133,7 +135,7 @@ export default function TahsilatPanel({ kalemler, toplam, araToplam, indirim, kd
                     <span>
                       {pasif
                         ? k.durum === "ikram" ? "İkram" : "İptal"
-                        : bitti ? "✓" : seciliAdet > 0
+                        : bitti ? <Check size={17} /> : seciliAdet > 0
                           ? `${seciliAdet} seçili · ₺${k.fiyat * seciliAdet}`
                           : `₺${k.fiyat * k.adet}`}
                     </span>
@@ -147,17 +149,21 @@ export default function TahsilatPanel({ kalemler, toplam, araToplam, indirim, kd
                 <p className="gecmis-baslik">Alınan Ödemeler</p>
                 {tahsilatlar.map((o, i) => (
                   <div key={i} className="gecmis-satir">
-                    <span className="gecmis-tip">{o.tip}</span>
+                    <span className="gecmis-tip">
+                      <OdemeIkon ad={o.tip} size={16} />
+                      {o.tip}
+                    </span>
                     <span className="gecmis-tutar">₺{o.tutar}</span>
                     <button
                       className="gecmis-sil"
+                      aria-label="Tahsilatı sil"
                       onClick={(e) => {
                         e.stopPropagation();
                         const yeni = tahsilatlar.filter((_, j) => j !== i);
                         setTahsilatlar(yeni);
                         onKaydet(yeni);
                       }}
-                    >×</button>
+                    ><X size={15} /></button>
                   </div>
                 ))}
               </div>
@@ -192,7 +198,13 @@ export default function TahsilatPanel({ kalemler, toplam, araToplam, indirim, kd
               />
               <div className="numpad-grid">
                 {["7","8","9","4","5","6","1","2","3","Tümü","0","⌫"].map((t) => (
-                  <button key={t} className={t === "Tümü" ? "numpad-tus tum" : "numpad-tus"} onClick={() => numpadTus(t)}>{t}</button>
+                  <button
+                    key={t}
+                    className={t === "Tümü" ? "numpad-tus tum" : "numpad-tus"}
+                    onClick={() => numpadTus(t)}
+                  >
+                    {t === "⌫" ? <Delete size={20} /> : t}
+                  </button>
                 ))}
               </div>
               <div className="bolme-kisayol">
@@ -201,7 +213,10 @@ export default function TahsilatPanel({ kalemler, toplam, araToplam, indirim, kd
                     1/{n}
                   </button>
                 ))}
-                <button onClick={() => setIndirimAcik(true)}>İndirim</button>
+                <button className="indirim-kisayol" onClick={() => setIndirimAcik(true)}>
+                  <Percent size={15} />
+                  İndirim
+                </button>
               </div>
             </div>
 
@@ -213,6 +228,7 @@ export default function TahsilatPanel({ kalemler, toplam, araToplam, indirim, kd
                   style={{ background: renk }}
                   onClick={() => odemeAl(ad)}
                 >
+                  <OdemeIkon ad={ad} />
                   {ad}
                 </button>
               ))}
@@ -221,10 +237,12 @@ export default function TahsilatPanel({ kalemler, toplam, araToplam, indirim, kd
             <div className="tahsilat-alt-butonlar">
               {odemeBitti ? (
                 <button className="tahsilat-kapat-btn" onClick={() => onOdendi(tahsilatlar)}>
+                  <CircleCheckBig size={19} />
                   Adisyonu Kapat
                 </button>
               ) : (
                 <button className="tahsilat-kaydet" onClick={() => { onKaydet(tahsilatlar); onKapat(); }}>
+                  <Save size={18} />
                   Kaydet
                 </button>
               )}

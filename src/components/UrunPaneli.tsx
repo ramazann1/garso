@@ -1,6 +1,6 @@
 import { useState } from "react";
 import Bilgi from "./Bilgi";
-import { ChevronDown } from "lucide-react";
+import { ChevronDown, Plus, X } from "lucide-react";
 import Anahtar from "./Anahtar";
 import RenkSecici from "./RenkSecici";
 import { paraMetin, paraSayi, paraYaz } from "../para";
@@ -182,7 +182,7 @@ export default function UrunPaneli({
       <div className="urun-panel" onClick={(e) => e.stopPropagation()}>
         <header className="panel-ust">
           <h3>{urun.id ? "Ürünü düzenle" : "Yeni ürün"}</h3>
-          <button className="panel-kapat" onClick={onKapat}>×</button>
+          <button className="panel-kapat" onClick={onKapat}><X size={19} /></button>
         </header>
 
         <div className="panel-govde">
@@ -202,7 +202,7 @@ export default function UrunPaneli({
               <>
                 <div className="ekle-satir">
                   <button onClick={() => setPorsiyonlar([...porsiyonlar, yeniPorsiyon(false)])}>
-                    + Porsiyon
+                    <Plus size={14} /> Porsiyon
                   </button>
                 </div>
                 <Bilgi>
@@ -237,7 +237,7 @@ export default function UrunPaneli({
                         inputMode="decimal"
                       />
                       <button className="satir-sil" onClick={() => porsiyonSil(i)} disabled={porsiyonlar.length === 1}>
-                        ×
+                        <X size={15} />
                       </button>
                     </div>
 

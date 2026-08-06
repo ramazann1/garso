@@ -1,4 +1,5 @@
 import { useEffect, useMemo, useState } from "react";
+import { X } from "lucide-react";
 import Bilgi from "./Bilgi";
 import { kategoriUrunleri } from "../menu";
 import { paraMetin, paraSayi, paraYaz } from "../para";
@@ -281,7 +282,7 @@ export default function TopluDuzenle({
           />
           {arama && (
             <button className="arama-temizle" onClick={() => setArama("")} title="Temizle">
-              ×
+              <X size={15} />
             </button>
           )}
         </div>

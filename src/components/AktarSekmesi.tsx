@@ -1,4 +1,5 @@
 import { useRef, useState } from "react";
+import { X } from "lucide-react";
 import { SUTUN_GENISLIKLERI, planHazirla, satirlariOku, tabloUret } from "../aktarim";
 import type { AktarimPlani } from "../aktarim";
 import type { MenuBirim, MenuKategori, MenuKdv, MenuUrun } from "../types";
@@ -134,7 +135,7 @@ export default function AktarSekmesi({
           <div className="ozet-ust">
             <h2>{dosyaAdi}</h2>
             <button className="arama-temizle" onClick={vazgec} title="Vazgeç">
-              ×
+              <X size={15} />
             </button>
           </div>
 

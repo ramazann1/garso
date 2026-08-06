@@ -1,11 +1,14 @@
 import { useEffect, useState } from "react";
 import { useNavigate } from "react-router-dom";
-import { LayoutGrid } from "lucide-react";
+import { ArrowRightLeft, Combine, LayoutGrid } from "lucide-react";
 import MasaKarti from "../components/MasaKarti";
+import MasaSecim from "../components/MasaSecim";
+import MasaPlani, { yerlesimiVar } from "../components/MasaPlani";
+import OnayModal from "../components/OnayModal";
 import Duzen from "../components/Duzen";
-import { tumAdisyonlar } from "../adisyonlar";
+import { masaBirlestir, masaTasi, tumAdisyonlar } from "../adisyonlar";
 import { bolgeleriGetir } from "../masalar";
-import type { Bolge } from "../types";
+import type { Bolge, Masa } from "../types";
 
 type Acik = { tutar: number; adet: number; acilis?: string; garson?: string };
 
@@ -31,6 +34,10 @@ export default function Salon() {
   // Açık kalma süreleri kendiliğinden ilerlesin; garson ekranı yenilemek zorunda
   // kalmasın diye dakikada bir yeniden çiziliyor.
   const [, setTik] = useState(0);
+  // Masa işlemi iki adımda ilerliyor: önce hedef masa seçilir, sonra onaylanır.
+  const [islem, setIslem] = useState<{ tip: "tasi" | "birlestir"; masa: Masa } | null>(null);
+  const [onay, setOnay] = useState<{ mesaj: string; onOnay: () => void } | null>(null);
+  const [uyari, setUyari] = useState<string | null>(null);
 
   useEffect(() => {
     Promise.all([bolgeleriGetir(), tumAdisyonlar()]).then(([b, a]) => {
@@ -45,6 +52,65 @@ export default function Salon() {
     const zaman = setInterval(() => setTik((t) => t + 1), 60000);
     return () => clearInterval(zaman);
   }, []);
+
+  const yenile = () => tumAdisyonlar().then(setAdisyonlar);
+
+  // Hedef seçildi: yapılacak işi anlatan onay çıkıyor, "evet" denince uygulanıyor.
+  function hedefSecildi(hedef: Masa) {
+    if (!islem) return;
+    const kaynak = islem.masa;
+    const tasima = islem.tip === "tasi";
+    setIslem(null);
+    setOnay({
+      mesaj: tasima
+        ? `${kaynak.ad} masasındaki adisyon ${hedef.ad} masasına taşınacak. Onaylıyor musunuz?`
+        : `${kaynak.ad} masasındaki adisyon ${hedef.ad} masasının adisyonuna eklenecek. ` +
+          `${kaynak.ad} boşalacak, iki hesap tek adisyonda toplanacak. Onaylıyor musunuz?`,
+      onOnay: async () => {
+        setOnay(null);
+        try {
+          if (tasima) await masaTasi(kaynak.id, hedef.id);
+          else await masaBirlestir(kaynak.id, hedef.id);
+          await yenile();
+        } catch (e) {
+          setUyari(e instanceof Error ? e.message : "İşlem tamamlanamadı.");
+        }
+      },
+    });
+  }
+
+  const aksiyonlar = (masa: Masa) => [
+    {
+      ad: "Masayı taşı",
+      ikon: <ArrowRightLeft size={16} />,
+      onSec: () => setIslem({ tip: "tasi", masa }),
+    },
+    {
+      ad: "Adisyonu birleştir",
+      ikon: <Combine size={16} />,
+      onSec: () => setIslem({ tip: "birlestir", masa }),
+    },
+  ];
+
+  // Masa kartı iki yerde de aynı: ızgarada da planda da bu çıkıyor.
+  const kart = (masa: Masa) => {
+    const acik = adisyonlar[masa.id];
+    return (
+      <MasaKarti
+        masa={masa}
+        durum={
+          acik && {
+            tutar: acik.tutar,
+            sure: acik.acilis ? sureFarki(acik.acilis) : "şimdi",
+            garson: acik.garson,
+            gecikti: dakika(acik.acilis) >= UZUN_SURE_DK,
+          }
+        }
+        aksiyonlar={aksiyonlar(masa)}
+        onClick={() => navigate(`/siparis/${masa.id}`)}
+      />
+    );
+  };
 
   const gosterilen = seciliId === "tumu" ? bolgeler : bolgeler.filter((b) => b.id === seciliId);
   const tumMasalar = bolgeler.flatMap((b) => b.masalar);
@@ -100,32 +166,49 @@ export default function Salon() {
 
                 {bolge.masalar.length === 0 ? (
                   <p className="bolge-bos">Bu bölgede masa yok.</p>
+                ) : bolge.planModu && bolge.masalar.every(yerlesimiVar) ? (
+                  // Plan yalnız işletmeci bölge için açtıysa çiziliyor; masaya
+                  // konum yazılmış olması tek başına görünümü değiştirmiyor.
+                  <MasaPlani masalar={bolge.masalar} icerik={kart} />
                 ) : (
                   <div className="masa-grid">
-                    {bolge.masalar.map((masa) => {
-                      const acik = adisyonlar[masa.id];
-                      return (
-                        <MasaKarti
-                          key={masa.id}
-                          masa={masa}
-                          durum={
-                            acik && {
-                              tutar: acik.tutar,
-                              sure: acik.acilis ? sureFarki(acik.acilis) : "şimdi",
-                              garson: acik.garson,
-                              gecikti: dakika(acik.acilis) >= UZUN_SURE_DK,
-                            }
-                          }
-                          onClick={() => navigate(`/siparis/${masa.id}`)}
-                        />
-                      );
-                    })}
+                    {bolge.masalar.map((masa) => (
+                      <div key={masa.id}>{kart(masa)}</div>
+                    ))}
                   </div>
                 )}
               </section>
             ))}
           </>
         )}
+
+        {islem && (
+          <MasaSecim
+            baslik={islem.tip === "tasi" ? "Masayı taşı" : "Adisyonu birleştir"}
+            aciklama={
+              islem.tip === "tasi"
+                ? `${islem.masa.ad} masasındaki adisyon, seçtiğiniz boş masaya olduğu gibi geçer. Siparişler, notlar ve alınan tahsilatlar korunur.`
+                : `${islem.masa.ad} masasındaki siparişler, seçtiğiniz masanın adisyonuna eklenir. İki hesap tek adisyonda birleşir ve ${islem.masa.ad} boşalır.`
+            }
+            bolgeler={bolgeler}
+            doluIdler={new Set(Object.keys(adisyonlar).map(Number))}
+            secilebilirlik={islem.tip === "birlestir" ? "dolu" : "bos"}
+            haricId={islem.masa.id}
+            onSec={hedefSecildi}
+            onKapat={() => setIslem(null)}
+          />
+        )}
+
+        {onay && (
+          <OnayModal
+            mesaj={onay.mesaj}
+            onayMetni="Evet, uygula"
+            onOnay={onay.onOnay}
+            onKapat={() => setOnay(null)}
+          />
+        )}
+
+        {uyari && <OnayModal mesaj={uyari} tekTus onKapat={() => setUyari(null)} />}
       </div>
     </Duzen>
   );

@@ -125,11 +125,11 @@ export async function tumAdisyonlar(): Promise<
 async function acikAdisyonBul(masaId: number) {
   const { data } = await supabase
     .from("adisyonlar")
-    .select("id, acilis")
+    .select("id, acilis, indirim")
     .eq("masa_id", masaId)
     .eq("durum", "acik")
     .maybeSingle();
-  return data as { id: number; acilis: string } | null;
+  return data as { id: number; acilis: string; indirim: number } | null;
 }
 
 /**
@@ -154,9 +154,9 @@ export async function adisyonKaydet(
     const { data } = await supabase
       .from("adisyonlar")
       .insert({ masa_id: masaId, indirim: veri.indirim, garson: veri.garson ?? null })
-      .select("id, acilis")
+      .select("id, acilis, indirim")
       .single();
-    adisyon = data as { id: number; acilis: string };
+    adisyon = data as { id: number; acilis: string; indirim: number };
   } else {
     await supabase
       .from("adisyonlar")
@@ -259,6 +259,151 @@ function gercekKimlikler(kalemler: Record<number, number>, es: Map<number, numbe
     sonuc[es.get(Number(id)) ?? Number(id)] = adet;
   }
   return sonuc;
+}
+
+/**
+ * Açık adisyonu olduğu gibi başka masaya götürür. Kalemler, turlar ve
+ * tahsilatlar adisyona bağlı olduğu için tek satır değişiyor — kimlikler
+ * kaymadığından ödeme eşleşmeleri de bozulmuyor.
+ */
+export async function masaTasi(kaynakMasaId: number, hedefMasaId: number) {
+  const kaynak = await acikAdisyonBul(kaynakMasaId);
+  if (!kaynak) throw new Error("Bu masada açık adisyon yok.");
+
+  const hedef = await acikAdisyonBul(hedefMasaId);
+  if (hedef) throw new Error("Hedef masada açık adisyon var. Taşımak yerine birleştirin.");
+
+  await supabase
+    .from("adisyonlar")
+    .update({ masa_id: hedefMasaId, guncelleme: new Date().toISOString() })
+    .eq("id", kaynak.id);
+}
+
+/**
+ * İki açık adisyonu tek adisyonda toplar. Kaynağın turları hedefin son turundan
+ * devam ederek aktarılır — böylece "1. tur / 2. tur" sırası zaman akışını
+ * korur. İndirimler toplanır, tahsilatlar taşınır, boşalan adisyon silinir.
+ */
+export async function masaBirlestir(kaynakMasaId: number, hedefMasaId: number) {
+  if (kaynakMasaId === hedefMasaId) throw new Error("Masa kendisiyle birleştirilemez.");
+
+  const [kaynak, hedef] = await Promise.all([
+    acikAdisyonBul(kaynakMasaId),
+    acikAdisyonBul(hedefMasaId),
+  ]);
+  if (!kaynak) throw new Error("Bu masada açık adisyon yok.");
+  if (!hedef) throw new Error("Hedef masada açık adisyon yok. Bu masayı oraya taşıyabilirsiniz.");
+
+  const [{ data: kaynakTurlar }, { data: hedefTurlar }] = await Promise.all([
+    supabase.from("turlar").select("id, sira").eq("adisyon_id", kaynak.id).order("sira"),
+    supabase.from("turlar").select("sira").eq("adisyon_id", hedef.id),
+  ]);
+
+  let sira = ((hedefTurlar as any[]) ?? []).reduce((e, t) => Math.max(e, t.sira), 0);
+  for (const tur of ((kaynakTurlar as any[]) ?? [])) {
+    sira += 1;
+    await supabase.from("turlar").update({ adisyon_id: hedef.id, sira }).eq("id", tur.id);
+  }
+
+  await supabase.from("tahsilatlar").update({ adisyon_id: hedef.id }).eq("adisyon_id", kaynak.id);
+
+  const toplamIndirim = Number(kaynak.indirim ?? 0) + Number(hedef.indirim ?? 0);
+  await supabase
+    .from("adisyonlar")
+    .update({ indirim: toplamIndirim, guncelleme: new Date().toISOString() })
+    .eq("id", hedef.id);
+
+  await supabase.from("adisyonlar").delete().eq("id", kaynak.id);
+}
+
+/**
+ * Tek bir kalemi başka masanın adisyonuna gönderir. Kalem hedefte yeni bir tura
+ * girer — mutfağa ne zaman düştüğü kaybolmasın. `adet` satırın tamamından azsa
+ * kaynakta kalan kısım durur, yalnız taşınan kadarı gider.
+ *
+ * Ödemesi işlenmiş kalem taşınmaz: ödeme kalem kimliğine bağlı, kalem gidince
+ * ödenen adet yanlış adisyonda kalırdı.
+ */
+export async function kalemTasi(
+  kaynakMasaId: number,
+  hedefMasaId: number,
+  kalemId: number,
+  adet: number
+) {
+  if (kaynakMasaId === hedefMasaId) throw new Error("Kalem zaten bu masada.");
+
+  const kaynak = await acikAdisyonBul(kaynakMasaId);
+  if (!kaynak) throw new Error("Bu masada açık adisyon yok.");
+
+  const { data: kalem } = await supabase
+    .from("adisyon_kalemleri")
+    .select(KALEM_ALANLARI + ", tur_id")
+    .eq("id", kalemId)
+    .maybeSingle();
+  if (!kalem) throw new Error("Kalem bulunamadı. Adisyonu kaydedip tekrar deneyin.");
+
+  const mevcutAdet = Number((kalem as any).adet);
+  const tasinan = Math.min(adet, mevcutAdet);
+
+  let hedef = await acikAdisyonBul(hedefMasaId);
+  if (!hedef) {
+    const { data } = await supabase
+      .from("adisyonlar")
+      .insert({ masa_id: hedefMasaId, indirim: 0 })
+      .select("id, acilis, indirim")
+      .single();
+    hedef = data as { id: number; acilis: string; indirim: number };
+  }
+
+  const { data: hedefTurlar } = await supabase
+    .from("turlar")
+    .select("sira")
+    .eq("adisyon_id", hedef.id);
+  const sira = ((hedefTurlar as any[]) ?? []).reduce((e, t) => Math.max(e, t.sira), 0) + 1;
+
+  const { data: tur } = await supabase
+    .from("turlar")
+    .insert({ adisyon_id: hedef.id, sira })
+    .select("id")
+    .single();
+
+  const k = kalem as any;
+  await supabase.from("adisyon_kalemleri").insert({
+    tur_id: (tur as any).id,
+    urun_id: k.urun_id,
+    porsiyon_id: k.porsiyon_id,
+    ad: k.ad,
+    porsiyon: k.porsiyon,
+    secimler: k.secimler ?? [],
+    adet: tasinan,
+    fiyat: k.fiyat,
+    kdv_oran: k.kdv_oran,
+    durum: k.durum,
+    not_metni: k.not_metni,
+  });
+
+  if (tasinan < mevcutAdet) {
+    await supabase
+      .from("adisyon_kalemleri")
+      .update({ adet: mevcutAdet - tasinan })
+      .eq("id", kalemId);
+  } else {
+    await supabase.from("adisyon_kalemleri").delete().eq("id", kalemId);
+  }
+
+  await bosAdisyonuTemizle(kaynak.id);
+}
+
+/** Son kalemi de gidince adisyon masayı işgal etmesin — boşsa siliniyor. */
+async function bosAdisyonuTemizle(adisyonId: number) {
+  const { data } = await supabase
+    .from("turlar")
+    .select("id, adisyon_kalemleri (id)")
+    .eq("adisyon_id", adisyonId);
+
+  const turlar = ((data as any[]) ?? []);
+  const kalemVar = turlar.some((t) => (t.adisyon_kalemleri ?? []).length > 0);
+  if (!kalemVar) await supabase.from("adisyonlar").delete().eq("id", adisyonId);
 }
 
 export type OdemeTipi = { id: number; ad: string; renk: string; sira: number };

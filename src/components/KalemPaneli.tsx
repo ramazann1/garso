@@ -1,30 +1,54 @@
-import { useState } from "react";
-import { Minus, Plus } from "lucide-react";
+import { useEffect, useState } from "react";
+import { Ban, Gift, Minus, Plus, RotateCcw, Send, X } from "lucide-react";
 import OnayModal from "./OnayModal";
-import Anahtar from "./Anahtar";
+import MasaSecim from "./MasaSecim";
 import Bilgi from "./Bilgi";
 import { porsiyonFiyat } from "../menu";
-import { yeniKalemId } from "../adisyonlar";
+import { tumAdisyonlar, yeniKalemId } from "../adisyonlar";
+import { bolgeleriGetir } from "../masalar";
 import { paraMetin, paraSayi, paraYaz } from "../para";
-import type { MenuUrun, SepetKalemi } from "../types";
+import type { Bolge, MenuUrun, SepetKalemi } from "../types";
 
 type Props = {
   kalem: SepetKalemi;
   urun?: MenuUrun; // porsiyon değiştirmek için; menüden silinmiş ürünlerde boş olabilir
+  masaId: number;
+  /** Ödemesi işlenmiş kalem taşınmaz; düğme yerine gerekçe gösteriliyor. */
+  odenmis?: boolean;
   onKapat: () => void;
   // İkram/iptal kalemin bir kısmına uygulanabildiği için satır ikiye bölünebilir.
   onUygula: (kalemler: SepetKalemi[]) => void;
+  onTasi: (hedefMasaId: number, adet: number) => void;
 };
 
-export default function KalemPaneli({ kalem, urun, onKapat, onUygula }: Props) {
+export default function KalemPaneli({
+  kalem,
+  urun,
+  masaId,
+  odenmis,
+  onKapat,
+  onUygula,
+  onTasi,
+}: Props) {
   const [adet, setAdet] = useState(kalem.adet);
   const [fiyat, setFiyat] = useState(paraMetin(kalem.fiyat));
   const [porsiyon, setPorsiyon] = useState(kalem.porsiyon);
   const [notMetni, setNotMetni] = useState(kalem.not ?? "");
-  const [ikram, setIkram] = useState(kalem.durum === "ikram");
   const [iptalSorusu, setIptalSorusu] = useState(false);
+  const [tasimaAcik, setTasimaAcik] = useState(false);
+  const [bolgeler, setBolgeler] = useState<Bolge[]>([]);
+  const [doluIdler, setDoluIdler] = useState<Set<number>>(new Set());
 
   const porsiyonlar = urun?.porsiyonlar ?? [];
+
+  // Masa listesi ancak taşıma istenince gerekiyor; panel açılışını yavaşlatmasın.
+  useEffect(() => {
+    if (!tasimaAcik) return;
+    Promise.all([bolgeleriGetir(), tumAdisyonlar()]).then(([b, a]) => {
+      setBolgeler(b);
+      setDoluIdler(new Set(Object.keys(a).map(Number)));
+    });
+  }, [tasimaAcik]);
 
   const porsiyonSec = (ad: string) => {
     setPorsiyon(ad);
@@ -56,70 +80,87 @@ export default function KalemPaneli({ kalem, urun, onKapat, onUygula }: Props) {
     onUygula([{ ...temel, durum }]);
   };
 
+  const satirToplami = (paraSayi(fiyat) ?? 0) * adet;
+
+  // Panelde tek açıklama satırı duruyor, o da duruma göre değişiyor: üst üste
+  // dizilmiş bilgi kutuları paneli ders kitabına çeviriyordu.
+  const aciklama =
+    kalem.durum === "iptal"
+      ? "Kalem yeniden hesaba girer ve aynı üründen normal satır varsa onunla birleşir."
+      : kalem.adet > 1 && adet < kalem.adet
+        ? `İkram, iptal veya taşımada ${kalem.adet} adedin ${adet} tanesi işleme girer; kalan ${kalem.adet - adet} adet adisyonda durur.`
+        : odenmis
+          ? "Bu kalemin ödemesi işlendiği için taşınamaz. Önce ilgili tahsilatı geri alın."
+          : null;
+
   return (
     <div className="panel-fon" onClick={onKapat}>
       <div className="urun-panel" onClick={(e) => e.stopPropagation()}>
-        <header className="panel-ust">
-          <h3>
-            {kalem.ad}
-            {porsiyon && <em className="panel-alt-baslik">{porsiyon}</em>}
-          </h3>
-          <button className="panel-kapat" onClick={onKapat}>×</button>
+        <header className="kp-ust">
+          <div className="kp-ust-satir">
+            <h3>{kalem.ad}</h3>
+            <button className="panel-kapat" onClick={onKapat}>
+              <X size={19} />
+            </button>
+          </div>
+
+          <div className="kp-rozetler">
+            {porsiyon && <span className="kp-rozet">{porsiyon}</span>}
+            {kalem.durum === "ikram" && <span className="kp-rozet ikram">İkram</span>}
+            {kalem.durum === "iptal" && <span className="kp-rozet iptal">İptal edildi</span>}
+          </div>
+
+          {/* Tutar başlığın içinde: adet ya da fiyat değiştikçe gözün takılı
+              olduğu rakam anında güncelleniyor. */}
+          <div className="kp-tutar">
+            <span>Satır toplamı</span>
+            <strong>₺{satirToplami.toLocaleString("tr-TR", { minimumFractionDigits: 2 })}</strong>
+          </div>
         </header>
 
-        <div className="panel-govde">
-          <div className="kalem-ikili">
-            <div className="alan">
-              <span>Adet</span>
-              <div className="adet-kutu">
-                <button onClick={() => setAdet((a) => Math.max(1, a - 1))}>
-                  <Minus size={18} />
-                </button>
-                <input
-                  type="number"
-                  min={1}
-                  value={adet}
-                  onChange={(e) => setAdet(Math.max(1, Number(e.target.value) || 1))}
-                />
-                <button onClick={() => setAdet((a) => a + 1)}>
-                  <Plus size={18} />
-                </button>
-              </div>
-            </div>
-
-            <div className="alan">
-              <span>Birim fiyat</span>
-              <div className="para-alan">
-                <em>₺</em>
-                <input
-                  value={fiyat}
-                  onChange={(e) => setFiyat(paraYaz(e.target.value))}
-                  inputMode="decimal"
-                />
-              </div>
+        <div className="panel-govde kp-govde">
+          <div className="kp-satir">
+            <label>Adet</label>
+            <div className="kp-adet">
+              <button
+                aria-label="Azalt"
+                disabled={adet <= 1}
+                onClick={() => setAdet((a) => Math.max(1, a - 1))}
+              >
+                <Minus size={17} />
+              </button>
+              <input
+                type="number"
+                min={1}
+                value={adet}
+                onChange={(e) => setAdet(Math.max(1, Number(e.target.value) || 1))}
+              />
+              <button aria-label="Artır" onClick={() => setAdet((a) => a + 1)}>
+                <Plus size={17} />
+              </button>
             </div>
           </div>
 
-          <div className="kalem-toplam">
-            <span>Satır toplamı</span>
-            <strong>₺{((paraSayi(fiyat) ?? 0) * adet).toFixed(2)}</strong>
+          <div className="kp-satir">
+            <label>Birim fiyat</label>
+            <div className="kp-para">
+              <em>₺</em>
+              <input
+                value={fiyat}
+                onChange={(e) => setFiyat(paraYaz(e.target.value))}
+                inputMode="decimal"
+              />
+            </div>
           </div>
-
-          {kalem.adet > 1 && adet < kalem.adet && (
-            <Bilgi>
-              İkram veya iptal ederseniz {kalem.adet} adedin {adet} tanesi işleme girer,
-              kalan {kalem.adet - adet} adet adisyonda normal satır olarak durur.
-            </Bilgi>
-          )}
 
           {porsiyonlar.length > 1 && (
-            <div className="alan">
-              <span>Porsiyon</span>
-              <div className="porsiyon-secim">
+            <div className="kp-blok">
+              <label>Porsiyon</label>
+              <div className="kp-porsiyonlar">
                 {porsiyonlar.map((p) => (
                   <button
                     key={p.ad}
-                    className={p.ad === porsiyon ? "porsiyon-tus secili" : "porsiyon-tus"}
+                    className={p.ad === porsiyon ? "kp-porsiyon secili" : "kp-porsiyon"}
                     onClick={() => porsiyonSec(p.ad)}
                   >
                     {p.ad}
@@ -130,55 +171,91 @@ export default function KalemPaneli({ kalem, urun, onKapat, onUygula }: Props) {
             </div>
           )}
 
-          <div className="alan">
-            <span>Ürün notu</span>
+          <div className="kp-blok">
+            <label>Ürün notu</label>
             <input
+              className="kp-not"
               value={notMetni}
               onChange={(e) => setNotMetni(e.target.value)}
               placeholder="Az şekerli"
             />
           </div>
 
-          <Anahtar
-            etiket="İkram"
-            ipucu="Kalem adisyonda kalır, tutarı hesaba girmez"
-            acik={ikram}
-            degistir={setIkram}
-          />
-
-          {kalem.durum === "iptal" ? (
-            <>
-              <button className="iptali-geri-al" onClick={() => kaydet("normal")}>
+          {/* Kalemin durumunu değiştiren işler ayrı bir bölümde toplanıyor;
+              adet ve fiyat düzenlemesiyle aynı hizada durmasınlar. */}
+          <div className="kp-islemler">
+            {kalem.durum === "iptal" ? (
+              <button className="kp-islem geri-al" onClick={() => kaydet("normal")}>
+                <RotateCcw size={16} />
                 İptali geri al
               </button>
-              <Bilgi>Kalem yeniden hesaba girer ve aynı üründen normal satır varsa onunla birleşir.</Bilgi>
-            </>
-          ) : (
-            <Bilgi>
-              İptal edilen kalem silinmez; adisyonda üstü çizili kalır ve hesaba girmez.
-              Aynı panelden geri alınabilir.
-            </Bilgi>
-          )}
+            ) : (
+              <>
+                {kalem.durum === "ikram" ? (
+                  <button className="kp-islem geri-al" onClick={() => kaydet("normal")}>
+                    <RotateCcw size={16} />
+                    İkramı geri al
+                  </button>
+                ) : (
+                  <button className="kp-islem" onClick={() => kaydet("ikram")}>
+                    <Gift size={16} />
+                    İkram et
+                    <em>Hesaba girmez</em>
+                  </button>
+                )}
+
+                <button
+                  className="kp-islem"
+                  disabled={odenmis}
+                  onClick={() => setTasimaAcik(true)}
+                >
+                  <Send size={16} />
+                  Başka masaya taşı
+                </button>
+
+                <button className="kp-islem tehlikeli" onClick={() => setIptalSorusu(true)}>
+                  <Ban size={16} />
+                  Kalemi iptal et
+                </button>
+              </>
+            )}
+          </div>
+
+          {aciklama && <Bilgi>{aciklama}</Bilgi>}
         </div>
 
-        <footer className="modal-aksiyonlar">
-          {kalem.durum !== "iptal" && (
-            <button className="sil-buton" onClick={() => setIptalSorusu(true)}>
-              Kalemi iptal et
-            </button>
-          )}
+        <footer className="kp-alt">
           <button className="iptal" onClick={onKapat}>Vazgeç</button>
           <button
             className="uygula"
-            onClick={() =>
-              // İptal edilmiş kalemde "Uygula" iptali kaldırmaz; onun kendi düğmesi var.
-              kaydet(kalem.durum === "iptal" ? "iptal" : ikram ? "ikram" : "normal")
-            }
+            // İkram ve iptalin kendi düğmesi var; "Uygula" yalnız adet, fiyat,
+            // porsiyon ve not düzenlemesini yazar, kalemin durumuna dokunmaz.
+            onClick={() => kaydet(kalem.durum ?? "normal")}
           >
             Uygula
           </button>
         </footer>
       </div>
+
+      {tasimaAcik && (
+        <MasaSecim
+          baslik="Kalemi taşı"
+          aciklama={
+            adet < kalem.adet
+              ? `“${kalem.ad}” kaleminin ${kalem.adet} adedinden ${adet} tanesi seçtiğiniz masaya gider, kalan ${kalem.adet - adet} adet bu adisyonda durur. Boş masa seçerseniz orada yeni adisyon açılır.`
+              : `“${kalem.ad}” seçtiğiniz masanın adisyonuna geçer. Boş masa seçerseniz orada yeni adisyon açılır.`
+          }
+          bolgeler={bolgeler}
+          doluIdler={doluIdler}
+          secilebilirlik="hepsi"
+          haricId={masaId}
+          onSec={(m) => {
+            setTasimaAcik(false);
+            onTasi(m.id, adet);
+          }}
+          onKapat={() => setTasimaAcik(false)}
+        />
+      )}
 
       {iptalSorusu && (
         <OnayModal

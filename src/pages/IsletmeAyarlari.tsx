@@ -2,16 +2,22 @@ import { useEffect, useState } from "react";
 import {
   ChevronLeft,
   ChevronRight,
+  Grid3x3,
   LayoutGrid,
+  List,
+  Map,
   Pencil,
   Plus,
   Trash2,
   Users,
+  X,
 } from "lucide-react";
 import Duzen from "../components/Duzen";
 import Bildirim from "../components/Bildirim";
 import Bilgi from "../components/Bilgi";
+import Anahtar from "../components/Anahtar";
 import OnayModal from "../components/OnayModal";
+import MasaPlani, { otomatikDiz, yerlesimiVar } from "../components/MasaPlani";
 import {
   acikAdisyonluMasalar,
   bolgeEkle,
@@ -22,14 +28,32 @@ import {
   masaGuncelle,
   masaSil,
   topluMasaEkle,
+  yerlesimKaydet,
+  yerlesimTopluKaydet,
 } from "../masalar";
 import type { Bolge, Masa } from "../types";
 
 // Masa kartının şekli salon planında da kullanılacak; ayar ekranında da aynı
 // görünsün ki işletmeci ne seçtiğini görsün.
-function MasaKutusu({ masa, onDuzenle }: { masa: Masa; onDuzenle: () => void }) {
+function MasaKutusu({
+  masa,
+  planda,
+  onDuzenle,
+}: {
+  masa: Masa;
+  planda?: boolean;
+  onDuzenle: () => void;
+}) {
+  const sinif = [
+    "ayar-masa",
+    masa.sekil === "daire" ? "daire" : "",
+    planda ? "planda" : "",
+  ]
+    .filter(Boolean)
+    .join(" ");
+
   return (
-    <div className={masa.sekil === "daire" ? "ayar-masa daire" : "ayar-masa"}>
+    <div className={sinif}>
       <button className="ayar-masa-duzenle" onClick={onDuzenle} title="Masayı düzenle">
         <Pencil size={14} />
       </button>
@@ -60,7 +84,7 @@ function MasaPaneli({ masa, onKapat, onKaydet, onSil }: MasaPaneliProps) {
       <div className="ayar-panel" onClick={(e) => e.stopPropagation()}>
         <header className="panel-ust">
           <h3>Masa düzenle</h3>
-          <button className="panel-kapat" onClick={onKapat}>×</button>
+          <button className="panel-kapat" onClick={onKapat}><X size={19} /></button>
         </header>
 
         <div className="panel-govde">
@@ -137,7 +161,7 @@ function TopluEklePaneli({
       <div className="ayar-panel" onClick={(e) => e.stopPropagation()}>
         <header className="panel-ust">
           <h3>{bolgeAd} bölgesine toplu masa</h3>
-          <button className="panel-kapat" onClick={onKapat}>×</button>
+          <button className="panel-kapat" onClick={onKapat}><X size={19} /></button>
         </header>
 
         <div className="panel-govde">
@@ -205,7 +229,7 @@ function BolgePaneli({
       <div className="ayar-panel" onClick={(e) => e.stopPropagation()}>
         <header className="panel-ust">
           <h3>{bolge ? "Bölgeyi düzenle" : "Yeni bölge"}</h3>
-          <button className="panel-kapat" onClick={onKapat}>×</button>
+          <button className="panel-kapat" onClick={onKapat}><X size={19} /></button>
         </header>
 
         <div className="panel-govde">
@@ -248,6 +272,7 @@ export default function IsletmeAyarlari() {
   const [topluAcik, setTopluAcik] = useState(false);
   const [silinecekBolge, setSilinecekBolge] = useState<Bolge | null>(null);
   const [silinecekMasa, setSilinecekMasa] = useState<Masa | null>(null);
+  const [gorunum, setGorunum] = useState<"liste" | "plan">("liste");
 
   const tazele = async (secilecekId?: number) => {
     const veri = await bolgeleriGetir();
@@ -295,6 +320,22 @@ export default function IsletmeAyarlari() {
     }
     setMasaPaneli(null);
     setSilinecekMasa(masa);
+  };
+
+  // Plana ilk geçişte konumu olmayan masalar sıraya göre diziliyor; işletmeci
+  // boş tuvalle karşılaşıp "masalarım nerede" demesin.
+  const planaGec = async () => {
+    setGorunum("plan");
+    const konumsuz = masalar.filter((m) => !yerlesimiVar(m));
+    if (konumsuz.length === 0) return;
+    await yerlesimTopluKaydet(otomatikDiz(masalar).filter((y) => konumsuz.some((m) => m.id === y.id)));
+    await tazele(secili?.id);
+  };
+
+  const otomatikDizVeKaydet = async () => {
+    await yerlesimTopluKaydet(otomatikDiz(masalar));
+    await tazele(secili?.id);
+    setBildirim("Masalar yeniden dizildi.");
   };
 
   const masaEklePanelsiz = async () => {
@@ -378,18 +419,71 @@ export default function IsletmeAyarlari() {
                   <button className="ayar-ekle ikincil" onClick={() => setTopluAcik(true)}>
                     <LayoutGrid size={15} /> Toplu masa ekle
                   </button>
+
+                  <div className="gorunum-sec">
+                    <button
+                      className={gorunum === "liste" ? "aktif" : ""}
+                      onClick={() => setGorunum("liste")}
+                    >
+                      <List size={15} /> Liste
+                    </button>
+                    <button
+                      className={gorunum === "plan" ? "aktif" : ""}
+                      onClick={planaGec}
+                    >
+                      <Map size={15} /> Plan
+                    </button>
+                  </div>
+
+                  {gorunum === "plan" && masalar.length > 0 && (
+                    <button className="ayar-ekle ikincil" onClick={otomatikDizVeKaydet}>
+                      <Grid3x3 size={15} /> Otomatik diz
+                    </button>
+                  )}
                 </div>
 
                 {masalar.length === 0 ? (
                   <div className="ayar-bos">
                     <p>Bu bölgede masa yok. Tek tek ekleyebilir veya toplu masa oluşturabilirsiniz.</p>
                   </div>
-                ) : (
+                ) : gorunum === "liste" ? (
                   <div className="ayar-masa-grid">
                     {masalar.map((m) => (
                       <MasaKutusu key={m.id} masa={m} onDuzenle={() => setMasaPaneli(m)} />
                     ))}
                   </div>
+                ) : (
+                  <>
+                    <Bilgi>
+                      Masaları tutup sürükleyerek salonunuzdaki yerlerine taşıyın, sağ alt
+                      köşesinden çekerek boyutlandırın. Çizdiğiniz düzenin satış ekranında
+                      da görünmesi için aşağıdaki anahtarı açın.
+                    </Bilgi>
+
+                    <div className="plan-anahtar">
+                      <Anahtar
+                        etiket="Bu bölgeyi salon ekranında plan olarak göster"
+                        ipucu="Kapalıyken masalar eskisi gibi sıralı kutular hâlinde görünür"
+                        acik={secili?.planModu ?? false}
+                        degistir={async (acik) => {
+                          if (!secili) return;
+                          await bolgeGuncelle(secili.id, { plan_modu: acik });
+                          await tazele(secili.id);
+                        }}
+                      />
+                    </div>
+                    <MasaPlani
+                      masalar={masalar}
+                      duzenlenebilir
+                      onYerlesim={async (id, y) => {
+                        await yerlesimKaydet(id, y);
+                        await tazele(secili?.id);
+                      }}
+                      icerik={(m) => (
+                        <MasaKutusu masa={m} planda onDuzenle={() => setMasaPaneli(m)} />
+                      )}
+                    />
+                  </>
                 )}
               </>
             )}
