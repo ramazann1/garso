@@ -55,6 +55,19 @@ Açıklama gerekiyorsa en fazla bir-iki cümle.
   duruyorlar. Bunun yerine her zaman kendi modalımız kullanılır
   (`components/OnayModal.tsx` — onay için Vazgeç/Evet, uyarı için tek Tamam).
 
+## Görünüm kuralları
+
+- **Silik yazı yasak.** Hiçbir ekranda düşük kontrastlı gri metin olmaz.
+  İkincil metin bile okunur tondadır (`--soluk`), gövde yazısı 14px'in,
+  başlık 17px'in altına inmez. 12px altı punto kullanılmaz.
+- **Yazı tipi Poppins** (`@fontsource/poppins`, pakete gömülü — kasa
+  çevrimdışıyken de doğru görünsün diye internetten çekilmiyor).
+- **Vurgu rengi mercan** (`--mercan`). Pastel veya çok renkli paletler ana
+  ekranlarda kullanılmaz; renk seçici yalnızca kategori/ürün gibi kullanıcının
+  kendi etiketlediği yerlerde vardır.
+- Bir ekranın veya bölümün ne işe yaradığını anlatan açıklama cümleleri düz
+  paragraf değil, `components/Bilgi.tsx` ile yazılır (yuvarlak "i" ikonlu kutu).
+
 ## Teknoloji
 
 React + TypeScript + Vite, Supabase (PostgreSQL), react-router-dom.

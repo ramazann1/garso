@@ -1,58 +1,45 @@
 # GARSO — Teknik Tasarım: Veri Modeli & Ekran Haritası
 *Restoran ve cafe'ler için bulut tabanlı satış ve işletme yönetim sistemi.*
 
-## 0. SIRADAKİ İŞ (6 Ağu 2026'da güncellendi)
+## 0. SIRADAKİ İŞ (6 Ağu 2026 ikinci oturumda güncellendi)
 
 *Ramazan seansa "devam edelim" diye giriyor — sıradaki iş bu listenin en üstündeki
 maddedir. Seans sonunda bu liste güncellenir: biten madde silinir, kalanlar
 yukarı kayar, yeni çıkanlar sıraya girer.*
 
-**Menü modülü bitti; sıra satış çekirdeğinde.** Eksik envanteri bölüm 6'da,
-Adisyo'nun canlı turu `pos-yol-haritasi.md` bölüm 7'de.
+**Menü modülü ve masa/bölge tanımları bitti; salon çekirdeği sürüyor.** Eksik
+envanteri bölüm 6'da, Adisyo turları `pos-yol-haritasi.md` bölüm 7 ve 8'de.
 
-1. **Masa ve bölgeler veritabanına** + İşletme Ayarları ekranının açılması;
-   ardından masa taşıma / birleştirme / adisyon aktarma. **Salon ekranının
-   yeniden tasarımı bu maddeye dahil** — masalar koda gömülüyken tasarım
-   yapılırsa veri gelince ikinci kez elden geçmesi gerekir. Ramazan'ın
-   şikâyeti (4 Ağu): giriş ekranı hoşuna gitmiyor; "Garso / Salon Görünümü"
-   başlığı uygulama adını tekrar ediyor, bölgeler uzun bloklar halinde akıyor,
-   masa kartı sadece dolu/boş söylüyor — garson, adisyon adı, masa etiketi ve
-   durum rengi yok.
-2. **Kalemi başka adisyona taşıma** — kalem panelinde yeri hazır, masa listesi
-   veritabanına geçmeden yapılmıyor (1. maddeye bağlı).
-3. **Tahsilat zenginleştirme** — Hızlı Öde, bahşiş (üstünü tamamla), ödeme tipi
+1. **Masa taşıma / birleştirme / adisyon aktarma** — masa kartında üç nokta
+   menüsü. Veri tarafı hazır (masalar tabloda, adisyon `masa_id` ile bağlı).
+2. **Kalemi başka adisyona taşıma** — kalem panelinde yeri hazır (1. maddeyle
+   aynı akışın parçası).
+3. **Masa yerleşim editörü** — masaları salon planı gibi sürükleyip
+   boyutlandırma. Kolonlar açıldı (`konum_x`, `konum_y`, `genislik`,
+   `yukseklik`), editör yok. Ramazan istedi: "olsun, zararı ne".
+4. **Tahsilat zenginleştirme** — Hızlı Öde, bahşiş (üstünü tamamla), ödeme tipi
    ÖKC/klasik ayrımı, ürün bazlı 1/n, ürün bazlı indirim.
-4. **Gel Al / Paket akışı** — fiyat altyapısı hazır, akış yok. Pakette ödeme
-   tipi önden seçiliyor.
-5. **Fiyatlar KDV hariç ayarı** — işletme geneli tek ayar, varsayılan "dahil".
-   İşletme Ayarları ekranı açılınca oraya girecek (1. maddeye bağlı).
-6. **Turların arayüze çıkması** — `turlar` tablosu doldu (her kaydetmede yeni
-   tur), sepet hâlâ düz liste. Adisyonda "1. tur / 14:20" başlıkları görünecek.
-7. **Adisyon düzeyi alanlar** — adisyon no, serbest isim, kişi sayısı, adisyon
-   notu, müşteri. Tabloda `adisyon_no` var, ekranda kullanılmıyor.
-8. **Kapanmış adisyonlar listesi** — kapanan adisyon artık siliniyordu, şimdi
-   `durum = kapali` olarak duruyor; onları gösteren ekran yok.
+5. **Gel Al / Paket akışı** — fiyat altyapısı hazır, akış yok. Salon ekranının
+   solunda kısayol olacak (Adisyo'daki gibi).
+6. **Fiyatlar KDV hariç ayarı** — işletme geneli tek ayar, varsayılan "dahil".
+   İşletme Ayarları ekranı açıldı, oraya girecek.
+7. **Ön tanımlı indirimler** — ad + tip + değer; satışta serbest tutar yerine
+   listeden seçim. (Adisyo Tanımlamalar turu, 6 Ağu)
+8. **Seçenek grubunda zorunlu seçim sayısı ve varsayılan seçenek** — bizde
+   tekli/çoklu ve zorunlu var, "en az kaç tane" ile "önceden işaretli" yok.
+9. **Turların arayüze çıkması** — `turlar` tablosu doluyor, sepet hâlâ düz liste.
+   Adisyonda "1. tur / 14:20" başlıkları görünecek.
+10. **Adisyon düzeyi alanlar** — adisyon no, serbest isim, kişi sayısı, adisyon
+    notu, müşteri. Tabloda `adisyon_no` var, ekranda kullanılmıyor.
+11. **Kapanmış adisyonlar listesi** — kapanan adisyon `durum = kapali` olarak
+    duruyor; onları gösteren ekran yok.
 
-**İkon seti** ayrı madde değil — 1. maddeyle **eşzamanlı** yapılır (Ramazan'ın
-kararı, 4 Ağu): set Salon'un yeniden tasarımı sırasında kurulur ve önce oraya
-tam uygulanır, diğer ekranlar da elimiz değdikçe karakterden ikona geçer.
-Karar: **`lucide-react`** — ince çizgili modern set, React bileşeni, rengi ve
-çizgi kalınlığı CSS'ten yönetiliyor, yalnız kullanılan ikon pakete giriyor,
-internetten yüklenmediği için çevrimdışı kasada da çalışır. Material Symbols
-bilinçli olarak elendi: Adisyo onu kullanıyor, Garso'nun kendi kimliği olsun.
-Paket 6 Ağu'da kuruldu ve ilk ikonlar girdi (favori yıldızı, katlama okları,
-kalem paneli, bilgi kutusu); `⇅`, `×`, `⧉`, `★` karakterleri hâlâ birçok yerde.
+**Ödenmezler** ve **Kuver/Garsoniye** Faz 2'ye yazıldı (yol haritası bölüm 8);
+bu listeye satış çekirdeği bitince girecekler.
 
-*Ürünün kategorisini listeden taşıma maddesi 3 Ağu'da Ramazan tarafından
-"gerek yok" denerek listeden çıkarıldı.*
-
-*Reçete bilinçli olarak ertelendi: malzeme/stok tablosu olmadan boş bir alandan
-ibaret kalırdı, stok modülüyle (Faz 3) birlikte yapılacak. (2 Ağu 2026)*
-
-*(30 Tem – 2 Ağu'da yapılanlar bölüm 5'te; menü modülünün tam eksik listesi
-bölüm 5'in sonundaki "SONRAKİ ADIMLAR" başlığında.)*
-
----
+**İkon seti:** `lucide-react` kullanılıyor. Salon, İşletme Ayarları, kalem
+paneli ve Menü Stüdyosu'nun bir kısmı geçti; birkaç ekranda hâlâ düz karakter
+simgeleri (çarpı, kopyala, sırala) duruyor, elimiz değdikçe ikona çevriliyor.
 
 ## 1. TEKNOLOJİ KARARLARI
 - **Veritabanı:** PostgreSQL 16 (para alanları `BIGINT` kuruş, asla float)
@@ -556,6 +543,18 @@ görüntüle" ve aktif/pasif ürün — 1 Ağu 2026 ikinci seansında tamamland�
    `Bilgi.tsx`: yuvarlak "i" ikonu + normal punto, normal renk. Eski `.ipucu`
    sınıfı tamamen kaldırıldı. Arayüz metni ürünü satın alacak işletmeciye
    yazılır; okunmayacak kadar soluk yazı profesyonel durmuyor. *(6 Ağu 2026)*
+48. **Silik yazı hiçbir ekranda kullanılmaz.** İkincil metin de okunur tonda
+   (`--soluk: #6b7578`); gövde 14px'in, başlık 17px'in altına inmez, 12px altı
+   punto yok. Ramazan'ın tekrar eden şikâyeti buydu: "bundan sonra asla silik
+   yazı görmek istemiyorum". Kural CLAUDE.md'ye de yazıldı. *(6 Ağu 2026)*
+49. **Yazı tipi Poppins, pakete gömülü.** `@fontsource/poppins` ile geliyor,
+   Google Fonts'tan çekilmiyor — kasa çevrimdışıyken de yazı tipi doğru
+   görünmeli. Sistem fontu (`Segoe UI`) sert ve dar duruyordu. *(6 Ağu 2026)*
+50. **Ana ekranlarda tek vurgu rengi: mercan.** Bölgelere pastel renk verip
+   masaları o renge boyama denemesi reddedildi ("çok çirkin, kendi rengimizi
+   kullan"). Renk seçici yalnızca kategori/ürün gibi kullanıcının kendi
+   etiketlediği yerlerde kalır. Salonda dolu masa dolgun mercan, boş masa
+   beyaz — durum farkı renk yoğunluğundan okunur. *(6 Ağu 2026)*
 
 ## 7. KOD PAYLAŞIM DÜZENİ
 - Kod GitHub'da: `github.com/ramazann1/garso` (şimdilik Public — final'de Private yapılacak)
@@ -711,3 +710,50 @@ açıklamalar ikonlu kutuya geçti.
 ### Sonraki seansın ilk işi
 Masa ve bölgelerin veritabanına taşınması + Salon ekranının yeniden tasarımı +
 ikon setinin oraya tam uygulanması (0. bölümdeki 1. madde).
+
+---
+
+## 9. SEANS GÜNLÜĞÜ — 6 AĞU 2026 (ikinci oturum)
+
+### Yapılanlar
+- ✅ **Masa ve bölgeler veritabanına** (`sql/2026-08-06-masalar.sql`): `bolgeler`
+  ve `masalar` tabloları, mevcut Bahçe/Salon masaları başlangıç verisi olarak
+  yazıldı. `adisyonlar` artık masaya **adıyla değil kimliğiyle** bağlı
+  (`masa_id`); masa yeniden adlandırılınca üstündeki adisyon kopmuyor. Rota
+  `/siparis/:masaId` oldu, `src/ornekVeri.ts` silindi.
+- ✅ Masaya **kapasite ve şekil** (kare/daire) alanları; salon planı için
+  `konum_x`, `konum_y`, `genislik`, `yukseklik` kolonları şimdiden açıldı —
+  sürükleyip yerleştirme editörü sonra gelecek, tablo ikinci kez elden geçmesin.
+- ✅ **İşletme Ayarları ekranı** (`pages/IsletmeAyarlari.tsx`): bölge çip şeridi
+  (sola/sağa taşı, düzenle), masa ızgarası, sağdan açılan düzenleme panelleri,
+  **toplu masa ekleme** (ön ek + adet + şekil, canlı önizlemeli). Kaydetme
+  anında; sayfanın altında bekleyen Kaydet düğmesi yok. Açık adisyonu olan masa
+  veya bölge silinemiyor.
+- ✅ **Salon ekranı yeniden tasarlandı**: eski "Garso / Salon Görünümü" başlığı
+  kalktı, bölgeler sekme oldu (doluluk rozetli, "Tümü" en sonda), masa kartı
+  yeniden yazıldı — dolu masa dolgun mercan + beyaza yakın yazı, boş masa beyaz
+  ve tek satır, üstüne gelince "Adisyon aç" beliriyor. 2 saati geçen adisyonun
+  süresi rozetleniyor. Süreler dakikada bir kendiliğinden ilerliyor.
+- ✅ **Adisyo Tanımlamalar modülünün tamamı canlı hesapta gezildi** — on ekran,
+  bulgular `pos-yol-haritasi.md` bölüm 8'e işlendi, Garso ile kıyas tablosu ve
+  yedi yeni faz maddesi çıkarıldı.
+- ✅ **Tipografi elden geçti:** yazı tipi **Poppins** (`@fontsource/poppins`,
+  pakete gömülü), `--soluk` okunur tona çekildi (`#6b7578`), 10-11px puntolar
+  kaldırıldı, `input/button/select/textarea` için global `font-family: inherit`
+  eklendi (form öğeleri sayfa fontunu miras almıyordu — Menü Stüdyosu ve
+  İşletme Ayarları'ndaki "eski font" şikâyetinin sebebi buydu).
+
+### Denenip vazgeçilenler
+- **Bölgelere renk verme** (pastel palet, dolu masa bölge rengini alsın):
+  Ramazan reddetti — "çok çirkin, kendi rengimizi kullan". Veritabanı kolonu,
+  renk seçici ve stiller geri alındı. Karar 50 numarayla işlendi.
+- **Masa kartında adet rozeti**: kaldırıldı, kart kalabalık duruyordu.
+
+### Kararlar
+Bölüm 6'ya **48, 49, 50** numaralarla işlendi: silik yazı yasağı, Poppins,
+ana ekranlarda tek vurgu rengi. Silik yazı kuralı ayrıca CLAUDE.md'ye
+"Görünüm kuralları" başlığıyla girdi.
+
+### Sonraki seansın ilk işi
+Salon ekranının kalan parçaları: masa taşıma / birleştirme / adisyon aktarma
+(üç nokta menüsü) ve masa yerleşim editörü.

@@ -53,7 +53,7 @@ function kalemeCevir(s: KalemSatiri): SepetKalemi {
   };
 }
 
-export async function adisyonGetir(masaAd: string): Promise<AdisyonVerisi> {
+export async function adisyonGetir(masaId: number): Promise<AdisyonVerisi> {
   const { data } = await supabase
     .from("adisyonlar")
     .select(
@@ -61,7 +61,7 @@ export async function adisyonGetir(masaAd: string): Promise<AdisyonVerisi> {
        turlar (sira, adisyon_kalemleri (${KALEM_ALANLARI})),
        tahsilatlar (id, tip, tutar, kalem_adetleri)`
     )
-    .eq("masa_ad", masaAd)
+    .eq("masa_id", masaId)
     .eq("durum", "acik")
     .maybeSingle();
 
@@ -94,14 +94,14 @@ export async function adisyonGetir(masaAd: string): Promise<AdisyonVerisi> {
 
 // Salon ekranı için: açık adisyonların masa bazlı özeti.
 export async function tumAdisyonlar(): Promise<
-  Record<string, { tutar: number; adet: number; acilis?: string; garson?: string }>
+  Record<number, { tutar: number; adet: number; acilis?: string; garson?: string }>
 > {
   const { data } = await supabase
     .from("adisyonlar")
-    .select("masa_ad, acilis, garson, indirim, turlar (adisyon_kalemleri (adet, fiyat, durum))")
+    .select("masa_id, acilis, garson, indirim, turlar (adisyon_kalemleri (adet, fiyat, durum))")
     .eq("durum", "acik");
 
-  const sonuc: Record<string, { tutar: number; adet: number; acilis?: string; garson?: string }> = {};
+  const sonuc: Record<number, { tutar: number; adet: number; acilis?: string; garson?: string }> = {};
   for (const satir of (data as any[]) ?? []) {
     let tutar = 0;
     let adet = 0;
@@ -112,7 +112,7 @@ export async function tumAdisyonlar(): Promise<
         if (k.durum !== "ikram") tutar += Number(k.fiyat) * Number(k.adet);
       }
     }
-    sonuc[satir.masa_ad] = {
+    sonuc[satir.masa_id] = {
       tutar: Math.max(0, tutar - Number(satir.indirim ?? 0)),
       adet,
       acilis: satir.acilis,
@@ -122,11 +122,11 @@ export async function tumAdisyonlar(): Promise<
   return sonuc;
 }
 
-async function acikAdisyonBul(masaAd: string) {
+async function acikAdisyonBul(masaId: number) {
   const { data } = await supabase
     .from("adisyonlar")
     .select("id, acilis")
-    .eq("masa_ad", masaAd)
+    .eq("masa_id", masaId)
     .eq("durum", "acik")
     .maybeSingle();
   return data as { id: number; acilis: string } | null;
@@ -138,11 +138,11 @@ async function acikAdisyonBul(masaAd: string) {
  * kaymaz. `kapat` verilirse adisyon silinmez, kapalıya çekilir.
  */
 export async function adisyonKaydet(
-  masaAd: string,
+  masaId: number,
   veri: AdisyonVerisi,
   kapat = false
 ): Promise<AdisyonVerisi> {
-  let adisyon = await acikAdisyonBul(masaAd);
+  let adisyon = await acikAdisyonBul(masaId);
 
   // Boş adisyon: hiç kalem yoksa masayı işgal etmesin.
   if (veri.sepet.length === 0 && !kapat) {
@@ -153,7 +153,7 @@ export async function adisyonKaydet(
   if (!adisyon) {
     const { data } = await supabase
       .from("adisyonlar")
-      .insert({ masa_ad: masaAd, indirim: veri.indirim, garson: veri.garson ?? null })
+      .insert({ masa_id: masaId, indirim: veri.indirim, garson: veri.garson ?? null })
       .select("id, acilis")
       .single();
     adisyon = data as { id: number; acilis: string };

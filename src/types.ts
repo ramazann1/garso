@@ -1,14 +1,31 @@
 export type Masa = {
+  id: number;
+  bolgeId: number;
   ad: string;
-  dolu: boolean;
-  tutar?: number;
-  sure?: string;
-  garson?: string;
+  sira: number;
+  kapasite?: number;
+  aktif: boolean;
+  // Salon planı alanları; editör gelene kadar boş kalıyor, masa ızgarada dizilir.
+  konumX?: number;
+  konumY?: number;
+  genislik?: number;
+  yukseklik?: number;
+  sekil: "kare" | "daire";
 };
 
 export type Bolge = {
+  id: number;
   ad: string;
+  sira: number;
   masalar: Masa[];
+};
+
+// Salon kartında masanın o anki hali — masanın kendisi değil, üstündeki adisyon.
+export type MasaDurumu = {
+  tutar: number;
+  sure?: string;
+  garson?: string;
+  gecikti?: boolean;
 };
 export type SepetKalemi = {
   id?: number; // kalem kimliği; negatifse henüz kaydedilmemiş

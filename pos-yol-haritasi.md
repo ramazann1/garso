@@ -434,3 +434,77 @@ hiçbir kayıt değiştirilmedi (açılan grup ve denenen ürün kaydedilmeden g
    tahsilat alınmasını engelleyen basit ve doğru kural.
 5. Adisyona **serbest isim** verilebilmesi ("polısler") masa adından bağımsız bir
    ihtiyaç: aynı masada iki grup, ya da isimle çağrılan müdavim.
+
+---
+
+## 8. TANIMLAMALAR MODÜLÜ — CANLI DERİN TUR (6 Ağu 2026)
+
+Adisyo'nun Tanımlamalar menüsündeki on ekranın tamamı kendi işletme panelimizden
+tek tek gezildi. Amaç kopyalamak değil, hangi ayarın gerçekten operasyonda
+karşılığı olduğunu görmek.
+
+### Ortak ekran deseni
+Her tanım ekranı ortalanmış tek kart: sol üstte renkli ikon karesi, yanında
+başlık ve **ne işe yaradığını anlatan bir cümle**, sağ üstte birincil aksiyon
+(Yeni/Ekle). Basit kayıtlar modalla, çok alanlı olanlar (özellik grubu) sağdan
+açılan panelle düzenleniyor. Açıklama cümlesi fikri iyi: işletmeci ekrana ilk
+girdiğinde "burası ne" sorusunu okuyarak çözüyor.
+
+### Masa/Bölgeler (`/app/table-area-definition`)
+- Bölgeler üstte **sekme**, kısa kodla (`B`, `S`, `IB`, `DB`, `L`).
+- Masalar **serbest yerleşimli**: kart sürüklenebiliyor ve sağ alt köşeden
+  boyutlandırılıyor; değişince "Düzeni Kaydet" düğmesi beliriyor. Ayrıca
+  "Bölge Düzenini Sıfırla" ile ızgaraya dönülüyor.
+- Masa modalı yalnızca **ad + şekil (Kare/Daire)** — kapasite alanı yok.
+- Bölge modalı: **ad + "Tüm Garsonlarda Göster"** (bölge–garson yetkisi).
+- **Toplu Masa Ekleme**: ön ek + adet + şekil → "Masa 1…20". 20 masalı bölgeyi
+  tek tek girmeye göre operasyonel olarak çok değerli.
+
+### Özellikler (`/app/features`) — bizdeki Seçenek Grupları
+Tablo: grup adı · seçim tipi · özellik sayısı (açılır) · Düzenle · Yeni özellik
+ekle · Sil. Düzenleme sağdan panelde: seçim tipi, "Reçeteli ürün kullan",
+"Özellik seçimi zorunlu olsun" + **Zorunlu Seçim Sayısı**, satırlar
+(sürükle-sırala · ad · **ekstra tutar** · **varsayılan** · sil).
+
+### Diğer ekranlar
+- **Menü/Ürünler:** solda kategori listesi (renk noktası + ⋮), sağda ürün kartı
+  ızgarası; kartta favori kalbi, renk paleti, kopyala.
+- **Birimler:** düz liste (Tam, Yarım, Bir buçuk, Adet, Kg).
+- **Kdv Oranları:** satır içi düzenleme, sürükle-sırala, varsayılan işareti,
+  en fazla 8 tanım (bizdeki `KDV_SINIRI` ile aynı).
+- **İndirimler:** ön tanımlı indirim listesi — ad + tip (Yüzde/Tutar) + değer.
+  Satışta serbest indirim yerine listeden seçiliyor.
+- **Mutfak Grupları:** ad + "Pişirme aşaması" / "Paketleme aşaması". Ürünün
+  hangi mutfağa/yazıcıya düşeceğini ve KDS'de kaç aşamadan geçeceğini belirler.
+- **Müşteriler:** ad/soyad, iki telefon, adresler, **açılış bakiyesi**, açık
+  hesap işareti. Üstte müşteri sayısı ve toplam bakiye; Excel ile yükle/indir.
+- **Ödenmezler:** ikram/personel yemeğinin kime yazıldığı (No · Ad Soyad ·
+  Unvan), personel listesinden toplu aktarılıyor.
+- **Kuver/Garsoniye:** üstte tek ana anahtar (kapalıyken tüm alanlar soluk), iki
+  sütun; her biri "siparişe otomatik eklensin" + ad + tip (Tutar/Yüzde) + değer.
+
+### Garso ile kıyas (6 Ağu 2026)
+Bizde **var:** menü/ürünler (daha zengin — maliyet, kâr, kampanyalı menü, alt
+kategori ağacı, favori, Excel aktarım), birimler, seçenek grupları, KDV grupları.
+Bizde **yok ama sonraki fazın işi:** mutfak grupları (Faz 2 — KDS/yazıcı),
+müşteriler (Faz 2/3 — paket servis, cari/veresiye).
+Bizde **yok ve hiçbir fazda geçmiyordu** (bu turda eklendi): ödenmezler,
+kuver/garsoniye, ön tanımlı indirimler.
+
+### Bu turda çıkan yeni maddeler
+1. **Ön tanımlı indirimler** — ad + tip + değer; satışta serbest tutar yerine
+   listeden seçim. Yetki matrisindeki "sadece ön tanımlı indirim" kuralının
+   önkoşulu. → Faz 1
+2. **Ödenmezler** — ikramın/personel yemeğinin kime yazıldığı. Bizde ikram
+   durumu var ama "kime" bilgisi yok; kayıp/kaçak denetimi bunsuz eksik. → Faz 2
+3. **Kuver/Garsoniye** — adisyona otomatik kuver ücreti veya yüzdeli servis
+   bedeli. Tek ana anahtarla kapatılabilir olmalı. → Faz 2
+4. **Seçenek grubunda zorunlu seçim sayısı ve varsayılan seçenek** — bizde
+   tekli/çoklu ve zorunlu var, "en az kaç tane" ile "önceden işaretli" yok. → Faz 1
+5. **Bölge–garson yetkisi** ("Tüm Garsonlarda Göster") — rol sistemi kurulunca
+   bölge tanımına eklenecek. → Faz 0/1 (rol/yetki)
+6. **Toplu masa ekleme** ve **masa şekli** Garso'ya alındı; ayrıca Adisyo'da
+   olmayan **masa kapasitesi** eklendi (kuver ve kişi sayısı için).
+7. **Modüllerin eklenti olarak satılması** — Adisyo'da KDS, Stok/Reçete,
+   Kuver&Garsoniye, Maliyet Analizi "Uygulama Mağazası"ndan ekleniyor, bazıları
+   Pro Plan'a bağlı. Garso ticarileşirken paketleme modeli için örnek. → Faz 4

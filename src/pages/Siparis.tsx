@@ -3,6 +3,7 @@ import { useNavigate, useParams } from "react-router-dom";
 import { ChevronDown, SlidersHorizontal, Star } from "lucide-react";
 import { menuGetir, agacUrunleri, altKategoriler, porsiyonFiyat, urunKdv } from "../menu";
 import { adisyonGetir, adisyonKaydet, yeniKalemId } from "../adisyonlar";
+import { masaGetir } from "../masalar";
 import UrunSecim from "../components/UrunSecim";
 import KampanyaSecim from "../components/KampanyaSecim";
 import TahsilatPanel from "../components/TahsilatPanel";
@@ -48,7 +49,9 @@ function anaFiyat(u: MenuUrun) {
 }
 
 export default function Siparis() {
-  const { masaAd } = useParams();
+  const { masaId: masaIdParam } = useParams();
+  const masaId = Number(masaIdParam);
+  const [masaAdi, setMasaAdi] = useState("");
   const navigate = useNavigate();
   const [kategoriler, setKategoriler] = useState<MenuKategori[]>([]);
   const [urunler, setUrunler] = useState<MenuUrun[]>([]);
@@ -91,15 +94,19 @@ export default function Siparis() {
   }, []);
 
   useEffect(() => {
+    masaGetir(masaId).then((m) => setMasaAdi(m?.ad ?? ""));
+  }, [masaId]);
+
+  useEffect(() => {
     setYukleniyor(true);
-    adisyonGetir(masaAd ?? "").then((veri) => {
+    adisyonGetir(masaId).then((veri) => {
       setSepet(veri.sepet);
       setIndirim(veri.indirim);
       setKayitliTahsilatlar(veri.tahsilatlar);
       setKayitliImza(adisyonImzasi(veri.sepet, veri.indirim, veri.tahsilatlar));
       setYukleniyor(false);
     });
-  }, [masaAd]);
+  }, [masaId]);
 
   // Şeritte ana kategoriler durur; alt kategoriler satırdaki okla açılır.
   // Üstü satışta gizliyse alt kategori şeride ana kategori gibi girer.
@@ -195,7 +202,7 @@ export default function Siparis() {
   }, [kirli]);
 
   const kaydet = async () => {
-    await adisyonKaydet(masaAd ?? "", { sepet, indirim, tahsilatlar: kayitliTahsilatlar });
+    await adisyonKaydet(masaId, { sepet, indirim, tahsilatlar: kayitliTahsilatlar });
     kilitKaldir();
     navigate("/");
   };
@@ -209,7 +216,7 @@ export default function Siparis() {
     <div className="siparis-sayfa">
       <header className="siparis-ust">
         <button className="geri" onClick={salonaDon}>← Salon</button>
-        <h1>{masaAd}</h1>
+        <h1>{masaAdi}</h1>
       </header>
 
       <div className="siparis-govde">
@@ -423,7 +430,7 @@ export default function Siparis() {
           onKapat={() => setTahsilatAcik(false)}
           onOdendi={async (tahsilatlar) => {
             // Kapanan adisyon silinmiyor, kapalıya çekiliyor — gün sonu raporu ona bakacak.
-            await adisyonKaydet(masaAd ?? "", { sepet, indirim, tahsilatlar }, true);
+            await adisyonKaydet(masaId, { sepet, indirim, tahsilatlar }, true);
             kilitKaldir();
             navigate("/");
           }}
