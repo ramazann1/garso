@@ -1,7 +1,7 @@
 # GARSO — Teknik Tasarım: Veri Modeli & Ekran Haritası
 *Restoran ve cafe'ler için bulut tabanlı satış ve işletme yönetim sistemi.*
 
-## 0. SIRADAKİ İŞ (4 Ağu 2026'da güncellendi)
+## 0. SIRADAKİ İŞ (6 Ağu 2026'da güncellendi)
 
 *Ramazan seansa "devam edelim" diye giriyor — sıradaki iş bu listenin en üstündeki
 maddedir. Seans sonunda bu liste güncellenir: biten madde silinir, kalanlar
@@ -10,16 +10,7 @@ yukarı kayar, yeni çıkanlar sıraya girer.*
 **Menü modülü bitti; sıra satış çekirdeğinde.** Eksik envanteri bölüm 6'da,
 Adisyo'nun canlı turu `pos-yol-haritasi.md` bölüm 7'de.
 
-1. **Adisyon veri modeli** — `masa_ad` + tek jsonb yapısından gerçek tablolara
-   (`adisyonlar` / `turlar` / `adisyon_kalemleri` / `tahsilatlar`). Tek başına
-   6.1'deki 1, 3, 4, 5 numaralı hataları kapatıyor; turlar, ikram, kapanan
-   adisyon ve masa taşımanın önünü açan zorunlu ilk adım.
-2. **Hızlı kazançlar** — sipariş ekranında ürün arama, favoriler şeridi, ürün
-   kartında adisyondaki adet rozeti, sepetten çıkarma hatasının düzeltilmesi,
-   kaydetmeden çıkış koruması. (1'den bağımsız, tek tek yapılabilir.)
-3. **Kalem işlemleri** — kaleme dokununca sağdan panel: adet, birim fiyat,
-   ürün notu, porsiyon değiştirme, ikram, iptal, başka adisyona taşıma.
-4. **Masa ve bölgeler veritabanına** + İşletme Ayarları ekranının açılması;
+1. **Masa ve bölgeler veritabanına** + İşletme Ayarları ekranının açılması;
    ardından masa taşıma / birleştirme / adisyon aktarma. **Salon ekranının
    yeniden tasarımı bu maddeye dahil** — masalar koda gömülüyken tasarım
    yapılırsa veri gelince ikinci kez elden geçmesi gerekir. Ramazan'ın
@@ -27,21 +18,30 @@ Adisyo'nun canlı turu `pos-yol-haritasi.md` bölüm 7'de.
    başlığı uygulama adını tekrar ediyor, bölgeler uzun bloklar halinde akıyor,
    masa kartı sadece dolu/boş söylüyor — garson, adisyon adı, masa etiketi ve
    durum rengi yok.
-5. **Tahsilat zenginleştirme** — Hızlı Öde, bahşiş (üstünü tamamla), ödeme tipi
+2. **Kalemi başka adisyona taşıma** — kalem panelinde yeri hazır, masa listesi
+   veritabanına geçmeden yapılmıyor (1. maddeye bağlı).
+3. **Tahsilat zenginleştirme** — Hızlı Öde, bahşiş (üstünü tamamla), ödeme tipi
    ÖKC/klasik ayrımı, ürün bazlı 1/n, ürün bazlı indirim.
-6. **Gel Al / Paket akışı** — fiyat altyapısı hazır, akış yok. Pakette ödeme
+4. **Gel Al / Paket akışı** — fiyat altyapısı hazır, akış yok. Pakette ödeme
    tipi önden seçiliyor.
-7. **Fiyatlar KDV hariç ayarı** — işletme geneli tek ayar, varsayılan "dahil".
-   İşletme Ayarları ekranı açılınca oraya girecek (4. maddeye bağlı).
-**İkon seti** ayrı madde değil — 4. maddeyle **eşzamanlı** yapılır (Ramazan'ın
+5. **Fiyatlar KDV hariç ayarı** — işletme geneli tek ayar, varsayılan "dahil".
+   İşletme Ayarları ekranı açılınca oraya girecek (1. maddeye bağlı).
+6. **Turların arayüze çıkması** — `turlar` tablosu doldu (her kaydetmede yeni
+   tur), sepet hâlâ düz liste. Adisyonda "1. tur / 14:20" başlıkları görünecek.
+7. **Adisyon düzeyi alanlar** — adisyon no, serbest isim, kişi sayısı, adisyon
+   notu, müşteri. Tabloda `adisyon_no` var, ekranda kullanılmıyor.
+8. **Kapanmış adisyonlar listesi** — kapanan adisyon artık siliniyordu, şimdi
+   `durum = kapali` olarak duruyor; onları gösteren ekran yok.
+
+**İkon seti** ayrı madde değil — 1. maddeyle **eşzamanlı** yapılır (Ramazan'ın
 kararı, 4 Ağu): set Salon'un yeniden tasarımı sırasında kurulur ve önce oraya
 tam uygulanır, diğer ekranlar da elimiz değdikçe karakterden ikona geçer.
 Karar: **`lucide-react`** — ince çizgili modern set, React bileşeni, rengi ve
 çizgi kalınlığı CSS'ten yönetiliyor, yalnız kullanılan ikon pakete giriyor,
 internetten yüklenmediği için çevrimdışı kasada da çalışır. Material Symbols
 bilinçli olarak elendi: Adisyo onu kullanıyor, Garso'nun kendi kimliği olsun.
-Bugün her yerde karakter var (`⇅`, `×`, `⧉`, `★`, `⌫`); yazı tipine göre
-kayıyorlar ve amatör duruyorlar.
+Paket 6 Ağu'da kuruldu ve ilk ikonlar girdi (favori yıldızı, katlama okları,
+kalem paneli, bilgi kutusu); `⇅`, `×`, `⧉`, `★` karakterleri hâlâ birçok yerde.
 
 *Ürünün kategorisini listeden taşıma maddesi 3 Ağu'da Ramazan tarafından
 "gerek yok" denerek listeden çıkarıldı.*
@@ -522,6 +522,41 @@ görüntüle" ve aktif/pasif ürün — 1 Ağu 2026 ikinci seansında tamamland�
    özet kutusunda "₺0" değil "—" gösterilir ve menüye maliyet yazılmaz; 0 yazmak
    "maliyetsiz ürün" gibi okunup kâr raporunu bozardı. *(3 Ağu 2026)*
 
+39. **Kapanan adisyon silinmez, `durum = kapali` olur.** Gün sonu, ciro ve denetim
+   raporlarının tek dayanağı bu. Adisyon artık `adisyonlar` / `turlar` /
+   `adisyon_kalemleri` / `tahsilatlar` tablolarında duruyor; masada tek açık
+   adisyon kuralını kısmi tekil indeks (`where durum = 'acik'`) zorluyor.
+   *(6 Ağu 2026)*
+40. **Her kalemin kendi kimliği vardır.** Sepetten çıkarma, tahsilatta "hangi
+   kalem ödendi" ve kalem işlemleri hep bu kimliğe bağlı — sıra numarasına
+   bağlıyken araya kalem girip çıkınca işaretler kayıyordu. Ekranda yeni açılan
+   kalem negatif geçici kimlik taşır, kayıtta gerçeğiyle değişir. *(6 Ağu 2026)*
+41. **Yeni gelen kalemler kendi turuna yazılır.** Kaydetme sırasında var olan
+   kalemler yerinde güncellenir, yalnız yeniler yeni tura girer; kimlikler
+   korunsun ve "ne zaman ne söylendi" kaybolmasın diye. *(6 Ağu 2026)*
+42. **İkram ve iptal kalemi silmez.** İkisi de adisyonda görünür (iptal üstü
+   çizili, ikram soluk), tutarları ara toplama ve KDV dökümüne girmez, tahsilat
+   listesinde etiketli ve tıklanamaz durur. İptal geri alınabilir. *(6 Ağu 2026)*
+43. **Kalem işlemi adedin bir kısmına uygulanabilir.** "2 salebin biri ikram"
+   deyince satır ikiye bölünür; adedi panelin kendi Adet alanı belirler, ayrı bir
+   "işlem adedi" alanı yoktur (denendi, fazladan kavram olarak reddedildi).
+   Durum geri alınınca satırlar tekrar birleşir — ödemesi işlenmiş kalem hariç.
+   *(6 Ağu 2026)*
+44. **Adisyon ödeme bitince kendiliğinden kapanmaz.** Kalan sıfırlanınca tahsilat
+   panelindeki düğme "Adisyonu Kapat"a döner; kapatma kararı kullanıcınındır.
+   Önce otomatik kapanıyordu, Ramazan tarafından reddedildi. *(6 Ağu 2026)*
+45. **Alt kategoriler kendiliğinden açılmaz.** Hem satış ekranında hem Menü
+   Stüdyosu'nda kategori kutusunun sağ ucundaki mercan okla açılır, aynı anda tek
+   dal açık kalır. 32 numaralı kararın "seçili kategorinin altları açılır" kısmı
+   bununla değişti — seçmek ile açmak ayrı işler. *(6 Ağu 2026)*
+46. **Seçili kategori mercan dolguludur.** Satış ekranı ve Menü Stüdyosu aynı
+   görünümü kullanır; dolgu üstünde kategorinin kendi renkli kenarlığı kalkar,
+   ok beyaza döner (mercan üstünde mercan ok kayboluyordu). *(6 Ağu 2026)*
+47. **Açıklama metinleri soluk küçük punto değil, ikonlu kutudur.** Ortak
+   `Bilgi.tsx`: yuvarlak "i" ikonu + normal punto, normal renk. Eski `.ipucu`
+   sınıfı tamamen kaldırıldı. Arayüz metni ürünü satın alacak işletmeciye
+   yazılır; okunmayacak kadar soluk yazı profesyonel durmuyor. *(6 Ağu 2026)*
+
 ## 7. KOD PAYLAŞIM DÜZENİ
 - Kod GitHub'da: `github.com/ramazann1/garso` (şimdilik Public — final'de Private yapılacak)
 - **Claude'un repoya erişim yöntemi:** seans başında bash ile tarball indirilir:
@@ -640,3 +675,39 @@ sipariş şeridinde açılması · kendi onay modalımız.
 ### Not
 Bu seansta Adisyo'nun canlı sisteminde hiçbir kayıt değiştirilmedi: denenen
 "Grup Ekle" ve sepete eklenen ürün kaydedilmeden geri alındı, ödeme alınmadı.
+
+---
+
+## 8. SEANS GÜNLÜĞÜ — 6 AĞU 2026
+
+### Yapılanlar
+- ✅ **Adisyon veri modeli gerçek tablolara taşındı** (`sql/2026-08-04-adisyon-modeli.sql`):
+  `adisyonlar` / `turlar` / `adisyon_kalemleri` / `tahsilatlar`. Eski tek satırlık
+  jsonb yapısı `adisyonlar_eski` adıyla duruyor, açık adisyonlar betikle aktarıldı.
+  `adisyonlar.ts` baştan yazıldı: kaydetmede mevcut kalemler yerinde güncelleniyor,
+  yeniler yeni tura giriyor, tahsilatlar kalem kimlikleriyle yeniden yazılıyor.
+  Bu adım 6.1'deki **1, 2, 3, 4 numaralı hataları** kapattı.
+- ✅ **Hızlı kazançlar:** ürün arama (ad + kod, kategori sınırını kaldırıyor),
+  favoriler şeridi (yıldız ikonlu, favori yoksa görünmüyor), ürün kartında
+  adisyondaki adet rozeti, sipariş ekranına kaydetmeden çıkış koruması
+  (`cikisKilidi.ts` + kendi onay modalı).
+- ✅ **Kalem paneli** (`components/KalemPaneli.tsx`): adet, birim fiyat, porsiyon
+  değiştirme, ürün notu, ikram, iptal ve iptali geri alma. Adisyon satırı
+  tıklanabilir oldu (mercan ayar simgesi + üstüne gelince zemin).
+- ✅ **lucide-react kuruldu**, ilk ikonlar girdi: favori yıldızı, katlama okları
+  (satış şeridi, Menü Stüdyosu, ürün paneli), kalem panelindeki artı/eksi,
+  bilgi kutusu ikonu.
+- ✅ **`Bilgi.tsx`** — 14 yerdeki soluk `ipucu` satırı ikonlu bilgi kutusuna
+  çevrildi, eski `.ipucu` stili silindi.
+- ✅ **Menü Stüdyosu kategori listesinden ürün sayısı kaldırıldı** (Ramazan'ın
+  isteği); alt kategoriler artık okla açılıyor.
+
+### Kararlar
+Bu seansta çıkan kararlar bölüm 6'ya 39–47 numaralarla işlendi. Öne çıkanlar:
+kapanan adisyon silinmiyor, her kalemin kendi kimliği var, ikram/iptal kalemi
+silmiyor ve adedin bir kısmına uygulanabiliyor, adisyon kendiliğinden kapanmıyor,
+açıklamalar ikonlu kutuya geçti.
+
+### Sonraki seansın ilk işi
+Masa ve bölgelerin veritabanına taşınması + Salon ekranının yeniden tasarımı +
+ikon setinin oraya tam uygulanması (0. bölümdeki 1. madde).

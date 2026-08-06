@@ -1,4 +1,5 @@
 import { useState } from "react";
+import Bilgi from "./Bilgi";
 import {
   grubunVarsayilanSecimi,
   icerikPorsiyonu,
@@ -203,10 +204,10 @@ export default function KampanyaSekmesi({
           <p className="bos">Soldan bir menü seç ya da yenisini oluştur</p>
         ) : (
           <>
-            <p className="ipucu">
+            <Bilgi>
               Kampanyalı menü, birden fazla ürünü tek fiyata satar. Her grup için "kaç tane
               seçilebilir" belirlersin; siparişte garson o gruptan seçim yapar.
-            </p>
+            </Bilgi>
 
             <div className="alan">
               <span>Menü adı</span>
@@ -247,9 +248,9 @@ export default function KampanyaSekmesi({
                     ×
                   </button>
                 </div>
-                <p className="ipucu">
+                <Bilgi>
                   Müşteri bu gruptan {g.secilebilir} ürün seçer. Yıldızlı satır hazır gelir.
-                </p>
+                </Bilgi>
 
                 {g.satirlar.map((s, si) => {
                   const urun = urunler.find((u) => u.id === s.urunId);
@@ -328,10 +329,10 @@ export default function KampanyaSekmesi({
             {temizGruplar.length > 0 && (
               <div className="kampanya-indirim">
                 <span className="bolum-ad">Kampanya indirimi</span>
-                <p className="ipucu">
+                <Bilgi>
                   Bu ürünler ayrı ayrı ₺{ayriTutar} tutuyor. İndirimi yüzde ya da tutar olarak
                   gir; menünün satış fiyatı buradan çıkar.
-                </p>
+                </Bilgi>
 
                 <div className="indirim-satir">
                   <div className="mod-sec">

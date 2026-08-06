@@ -1,4 +1,5 @@
 import { useRef, useState } from "react";
+import Bilgi from "./Bilgi";
 
 type Satir = { id: number; ad: string };
 
@@ -77,7 +78,7 @@ export default function SiralamaModal({
           <button className="sirala-az" onClick={alfabetik}>A-Z</button>
         </header>
 
-        <p className="ipucu">Satırları tutup sürükleyerek sırayı değiştir.</p>
+        <Bilgi>Satırları tutup sürükleyerek sırayı değiştir.</Bilgi>
 
         <div className="sirala-liste">
           {liste.map((s, i) => (

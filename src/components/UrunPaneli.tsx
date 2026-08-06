@@ -1,4 +1,6 @@
 import { useState } from "react";
+import Bilgi from "./Bilgi";
+import { ChevronDown } from "lucide-react";
 import Anahtar from "./Anahtar";
 import RenkSecici from "./RenkSecici";
 import { paraMetin, paraSayi, paraYaz } from "../para";
@@ -193,7 +195,7 @@ export default function UrunPaneli({
             <button className="bolum-basi" onClick={() => katla("porsiyon")}>
               <span>Porsiyonlar ve fiyat</span>
               <small>{porsiyonlar.length}</small>
-              <em className={acik.includes("porsiyon") ? "ok acik" : "ok"}>›</em>
+              <ChevronDown size={18} className={acik.includes("porsiyon") ? "bolum-ok donuk" : "bolum-ok"} />
             </button>
 
             {acik.includes("porsiyon") && (
@@ -203,11 +205,11 @@ export default function UrunPaneli({
                     + Porsiyon
                   </button>
                 </div>
-                <p className="ipucu">
+                <Bilgi>
                   {birimler.length
                     ? "Yıldızlı porsiyon, siparişte varsayılan olarak gelir."
                     : "Önce Menü Stüdyosu'nun Birimler sekmesinden birim tanımla."}
-                </p>
+                </Bilgi>
                 {porsiyonlar.map((p, i) => (
                   <div key={i} className="porsiyon">
                     <div className="satir-alan">
@@ -270,9 +272,9 @@ export default function UrunPaneli({
                           </label>
                         </div>
 
-                        <p className="ipucu">
+                        <Bilgi>
                           Sipariş türüne göre fiyat. Boş bıraktığın türde yukarıdaki tek fiyat geçerli olur.
-                        </p>
+                        </Bilgi>
                         <div className="detay-satir">
                           <label>
                             <span>Masa</span>
@@ -303,12 +305,12 @@ export default function UrunPaneli({
                           </label>
                         </div>
 
-                        <p className="ipucu">
+                        <Bilgi>
                           Seçenek grupları bu porsiyona bağlanır — "Tam" ve "Yarım" farklı
                           seçenek taşıyabilir.
-                        </p>
+                        </Bilgi>
                         {gruplar.length === 0 ? (
-                          <p className="ipucu">Henüz seçenek grubu yok.</p>
+                          <Bilgi>Henüz seçenek grubu yok.</Bilgi>
                         ) : (
                           <div className="cipler">
                             {gruplar.map((g) => (
@@ -335,12 +337,12 @@ export default function UrunPaneli({
             <button className="bolum-basi" onClick={() => katla("kategori")}>
               <span>Kategoriler</span>
               <small>{kategoriIdler.length} seçili</small>
-              <em className={acik.includes("kategori") ? "ok acik" : "ok"}>›</em>
+              <ChevronDown size={18} className={acik.includes("kategori") ? "bolum-ok donuk" : "bolum-ok"} />
             </button>
 
             {acik.includes("kategori") && (
               <>
-                <p className="ipucu">Ürün birden fazla kategoride görünebilir.</p>
+                <Bilgi>Ürün birden fazla kategoride görünebilir.</Bilgi>
                 <div className="kategori-agac">
                   {anaKategoriler.map((k) => {
                     const altlar = altKategoriler(kategoriler, k.id);
@@ -362,7 +364,7 @@ export default function UrunPaneli({
                               title="Alt kategoriler"
                             >
                               {seciliAlt > 0 && <em className="agac-rozet">{seciliAlt}</em>}
-                              <em className={altAcik.includes(k.id) ? "ok acik" : "ok"}>›</em>
+                              <ChevronDown size={18} className={altAcik.includes(k.id) ? "bolum-ok donuk" : "bolum-ok"} />
                             </button>
                           )}
                         </div>

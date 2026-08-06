@@ -1,4 +1,5 @@
 import { useEffect, useMemo, useState } from "react";
+import Bilgi from "./Bilgi";
 import { kategoriUrunleri } from "../menu";
 import { paraMetin, paraSayi, paraYaz } from "../para";
 import type { TopluPorsiyon, TopluUrun } from "../menu";
@@ -266,10 +267,10 @@ export default function TopluDuzenle({
         </span>
       </div>
 
-      <p className="ipucu">
+      <Bilgi>
         Fiyatları ve anahtarları doğrudan tabloda değiştir, en altta tek Kaydet ile hepsi birden yazılır.
         Zam döneminde ürünleri tek tek açmaktan çok hızlı.
-      </p>
+      </Bilgi>
 
       <div className="ms-arama toplu-arac">
         <div className="arama-kutu">

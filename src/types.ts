@@ -11,17 +11,23 @@ export type Bolge = {
   masalar: Masa[];
 };
 export type SepetKalemi = {
+  id?: number; // kalem kimliği; negatifse henüz kaydedilmemiş
+  urunId?: number;
+  porsiyonId?: number;
   ad: string;
   fiyat: number;
   adet: number;
   porsiyon?: string;
   secimler?: string[];
   kdvOran?: number; // satış anındaki oran; eski adisyonlarda boş, varsayılana düşer
+  durum?: "normal" | "ikram" | "iptal";
+  not?: string;
+  turSira?: number;
 };
 export type Tahsilat = {
   tip: string;
   tutar: number;
-  kalemler?: Record<number, number>;
+  kalemler?: Record<number, number>; // kalem kimliği → ödenen adet
 };
 export type Adisyon = {
   sepet: SepetKalemi[];

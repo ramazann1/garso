@@ -1,14 +1,45 @@
 import { useEffect, useState } from "react";
 import { useNavigate, useParams } from "react-router-dom";
+import { ChevronDown, SlidersHorizontal, Star } from "lucide-react";
 import { menuGetir, agacUrunleri, altKategoriler, porsiyonFiyat, urunKdv } from "../menu";
-import { adisyonGetir, adisyonKaydet } from "../adisyonlar";
+import { adisyonGetir, adisyonKaydet, yeniKalemId } from "../adisyonlar";
 import UrunSecim from "../components/UrunSecim";
 import KampanyaSecim from "../components/KampanyaSecim";
 import TahsilatPanel from "../components/TahsilatPanel";
 import IndirimModal from "../components/IndirimModal";
 import KdvDokum from "../components/KdvDokum";
+import OnayModal from "../components/OnayModal";
+import KalemPaneli from "../components/KalemPaneli";
+import { kilitKaldir, kilitKur } from "../cikisKilidi";
 import { kdvDokumu } from "../kdv";
 import type { MenuKategori, MenuKdv, MenuSecenekGrubu, MenuUrun, SepetKalemi, Tahsilat } from "../types";
+
+// Adisyonun kaydedilmiş hâliyle karşılaştırmak için sadeleştirilmiş imzası.
+function adisyonImzasi(sepet: SepetKalemi[], indirim: number, tahsilatlar: Tahsilat[]) {
+  return JSON.stringify({
+    sepet: sepet.map((k) => [k.id, k.adet, k.fiyat, k.durum ?? "normal"]),
+    indirim,
+    tahsilat: tahsilatlar.map((t) => [t.tip, t.tutar]),
+  });
+}
+
+// Aynı ürünün aynı durumdaki satırları tek satırda toplanır — ikram veya iptal
+// geri alınınca adisyon yeniden sadeleşsin. Ödemesi işlenmiş kalem birleşmez;
+// birleşseydi ödenen adet başka kaleme yazılırdı.
+function satirlariBirlestir(sepet: SepetKalemi[], odenmisIdler: Set<number>) {
+  const anahtar = (k: SepetKalemi) =>
+    [k.durum ?? "normal", k.ad, k.porsiyon, k.fiyat, k.not, ...(k.secimler ?? [])].join("|");
+
+  const sonuc: SepetKalemi[] = [];
+  for (const k of sepet) {
+    const es =
+      !odenmisIdler.has(k.id ?? 0) &&
+      sonuc.find((x) => anahtar(x) === anahtar(k) && !odenmisIdler.has(x.id ?? 0));
+    if (es) es.adet += k.adet;
+    else sonuc.push({ ...k });
+  }
+  return sonuc;
+}
 
 // Masa siparişi ekranı — fiyat kuralı tek yerden (porsiyonFiyat) geçiyor.
 function anaFiyat(u: MenuUrun) {
@@ -32,10 +63,18 @@ export default function Siparis() {
   const [kayitliTahsilatlar, setKayitliTahsilatlar] = useState<Tahsilat[]>([]);
   const [secimUrunu, setSecimUrunu] = useState<MenuUrun | null>(null);
   const [kampanyaUrunu, setKampanyaUrunu] = useState<MenuUrun | null>(null);
-  const [kampanyaAcik, setKampanyaAcik] = useState(false);
+  // Şeridin üstündeki kategori dışı listeler; ikisi de kategoriyle aynı anda açık olmaz.
+  const [ozelListe, setOzelListe] = useState<"kampanya" | "favori" | null>(null);
+  // Alt kategoriler kendiliğinden açılmaz; oktan açılır ve aynı anda tek dal açık kalır.
+  const [acikGrupId, setAcikGrupId] = useState<number | null>(null);
+  const [arama, setArama] = useState("");
   const [tahsilatAcik, setTahsilatAcik] = useState(false);
   const [indirimAcik, setIndirimAcik] = useState(false);
   const [yukleniyor, setYukleniyor] = useState(true);
+  // Kaydedilmiş hâlin imzası; değişince çıkışta uyarı çıkıyor.
+  const [kayitliImza, setKayitliImza] = useState("");
+  const [cikisSorusu, setCikisSorusu] = useState(false);
+  const [seciliKalem, setSeciliKalem] = useState<SepetKalemi | null>(null);
 
   useEffect(() => {
     menuGetir().then((veri) => {
@@ -57,29 +96,43 @@ export default function Siparis() {
       setSepet(veri.sepet);
       setIndirim(veri.indirim);
       setKayitliTahsilatlar(veri.tahsilatlar);
+      setKayitliImza(adisyonImzasi(veri.sepet, veri.indirim, veri.tahsilatlar));
       setYukleniyor(false);
     });
   }, [masaAd]);
 
-  // Şeritte ana kategoriler durur; alt kategoriler yalnızca seçili olanın altında
-  // açılır. Üstü satışta gizliyse alt kategori şeride ana kategori gibi girer.
+  // Şeritte ana kategoriler durur; alt kategoriler satırdaki okla açılır.
+  // Üstü satışta gizliyse alt kategori şeride ana kategori gibi girer.
   const anaKategoriler = kategoriler.filter(
     (k) => !k.ustId || !kategoriler.some((x) => x.id === k.ustId)
   );
   const secili = kategoriler.find((k) => k.id === seciliId) ?? anaKategoriler[0];
-  const acikUstId = secili?.ustId ?? secili?.id;
 
   // Kampanyalı menüler şeridin en üstünde kendi maddesinde toplanır; hiç yoksa
   // madde de görünmez.
   const kampanyalar = urunler.filter((u) => u.menuGruplari.length > 0);
 
+  // Favoriler de aynı yerde kendi maddesinde; hiç favori yoksa madde görünmez.
+  const favoriler = urunler.filter((u) => u.favori);
+
   // Üst kategoriye basınca altındakilerin ürünleri de geliyor — garson tek dokunuşta
   // hepsini görsün; alt kategoriye basınca liste ona daralıyor.
-  const listelenen = kampanyaAcik
-    ? kampanyalar
-    : secili
-      ? agacUrunleri(urunler, kategoriler, secili.id).filter((u) => !u.menuGruplari.length)
-      : [];
+  // Arama açıkken kategori sınırı kalkar: garson ürünün hangi kategoride
+  // olduğunu düşünmeden adını yazsın.
+  const aranan = arama.trim().toLocaleLowerCase("tr");
+  const listelenen = aranan
+    ? urunler.filter(
+        (u) =>
+          u.ad.toLocaleLowerCase("tr").includes(aranan) ||
+          (u.kod ?? "").toLocaleLowerCase("tr").includes(aranan)
+      )
+    : ozelListe === "kampanya"
+      ? kampanyalar
+      : ozelListe === "favori"
+        ? favoriler
+        : secili
+          ? agacUrunleri(urunler, kategoriler, secili.id).filter((u) => !u.menuGruplari.length)
+          : [];
 
   // KDV oranı satış anında kaleme yazılır — sonradan ürünün grubu değişse bile
   // kesilmiş adisyonun dökümü oynamasın.
@@ -93,29 +146,69 @@ export default function Siparis() {
     const kdvOran = urunKdv(urun, kdvler)?.oran;
     const anahtar = [ad, porsiyon, ...(secimler ?? [])].join("|");
     setSepet((s) => {
-      const var_mi = s.find((k) => [k.ad, k.porsiyon, ...(k.secimler ?? [])].join("|") === anahtar);
+      // Yeni ürün yalnızca normal satırla birleşir; ikram/iptal satırı ayrı durur.
+      const var_mi = s.find(
+        (k) =>
+          (k.durum ?? "normal") === "normal" &&
+          [k.ad, k.porsiyon, ...(k.secimler ?? [])].join("|") === anahtar
+      );
       if (var_mi) return s.map((k) => (k === var_mi ? { ...k, adet: k.adet + 1 } : k));
-      return [...s, { ad, fiyat, adet: 1, porsiyon, secimler, kdvOran }];
+      return [
+        ...s,
+        { id: yeniKalemId(), urunId: urun.id, ad, fiyat, adet: 1, porsiyon, secimler, kdvOran },
+      ];
     });
   };
 
-  const sepettenCikar = (ad: string) => {
-    setSepet((s) => s.map((k) => (k.ad === ad ? { ...k, adet: k.adet - 1 } : k)).filter((k) => k.adet > 0));
+  // Çıkarma kalem kimliğiyle yapılır: aynı ürünün iki porsiyonu ayrı satırdır.
+  const sepettenCikar = (id?: number) => {
+    setSepet((s) => s.map((k) => (k.id === id ? { ...k, adet: k.adet - 1 } : k)).filter((k) => k.adet > 0));
   };
 
-  const araToplam = sepet.reduce((t, k) => t + k.fiyat * k.adet, 0);
+  // Ödemesi işlenmiş kalemler: birleştirmede bunlara dokunulmuyor.
+  const odenmisIdler = new Set<number>(
+    kayitliTahsilatlar.flatMap((t) => Object.keys(t.kalemler ?? {}).map(Number))
+  );
+
+  // İkram ve iptal edilen kalemler adisyonda görünür ama hesaba girmez.
+  const hesaba = (k: SepetKalemi) => (k.durum ?? "normal") === "normal";
+  const odenecekler = sepet.filter(hesaba);
+
+  // Ürün kartındaki rozet: o üründen adisyonda kaç adet var (porsiyonlar toplanır).
+  const kartAdetleri = sepet.reduce<Record<string, number>>((m, k) => {
+    if (k.durum === "iptal") return m;
+    m[k.ad] = (m[k.ad] ?? 0) + k.adet;
+    return m;
+  }, {});
+
+  const araToplam = odenecekler.reduce((t, k) => t + k.fiyat * k.adet, 0);
   const toplam = Math.max(0, araToplam - indirim);
-  const kdvSatirlari = kdvDokumu(sepet, indirim, kdvler.find((k) => k.varsayilan)?.oran);
+  const kdvSatirlari = kdvDokumu(odenecekler, indirim, kdvler.find((k) => k.varsayilan)?.oran);
+
+  const kirli = !yukleniyor && adisyonImzasi(sepet, indirim, kayitliTahsilatlar) !== kayitliImza;
+
+  // Sol menü de aynı kilide bakıyor; sipariş ekranı bugün menüsüz açılıyor ama
+  // kural tek yerden işlesin.
+  useEffect(() => {
+    kilitKur(() => kirli);
+    return kilitKaldir;
+  }, [kirli]);
 
   const kaydet = async () => {
     await adisyonKaydet(masaAd ?? "", { sepet, indirim, tahsilatlar: kayitliTahsilatlar });
+    kilitKaldir();
     navigate("/");
+  };
+
+  const salonaDon = () => {
+    if (kirli) setCikisSorusu(true);
+    else navigate("/");
   };
 
   return (
     <div className="siparis-sayfa">
       <header className="siparis-ust">
-        <button className="geri" onClick={() => navigate("/")}>← Salon</button>
+        <button className="geri" onClick={salonaDon}>← Salon</button>
         <h1>{masaAd}</h1>
       </header>
 
@@ -123,43 +216,84 @@ export default function Siparis() {
         <nav className="kategori-serit">
           {kampanyalar.length > 0 && (
             <button
-              className={kampanyaAcik ? "kategori kampanya aktif" : "kategori kampanya"}
-              onClick={() => setKampanyaAcik(true)}
+              className={ozelListe === "kampanya" ? "kategori kampanya aktif" : "kategori kampanya"}
+              onClick={() => setOzelListe("kampanya")}
             >
               Kampanyalı Menüler
             </button>
           )}
 
-          {anaKategoriler.map((k) => (
+          {favoriler.length > 0 && (
+            <button
+              className={ozelListe === "favori" ? "kategori favori aktif" : "kategori favori"}
+              onClick={() => setOzelListe("favori")}
+            >
+              <Star size={15} strokeWidth={2} fill="currentColor" />
+              Favoriler
+            </button>
+          )}
+
+          {anaKategoriler.map((k) => {
+            const altlar = altKategoriler(kategoriler, k.id);
+            return (
             <div key={k.id} className="kategori-grup">
               <button
-                className={!kampanyaAcik && k.id === secili?.id ? "kategori aktif" : "kategori"}
-                style={{ borderColor: k.renk }}
-                onClick={() => { setKampanyaAcik(false); setSeciliId(k.id); }}
+                className={!ozelListe && k.id === secili?.id ? "kategori aktif" : "kategori"}
+                style={{ borderColor: !ozelListe && k.id === secili?.id ? "transparent" : k.renk }}
+                onClick={() => { setOzelListe(null); setSeciliId(k.id); }}
               >
                 {k.ad}
+
+                {altlar.length > 0 && (
+                  <span
+                    className="alt-ac"
+                    title={acikGrupId === k.id ? "Alt kategorileri kapat" : "Alt kategorileri aç"}
+                    onClick={(e) => {
+                      e.stopPropagation();
+                      setAcikGrupId(acikGrupId === k.id ? null : k.id);
+                    }}
+                  >
+                    <ChevronDown size={18} className={acikGrupId === k.id ? "donuk" : ""} />
+                  </span>
+                )}
               </button>
 
-              {k.id === acikUstId &&
-                altKategoriler(kategoriler, k.id).map((a) => (
+              {k.id === acikGrupId &&
+                altlar.map((a) => (
                   <button
                     key={a.id}
                     className={
-                      !kampanyaAcik && a.id === secili?.id ? "kategori alt aktif" : "kategori alt"
+                      !ozelListe && a.id === secili?.id ? "kategori alt aktif" : "kategori alt"
                     }
-                    style={{ borderColor: a.renk }}
-                    onClick={() => { setKampanyaAcik(false); setSeciliId(a.id); }}
+                    style={{ borderColor: !ozelListe && a.id === secili?.id ? "transparent" : a.renk }}
+                    onClick={() => { setOzelListe(null); setSeciliId(a.id); }}
                   >
                     <em className="dal" />
                     {a.ad}
                   </button>
                 ))}
             </div>
-          ))}
+            );
+          })}
         </nav>
 
         <main className="urun-alani">
+          <div className="urun-arama">
+            <input
+              placeholder="Ürün ara"
+              value={arama}
+              onChange={(e) => setArama(e.target.value)}
+            />
+            {arama && (
+              <button className="arama-temizle" onClick={() => setArama("")}>×</button>
+            )}
+          </div>
+
           {menuYukleniyor && <div className="yukleniyor"><div className="cember" /></div>}
+
+          {!menuYukleniyor && aranan && listelenen.length === 0 && (
+            <p className="bos">“{arama}” için ürün bulunamadı</p>
+          )}
 
           {!menuYukleniyor && (
             <div className="urun-grid">
@@ -175,6 +309,9 @@ export default function Siparis() {
                         : sepeteEkle(u, anaFiyat(u))
                   }
                 >
+                  {kartAdetleri[u.ad] > 0 && (
+                    <em className="kart-rozet">{kartAdetleri[u.ad]}</em>
+                  )}
                   <span>{u.ad}</span>
                   <strong>₺{anaFiyat(u)}</strong>
                 </button>
@@ -188,21 +325,39 @@ export default function Siparis() {
           <div className="sepet-liste">
             {yukleniyor && <div className="yukleniyor"><div className="cember" /></div>}
             {!yukleniyor && sepet.length === 0 && <p className="bos">Henüz ürün yok</p>}
-            {sepet.map((k) => (
-              <div key={k.ad} className="sepet-satir">
+            {sepet.map((k) => {
+              const detay = [
+                k.porsiyon,
+                ...(k.secimler ?? []),
+                k.not,
+                k.durum === "ikram" ? "ikram" : k.durum === "iptal" ? "iptal" : null,
+              ].filter(Boolean);
+              return (
+              <div
+                key={k.id}
+                className={k.durum && k.durum !== "normal" ? `sepet-satir ${k.durum}` : "sepet-satir"}
+                onClick={() => setSeciliKalem(k)}
+              >
                 <span className="adet">{k.adet}</span>
                 <span className="ad">
                   {k.ad}
-                  {(k.porsiyon || k.secimler?.length) && (
-                    <small className="kalem-detay">
-                      {[k.porsiyon, ...(k.secimler ?? [])].filter(Boolean).join(" · ")}
-                    </small>
+                  {detay.length > 0 && (
+                    <small className="kalem-detay">{detay.join(" · ")}</small>
                   )}
                 </span>
-                <span className="tutar">₺{k.fiyat * k.adet}</span>
-                <button className="cikar" onClick={() => sepettenCikar(k.ad)}>−</button>
+                <span className="tutar">₺{hesaba(k) ? k.fiyat * k.adet : 0}</span>
+                <span className="kalem-duzenle" title="Kalem işlemleri">
+                  <SlidersHorizontal size={16} />
+                </span>
+                <button
+                  className="cikar"
+                  onClick={(e) => { e.stopPropagation(); sepettenCikar(k.id); }}
+                >
+                  −
+                </button>
               </div>
-            ))}
+              );
+            })}
           </div>
           <footer>
             <div className="sepet-ozet">
@@ -266,8 +421,10 @@ export default function Siparis() {
           onKaydet={(t) => setKayitliTahsilatlar(t)}
           onIndirimDegis={(tutar) => setIndirim(tutar)}
           onKapat={() => setTahsilatAcik(false)}
-          onOdendi={() => {
-            adisyonKaydet(masaAd ?? "", { sepet: [], indirim: 0, tahsilatlar: [] });
+          onOdendi={async (tahsilatlar) => {
+            // Kapanan adisyon silinmiyor, kapalıya çekiliyor — gün sonu raporu ona bakacak.
+            await adisyonKaydet(masaAd ?? "", { sepet, indirim, tahsilatlar }, true);
+            kilitKaldir();
             navigate("/");
           }}
         />
@@ -303,6 +460,35 @@ export default function Siparis() {
             sepeteEkle(secimUrunu, fiyat, porsiyon, secimler);
             setSecimUrunu(null);
           }}
+        />
+      )}
+
+      {seciliKalem && (
+        <KalemPaneli
+          kalem={seciliKalem}
+          urun={tumUrunler.find((u) => u.id === seciliKalem.urunId || u.ad === seciliKalem.ad)}
+          onKapat={() => setSeciliKalem(null)}
+          onUygula={(yeniler) => {
+            // Satır bölündüyse eskisinin yerine birden fazla satır geçer; aynı
+            // duruma dönen satırlar tekrar birleşir.
+            setSepet((s) =>
+              satirlariBirlestir(
+                s.flatMap((k) => (k.id === yeniler[0].id ? yeniler : [k])).filter((k) => k.adet > 0),
+                odenmisIdler
+              )
+            );
+            setSeciliKalem(null);
+          }}
+        />
+      )}
+
+      {cikisSorusu && (
+        <OnayModal
+          mesaj="Adisyonda kaydedilmemiş değişiklik var. Kaydetmeden çıkılsın mı?"
+          tehlikeli
+          onayMetni="Kaydetmeden çık"
+          onOnay={() => { kilitKaldir(); navigate("/"); }}
+          onKapat={() => setCikisSorusu(false)}
         />
       )}
     </div>

@@ -17,7 +17,7 @@ type Props = {
   onKaydet: (tahsilatlar: Tahsilat[]) => void;
   onIndirimDegis: (tutar: number) => void;
   onKapat: () => void;
-  onOdendi: () => void;
+  onOdendi: (tahsilatlar: Tahsilat[]) => void;
 };
 
 export default function TahsilatPanel({ kalemler, toplam, araToplam, indirim, kdvSatirlari, kayitliTahsilatlar, onKaydet, onIndirimDegis, onKapat, onOdendi }: Props) {
@@ -35,11 +35,13 @@ export default function TahsilatPanel({ kalemler, toplam, araToplam, indirim, kd
   const odenen = (tahsilatlar ?? []).reduce((t, o) => t + o.tutar, 0);
   const kalan = toplam - odenen;
 
+  // Ödenen adetler kalem kimliğine göre tutulur; sepetten satır silinse bile
+  // "ödendi" işareti başka ürüne kaymaz.
   const odenmisMap = (() => {
     const map: Record<number, number> = {};
     for (const o of tahsilatlar ?? []) {
-      for (const [i, adet] of Object.entries(o.kalemler ?? {})) {
-        map[Number(i)] = (map[Number(i)] ?? 0) + adet;
+      for (const [id, adet] of Object.entries(o.kalemler ?? {})) {
+        map[Number(id)] = (map[Number(id)] ?? 0) + adet;
       }
     }
     return map;
@@ -51,16 +53,24 @@ export default function TahsilatPanel({ kalemler, toplam, araToplam, indirim, kd
     setGirilen((g) => g + v);
   };
 
-  const kalemSec = (i: number) => {
-    const odenmisAdet = odenmisMap[i] ?? 0;
-    const kalanAdet = kalemler[i].adet - odenmisAdet;
+  // İkram ve iptal edilen kalemler listede durur ama ödemeye girmez.
+  const odenebilir = (k: SepetKalemi) => (k.durum ?? "normal") === "normal";
+
+  const kalemSec = (kalem: SepetKalemi) => {
+    if (!odenebilir(kalem)) return;
+    const id = kalem.id!;
+    const odenmisAdet = odenmisMap[id] ?? 0;
+    const kalanAdet = kalem.adet - odenmisAdet;
     if (kalanAdet <= 0) return;
     setSecilen((s) => {
-      const su = s[i] ?? 0;
+      const su = s[id] ?? 0;
       const yeniAdet = su >= kalanAdet ? 0 : su + 1;
-      const yeni = { ...s, [i]: yeniAdet };
-      if (yeniAdet === 0) delete yeni[i];
-      const tutar = Object.entries(yeni).reduce((t, [x, adet]) => t + kalemler[Number(x)].fiyat * adet, 0);
+      const yeni = { ...s, [id]: yeniAdet };
+      if (yeniAdet === 0) delete yeni[id];
+      const tutar = Object.entries(yeni).reduce((t, [x, adet]) => {
+        const k = kalemler.find((y) => y.id === Number(x));
+        return t + (k ? k.fiyat * adet : 0);
+      }, 0);
       setGirilen(tutar > 0 ? String(tutar) : "");
       return yeni;
     });
@@ -76,8 +86,11 @@ export default function TahsilatPanel({ kalemler, toplam, araToplam, indirim, kd
     setSecilen({});
     setGirilen("");
     onKaydet(yeni);
-    if (yeni.reduce((t, o) => t + o.tutar, 0) >= toplam) onOdendi();
   };
+
+  // Kalan sıfırlansa bile adisyon kendi kendine kapanmaz; kapatma kararı
+  // kullanıcınındır, panel açık kalır.
+  const odemeBitti = kalan <= 0;
 
   return (
     <div className="tahsilat-fon" onClick={onKapat}>
@@ -91,27 +104,38 @@ export default function TahsilatPanel({ kalemler, toplam, araToplam, indirim, kd
           <div className="tahsilat-sol">
             <p className="sutun-baslik">Ürünler</p>
             <div className="kalem-sec-liste">
-              {kalemler.map((k, i) => {
-                const odenmisAdet = odenmisMap[i] ?? 0;
-                const seciliAdet = secilen[i] ?? 0;
-                const bitti = odenmisAdet >= k.adet;
+              {kalemler.map((k) => {
+                const pasif = !odenebilir(k);
+                const odenmisAdet = odenmisMap[k.id!] ?? 0;
+                const seciliAdet = secilen[k.id!] ?? 0;
+                const bitti = !pasif && odenmisAdet >= k.adet;
                 return (
                   <button
-                    key={i}
-                    className={bitti ? "kalem-sec odendi" : seciliAdet > 0 ? "kalem-sec aktif" : "kalem-sec"}
-                    disabled={bitti}
-                    onClick={() => kalemSec(i)}
+                    key={k.id}
+                    className={
+                      pasif
+                        ? `kalem-sec pasif ${k.durum}`
+                        : bitti
+                          ? "kalem-sec odendi"
+                          : seciliAdet > 0
+                            ? "kalem-sec aktif"
+                            : "kalem-sec"
+                    }
+                    disabled={bitti || pasif}
+                    onClick={() => kalemSec(k)}
                   >
                     <span>
                       {k.adet}× {k.ad}
-                      {odenmisAdet > 0 && !bitti && (
+                      {odenmisAdet > 0 && !bitti && !pasif && (
                         <em className="odendi-rozet">{odenmisAdet} ödendi</em>
                       )}
                     </span>
                     <span>
-                      {bitti ? "✓" : seciliAdet > 0
-                        ? `${seciliAdet} seçili · ₺${k.fiyat * seciliAdet}`
-                        : `₺${k.fiyat * k.adet}`}
+                      {pasif
+                        ? k.durum === "ikram" ? "İkram" : "İptal"
+                        : bitti ? "✓" : seciliAdet > 0
+                          ? `${seciliAdet} seçili · ₺${k.fiyat * seciliAdet}`
+                          : `₺${k.fiyat * k.adet}`}
                     </span>
                   </button>
                 );
@@ -195,7 +219,15 @@ export default function TahsilatPanel({ kalemler, toplam, araToplam, indirim, kd
             </div>
 
             <div className="tahsilat-alt-butonlar">
-              <button className="tahsilat-kaydet" onClick={() => { onKaydet(tahsilatlar); onKapat(); }}>Kaydet</button>
+              {odemeBitti ? (
+                <button className="tahsilat-kapat-btn" onClick={() => onOdendi(tahsilatlar)}>
+                  Adisyonu Kapat
+                </button>
+              ) : (
+                <button className="tahsilat-kaydet" onClick={() => { onKaydet(tahsilatlar); onKapat(); }}>
+                  Kaydet
+                </button>
+              )}
             </div>
           </div>
         </div>

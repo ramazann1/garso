@@ -1,5 +1,7 @@
 import { useEffect, useState } from "react";
+import { ChevronDown } from "lucide-react";
 import Duzen from "../components/Duzen";
+import Bilgi from "../components/Bilgi";
 import UrunPaneli from "../components/UrunPaneli";
 import OnayModal from "../components/OnayModal";
 import Bildirim from "../components/Bildirim";
@@ -99,9 +101,9 @@ function KategoriPenceresi({
             ))}
           </select>
           {cocukluMu && (
-            <p className="ipucu">
+            <Bilgi>
               Bu kategorinin altında kategori var; kendisi alt kategori olamaz.
-            </p>
+            </Bilgi>
           )}
         </div>
 
@@ -217,7 +219,7 @@ function GrupPaneli({
               </button>
               <button onClick={() => setListe([...liste, { ad: "", ekFiyat: 0 }])}>+ Seçenek</button>
             </div>
-            <p className="ipucu">Ek fiyat boş bırakılırsa ücretsiz sayılır.</p>
+            <Bilgi>Ek fiyat boş bırakılırsa ücretsiz sayılır.</Bilgi>
             {liste.map((s, i) => (
               <div key={i} className="satir-alan">
                 <input value={s.ad} onChange={(e) => satirDegis(i, "ad", e.target.value)} placeholder="Sade" />
@@ -317,10 +319,10 @@ function BirimlerSekmesi({
         </button>
       </div>
 
-      <p className="ipucu">
+      <Bilgi>
         Porsiyon adları bu listeden seçilir — "Tam" ile "tam" karmaşası olmasın diye tek yerde
         tutuluyor. Yıldızlı birim, yeni ürünün ilk porsiyonunda hazır gelir.
-      </p>
+      </Bilgi>
 
       <div className="birim-liste">
         {liste.map((b, i) => (
@@ -416,10 +418,10 @@ function KdvSekmesi({
         </button>
       </div>
 
-      <p className="ipucu">
+      <Bilgi>
         En fazla {KDV_SINIRI} grup tanımlanır. Yıldızlı grup, kendi KDV'si seçilmemiş
         ürünlerde geçerlidir. Silinen grubu kullanan ürünler varsayılana döner.
-      </p>
+      </Bilgi>
 
       <div className="birim-liste">
         {liste.map((k, i) => (
@@ -467,6 +469,8 @@ export default function MenuStudyosu() {
   const [birimler, setBirimler] = useState<MenuBirim[]>([]);
   const [kdvler, setKdvler] = useState<MenuKdv[]>([]);
   const [seciliId, setSeciliId] = useState<number | null>(null);
+  // Alt kategoriler kendiliğinden açılmaz; satırdaki okla açılır, tek dal açık kalır.
+  const [acikGrupId, setAcikGrupId] = useState<number | null>(null);
   const [yukleniyor, setYukleniyor] = useState(true);
   const [pencere, setPencere] = useState<{ kategori?: MenuKategori } | null>(null);
   const [panel, setPanel] = useState<MenuUrun | null>(null);
@@ -505,11 +509,10 @@ export default function MenuStudyosu() {
     return kilitKaldir;
   }, [topluDegisiklik]);
 
-  // Listede ana kategoriler durur; alt kategoriler yalnızca kendi üstü seçiliyken
-  // altında açılır — hepsi birden görünürse liste uzuyor ve ekran karışıyor.
+  // Listede ana kategoriler durur; alt kategoriler satırdaki okla açılır —
+  // hepsi birden görünürse liste uzuyor ve ekran karışıyor.
   const anaKategoriler = kategoriler.filter((k) => !k.ustId);
   const secili = kategoriler.find((k) => k.id === seciliId) ?? anaKategoriler[0];
-  const acikUstId = secili?.ustId ?? secili?.id;
 
   // Arama ürün adına ve ürün koduna bakar; kapsam tüm menüye açılabilir.
   const aranan = arama.trim().toLocaleLowerCase("tr");
@@ -881,7 +884,9 @@ export default function MenuStudyosu() {
                 </button>
               </div>
 
-              {anaKategoriler.map((k) => (
+              {anaKategoriler.map((k) => {
+                const altlar = altKategoriler(kategoriler, k.id);
+                return (
                 <div key={k.id} className="ms-dal-grup">
                   <div
                     className={k.id === secili?.id ? "ms-kategori aktif" : "ms-kategori"}
@@ -892,7 +897,6 @@ export default function MenuStudyosu() {
                       {k.ad}
                       {!k.satistaGorunur && <em className="gizli-im" title="Satışta gizli">gizli</em>}
                     </span>
-                    <span className="ms-sayi">{sayac(k.id)}</span>
                     <button
                       className="ms-islem"
                       title="Düzenle"
@@ -907,10 +911,22 @@ export default function MenuStudyosu() {
                     >
                       ×
                     </button>
+                    {altlar.length > 0 && (
+                      <span
+                        className="alt-ac"
+                        title={acikGrupId === k.id ? "Alt kategorileri kapat" : "Alt kategorileri aç"}
+                        onClick={(e) => {
+                          e.stopPropagation();
+                          setAcikGrupId(acikGrupId === k.id ? null : k.id);
+                        }}
+                      >
+                        <ChevronDown size={18} className={acikGrupId === k.id ? "donuk" : ""} />
+                      </span>
+                    )}
                   </div>
 
-                  {k.id === acikUstId &&
-                    altKategoriler(kategoriler, k.id).map((a) => (
+                  {k.id === acikGrupId &&
+                    altlar.map((a) => (
                       <div
                         key={a.id}
                         className={a.id === secili?.id ? "ms-kategori alt aktif" : "ms-kategori alt"}
@@ -922,7 +938,6 @@ export default function MenuStudyosu() {
                           {a.ad}
                           {!a.satistaGorunur && <em className="gizli-im" title="Satışta gizli">gizli</em>}
                         </span>
-                        <span className="ms-sayi">{sayac(a.id)}</span>
                         <button
                           className="ms-islem"
                           title="Düzenle"
@@ -940,7 +955,8 @@ export default function MenuStudyosu() {
                       </div>
                     ))}
                 </div>
-              ))}
+                );
+              })}
 
               {kategoriler.length === 0 && <p className="bos">Henüz kategori yok</p>}
             </div>
