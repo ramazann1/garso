@@ -42,12 +42,14 @@ export type SepetKalemi = {
   secimler?: string[];
   kdvOran?: number; // satış anındaki oran; eski adisyonlarda boş, varsayılana düşer
   durum?: "normal" | "ikram" | "iptal";
+  indirim?: number; // yalnız bu satıra verilen indirim tutarı
   not?: string;
   turSira?: number;
 };
 export type Tahsilat = {
   tip: string;
   tutar: number;
+  bahsis?: number; // hesabın üstünde kalan, müşterinin bıraktığı tutar
   kalemler?: Record<number, number>; // kalem kimliği → ödenen adet
 };
 export type Adisyon = {

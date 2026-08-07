@@ -14,7 +14,10 @@ const ESLER: { anahtarlar: string[]; ikon: typeof Wallet }[] = [
   { anahtarlar: ["nakit", "peşin", "pesin"], ikon: Banknote },
   { anahtarlar: ["kredi", "kart", "visa", "master", "banka kartı", "pos"], ikon: CreditCard },
   {
-    anahtarlar: ["multinet", "sodexo", "ticket", "setcard", "metropol", "yemek", "edenred"],
+    anahtarlar: [
+      "multinet", "sodexo", "pluxee", "ticket", "setcard",
+      "metropol", "paye", "yemek", "edenred",
+    ],
     ikon: Ticket,
   },
   { anahtarlar: ["açık hesap", "acik hesap", "veresiye", "cari", "borç", "borc"], ikon: BookUser },

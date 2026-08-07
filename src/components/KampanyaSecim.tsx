@@ -1,16 +1,18 @@
 import { useState } from "react";
 import { porsiyonFiyat } from "../menu";
-import type { MenuUrun } from "../types";
+import type { MenuUrun, SiparisTuru } from "../types";
 
 // Kampanyalı menü siparişe girerken: her gruptan izin verilen sayıda seçim.
 export default function KampanyaSecim({
   urun,
   urunler,
+  tur = "masa",
   onEkle,
   onKapat,
 }: {
   urun: MenuUrun;
   urunler: MenuUrun[];
+  tur?: SiparisTuru;
   onEkle: (fiyat: number, secimler: string[]) => void;
   onKapat: () => void;
 }) {
@@ -48,7 +50,7 @@ export default function KampanyaSecim({
 
   const temelFiyat = (() => {
     const p = urun.porsiyonlar.find((x) => x.varsayilan) ?? urun.porsiyonlar[0];
-    return p ? porsiyonFiyat(p, "masa") : 0;
+    return p ? porsiyonFiyat(p, tur) : 0;
   })();
 
   const secimAdlari: string[] = [];

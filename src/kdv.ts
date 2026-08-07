@@ -21,14 +21,19 @@ export function kdvDokumu(
   indirim: number,
   varsayilanOran?: number
 ): KdvSatiri[] {
-  const araToplam = kalemler.reduce((t, k) => t + k.fiyat * k.adet, 0);
+  // Ürün bazlı indirim satırın kendi oranından düşer; hesap geneli indirim
+  // aşağıda tüm oranlara payıyla dağıtılır.
+  const satirTutari = (k: SepetKalemi) =>
+    Math.max(0, kurus(k.fiyat * k.adet - (k.indirim ?? 0)));
+
+  const araToplam = kalemler.reduce((t, k) => t + satirTutari(k), 0);
   if (araToplam <= 0) return [];
 
   const oranlar = new Map<number, number>();
   for (const k of kalemler) {
     const oran = k.kdvOran ?? varsayilanOran;
     if (oran == null) continue;
-    oranlar.set(oran, (oranlar.get(oran) ?? 0) + k.fiyat * k.adet);
+    oranlar.set(oran, (oranlar.get(oran) ?? 0) + satirTutari(k));
   }
 
   // İndirim kalemlere tutarları oranında dağıtılır.

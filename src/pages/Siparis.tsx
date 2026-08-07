@@ -1,8 +1,29 @@
 import { useEffect, useState } from "react";
 import { useNavigate, useParams } from "react-router-dom";
-import { ArrowLeft, Check, ChevronDown, Percent, SlidersHorizontal, Star, Wallet, X, Zap } from "lucide-react";
+import {
+  ArrowLeft,
+  Bike,
+  Check,
+  ChevronDown,
+  Percent,
+  ShoppingBag,
+  SlidersHorizontal,
+  Star,
+  Wallet,
+  X,
+  Zap,
+} from "lucide-react";
 import { menuGetir, agacUrunleri, altKategoriler, porsiyonFiyat, urunKdv } from "../menu";
-import { adisyonGetir, adisyonKaydet, kalemTasi, yeniKalemId } from "../adisyonlar";
+import {
+  adisyonGetir,
+  adisyonKaydet,
+  kalemTasi,
+  kalemTutari,
+  masasizGetir,
+  masasizKaydet,
+  yeniKalemId,
+} from "../adisyonlar";
+import type { AdisyonVerisi } from "../adisyonlar";
 import { masaGetir } from "../masalar";
 import UrunSecim from "../components/UrunSecim";
 import KampanyaSecim from "../components/KampanyaSecim";
@@ -14,12 +35,20 @@ import OnayModal from "../components/OnayModal";
 import KalemPaneli from "../components/KalemPaneli";
 import { kilitKaldir, kilitKur } from "../cikisKilidi";
 import { kdvDokumu } from "../kdv";
-import type { MenuKategori, MenuKdv, MenuSecenekGrubu, MenuUrun, SepetKalemi, Tahsilat } from "../types";
+import type {
+  MenuKategori,
+  MenuKdv,
+  MenuSecenekGrubu,
+  MenuUrun,
+  SepetKalemi,
+  SiparisTuru,
+  Tahsilat,
+} from "../types";
 
 // Adisyonun kaydedilmiş hâliyle karşılaştırmak için sadeleştirilmiş imzası.
 function adisyonImzasi(sepet: SepetKalemi[], indirim: number, tahsilatlar: Tahsilat[]) {
   return JSON.stringify({
-    sepet: sepet.map((k) => [k.id, k.adet, k.fiyat, k.durum ?? "normal"]),
+    sepet: sepet.map((k) => [k.id, k.adet, k.fiyat, k.durum ?? "normal", k.indirim ?? 0]),
     indirim,
     tahsilat: tahsilatlar.map((t) => [t.tip, t.tutar]),
   });
@@ -30,7 +59,8 @@ function adisyonImzasi(sepet: SepetKalemi[], indirim: number, tahsilatlar: Tahsi
 // birleşseydi ödenen adet başka kaleme yazılırdı.
 function satirlariBirlestir(sepet: SepetKalemi[], odenmisIdler: Set<number>) {
   const anahtar = (k: SepetKalemi) =>
-    [k.durum ?? "normal", k.ad, k.porsiyon, k.fiyat, k.not, ...(k.secimler ?? [])].join("|");
+    [k.durum ?? "normal", k.ad, k.porsiyon, k.fiyat, k.indirim ?? 0, k.not, ...(k.secimler ?? [])]
+      .join("|");
 
   const sonuc: SepetKalemi[] = [];
   for (const k of sepet) {
@@ -44,15 +74,33 @@ function satirlariBirlestir(sepet: SepetKalemi[], odenmisIdler: Set<number>) {
 }
 
 // Masa siparişi ekranı — fiyat kuralı tek yerden (porsiyonFiyat) geçiyor.
-function anaFiyat(u: MenuUrun) {
+function anaFiyat(u: MenuUrun, tur: SiparisTuru = "masa") {
   const p = u.porsiyonlar.find((x) => x.varsayilan) ?? u.porsiyonlar[0];
-  return p ? porsiyonFiyat(p, "masa") : 0;
+  return p ? porsiyonFiyat(p, tur) : 0;
 }
 
 export default function Siparis() {
-  const { masaId: masaIdParam } = useParams();
+  // Ekran iki yoldan açılıyor: masadan (/siparis/:masaId) ve masasız gel al /
+  // paket adisyonundan (/adisyon/:adisyonId). Okuma-yazma bu ayrımdan geçiyor,
+  // gerisi aynı ekran.
+  const { masaId: masaIdParam, adisyonId: adisyonIdParam } = useParams();
+  const masasiz = adisyonIdParam != null;
   const masaId = Number(masaIdParam);
+  const adisyonId = Number(adisyonIdParam);
   const [masaAdi, setMasaAdi] = useState("");
+  const [masasizBilgi, setMasasizBilgi] = useState<AdisyonVerisi | null>(null);
+
+  // Ürünün gel al / paket fiyatı tanımlıysa o kullanılıyor; tanımlı değilse
+  // porsiyonFiyat zaten tek fiyata düşüyor.
+  const siparisTuru: SiparisTuru = masasiz
+    ? masasizBilgi?.tip === "paket"
+      ? "paket"
+      : "gelal"
+    : "masa";
+
+  const adisyonuOku = () => (masasiz ? masasizGetir(adisyonId) : adisyonGetir(masaId));
+  const adisyonuYaz = (veri: AdisyonVerisi, kapat = false) =>
+    masasiz ? masasizKaydet(adisyonId, veri, kapat) : adisyonKaydet(masaId, veri, kapat);
   const navigate = useNavigate();
   const [kategoriler, setKategoriler] = useState<MenuKategori[]>([]);
   const [urunler, setUrunler] = useState<MenuUrun[]>([]);
@@ -97,19 +145,21 @@ export default function Siparis() {
   }, []);
 
   useEffect(() => {
+    if (masasiz) return;
     masaGetir(masaId).then((m) => setMasaAdi(m?.ad ?? ""));
-  }, [masaId]);
+  }, [masaId, masasiz]);
 
   useEffect(() => {
     setYukleniyor(true);
-    adisyonGetir(masaId).then((veri) => {
+    adisyonuOku().then((veri) => {
       setSepet(veri.sepet);
       setIndirim(veri.indirim);
       setKayitliTahsilatlar(veri.tahsilatlar);
       setKayitliImza(adisyonImzasi(veri.sepet, veri.indirim, veri.tahsilatlar));
+      if (masasiz) setMasasizBilgi(veri);
       setYukleniyor(false);
     });
-  }, [masaId]);
+  }, [masaId, adisyonId, masasiz]);
 
   // Şeritte ana kategoriler durur; alt kategoriler satırdaki okla açılır.
   // Üstü satışta gizliyse alt kategori şeride ana kategori gibi girer.
@@ -191,7 +241,7 @@ export default function Siparis() {
     return m;
   }, {});
 
-  const araToplam = odenecekler.reduce((t, k) => t + k.fiyat * k.adet, 0);
+  const araToplam = odenecekler.reduce((t, k) => t + kalemTutari(k), 0);
   const toplam = Math.max(0, araToplam - indirim);
   const kdvSatirlari = kdvDokumu(odenecekler, indirim, kdvler.find((k) => k.varsayilan)?.oran);
   const odenen = kayitliTahsilatlar.reduce((t, o) => t + o.tutar, 0);
@@ -209,7 +259,7 @@ export default function Siparis() {
   // Adisyonu tazeleyip kirli imzayı da sıfırlar; taşıma gibi doğrudan diske
   // yazan işlemlerden sonra ekran veritabanıyla aynı hizaya geliyor.
   const adisyonuTazele = async () => {
-    const veri = await adisyonGetir(masaId);
+    const veri = await adisyonuOku();
     setSepet(veri.sepet);
     setIndirim(veri.indirim);
     setKayitliTahsilatlar(veri.tahsilatlar);
@@ -221,7 +271,7 @@ export default function Siparis() {
   const kalemiTasi = async (kalem: SepetKalemi, hedefMasaId: number, adet: number) => {
     setSeciliKalem(null);
     try {
-      const kayitli = await adisyonKaydet(masaId, { sepet, indirim, tahsilatlar: kayitliTahsilatlar });
+      const kayitli = await adisyonuYaz({ sepet, indirim, tahsilatlar: kayitliTahsilatlar });
       const guncel = kayitli.sepet.find(
         (k) => k.id === kalem.id || (kalem.id && kalem.id < 0 && k.ad === kalem.ad)
       );
@@ -236,7 +286,7 @@ export default function Siparis() {
   };
 
   const kaydet = async () => {
-    await adisyonKaydet(masaId, { sepet, indirim, tahsilatlar: kayitliTahsilatlar });
+    await adisyonuYaz({ sepet, indirim, tahsilatlar: kayitliTahsilatlar });
     kilitKaldir();
     navigate("/");
   };
@@ -253,7 +303,18 @@ export default function Siparis() {
           <ArrowLeft size={17} />
           Salon
         </button>
-        <h1>{masaAdi}</h1>
+        <h1>
+          {masasiz ? (
+            <>
+              {masasizBilgi?.tip === "paket" ? <Bike size={19} /> : <ShoppingBag size={19} />}
+              {masasizBilgi?.tip === "paket" ? "Paket" : "Gel Al"}
+              {masasizBilgi?.no ? ` #${masasizBilgi.no}` : ""}
+              {masasizBilgi?.musteri?.ad ? ` · ${masasizBilgi.musteri.ad}` : ""}
+            </>
+          ) : (
+            masaAdi
+          )}
+        </h1>
       </header>
 
       <div className="siparis-govde">
@@ -350,14 +411,14 @@ export default function Siparis() {
                       ? setKampanyaUrunu(u)
                       : u.porsiyonlar.length > 1 || u.porsiyonlar.some((p) => p.grupIdler.length > 0)
                         ? setSecimUrunu(u)
-                        : sepeteEkle(u, anaFiyat(u))
+                        : sepeteEkle(u, anaFiyat(u, siparisTuru))
                   }
                 >
                   {kartAdetleri[u.ad] > 0 && (
                     <em className="kart-rozet">{kartAdetleri[u.ad]}</em>
                   )}
                   <span>{u.ad}</span>
-                  <strong>₺{anaFiyat(u)}</strong>
+                  <strong>₺{anaFiyat(u, siparisTuru)}</strong>
                 </button>
               ))}
             </div>
@@ -389,7 +450,15 @@ export default function Siparis() {
                     <small className="kalem-detay">{detay.join(" · ")}</small>
                   )}
                 </span>
-                <span className="tutar">₺{hesaba(k) ? k.fiyat * k.adet : 0}</span>
+                <span className="tutar">
+                  {hesaba(k) && k.indirim ? (
+                    <>
+                      <s className="eski-tutar">₺{k.fiyat * k.adet}</s> ₺{kalemTutari(k)}
+                    </>
+                  ) : (
+                    `₺${hesaba(k) ? kalemTutari(k) : 0}`
+                  )}
+                </span>
                 <span className="kalem-duzenle" title="Kalem işlemleri">
                   <SlidersHorizontal size={16} />
                 </span>
@@ -477,10 +546,15 @@ export default function Siparis() {
           kayitliTahsilatlar={kayitliTahsilatlar}
           onKaydet={(t) => setKayitliTahsilatlar(t)}
           onIndirimDegis={(tutar) => setIndirim(tutar)}
+          onKalemIndirim={(paylar) =>
+            setSepet((s) =>
+              s.map((k) => (k.id != null && paylar[k.id] != null ? { ...k, indirim: paylar[k.id] } : k))
+            )
+          }
           onKapat={() => setTahsilatAcik(false)}
           onOdendi={async (tahsilatlar) => {
             // Kapanan adisyon silinmiyor, kapalıya çekiliyor — gün sonu raporu ona bakacak.
-            await adisyonKaydet(masaId, { sepet, indirim, tahsilatlar }, true);
+            await adisyonuYaz({ sepet, indirim, tahsilatlar }, true);
             kilitKaldir();
             navigate("/");
           }}
@@ -497,9 +571,9 @@ export default function Siparis() {
           kalan={kalan}
           onIndirimDegis={(tutar) => setIndirim(tutar)}
           onKapat={() => setHizliAcik(false)}
-          onSec={async (tip, tutar, kapat) => {
-            const tahsilatlar = [...kayitliTahsilatlar, { tip, tutar }];
-            await adisyonKaydet(masaId, { sepet, indirim, tahsilatlar }, kapat);
+          onSec={async (tip, tutar, kapat, bahsis) => {
+            const tahsilatlar = [...kayitliTahsilatlar, { tip, tutar, bahsis }];
+            await adisyonuYaz({ sepet, indirim, tahsilatlar }, kapat);
             if (kapat) {
               kilitKaldir();
               navigate("/");
@@ -524,6 +598,7 @@ export default function Siparis() {
 
       {kampanyaUrunu && (
         <KampanyaSecim
+          tur={siparisTuru}
           urun={kampanyaUrunu}
           urunler={tumUrunler}
           onKapat={() => setKampanyaUrunu(null)}
@@ -536,6 +611,7 @@ export default function Siparis() {
 
       {secimUrunu && (
         <UrunSecim
+          tur={siparisTuru}
           urun={secimUrunu}
           gruplar={gruplar}
           onKapat={() => setSecimUrunu(null)}
@@ -552,6 +628,7 @@ export default function Siparis() {
           urun={tumUrunler.find((u) => u.id === seciliKalem.urunId || u.ad === seciliKalem.ad)}
           masaId={masaId}
           odenmis={odenmisIdler.has(seciliKalem.id ?? 0)}
+          tasinabilir={!masasiz}
           onTasi={(hedefMasaId, adet) => kalemiTasi(seciliKalem, hedefMasaId, adet)}
           onKapat={() => setSeciliKalem(null)}
           onUygula={(yeniler) => {

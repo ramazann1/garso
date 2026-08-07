@@ -9,16 +9,27 @@ export type AdisyonVerisi = {
   tahsilatlar: Tahsilat[];
   acilis?: string;
   garson?: string;
+  tip?: AdisyonTipi;
+  musteri?: MusteriBilgisi;
 };
 
 /**
  * Adisyonun para özeti. Hızlı Öde hem Salon'dan hem sipariş ekranından açılıyor;
  * kalan tutar iki yerde de aynı çıksın diye hesap tek yerde duruyor.
  */
+/**
+ * Bir satırın tahsil edilecek tutarı: fiyat × adet, varsa o satıra verilen
+ * indirim düşülmüş hâli. Ürün bazlı indirim geldiğinden beri hiçbir yerde
+ * "fiyat × adet" doğrudan kullanılmıyor, hep buradan geçiyor.
+ */
+export function kalemTutari(k: SepetKalemi) {
+  return Math.max(0, Math.round((k.fiyat * k.adet - (k.indirim ?? 0)) * 100) / 100);
+}
+
 export function adisyonOzeti(veri: AdisyonVerisi) {
   const araToplam = veri.sepet
     .filter((k) => (k.durum ?? "normal") === "normal")
-    .reduce((t, k) => t + k.fiyat * k.adet, 0);
+    .reduce((t, k) => t + kalemTutari(k), 0);
   const toplam = Math.max(0, araToplam - veri.indirim);
   const odenen = veri.tahsilatlar.reduce((t, o) => t + o.tutar, 0);
   return { araToplam, toplam, odenen, kalan: toplam - odenen };
@@ -32,7 +43,7 @@ export function yeniKalemId() {
 }
 
 const KALEM_ALANLARI =
-  "id, urun_id, porsiyon_id, ad, porsiyon, secimler, adet, fiyat, kdv_oran, durum, not_metni";
+  "id, urun_id, porsiyon_id, ad, porsiyon, secimler, adet, fiyat, kdv_oran, durum, not_metni, indirim";
 
 type KalemSatiri = {
   id: number;
@@ -46,6 +57,7 @@ type KalemSatiri = {
   kdv_oran: number | null;
   durum: string;
   not_metni: string | null;
+  indirim?: number | null;
   tur_sira?: number;
 };
 
@@ -62,22 +74,40 @@ function kalemeCevir(s: KalemSatiri): SepetKalemi {
     kdvOran: s.kdv_oran ?? undefined,
     durum: (s.durum as SepetKalemi["durum"]) ?? "normal",
     not: s.not_metni ?? undefined,
+    indirim: Number(s.indirim ?? 0) || undefined,
     turSira: s.tur_sira,
   };
 }
 
+const ADISYON_ALANLARI = `id, adisyon_no, indirim, acilis, garson, tip,
+       musteri_ad, musteri_telefon, adres,
+       turlar (sira, adisyon_kalemleri (${KALEM_ALANLARI})),
+       tahsilatlar (id, tip, tutar, bahsis, kalem_adetleri)`;
+
 export async function adisyonGetir(masaId: number): Promise<AdisyonVerisi> {
   const { data } = await supabase
     .from("adisyonlar")
-    .select(
-      `id, adisyon_no, indirim, acilis, garson,
-       turlar (sira, adisyon_kalemleri (${KALEM_ALANLARI})),
-       tahsilatlar (id, tip, tutar, kalem_adetleri)`
-    )
+    .select(ADISYON_ALANLARI)
     .eq("masa_id", masaId)
     .eq("durum", "acik")
     .maybeSingle();
 
+  return adisyonaCevir(data);
+}
+
+/** Masasız adisyon kimliğiyle okunuyor; masalıda anahtar masa, burada adisyon. */
+export async function masasizGetir(adisyonId: number): Promise<AdisyonVerisi> {
+  const { data } = await supabase
+    .from("adisyonlar")
+    .select(ADISYON_ALANLARI)
+    .eq("id", adisyonId)
+    .eq("durum", "acik")
+    .maybeSingle();
+
+  return adisyonaCevir(data);
+}
+
+function adisyonaCevir(data: any): AdisyonVerisi {
   if (!data) return { sepet: [], indirim: 0, tahsilatlar: [] };
 
   const sepet: SepetKalemi[] = [];
@@ -91,6 +121,7 @@ export async function adisyonGetir(masaId: number): Promise<AdisyonVerisi> {
   const tahsilatlar: Tahsilat[] = ((data as any).tahsilatlar ?? []).map((t: any) => ({
     tip: t.tip,
     tutar: Number(t.tutar),
+    bahsis: Number(t.bahsis ?? 0) || undefined,
     kalemler: t.kalem_adetleri ?? undefined,
   }));
 
@@ -102,7 +133,111 @@ export async function adisyonGetir(masaId: number): Promise<AdisyonVerisi> {
     tahsilatlar,
     acilis: (data as any).acilis,
     garson: (data as any).garson ?? undefined,
+    tip: ((data as any).tip ?? "masa") as AdisyonTipi,
+    musteri: {
+      ad: (data as any).musteri_ad ?? undefined,
+      telefon: (data as any).musteri_telefon ?? undefined,
+      adres: (data as any).adres ?? undefined,
+    },
   };
+}
+
+export type AdisyonTipi = "masa" | "gelal" | "paket";
+
+export type MusteriBilgisi = {
+  ad?: string;
+  telefon?: string;
+  adres?: string;
+};
+
+export type MasasizAdisyon = MusteriBilgisi & {
+  id: number;
+  no: number;
+  tip: Exclude<AdisyonTipi, "masa">;
+  tutar: number;
+  odenen: number;
+  kalan: number;
+  adet: number;
+  acilis: string;
+};
+
+/** Yeni gel al / paket adisyonu açar; sepeti boş, ilk ürün eklenince dolar. */
+export async function masasizAc(
+  tip: Exclude<AdisyonTipi, "masa">,
+  musteri: MusteriBilgisi = {}
+): Promise<number> {
+  const { data, error } = await supabase
+    .from("adisyonlar")
+    .insert({
+      tip,
+      musteri_ad: musteri.ad?.trim() || null,
+      musteri_telefon: musteri.telefon?.trim() || null,
+      adres: musteri.adres?.trim() || null,
+    })
+    .select("id")
+    .single();
+  if (error) throw new Error(error.message);
+  return (data as any).id as number;
+}
+
+export async function masasizGuncelle(adisyonId: number, musteri: MusteriBilgisi) {
+  const { error } = await supabase
+    .from("adisyonlar")
+    .update({
+      musteri_ad: musteri.ad?.trim() || null,
+      musteri_telefon: musteri.telefon?.trim() || null,
+      adres: musteri.adres?.trim() || null,
+      guncelleme: new Date().toISOString(),
+    })
+    .eq("id", adisyonId);
+  if (error) throw new Error(error.message);
+}
+
+export async function masasizSil(adisyonId: number) {
+  await supabase.from("adisyonlar").delete().eq("id", adisyonId);
+}
+
+/** Salon ekranındaki "Paket & Gel Al" sekmesinin listesi. */
+export async function masasizAdisyonlar(): Promise<MasasizAdisyon[]> {
+  const { data } = await supabase
+    .from("adisyonlar")
+    .select(
+      `id, adisyon_no, tip, indirim, acilis, musteri_ad, musteri_telefon, adres,
+       turlar (adisyon_kalemleri (adet, fiyat, durum, indirim)),
+       tahsilatlar (tutar)`
+    )
+    .eq("durum", "acik")
+    .neq("tip", "masa")
+    .order("acilis");
+
+  return ((data as any[]) ?? []).map((satir) => {
+    let tutar = 0;
+    let adet = 0;
+    for (const tur of satir.turlar ?? []) {
+      for (const k of tur.adisyon_kalemleri ?? []) {
+        if (k.durum === "iptal") continue;
+        adet += Number(k.adet);
+        if (k.durum !== "ikram") {
+          tutar += Math.max(0, Number(k.fiyat) * Number(k.adet) - Number(k.indirim ?? 0));
+        }
+      }
+    }
+    const net = Math.max(0, tutar - Number(satir.indirim ?? 0));
+    const odenen = (satir.tahsilatlar ?? []).reduce((t: number, o: any) => t + Number(o.tutar), 0);
+    return {
+      id: satir.id,
+      no: satir.adisyon_no,
+      tip: satir.tip,
+      tutar: net,
+      odenen,
+      kalan: Math.max(0, net - odenen),
+      adet,
+      acilis: satir.acilis,
+      ad: satir.musteri_ad ?? undefined,
+      telefon: satir.musteri_telefon ?? undefined,
+      adres: satir.adres ?? undefined,
+    };
+  });
 }
 
 export type MasaOzeti = {
@@ -121,7 +256,7 @@ export async function tumAdisyonlar(): Promise<Record<number, MasaOzeti>> {
     .from("adisyonlar")
     .select(
       `masa_id, acilis, garson, indirim,
-       turlar (adisyon_kalemleri (adet, fiyat, durum)),
+       turlar (adisyon_kalemleri (adet, fiyat, durum, indirim)),
        tahsilatlar (tutar)`
     )
     .eq("durum", "acik");
@@ -134,7 +269,9 @@ export async function tumAdisyonlar(): Promise<Record<number, MasaOzeti>> {
       for (const k of tur.adisyon_kalemleri ?? []) {
         if (k.durum === "iptal") continue;
         adet += Number(k.adet);
-        if (k.durum !== "ikram") tutar += Number(k.fiyat) * Number(k.adet);
+        if (k.durum !== "ikram") {
+          tutar += Math.max(0, Number(k.fiyat) * Number(k.adet) - Number(k.indirim ?? 0));
+        }
       }
     }
     const net = Math.max(0, tutar - Number(satir.indirim ?? 0));
@@ -195,8 +332,32 @@ export async function adisyonKaydet(
       .update({ indirim: veri.indirim, guncelleme: new Date().toISOString() })
       .eq("id", adisyon.id);
   }
-  const adisyonId = adisyon.id;
 
+  return kalemleriYaz(adisyon.id, veri, kapat);
+}
+
+/**
+ * Masasız adisyonun (gel al / paket) kaydı. Masalı akıştan tek farkı adisyon
+ * satırının hazır olması; sepet, tur ve tahsilat işleyişi aynı.
+ */
+export async function masasizKaydet(
+  adisyonId: number,
+  veri: AdisyonVerisi,
+  kapat = false
+): Promise<AdisyonVerisi> {
+  await supabase
+    .from("adisyonlar")
+    .update({ indirim: veri.indirim, guncelleme: new Date().toISOString() })
+    .eq("id", adisyonId);
+
+  return kalemleriYaz(adisyonId, veri, kapat);
+}
+
+async function kalemleriYaz(
+  adisyonId: number,
+  veri: AdisyonVerisi,
+  kapat: boolean
+): Promise<AdisyonVerisi> {
   const { data: turSatirlari } = await supabase
     .from("turlar")
     .select("id, sira, adisyon_kalemleri (id)")
@@ -220,6 +381,7 @@ export async function adisyonKaydet(
         fiyat: k.fiyat,
         durum: k.durum ?? "normal",
         not_metni: k.not ?? null,
+        indirim: k.indirim ?? 0,
       })
       .eq("id", k.id);
   }
@@ -251,6 +413,7 @@ export async function adisyonKaydet(
           kdv_oran: k.kdvOran ?? null,
           durum: k.durum ?? "normal",
           not_metni: k.not ?? null,
+          indirim: k.indirim ?? 0,
         }))
       )
       .select("id");
@@ -270,6 +433,7 @@ export async function adisyonKaydet(
         adisyon_id: adisyonId,
         tip: t.tip,
         tutar: t.tutar,
+        bahsis: t.bahsis ?? 0,
         kalem_adetleri: t.kalemler ? gercekKimlikler(t.kalemler, kimlikEsi) : null,
       }))
     );
@@ -438,13 +602,3 @@ async function bosAdisyonuTemizle(adisyonId: number) {
   if (!kalemVar) await supabase.from("adisyonlar").delete().eq("id", adisyonId);
 }
 
-export type OdemeTipi = { id: number; ad: string; renk: string; sira: number };
-
-export async function odemeTipleriniGetir(): Promise<OdemeTipi[]> {
-  const { data } = await supabase
-    .from("odeme_tipleri")
-    .select("id, ad, renk, sira")
-    .eq("aktif", true)
-    .order("sira");
-  return (data ?? []) as OdemeTipi[];
-}

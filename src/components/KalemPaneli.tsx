@@ -15,6 +15,8 @@ type Props = {
   masaId: number;
   /** Ödemesi işlenmiş kalem taşınmaz; düğme yerine gerekçe gösteriliyor. */
   odenmis?: boolean;
+  /** Gel al ve paket adisyonlarında masa yok, taşıma düğmesi de çıkmıyor. */
+  tasinabilir?: boolean;
   onKapat: () => void;
   // İkram/iptal kalemin bir kısmına uygulanabildiği için satır ikiye bölünebilir.
   onUygula: (kalemler: SepetKalemi[]) => void;
@@ -26,6 +28,7 @@ export default function KalemPaneli({
   urun,
   masaId,
   odenmis,
+  tasinabilir = true,
   onKapat,
   onUygula,
   onTasi,
@@ -108,6 +111,7 @@ export default function KalemPaneli({
             {porsiyon && <span className="kp-rozet">{porsiyon}</span>}
             {kalem.durum === "ikram" && <span className="kp-rozet ikram">İkram</span>}
             {kalem.durum === "iptal" && <span className="kp-rozet iptal">İptal edildi</span>}
+            {kalem.indirim ? <span className="kp-rozet indirimli">₺{kalem.indirim} indirim</span> : null}
           </div>
 
           {/* Tutar başlığın içinde: adet ya da fiyat değiştikçe gözün takılı
@@ -204,14 +208,26 @@ export default function KalemPaneli({
                   </button>
                 )}
 
-                <button
-                  className="kp-islem"
-                  disabled={odenmis}
-                  onClick={() => setTasimaAcik(true)}
-                >
-                  <Send size={16} />
-                  Başka masaya taşı
-                </button>
+                {tasinabilir && (
+                  <button
+                    className="kp-islem"
+                    disabled={odenmis}
+                    onClick={() => setTasimaAcik(true)}
+                  >
+                    <Send size={16} />
+                    Başka masaya taşı
+                  </button>
+                )}
+
+                {kalem.indirim ? (
+                  <button
+                    className="kp-islem geri-al"
+                    onClick={() => onUygula([{ ...kalem, indirim: undefined }])}
+                  >
+                    <RotateCcw size={16} />
+                    Ürün indirimini kaldır
+                  </button>
+                ) : null}
 
                 <button className="kp-islem tehlikeli" onClick={() => setIptalSorusu(true)}>
                   <Ban size={16} />

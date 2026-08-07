@@ -1,15 +1,17 @@
 import { useState } from "react";
 import { porsiyonFiyat } from "../menu";
-import type { MenuPorsiyon, MenuSecenekGrubu, MenuUrun } from "../types";
+import type { MenuPorsiyon, MenuSecenekGrubu, MenuUrun, SiparisTuru } from "../types";
 
 type Props = {
   urun: MenuUrun;
   gruplar: MenuSecenekGrubu[];
+  /** Fiyat siparişin türüne göre okunuyor: masa, gel al ve paket ayrı olabilir. */
+  tur?: SiparisTuru;
   onEkle: (porsiyon: string | undefined, fiyat: number, secimler: string[]) => void;
   onKapat: () => void;
 };
 
-export default function UrunSecim({ urun, gruplar, onEkle, onKapat }: Props) {
+export default function UrunSecim({ urun, gruplar, tur = "masa", onEkle, onKapat }: Props) {
   const [porsiyon, setPorsiyon] = useState<MenuPorsiyon | undefined>(
     urun.porsiyonlar.find((p) => p.varsayilan) ?? urun.porsiyonlar[0]
   );
@@ -46,7 +48,7 @@ export default function UrunSecim({ urun, gruplar, onEkle, onKapat }: Props) {
     }
   }
 
-  const fiyat = (porsiyon ? porsiyonFiyat(porsiyon, "masa") : 0) + ekToplam;
+  const fiyat = (porsiyon ? porsiyonFiyat(porsiyon, tur) : 0) + ekToplam;
 
   // Zorunlu gruptan seçim yapılmadan ürün sepete eklenemez.
   const eksikler = urunGruplari.filter((g) => g.zorunlu && !(secilenler[g.id] ?? []).length);
@@ -66,7 +68,7 @@ export default function UrunSecim({ urun, gruplar, onEkle, onKapat }: Props) {
                   className={porsiyon?.birimId === p.birimId ? "secim aktif" : "secim"}
                   onClick={() => porsiyonSec(p)}
                 >
-                  {p.ad} · ₺{porsiyonFiyat(p, "masa")}
+                  {p.ad} · ₺{porsiyonFiyat(p, tur)}
                 </button>
               ))}
             </div>

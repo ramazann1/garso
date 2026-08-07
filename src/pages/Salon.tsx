@@ -1,21 +1,38 @@
 import { useEffect, useState } from "react";
 import { useNavigate } from "react-router-dom";
-import { ArrowRightLeft, CircleCheckBig, Combine, LayoutGrid, Zap } from "lucide-react";
+import {
+  ArrowRightLeft,
+  Bike,
+  CircleCheckBig,
+  Clock,
+  Combine,
+  LayoutGrid,
+  Pencil,
+  Plus,
+  ShoppingBag,
+  Trash2,
+  Zap,
+} from "lucide-react";
 import MasaKarti from "../components/MasaKarti";
 import MasaSecim from "../components/MasaSecim";
 import MasaPlani, { yerlesimiVar } from "../components/MasaPlani";
 import OnayModal from "../components/OnayModal";
 import HizliOde from "../components/HizliOde";
 import Duzen from "../components/Duzen";
+import MasasizSiparis from "../components/MasasizSiparis";
 import {
   adisyonGetir,
   adisyonKaydet,
   adisyonOzeti,
   masaBirlestir,
   masaTasi,
+  masasizAc,
+  masasizAdisyonlar,
+  masasizGuncelle,
+  masasizSil,
   tumAdisyonlar,
 } from "../adisyonlar";
-import type { AdisyonVerisi, MasaOzeti } from "../adisyonlar";
+import type { AdisyonVerisi, MasaOzeti, MasasizAdisyon } from "../adisyonlar";
 import { bolgeleriGetir } from "../masalar";
 import type { Bolge, Masa } from "../types";
 
@@ -34,11 +51,72 @@ const UZUN_SURE_DK = 120;
 const dakika = (acilis?: string) =>
   acilis ? Math.floor((Date.now() - new Date(acilis).getTime()) / 60000) : 0;
 
+/**
+ * Gel al / paket kartı. Masa kartıyla aynı düzeni izliyor ama masa adı yerine
+ * müşteri, boşta ise adisyon numarası yazıyor.
+ */
+function MasasizKart({
+  adisyon,
+  sure,
+  gecikti,
+  onAc,
+  onDuzenle,
+  onSil,
+}: {
+  adisyon: MasasizAdisyon;
+  sure: string;
+  gecikti: boolean;
+  onAc: () => void;
+  onDuzenle: () => void;
+  onSil: () => void;
+}) {
+  const paket = adisyon.tip === "paket";
+  return (
+    <div className={adisyon.adet > 0 ? "masasiz-kart dolu" : "masasiz-kart"}>
+      <button className="masasiz-govde" onClick={onAc}>
+        <span className="masasiz-tip">
+          {paket ? <Bike size={15} /> : <ShoppingBag size={15} />}
+          {paket ? "Paket" : "Gel Al"}
+          <em>#{adisyon.no}</em>
+        </span>
+
+        <strong className="masasiz-ad">{adisyon.ad || (paket ? "Adres yok" : "Müşteri yok")}</strong>
+
+        {adisyon.adet > 0 ? (
+          <span className="masasiz-tutar">
+            ₺{adisyon.tutar}
+            {adisyon.odenen > 0 && <em>₺{adisyon.kalan} kalan</em>}
+          </span>
+        ) : (
+          <span className="masasiz-bos">Ürün eklenmedi</span>
+        )}
+
+        <span className={gecikti ? "masasiz-sure gecikti" : "masasiz-sure"}>
+          <Clock size={13} /> {sure}
+        </span>
+      </button>
+
+      <span className="masasiz-islem">
+        <button onClick={onDuzenle} title="Sipariş bilgileri">
+          <Pencil size={14} />
+        </button>
+        <button onClick={onSil} title="Siparişi iptal et">
+          <Trash2 size={14} />
+        </button>
+      </span>
+    </div>
+  );
+}
+
 export default function Salon() {
   const navigate = useNavigate();
   const [bolgeler, setBolgeler] = useState<Bolge[]>([]);
   const [adisyonlar, setAdisyonlar] = useState<Record<number, Acik>>({});
-  const [seciliId, setSeciliId] = useState<number | "tumu" | null>(null);
+  const [seciliId, setSeciliId] = useState<number | "tumu" | "masasiz" | null>(null);
+  // Gel al / paket siparişleri masaya bağlı değil; kendi sekmesinde listeleniyor.
+  const [masasizlar, setMasasizlar] = useState<MasasizAdisyon[]>([]);
+  const [yeniSiparis, setYeniSiparis] = useState(false);
+  const [duzenlenen, setDuzenlenen] = useState<MasasizAdisyon | null>(null);
   const [yukleniyor, setYukleniyor] = useState(true);
   // Açık kalma süreleri kendiliğinden ilerlesin; garson ekranı yenilemek zorunda
   // kalmasın diye dakikada bir yeniden çiziliyor.
@@ -51,9 +129,10 @@ export default function Salon() {
   const [hizli, setHizli] = useState<{ masa: Masa; veri: AdisyonVerisi } | null>(null);
 
   useEffect(() => {
-    Promise.all([bolgeleriGetir(), tumAdisyonlar()]).then(([b, a]) => {
+    Promise.all([bolgeleriGetir(), tumAdisyonlar(), masasizAdisyonlar()]).then(([b, a, m]) => {
       setBolgeler(b);
       setAdisyonlar(a);
+      setMasasizlar(m);
       setSeciliId((s) => s ?? b[0]?.id ?? "tumu");
       setYukleniyor(false);
     });
@@ -64,7 +143,28 @@ export default function Salon() {
     return () => clearInterval(zaman);
   }, []);
 
-  const yenile = () => tumAdisyonlar().then(setAdisyonlar);
+  const yenile = () =>
+    Promise.all([tumAdisyonlar(), masasizAdisyonlar()]).then(([a, m]) => {
+      setAdisyonlar(a);
+      setMasasizlar(m);
+    });
+
+  // Boş sipariş sessizce silinir; ürün girilmişse iptal onaya bağlı.
+  function siparisSil(a: MasasizAdisyon) {
+    const sil = async () => {
+      setOnay(null);
+      await masasizSil(a.id);
+      await yenile();
+    };
+    if (a.adet === 0) {
+      sil();
+      return;
+    }
+    setOnay({
+      mesaj: `${a.tip === "paket" ? "Paket" : "Gel Al"} #${a.no} siparişi ürünleriyle birlikte silinsin mi?`,
+      onOnay: sil,
+    });
+  }
 
   // Hedef seçildi: yapılacak işi anlatan onay çıkıyor, "evet" denince uygulanıyor.
   function hedefSecildi(hedef: Masa) {
@@ -214,9 +314,43 @@ export default function Salon() {
               >
                 Tümü <em>{doluSayisi}/{tumMasalar.length}</em>
               </button>
+
+              {/* Masaya oturmayan satışlar salonun kendi dilinde: ayrı ekran
+                  değil, şeridin sonunda duran sabit bir sekme. */}
+              <button
+                className={seciliId === "masasiz" ? "aktif" : ""}
+                onClick={() => setSeciliId("masasiz")}
+              >
+                <ShoppingBag size={15} />
+                Paket &amp; Gel Al
+                {masasizlar.length > 0 && <em>{masasizlar.length}</em>}
+              </button>
             </nav>
 
-            {gosterilen.map((bolge) => (
+            {seciliId === "masasiz" && (
+              <section className="bolge">
+                <div className="masa-grid">
+                  <button className="masasiz-yeni" onClick={() => setYeniSiparis(true)}>
+                    <Plus size={22} />
+                    Yeni sipariş
+                  </button>
+
+                  {masasizlar.map((a) => (
+                    <MasasizKart
+                      key={a.id}
+                      adisyon={a}
+                      sure={sureFarki(a.acilis)}
+                      gecikti={dakika(a.acilis) >= UZUN_SURE_DK}
+                      onAc={() => navigate(`/adisyon/${a.id}`)}
+                      onDuzenle={() => setDuzenlenen(a)}
+                      onSil={() => siparisSil(a)}
+                    />
+                  ))}
+                </div>
+              </section>
+            )}
+
+            {seciliId !== "masasiz" && gosterilen.map((bolge) => (
               <section key={bolge.id} className="bolge">
                 {seciliId === "tumu" && (
                   <h2>
@@ -284,13 +418,13 @@ export default function Salon() {
                   setUyari(e instanceof Error ? e.message : "İndirim kaydedilemedi.");
                 }
               }}
-              onSec={async (tip, tutar, kapat) => {
+              onSec={async (tip, tutar, kapat, bahsis) => {
                 const { masa, veri } = hizli;
                 setHizli(null);
                 try {
                   await adisyonKaydet(
                     masa.id,
-                    { ...veri, tahsilatlar: [...veri.tahsilatlar, { tip, tutar }] },
+                    { ...veri, tahsilatlar: [...veri.tahsilatlar, { tip, tutar, bahsis }] },
                     kapat
                   );
                   await yenile();
@@ -301,6 +435,39 @@ export default function Salon() {
             />
           );
         })()}
+
+        {(yeniSiparis || duzenlenen) && (
+          <MasasizSiparis
+            mevcut={
+              duzenlenen
+                ? {
+                    tip: duzenlenen.tip,
+                    ad: duzenlenen.ad,
+                    telefon: duzenlenen.telefon,
+                    adres: duzenlenen.adres,
+                  }
+                : undefined
+            }
+            onKapat={() => { setYeniSiparis(false); setDuzenlenen(null); }}
+            onAc={async (tip, musteri) => {
+              try {
+                if (duzenlenen) {
+                  await masasizGuncelle(duzenlenen.id, musteri);
+                  setDuzenlenen(null);
+                  await yenile();
+                  return;
+                }
+                const id = await masasizAc(tip, musteri);
+                setYeniSiparis(false);
+                navigate(`/adisyon/${id}`);
+              } catch (e) {
+                setYeniSiparis(false);
+                setDuzenlenen(null);
+                setUyari(e instanceof Error ? e.message : "Sipariş açılamadı.");
+              }
+            }}
+          />
+        )}
 
         {onay && (
           <OnayModal

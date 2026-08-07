@@ -1,4 +1,5 @@
 import { useEffect, useState } from "react";
+import { useNavigate, useParams } from "react-router-dom";
 import { ArrowUpDown, ChevronDown, Copy, Pencil, Plus, Trash2, X } from "lucide-react";
 import Duzen from "../components/Duzen";
 import Bilgi from "../components/Bilgi";
@@ -474,11 +475,11 @@ export default function MenuStudyosu() {
   const [yukleniyor, setYukleniyor] = useState(true);
   const [pencere, setPencere] = useState<{ kategori?: MenuKategori } | null>(null);
   const [panel, setPanel] = useState<MenuUrun | null>(null);
-  const [gorunum, setGorunum] = useState<
-    "kategoriler" | "gruplar" | "birimler" | "kdv" | "toplu" | "kampanya" | "aktarim"
-  >(
-    "kategoriler"
-  );
+  // Görünüm adresten geliyor; sol menüdeki alt başlıklar da aynı yolları açıyor.
+  const { bolum } = useParams();
+  const navigate = useNavigate();
+  const gorunum = (bolum ?? "kategoriler") as
+    | "kategoriler" | "gruplar" | "birimler" | "kdv" | "toplu" | "kampanya" | "aktarim";
   const [topluDegisiklik, setTopluDegisiklik] = useState(0);
   const [grupPencere, setGrupPencere] = useState<{ grup?: MenuSecenekGrubu } | null>(null);
   const [arama, setArama] = useState("");
@@ -744,13 +745,13 @@ export default function MenuStudyosu() {
         mesaj: `${topluDegisiklik} üründe kaydedilmemiş değişiklik var. Vazgeçilsin mi?`,
         devam: () => {
           setTopluDegisiklik(0);
-          setGorunum(yeni);
+          navigate(`/menu/${yeni}`);
         },
       });
       return;
     }
     setTopluDegisiklik(0);
-    setGorunum(yeni);
+    navigate(`/menu/${yeni}`);
   };
 
   const yeniUrun = (): MenuUrun => ({

@@ -1,34 +1,33 @@
 # GARSO — Teknik Tasarım: Veri Modeli & Ekran Haritası
 *Restoran ve cafe'ler için bulut tabanlı satış ve işletme yönetim sistemi.*
 
-## 0. SIRADAKİ İŞ (7 Ağu 2026 ikinci oturumda güncellendi)
+## 0. SIRADAKİ İŞ (8 Ağu 2026 oturumunda güncellendi)
 
 *Ramazan seansa "devam edelim" diye giriyor — sıradaki iş bu listenin en üstündeki
 maddedir. Seans sonunda bu liste güncellenir: biten madde silinir, kalanlar
 yukarı kayar, yeni çıkanlar sıraya girer.*
 
-**Menü modülü, masa/bölge tanımları, salon çekirdeği ve Hızlı Öde bitti; tahsilat
-derinleşmesi sürüyor.** Eksik envanteri bölüm 6'da, Adisyo turları
-`pos-yol-haritasi.md` bölüm 7 ve 8'de.
+**Menü modülü, masa/bölge tanımları, salon çekirdeği, Hızlı Öde, tahsilat
+zenginleştirmesi ve Gel Al / Paket akışı bitti.** Eksik envanteri bölüm 6'da,
+Adisyo turları `pos-yol-haritasi.md` bölüm 7 ve 8'de.
 
-1. **Tahsilat zenginleştirme (kalanı)** — bahşiş (üstünü tamamla), ödeme tipi
-   ÖKC/klasik ayrımı, ürün bazlı 1/n, ürün bazlı indirim. *(Hızlı Öde 7 Ağu'da
-   bitti.)*
-2. **Gel Al / Paket akışı** — fiyat altyapısı hazır, akış yok. Salon ekranının
-   solunda kısayol olacak (Adisyo'daki gibi).
-3. **Fiyatlar KDV hariç ayarı** — işletme geneli tek ayar, varsayılan "dahil".
+1. **Paket & Gel Al revizyonu — SEANS AÇILIŞINDA İLK BUNU HATIRLAT.** Ramazan
+   8 Ağu oturumunun sonunda "bu bölümde değişmesini istediğim şeyler var, önce
+   bunu hatırlat" dedi; ne istediğini henüz söylemedi. Yeni işe geçmeden önce
+   sor, isteklerini al.
+2. **Fiyatlar KDV hariç ayarı** — işletme geneli tek ayar, varsayılan "dahil".
    İşletme Ayarları ekranı açıldı, oraya girecek.
-4. **Ön tanımlı indirimler** — ad + tip + değer; satışta serbest tutar yerine
+3. **Ön tanımlı indirimler** — ad + tip + değer; satışta serbest tutar yerine
    listeden seçim. (Adisyo Tanımlamalar turu, 6 Ağu)
-5. **Seçenek grubunda zorunlu seçim sayısı ve varsayılan seçenek** — bizde
+4. **Seçenek grubunda zorunlu seçim sayısı ve varsayılan seçenek** — bizde
    tekli/çoklu ve zorunlu var, "en az kaç tane" ile "önceden işaretli" yok.
-6. **Turların arayüze çıkması** — `turlar` tablosu doluyor, sepet hâlâ düz liste.
+5. **Turların arayüze çıkması** — `turlar` tablosu doluyor, sepet hâlâ düz liste.
    Adisyonda "1. tur / 14:20" başlıkları görünecek.
-7. **Adisyon düzeyi alanlar** — adisyon no, serbest isim, kişi sayısı, adisyon
+6. **Adisyon düzeyi alanlar** — adisyon no, serbest isim, kişi sayısı, adisyon
    notu, müşteri. Tabloda `adisyon_no` var, ekranda kullanılmıyor.
-8. **Kapanmış adisyonlar listesi** — kapanan adisyon `durum = kapali` olarak
+7. **Kapanmış adisyonlar listesi** — kapanan adisyon `durum = kapali` olarak
    duruyor; onları gösteren ekran yok.
-9. **Masa yazdırma ve adisyon iptali** — masa üç nokta menüsünde yerleri boş
+8. **Masa yazdırma ve adisyon iptali** — masa üç nokta menüsünde yerleri boş
    duruyor; yazdırma yazıcı altyapısına, iptal kapanmış adisyon ekranına bağlı.
 
 **Ödenmezler** ve **Kuver/Garsoniye** Faz 2'ye yazıldı (yol haritası bölüm 8);
@@ -592,6 +591,23 @@ görüntüle" ve aktif/pasif ürün — 1 Ağu 2026 ikinci seansında tamamland�
    kaybolur. Hepsi eklenirse Öde ekranının kopyası olacağından bilinçli olarak
    sınırlı tutuldu. *(7 Ağu 2026)*
 
+58. **Bahşiş ödemenin kendi satırında durur.** Ayrı tahsilat kaydı açılmıyor;
+   `tahsilatlar.bahsis` sütunu hangi ödemeyle (nakit mi kart mı) geldiğini de
+   saklıyor. Tahsilata kalanın kendisi yazılır, üstü bahşişe gider — böylece
+   kalan hiç eksiye düşmez. *(8 Ağu 2026)*
+59. **Ödeme düğmesinin yazı rengi zeminden hesaplanır.** Renk işletmecinin
+   seçimi; yazı varsayılan siyah, yalnız siyah/füme/koyu gri gibi çok karanlık
+   zeminlerde beyaza döner (`renk.ts`, parlaklık eşiği 90). *(8 Ağu 2026)*
+60. **1/n ve indirim seçime göre davranır, yeni düğme açmaz.** Ürün seçiliyse
+   aynı düğmeler seçili ürüne, seçim yoksa hesabın tamamına uygulanır; düğmenin
+   üstündeki başlık hangisinde olduğunu söyler. Kalem payı kesirli tutulur,
+   kuruş artığı son ödeyene kalır. *(8 Ağu 2026)*
+61. **Gel Al ve Paket, salonun kendi dilinde durur.** Adisyo bunları ayrı ekrana
+   ve sol kısayola koymuş; Garso'da bölge şeridinin sonunda sabit bir sekme ve
+   masa kartıyla aynı düzende sipariş kartları var — garson ekran değiştirmiyor.
+   Müşteri alanları isteğe bağlı, paket siparişte ödeme tipi baştan zorunlu
+   değil. *(8 Ağu 2026)*
+
 ## 7. KOD PAYLAŞIM DÜZENİ
 - Kod GitHub'da: `github.com/ramazann1/garso` (şimdilik Public — final'de Private yapılacak)
 - **Claude'un repoya erişim yöntemi:** seans başında bash ile tarball indirilir:
@@ -868,3 +884,36 @@ Bölüm 6'ya **56-57** numaralarıyla işlendi: masa kartı düzeni ve durum ren
 ### Sonraki seansın ilk işi
 Tahsilat zenginleştirmenin kalanı: bahşiş (üstünü tamamla), ödeme tipi
 ÖKC/klasik ayrımı, ürün bazlı 1/n ve ürün bazlı indirim.
+
+## 12. SEANS GÜNLÜĞÜ — 8 AĞU 2026
+
+### Yapılanlar
+- ✅ **Bahşiş** — kalandan fazla girilen tutar reddedilmiyor; onay modalı çıkıp
+  üstünü `tahsilatlar.bahsis` alanına yazıyor. Kalan hesabı bozulmuyor
+  (`sql/2026-08-08-bahsis.sql`).
+- ✅ **Ödeme tipleri ekranı** — İşletme Ayarları'nda yeni bölüm: ad, düğme
+  rengi, sınıf (klasik / yazarkasa), cari hesap anahtarı, görünürlük anahtarı,
+  sıra. Veri katmanı `odemeTipleri.ts`'e taşındı.
+- ✅ **ÖKC/klasik ayrımı** — `odeme_tipleri.sinif`; ödeme ekranında düğmeler iki
+  başlık altında gruplanıyor, ÖKC tipi tanımlı değilse başlık hiç çıkmıyor.
+  Dokuz hazır ÖKC tipi gizli olarak yüklendi.
+- ✅ **Ürün bazlı 1/n** — 1/2–1/4 düğmeleri ürün seçiliyse o ürünün tutarını
+  bölüyor; kalem payı kesirli yazılıyor ("yarısı ödendi"), kuruş artığı son
+  ödeyene kalıyor.
+- ✅ **Ürün bazlı indirim** — `adisyon_kalemleri.indirim`; tahsilatta ürün
+  seçiliyken indirim seçili satırlara payına göre dağıtılıyor, KDV kendi
+  oranından düşüyor. Kalem panelinde rozet ve kaldırma düğmesi.
+- ✅ **Gel Al / Paket akışı** — `adisyonlar.tip` + müşteri alanları; salon
+  şeridinde "Paket & Gel Al" sekmesi, "+ Yeni sipariş" kartı, `/adisyon/:id`
+  yolu. Fiyat sipariş türüne göre okunuyor.
+- ✅ **Sol menü açılır alt başlıklar** — İşletme Ayarları ve Menü Stüdyosu
+  bölümleri hem menüde hem sayfa üstündeki şeritte; sekmeler adrese bağlandı
+  (`/menu/kdv`, `/ayarlar/odeme-tipleri`). Menünün açık/kapalı hâli tarayıcıda
+  saklanıyor, sayfa değişince kapanmıyor.
+
+### Kararlar
+Bölüm 6'ya **58-61** numaralarıyla işlendi.
+
+### Sonraki seansın ilk işi
+**Paket & Gel Al revizyonu.** Ramazan bu bölümde değişiklik istiyor, ne
+olduğunu henüz söylemedi — seansa girer girmez sor.

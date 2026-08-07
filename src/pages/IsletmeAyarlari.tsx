@@ -1,7 +1,10 @@
 import { useEffect, useState } from "react";
+import { useLocation, useNavigate, useParams } from "react-router-dom";
 import {
+  ChevronDown,
   ChevronLeft,
   ChevronRight,
+  ChevronUp,
   Grid3x3,
   LayoutGrid,
   List,
@@ -10,9 +13,10 @@ import {
   Plus,
   Trash2,
   Users,
+  Wallet,
   X,
 } from "lucide-react";
-import Duzen from "../components/Duzen";
+import Duzen, { ayarBolumleri } from "../components/Duzen";
 import Bildirim from "../components/Bildirim";
 import Bilgi from "../components/Bilgi";
 import Anahtar from "../components/Anahtar";
@@ -31,6 +35,16 @@ import {
   yerlesimKaydet,
   yerlesimTopluKaydet,
 } from "../masalar";
+import RenkSecici, { renkler } from "../components/RenkSecici";
+import { OdemeIkon } from "../odemeIkon";
+import { yaziRengi } from "../renk";
+import {
+  odemeTipiEkle,
+  odemeTipiGuncelle,
+  odemeTipiSil,
+  odemeTipleriniGetir,
+} from "../odemeTipleri";
+import type { OdemeSinifi, OdemeTipi, OdemeTipiAlanlari } from "../odemeTipleri";
 import type { Bolge, Masa } from "../types";
 
 // Masa kartının şekli salon planında da kullanılacak; ayar ekranında da aynı
@@ -260,7 +274,104 @@ function BolgePaneli({
   );
 }
 
+function OdemeTipiPaneli({
+  tip,
+  onKapat,
+  onKaydet,
+  onSil,
+}: {
+  tip: OdemeTipi | null;
+  onKapat: () => void;
+  onKaydet: (alanlar: OdemeTipiAlanlari) => void;
+  onSil?: () => void;
+}) {
+  const [ad, setAd] = useState(tip?.ad ?? "");
+  const [renk, setRenk] = useState(tip?.renk ?? renkler[2]);
+  const [sinif, setSinif] = useState<OdemeSinifi>(tip?.sinif ?? "klasik");
+  const [acikHesap, setAcikHesap] = useState(tip?.acikHesap ?? false);
+  const [aktif, setAktif] = useState(tip?.aktif ?? true);
+
+  return (
+    <div className="panel-fon" onClick={onKapat}>
+      <div className="ayar-panel" onClick={(e) => e.stopPropagation()}>
+        <header className="panel-ust">
+          <h3>{tip ? "Ödeme tipini düzenle" : "Yeni ödeme tipi"}</h3>
+          <button className="panel-kapat" onClick={onKapat}><X size={19} /></button>
+        </header>
+
+        <div className="panel-govde">
+          <div className="alan">
+            <label>Ödeme tipinin adı</label>
+            <input
+              value={ad}
+              onChange={(e) => setAd(e.target.value)}
+              placeholder="Nakit, Kredi Kartı, Multinet…"
+              autoFocus
+            />
+          </div>
+
+          <div className="alan">
+            <label>Düğme rengi</label>
+            <RenkSecici renk={renk} degistir={(r) => setRenk(r ?? renkler[2])} />
+          </div>
+
+          <div className="alan">
+            <label>Ödeme sınıfı</label>
+            <div className="mod-sec">
+              <button className={sinif === "klasik" ? "aktif" : ""} onClick={() => setSinif("klasik")}>
+                Klasik
+              </button>
+              <button className={sinif === "okc" ? "aktif" : ""} onClick={() => setSinif("okc")}>
+                Yazarkasa (ÖKC)
+              </button>
+            </div>
+            <Bilgi>
+              Yazarkasa seçilen ödemeler ÖKC cihazına iletilecek şekilde kaydedilir;
+              klasik ödemeler yalnızca Garso'da tutulur.
+            </Bilgi>
+          </div>
+
+          <Anahtar
+            etiket="Cari hesaba yazılsın"
+            ipucu="Açık hesap ödemelerinde kasaya para girmez, tutar müşterinin borcuna eklenir"
+            acik={acikHesap}
+            degistir={setAcikHesap}
+          />
+
+          <Anahtar
+            etiket="Satış ekranında görünsün"
+            ipucu="Kapatırsanız tip silinmez, sadece ödeme ekranında listelenmez"
+            acik={aktif}
+            degistir={setAktif}
+          />
+        </div>
+
+        <footer className="modal-aksiyonlar">
+          {onSil && (
+            <button className="sil-buton" onClick={onSil}>
+              <Trash2 size={15} /> Sil
+            </button>
+          )}
+          <button className="iptal" onClick={onKapat}>Vazgeç</button>
+          <button
+            className="uygula"
+            disabled={!ad.trim()}
+            onClick={() => onKaydet({ ad: ad.trim(), renk, sinif, acikHesap, aktif })}
+          >
+            Kaydet
+          </button>
+        </footer>
+      </div>
+    </div>
+  );
+}
+
 export default function IsletmeAyarlari() {
+  const { bolum } = useParams();
+  const navigate = useNavigate();
+  const { pathname } = useLocation();
+  const masalarBolumu = bolum !== "odeme-tipleri";
+
   const [bolgeler, setBolgeler] = useState<Bolge[]>([]);
   const [seciliId, setSeciliId] = useState<number | null>(null);
   const [yukleniyor, setYukleniyor] = useState(true);
@@ -274,6 +385,25 @@ export default function IsletmeAyarlari() {
   const [silinecekMasa, setSilinecekMasa] = useState<Masa | null>(null);
   const [gorunum, setGorunum] = useState<"liste" | "plan">("liste");
 
+  const [odemeTipleri, setOdemeTipleri] = useState<OdemeTipi[]>([]);
+  const [odemePaneli, setOdemePaneli] = useState<OdemeTipi | null | undefined>(undefined);
+  const [silinecekOdeme, setSilinecekOdeme] = useState<OdemeTipi | null>(null);
+
+  const odemeleriTazele = async () => setOdemeTipleri(await odemeTipleriniGetir(true));
+
+  // Sıra numaraları listedeki yerden geliyor; komşuyla takas edilir.
+  const odemeTasi = async (tip: OdemeTipi, yon: -1 | 1) => {
+    const ayniSinif = odemeTipleri.filter((t) => t.sinif === tip.sinif);
+    const i = ayniSinif.indexOf(tip);
+    const komsu = ayniSinif[i + yon];
+    if (!komsu) return;
+    await Promise.all([
+      odemeTipiGuncelle(tip.id, { sira: komsu.sira }),
+      odemeTipiGuncelle(komsu.id, { sira: tip.sira }),
+    ]);
+    await odemeleriTazele();
+  };
+
   const tazele = async (secilecekId?: number) => {
     const veri = await bolgeleriGetir();
     setBolgeler(veri);
@@ -285,7 +415,7 @@ export default function IsletmeAyarlari() {
   };
 
   useEffect(() => {
-    tazele().then(() => setYukleniyor(false));
+    Promise.all([tazele(), odemeleriTazele()]).then(() => setYukleniyor(false));
   }, []);
 
   const secili = bolgeler.find((b) => b.id === seciliId) ?? bolgeler[0];
@@ -354,14 +484,32 @@ export default function IsletmeAyarlari() {
   return (
     <Duzen>
       <div className="sayfa">
-        <header className="ayar-baslik">
+        <header className="menu-baslik">
           <h1>İşletme Ayarları</h1>
-          <Bilgi>Salonunuzdaki bölgeleri ve masaları buradan düzenlersiniz.</Bilgi>
+          <div className="ms-sekmeler">
+            {ayarBolumleri.map((b) => (
+              <button
+                key={b.yol}
+                className={pathname === b.yol ? "aktif" : ""}
+                onClick={() => navigate(b.yol)}
+              >
+                {b.ad}
+              </button>
+            ))}
+          </div>
         </header>
+
+        <Bilgi>
+          {masalarBolumu
+            ? "Salonunuzdaki bölgeleri ve masaları buradan düzenlersiniz."
+            : "Kasada hangi ödeme düğmelerinin çıkacağını buradan belirlersiniz."}
+        </Bilgi>
 
         {yukleniyor ? (
           <div className="yukleniyor"><div className="cember" /></div>
         ) : (
+          <>
+          {masalarBolumu && (
           <section className="ayar-bolum">
             <div className="ayar-bolum-ust">
               <h2><LayoutGrid size={17} /> Bölgeler ve Masalar</h2>
@@ -488,6 +636,71 @@ export default function IsletmeAyarlari() {
               </>
             )}
           </section>
+          )}
+
+          {!masalarBolumu && (
+          <section className="ayar-bolum">
+            <div className="ayar-bolum-ust">
+              <h2><Wallet size={17} /> Ödeme Tipleri</h2>
+              <button className="ayar-ekle" onClick={() => setOdemePaneli(null)}>
+                <Plus size={15} /> Ödeme tipi ekle
+              </button>
+            </div>
+
+            <Bilgi>
+              Yazarkasa (ÖKC) tipleri ödeme ekranında ayrı başlık altında listelenir.
+              Kullanmadığınız tipi silmeden gizleyebilirsiniz.
+            </Bilgi>
+
+            {odemeTipleri.length === 0 ? (
+              <div className="ayar-bos">
+                <Wallet size={30} />
+                <p>Henüz ödeme tipi yok. Nakit ve kredi kartı ekleyerek başlayın.</p>
+              </div>
+            ) : (
+              <div className="odeme-tip-liste">
+                {odemeTipleri.map((t, i) => (
+                  <div key={t.id} className={t.aktif ? "odeme-tip-satir" : "odeme-tip-satir kapali"}>
+                    <span
+                      className="odeme-tip-ornek"
+                      style={{ background: t.renk, color: yaziRengi(t.renk) }}
+                    >
+                      <OdemeIkon ad={t.ad} size={16} />
+                      {t.ad}
+                    </span>
+                    <span className="odeme-tip-etiket">
+                      {t.sinif === "okc" ? "Yazarkasa (ÖKC)" : "Klasik"}
+                      {t.acikHesap && " · Cari hesap"}
+                      {!t.aktif && " · Gizli"}
+                    </span>
+                    <span className="odeme-tip-islem">
+                      <button
+                        disabled={i === 0 || odemeTipleri[i - 1].sinif !== t.sinif}
+                        onClick={() => odemeTasi(t, -1)}
+                        title="Yukarı al"
+                      >
+                        <ChevronUp size={15} />
+                      </button>
+                      <button
+                        disabled={
+                          i === odemeTipleri.length - 1 || odemeTipleri[i + 1].sinif !== t.sinif
+                        }
+                        onClick={() => odemeTasi(t, 1)}
+                        title="Aşağı al"
+                      >
+                        <ChevronDown size={15} />
+                      </button>
+                      <button onClick={() => setOdemePaneli(t)} title="Düzenle">
+                        <Pencil size={14} />
+                      </button>
+                    </span>
+                  </div>
+                ))}
+              </div>
+            )}
+          </section>
+          )}
+          </>
         )}
       </div>
 
@@ -561,6 +774,49 @@ export default function IsletmeAyarlari() {
             setBildirim("Masa silindi");
           }}
           onKapat={() => setSilinecekMasa(null)}
+        />
+      )}
+
+      {odemePaneli !== undefined && (
+        <OdemeTipiPaneli
+          key={odemePaneli?.id ?? "yeni"}
+          tip={odemePaneli}
+          onKapat={() => setOdemePaneli(undefined)}
+          onSil={
+            odemePaneli
+              ? () => {
+                  const hedef = odemePaneli;
+                  setOdemePaneli(undefined);
+                  setSilinecekOdeme(hedef);
+                }
+              : undefined
+          }
+          onKaydet={async (alanlar) => {
+            if (odemePaneli) await odemeTipiGuncelle(odemePaneli.id, alanlar);
+            else {
+              const sonSira = odemeTipleri
+                .filter((t) => t.sinif === alanlar.sinif)
+                .reduce((e, t) => Math.max(e, t.sira), 0);
+              await odemeTipiEkle(alanlar, sonSira + 1);
+            }
+            setOdemePaneli(undefined);
+            await odemeleriTazele();
+            setBildirim("Ödeme tipi kaydedildi");
+          }}
+        />
+      )}
+
+      {silinecekOdeme && (
+        <OnayModal
+          mesaj={`${silinecekOdeme.ad} ödeme tipi silinsin mi? Geçmiş tahsilat kayıtları etkilenmez.`}
+          tehlikeli
+          onOnay={async () => {
+            await odemeTipiSil(silinecekOdeme.id);
+            setSilinecekOdeme(null);
+            await odemeleriTazele();
+            setBildirim("Ödeme tipi silindi");
+          }}
+          onKapat={() => setSilinecekOdeme(null)}
         />
       )}
 

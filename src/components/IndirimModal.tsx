@@ -3,13 +3,14 @@ import { Check, Delete, Percent } from "lucide-react";
 import OnayModal from "./OnayModal";
 
 type Props = {
+  baslik?: string;
   araToplam: number;
   mevcutIndirim: number;
   onKapat: () => void;
   onUygula: (tutar: number) => void;
 };
 
-export default function IndirimModal({ araToplam, mevcutIndirim, onKapat, onUygula }: Props) {
+export default function IndirimModal({ baslik, araToplam, mevcutIndirim, onKapat, onUygula }: Props) {
   const [mod, setMod] = useState<"yuzde" | "tutar">("tutar");
   const [tutarGirdi, setTutarGirdi] = useState(mevcutIndirim > 0 ? String(mevcutIndirim) : "");
   const [yuzdeGirdi, setYuzdeGirdi] = useState("");
@@ -43,7 +44,7 @@ export default function IndirimModal({ araToplam, mevcutIndirim, onKapat, onUygu
       <div className="indirim-modal" onClick={(e) => e.stopPropagation()}>
         <h3 className="modal-baslik">
           <Percent size={18} />
-          İndirim Uygula
+          {baslik ?? "İndirim Uygula"}
         </h3>
         <div className="mod-sec">
           <button className={mod === "tutar" ? "aktif" : ""} onClick={() => setMod("tutar")}>Tutar</button>

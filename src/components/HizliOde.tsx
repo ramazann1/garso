@@ -1,10 +1,10 @@
 import { useEffect, useState } from "react";
 import { CircleCheckBig, Percent, Wallet, X, Zap } from "lucide-react";
-import { OdemeIkon } from "../odemeIkon";
 import IndirimModal from "./IndirimModal";
 import OnayModal from "./OnayModal";
-import { odemeTipleriniGetir } from "../adisyonlar";
-import type { OdemeTipi } from "../adisyonlar";
+import OdemeTipDugmeleri from "./OdemeTipDugmeleri";
+import { odemeTipleriniGetir } from "../odemeTipleri";
+import type { OdemeTipi } from "../odemeTipleri";
 
 type Props = {
   baslik: string;
@@ -14,7 +14,7 @@ type Props = {
   odenen: number;
   kalan: number;
   onIndirimDegis: (tutar: number) => void;
-  onSec: (tip: string, tutar: number, kapat: boolean) => void;
+  onSec: (tip: string, tutar: number, kapat: boolean, bahsis?: number) => void;
   onKapat: () => void;
 };
 
@@ -42,6 +42,8 @@ export default function HizliOde({
   const [indirimAcik, setIndirimAcik] = useState(false);
   const [uyari, setUyari] = useState<string | null>(null);
   const [gonderiliyor, setGonderiliyor] = useState(false);
+  // Kalandan fazla girilen tutar onaya düşer: üstü bahşiş mi, yanlış giriş mi?
+  const [bahsisSorusu, setBahsisSorusu] = useState<{ tip: string; bahsis: number } | null>(null);
 
   useEffect(() => {
     odemeTipleriniGetir().then(setOdemeTipleri);
@@ -60,13 +62,18 @@ export default function HizliOde({
       return;
     }
     if (tutar > kalan) {
-      setUyari(`Tutar kalandan büyük olamaz (kalan ₺${kalan}).`);
+      setBahsisSorusu({ tip, bahsis: tutar - kalan });
       return;
     }
-    // Tahsilat kalanı kapatmıyorsa adisyon açık kalmalı; yarım ödemeyle masa
-    // kapanırsa geri kalan tutar kaybolur.
+    gonder(tip, tutar);
+  };
+
+  // Tahsilat kalanı kapatmıyorsa adisyon açık kalmalı; yarım ödemeyle masa
+  // kapanırsa geri kalan tutar kaybolur. Bahşiş kalanı azaltmadığı için
+  // tahsilata kalanın kendisi yazılır, üstü ayrı gider.
+  const gonder = (tip: string, tutar: number, bahsis?: number) => {
     setGonderiliyor(true);
-    onSec(tip, tutar, kapat && tutar >= kalan);
+    onSec(tip, tutar, kapat && tutar >= kalan, bahsis);
   };
 
   return (
@@ -142,18 +149,7 @@ export default function HizliOde({
         </p>
 
         <div className="hizli-tipler">
-          {odemeTipleri.map(({ id, ad, renk }) => (
-            <button
-              key={id}
-              className="odeme-tip-btn"
-              style={{ background: renk }}
-              disabled={gonderiliyor}
-              onClick={() => tahsilEt(ad)}
-            >
-              <OdemeIkon ad={ad} />
-              {ad}
-            </button>
-          ))}
+          <OdemeTipDugmeleri tipler={odemeTipleri} pasif={gonderiliyor} onSec={tahsilEt} />
         </div>
       </div>
 
@@ -167,6 +163,18 @@ export default function HizliOde({
             setGirilen("");
             setIndirimAcik(false);
           }}
+        />
+      )}
+
+      {bahsisSorusu && (
+        <OnayModal
+          mesaj={`Girilen tutar kalandan ₺${bahsisSorusu.bahsis} fazla. Üstü bahşiş olarak yazılsın mı?`}
+          onayMetni="Bahşiş yaz"
+          onOnay={() => {
+            gonder(bahsisSorusu.tip, kalan, bahsisSorusu.bahsis);
+            setBahsisSorusu(null);
+          }}
+          onKapat={() => setBahsisSorusu(null)}
         />
       )}
 
