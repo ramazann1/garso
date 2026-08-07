@@ -6,6 +6,9 @@
   --yesil: #2ecc9a;      /* onay / başarı rengi */
   --metin: #2d3436;      /* ana yazı rengi */
   --soluk: #6b7578;      /* ikincil yazı — silik gri değil, okunur koyu ton */
+  /* Renkli masa kartlarının yazıları: tam beyaz zeminde göz yoruyordu, beyaza
+     çalan tek bir açık gri kullanılıyor. */
+  --kart-yazi: #000000;
 }
 
 * {
@@ -61,8 +64,11 @@ body {
   flex-direction: column;
   justify-content: center;
   gap: 3px;
-  min-height: 110px;
+  /* Kart yüksekliği sabit: ödeme satırı çıksa da çıkmasa da masalar aynı
+     boyda dursun, salon ızgarası satır satır oynamasın. */
+  height: 130px;
   padding: 15px 18px;
+  overflow: hidden;
   border: none;
   border-radius: 18px;
   background: #fff;
@@ -77,6 +83,18 @@ body {
 .masa-kart:hover {
   transform: translateY(-2px);
   box-shadow: 0 8px 20px rgba(45, 52, 54, 0.14);
+}
+
+/* Tarayıcının kendi odak çerçevesi karta tıklandıktan sonra beyaz bir kutu
+   olarak asılı kalıyordu; klavyeyle gezene mercan halka, fareyle tıklayana
+   hiçbir şey. */
+.masa-kart:focus {
+  outline: none;
+}
+
+.masa-kart:focus-visible {
+  outline: 2px solid var(--mercan);
+  outline-offset: 2px;
 }
 
 .masa-kart.daire {
@@ -113,10 +131,13 @@ body {
   opacity: 1;
 }
 
-/* Dolu masa dolgun mercan: salonun neresinde hesap açık, kapıdan bakınca belli. */
+/* Dolu masa dolgun mercan: salonun neresinde hesap açık, kapıdan bakınca belli.
+   İçerik alta yaslı — üstteki bant üç nokta düğmesine kalıyor, garson adı ile
+   süre onun altına iniyor. */
 .masa-kart.dolu {
-  background: linear-gradient(150deg, #fb8a69 0%, #f9805f 60%, #ef7050 100%);
-  color: #fff6f2;
+  justify-content: flex-end;
+  background: linear-gradient(150deg, #45d9ac 0%, #2ecc9a 60%, #23b98a 100%);
+  color: var(--kart-yazi);
   box-shadow: 0 3px 12px rgba(255, 122, 89, 0.26);
 }
 
@@ -124,12 +145,14 @@ body {
   box-shadow: 0 10px 24px rgba(255, 122, 89, 0.42);
 }
 
+/* Kartın üst bandı: solda garson adı, sağ köşe üç nokta düğmesinin — garson
+   adı uzasa bile düğmenin altına girmiyor. */
 .masa-ust {
   display: flex;
   align-items: center;
-  justify-content: space-between;
   gap: 8px;
   min-height: 17px;
+  padding-right: 34px;
 }
 
 .masa-garson {
@@ -140,48 +163,73 @@ body {
   font-weight: 500;
   letter-spacing: 0.04em;
   text-transform: uppercase;
-  color: #ffe0d4;
+  color: var(--kart-yazi);
 }
 
 .masa-kart.dolu .masa-ad {
   font-size: 17px;
   font-weight: 600;
-  color: #fff9f6;
+  color: var(--kart-yazi);
+  overflow: hidden;
+  white-space: nowrap;
+  text-overflow: ellipsis;
 }
 
-.masa-satir {
+/* Tahsilat başlamış masada üç rakam yan yana: toplam · ödenen · kalan.
+   Süre yukarı, garson adının yanına taşındı — yer buradan çıktı. */
+.masa-rakamlar {
   display: flex;
-  align-items: baseline;
+  align-items: flex-end;
   justify-content: space-between;
-  gap: 10px;
+  gap: 6px;
   margin-top: 4px;
   min-width: 0;
 }
 
+.masa-rakam {
+  display: flex;
+  flex-direction: column;
+  gap: 1px;
+  min-width: 0;
+}
+
+.masa-rakam em {
+  font-size: 12px;
+  font-style: normal;
+  font-weight: 500;
+  color: var(--kart-yazi);
+  white-space: nowrap;
+}
+
+.masa-rakam strong {
+  display: inline-flex;
+  align-items: center;
+  gap: 4px;
+  font-size: 15px;
+  font-weight: 700;
+  color: var(--kart-yazi);
+  font-variant-numeric: tabular-nums;
+  white-space: nowrap;
+  line-height: 1.2;
+}
+
+.masa-rakam.kalan strong {
+  font-size: 16px;
+}
+
+/* Süre her dolu masada saat işaretli rozet olarak duruyor; masadan masaya
+   değişen bir görünüm olmasın. Uzun süredir açık masa ileride renkle ayrılacak. */
 .masa-sure {
   display: inline-flex;
   align-items: center;
   gap: 4px;
   white-space: nowrap;
-  font-size: 13px;
-  font-weight: 500;
-  color: #ffe4d9;
-}
-
-/* Uzun süredir açık masa: saat işareti ve beyaz rozet. Kartın rengi değişmiyor,
-   ekran alarm panosuna dönmesin. */
-.masa-kart.gecikti .masa-sure {
-  background: rgba(255, 255, 255, 0.22);
-  border-radius: 999px;
   padding: 2px 9px 3px;
+  border-radius: 999px;
+  background: rgba(255, 255, 255, 0.14);
+  font-size: 12px;
   font-weight: 600;
-}
-
-.masa-tutar {
-  font-size: 21px;
-  font-weight: 700;
-  color: #fff9f6;
-  font-variant-numeric: tabular-nums;
+  color: var(--kart-yazi);
 }
 
 /* Bölge sekmeleri */
@@ -4025,7 +4073,7 @@ body {
   border: none;
   border-radius: 9px;
   background: rgba(255, 255, 255, 0.2);
-  color: #fff9f6;
+  color: var(--kart-yazi);
   cursor: pointer;
   transition: background 0.16s ease;
 }
@@ -4186,7 +4234,7 @@ body {
   padding: 20px 24px 18px;
   border-radius: 22px 0 0 0;
   background: linear-gradient(150deg, #fb8a69 0%, #f9805f 60%, #ef7050 100%);
-  color: #fff9f6;
+  color: var(--kart-yazi);
 }
 
 .kp-ust-satir {
@@ -4201,7 +4249,7 @@ body {
   font-weight: 600;
   letter-spacing: -0.2px;
   line-height: 1.3;
-  color: #fff9f6;
+  color: var(--kart-yazi);
 }
 
 .kp-ust .panel-kapat {
@@ -4214,7 +4262,7 @@ body {
   border: none;
   border-radius: 50%;
   background: rgba(255, 255, 255, 0.2);
-  color: #fff9f6;
+  color: var(--kart-yazi);
   cursor: pointer;
   transition: background 0.15s ease;
 }
@@ -4237,7 +4285,7 @@ body {
   background: rgba(255, 255, 255, 0.22);
   font-size: 13px;
   font-weight: 600;
-  color: #fff9f6;
+  color: var(--kart-yazi);
 }
 
 .kp-rozet.ikram {
@@ -4269,7 +4317,7 @@ body {
   font-size: 27px;
   font-weight: 700;
   letter-spacing: -0.5px;
-  color: #fff9f6;
+  color: var(--kart-yazi);
   font-variant-numeric: tabular-nums;
 }
 
@@ -4796,7 +4844,7 @@ body {
 }
 
 .plan-masa .masa-kart.dolu {
-  justify-content: space-between;
+  justify-content: flex-end;
 }
 
 .plan-masa .masa-ad {
@@ -4805,16 +4853,8 @@ body {
   text-overflow: ellipsis;
 }
 
-.plan-masa .masa-tutar {
-  font-size: 19px;
-}
-
-.plan-masa .masa-satir {
-  margin-top: 0;
-}
-
-/* Dar masalarda süre ile tutar yan yana sığmıyor; süre gizlenip tutar
-   kalıyor — garsonun bakacağı rakam o. */
+/* Dar masalarda süre masa adıyla yan yana zor sığıyor; taşmak yerine kısalıyor,
+   asıl okunacak olan masa adı ve rakamlar. */
 .plan-masa .masa-sure {
   flex-shrink: 1;
   overflow: hidden;
@@ -4872,4 +4912,190 @@ body {
 .menu-urun-kopya,
 .ms-islem {
   position: relative;
+}
+
+/* ---- Hızlı Öde ----
+   Kalan tutarın tamamını tek dokunuşla kapatan akış. Sipariş ekranında üçüncü
+   aksiyon olarak alt satıra tam genişlikte geçiyor; İndirim ve Öde ile aynı
+   satıra sıkıştırılsa üç düğme de okunmaz hale geliyordu. */
+
+.sepet-aksiyonlar { flex-wrap: wrap; }
+.sepet-aksiyonlar .hizli-ode-btn {
+  flex: 1 0 100%;
+  padding: 12px;
+  border: none;
+  border-radius: 10px;
+  background: var(--mercan);
+  color: #fff;
+  font-size: 16px;
+  font-weight: 600;
+  cursor: pointer;
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  gap: 8px;
+}
+.sepet-aksiyonlar .hizli-ode-btn:disabled { opacity: 0.4; cursor: default; }
+
+.hizli-ode {
+  background: var(--kart);
+  border-radius: 16px;
+  padding: 22px;
+  width: 380px;
+  max-width: 92vw;
+  box-shadow: 0 8px 32px rgba(0, 0, 0, 0.15);
+}
+.hizli-ode header {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  margin-bottom: 16px;
+}
+.hizli-ode h3 {
+  margin: 0;
+  font-size: 18px;
+  display: inline-flex;
+  align-items: center;
+  gap: 8px;
+}
+.hizli-ode h3 svg { color: var(--mercan); }
+.hizli-ode .kapat {
+  border: none;
+  background: none;
+  color: var(--soluk);
+  cursor: pointer;
+  display: inline-flex;
+}
+.hizli-tutar {
+  border: 1px solid #eee6dc;
+  border-radius: 12px;
+  padding: 12px 14px;
+}
+.hizli-satir {
+  display: flex;
+  justify-content: space-between;
+  font-size: 15px;
+  padding: 3px 0;
+}
+.hizli-satir.odendi { color: var(--yesil); }
+.hizli-satir.kalan {
+  font-size: 17px;
+  padding-top: 8px;
+}
+.hizli-satir.kalan strong { color: var(--mercan); font-size: 20px; }
+.hizli-aciklama {
+  margin: 12px 0 14px;
+  font-size: 14px;
+  color: var(--soluk);
+}
+.hizli-tipler {
+  display: grid;
+  grid-template-columns: 1fr 1fr;
+  gap: 8px;
+}
+.hizli-tipler .odeme-tip-btn:disabled { opacity: 0.5; cursor: default; }
+.hizli-satir.indirim { color: var(--mercan); }
+
+/* Aksiyon seçici: ödeme tipine basmadan önce ne olacağı seçiliyor. */
+.hizli-aksiyon {
+  display: flex;
+  gap: 6px;
+  margin-top: 14px;
+  padding: 4px;
+  border-radius: 12px;
+  background: var(--zemin);
+}
+.hizli-aksiyon button {
+  flex: 1;
+  padding: 9px;
+  border: none;
+  border-radius: 9px;
+  background: none;
+  color: var(--soluk);
+  font-size: 14px;
+  font-weight: 600;
+  cursor: pointer;
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  gap: 6px;
+}
+.hizli-aksiyon button.aktif {
+  background: var(--kart);
+  color: var(--metin);
+  box-shadow: 0 1px 3px rgba(0, 0, 0, 0.12);
+}
+
+.hizli-giris { display: flex; gap: 8px; margin-top: 12px; }
+.hizli-giris input {
+  flex: 1;
+  min-width: 0;
+  padding: 12px;
+  border: 1px solid #eee6dc;
+  border-radius: 10px;
+  font-size: 15px;
+}
+.hizli-giris .hizli-indirim {
+  padding: 12px 14px;
+  border: 1px solid #eee6dc;
+  border-radius: 10px;
+  background: var(--kart);
+  color: var(--metin);
+  font-size: 14px;
+  font-weight: 600;
+  cursor: pointer;
+  display: inline-flex;
+  align-items: center;
+  gap: 6px;
+}
+
+/* ---- Ödemesi alınmış masa ----
+   Hesabı kapanan ama henüz kalkmayan masa yeşile dönüyor; dolu masalar arasında
+   "burada iş bitti" uzaktan okunsun. Kısmi ödemede kart mercan kalır, tutar
+   kalanı gösterir, altında ne kadar ödendiği yazar. */
+
+.masa-kart.dolu.odendi {
+  background: linear-gradient(150deg, #ef2028 0%, #e30a17 60%, #c70813 100%);
+  box-shadow: 0 3px 12px rgba(199, 8, 19, 0.26);
+}
+
+.masa-kart.dolu.odendi:hover {
+  box-shadow: 0 10px 24px rgba(199, 8, 19, 0.4);
+}
+
+/* Kısmi ödemede hesap sürüyor ama tahsilat başladı: mercanın koyu, mat tonu.
+   Açık ton denendi, açık zeminde açık yazı göz yorduğu için koyuya geçildi. */
+.masa-kart.dolu.kismi {
+  background: linear-gradient(150deg, #ffd24d 0%, #fbc02d 60%, #eeaa14 100%);
+  box-shadow: 0 3px 12px rgba(238, 170, 20, 0.26);
+}
+
+.masa-kart.dolu.kismi:hover {
+  box-shadow: 0 10px 24px rgba(238, 170, 20, 0.4);
+}
+
+/* Masa adı solda, süre sağda; üç nokta düğmesi bu satırın üstünde kalıyor. */
+.masa-baslik {
+  display: flex;
+  align-items: baseline;
+  justify-content: space-between;
+  gap: 8px;
+  min-width: 0;
+}
+
+.masa-baslik .masa-ad {
+  min-width: 0;
+}
+
+/* Plan görünümünde kutu dar: üç rakam sıkışsın diye aralık ve punto kısılıyor. */
+.plan-masa .masa-rakamlar {
+  gap: 4px;
+}
+
+.plan-masa .masa-rakam strong {
+  font-size: 14px;
+}
+
+.plan-masa .masa-rakam.kalan strong {
+  font-size: 15px;
 }

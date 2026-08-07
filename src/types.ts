@@ -25,6 +25,8 @@ export type Bolge = {
 // Salon kartında masanın o anki hali — masanın kendisi değil, üstündeki adisyon.
 export type MasaDurumu = {
   tutar: number;
+  odenen?: number;
+  kalan?: number;
   sure?: string;
   garson?: string;
   gecikti?: boolean;

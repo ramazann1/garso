@@ -11,6 +11,19 @@ export type AdisyonVerisi = {
   garson?: string;
 };
 
+/**
+ * Adisyonun para özeti. Hızlı Öde hem Salon'dan hem sipariş ekranından açılıyor;
+ * kalan tutar iki yerde de aynı çıksın diye hesap tek yerde duruyor.
+ */
+export function adisyonOzeti(veri: AdisyonVerisi) {
+  const araToplam = veri.sepet
+    .filter((k) => (k.durum ?? "normal") === "normal")
+    .reduce((t, k) => t + k.fiyat * k.adet, 0);
+  const toplam = Math.max(0, araToplam - veri.indirim);
+  const odenen = veri.tahsilatlar.reduce((t, o) => t + o.tutar, 0);
+  return { araToplam, toplam, odenen, kalan: toplam - odenen };
+}
+
 // Ekranda yeni açılan kalemin de bir kimliği olmalı ki tahsilat ona bağlanabilsin.
 // Kaydedilene kadar negatif geçici kimlik taşır, kayıtta gerçeğiyle değişir.
 let geciciSayac = 0;
@@ -92,16 +105,28 @@ export async function adisyonGetir(masaId: number): Promise<AdisyonVerisi> {
   };
 }
 
-// Salon ekranı için: açık adisyonların masa bazlı özeti.
-export async function tumAdisyonlar(): Promise<
-  Record<number, { tutar: number; adet: number; acilis?: string; garson?: string }>
-> {
+export type MasaOzeti = {
+  tutar: number;
+  odenen: number;
+  kalan: number;
+  adet: number;
+  acilis?: string;
+  garson?: string;
+};
+
+// Salon ekranı için: açık adisyonların masa bazlı özeti. Tahsilatlar da geliyor —
+// masa kartı ödemesi alınmış hesabı ödenmemişten ayırt edebilsin.
+export async function tumAdisyonlar(): Promise<Record<number, MasaOzeti>> {
   const { data } = await supabase
     .from("adisyonlar")
-    .select("masa_id, acilis, garson, indirim, turlar (adisyon_kalemleri (adet, fiyat, durum))")
+    .select(
+      `masa_id, acilis, garson, indirim,
+       turlar (adisyon_kalemleri (adet, fiyat, durum)),
+       tahsilatlar (tutar)`
+    )
     .eq("durum", "acik");
 
-  const sonuc: Record<number, { tutar: number; adet: number; acilis?: string; garson?: string }> = {};
+  const sonuc: Record<number, MasaOzeti> = {};
   for (const satir of (data as any[]) ?? []) {
     let tutar = 0;
     let adet = 0;
@@ -112,8 +137,15 @@ export async function tumAdisyonlar(): Promise<
         if (k.durum !== "ikram") tutar += Number(k.fiyat) * Number(k.adet);
       }
     }
+    const net = Math.max(0, tutar - Number(satir.indirim ?? 0));
+    const odenen = (satir.tahsilatlar ?? []).reduce(
+      (t: number, o: any) => t + Number(o.tutar),
+      0
+    );
     sonuc[satir.masa_id] = {
-      tutar: Math.max(0, tutar - Number(satir.indirim ?? 0)),
+      tutar: net,
+      odenen,
+      kalan: Math.max(0, net - odenen),
       adet,
       acilis: satir.acilis,
       garson: satir.garson ?? undefined,

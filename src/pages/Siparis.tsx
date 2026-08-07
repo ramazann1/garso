@@ -1,12 +1,13 @@
 import { useEffect, useState } from "react";
 import { useNavigate, useParams } from "react-router-dom";
-import { ArrowLeft, Check, ChevronDown, Percent, SlidersHorizontal, Star, Wallet, X } from "lucide-react";
+import { ArrowLeft, Check, ChevronDown, Percent, SlidersHorizontal, Star, Wallet, X, Zap } from "lucide-react";
 import { menuGetir, agacUrunleri, altKategoriler, porsiyonFiyat, urunKdv } from "../menu";
 import { adisyonGetir, adisyonKaydet, kalemTasi, yeniKalemId } from "../adisyonlar";
 import { masaGetir } from "../masalar";
 import UrunSecim from "../components/UrunSecim";
 import KampanyaSecim from "../components/KampanyaSecim";
 import TahsilatPanel from "../components/TahsilatPanel";
+import HizliOde from "../components/HizliOde";
 import IndirimModal from "../components/IndirimModal";
 import KdvDokum from "../components/KdvDokum";
 import OnayModal from "../components/OnayModal";
@@ -72,6 +73,7 @@ export default function Siparis() {
   const [acikGrupId, setAcikGrupId] = useState<number | null>(null);
   const [arama, setArama] = useState("");
   const [tahsilatAcik, setTahsilatAcik] = useState(false);
+  const [hizliAcik, setHizliAcik] = useState(false);
   const [indirimAcik, setIndirimAcik] = useState(false);
   const [yukleniyor, setYukleniyor] = useState(true);
   // Kaydedilmiş hâlin imzası; değişince çıkışta uyarı çıkıyor.
@@ -192,6 +194,8 @@ export default function Siparis() {
   const araToplam = odenecekler.reduce((t, k) => t + k.fiyat * k.adet, 0);
   const toplam = Math.max(0, araToplam - indirim);
   const kdvSatirlari = kdvDokumu(odenecekler, indirim, kdvler.find((k) => k.varsayilan)?.oran);
+  const odenen = kayitliTahsilatlar.reduce((t, o) => t + o.tutar, 0);
+  const kalan = Math.max(0, toplam - odenen);
 
   const kirli = !yukleniyor && adisyonImzasi(sepet, indirim, kayitliTahsilatlar) !== kayitliImza;
 
@@ -416,11 +420,11 @@ export default function Siparis() {
                 <>
                   <div className="ozet-satir odendi">
                     <span>Ödenen</span>
-                    <span>₺{kayitliTahsilatlar.reduce((t, o) => t + o.tutar, 0)}</span>
+                    <span>₺{odenen}</span>
                   </div>
                   <div className="ozet-satir kalan">
                     <span>Kalan</span>
-                    <span>₺{Math.max(0, toplam - kayitliTahsilatlar.reduce((t, o) => t + o.tutar, 0))}</span>
+                    <span>₺{kalan}</span>
                   </div>
                 </>
               )}
@@ -445,6 +449,14 @@ export default function Siparis() {
               >
                 <Wallet size={18} />
                 Öde
+              </button>
+              <button
+                className="hizli-ode-btn"
+                disabled={sepet.length === 0 || kalan <= 0}
+                onClick={() => setHizliAcik(true)}
+              >
+                <Zap size={18} />
+                Hızlı Öde
               </button>
             </div>
             <button className="kaydet" onClick={kaydet}>
@@ -471,6 +483,32 @@ export default function Siparis() {
             await adisyonKaydet(masaId, { sepet, indirim, tahsilatlar }, true);
             kilitKaldir();
             navigate("/");
+          }}
+        />
+      )}
+
+      {hizliAcik && (
+        <HizliOde
+          baslik={masaAdi}
+          araToplam={araToplam}
+          indirim={indirim}
+          toplam={toplam}
+          odenen={odenen}
+          kalan={kalan}
+          onIndirimDegis={(tutar) => setIndirim(tutar)}
+          onKapat={() => setHizliAcik(false)}
+          onSec={async (tip, tutar, kapat) => {
+            const tahsilatlar = [...kayitliTahsilatlar, { tip, tutar }];
+            await adisyonKaydet(masaId, { sepet, indirim, tahsilatlar }, kapat);
+            if (kapat) {
+              kilitKaldir();
+              navigate("/");
+              return;
+            }
+            // Adisyon açık kaldı: ekran diskteki hâliyle aynı hizaya geliyor,
+            // kaydedilmemiş değişiklik uyarısı boşuna çıkmasın.
+            await adisyonuTazele();
+            setHizliAcik(false);
           }}
         />
       )}

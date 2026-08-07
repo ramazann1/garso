@@ -1,18 +1,19 @@
 # GARSO — Teknik Tasarım: Veri Modeli & Ekran Haritası
 *Restoran ve cafe'ler için bulut tabanlı satış ve işletme yönetim sistemi.*
 
-## 0. SIRADAKİ İŞ (7 Ağu 2026 oturumunda güncellendi)
+## 0. SIRADAKİ İŞ (7 Ağu 2026 ikinci oturumda güncellendi)
 
 *Ramazan seansa "devam edelim" diye giriyor — sıradaki iş bu listenin en üstündeki
 maddedir. Seans sonunda bu liste güncellenir: biten madde silinir, kalanlar
 yukarı kayar, yeni çıkanlar sıraya girer.*
 
-**Menü modülü, masa/bölge tanımları ve salon çekirdeği bitti; sırada tahsilat
-derinleşmesi var.** Eksik envanteri bölüm 6'da, Adisyo turları
+**Menü modülü, masa/bölge tanımları, salon çekirdeği ve Hızlı Öde bitti; tahsilat
+derinleşmesi sürüyor.** Eksik envanteri bölüm 6'da, Adisyo turları
 `pos-yol-haritasi.md` bölüm 7 ve 8'de.
 
-1. **Tahsilat zenginleştirme** — Hızlı Öde, bahşiş (üstünü tamamla), ödeme tipi
-   ÖKC/klasik ayrımı, ürün bazlı 1/n, ürün bazlı indirim.
+1. **Tahsilat zenginleştirme (kalanı)** — bahşiş (üstünü tamamla), ödeme tipi
+   ÖKC/klasik ayrımı, ürün bazlı 1/n, ürün bazlı indirim. *(Hızlı Öde 7 Ağu'da
+   bitti.)*
 2. **Gel Al / Paket akışı** — fiyat altyapısı hazır, akış yok. Salon ekranının
    solunda kısayol olacak (Adisyo'daki gibi).
 3. **Fiyatlar KDV hariç ayarı** — işletme geneli tek ayar, varsayılan "dahil".
@@ -574,6 +575,22 @@ görüntüle" ve aktif/pasif ürün — 1 Ağu 2026 ikinci seansında tamamland�
 55. **Panelde tek açıklama satırı durur.** Kalem panelinde üç bilgi kutusu üst
    üste diziliyordu, panel ders kitabına dönüyordu. Duruma göre en gerekli olan
    tek kutu çıkar, hiçbiri geçerli değilse hiç çıkmaz. *(7 Ağu 2026)*
+56. **Masa kartı sabit boyutludur ve ödeme durumunu renkle anlatır.** Kart
+   yüksekliği 130px'e sabitlendi; içerik değiştikçe kartların boyu oynuyor,
+   ızgara satır satır kayıyordu. Düzen her dolu masada aynı: üstte garson adı,
+   altında masa adı + süre rozeti (saat ikonlu, her masada var), en altta
+   **Toplam / Ödenen / Kalan** üç sütunu — ödeme alınmamış masada da aynı üç
+   sütun durur, rakam ₺0 olur. Tahsilat tamamlanmışsa son sütun "Ödendi" olur.
+   Renkler trafik lambası mantığında: **yeşil** hiç ödeme yok, **sarı** kısmi
+   ödeme, **kırmızı** tamamı ödendi (kalkması bekleniyor). Yazılar siyah, tek
+   değişkenden (`--kart-yazi`) geliyor. *(7 Ağu 2026 — geçici karar, proje
+   sonunda palet bütününde yeniden değerlendirilecek.)*
+57. **Hızlı Öde ayrı ve sade bir akıştır.** Kalem seçimi ve numpad yok: tutar
+   kutusu (boşsa kalanın tamamı), indirim kısayolu, "Öde ve kapat / Öde, açık
+   kalsın" seçici ve ödeme tipi kartları. Tutar kalanı kapatmıyorsa "kapat"
+   seçili olsa bile adisyon kapanmaz — yarım ödemeyle masa kapanırsa kalan
+   kaybolur. Hepsi eklenirse Öde ekranının kopyası olacağından bilinçli olarak
+   sınırlı tutuldu. *(7 Ağu 2026)*
 
 ## 7. KOD PAYLAŞIM DÜZENİ
 - Kod GitHub'da: `github.com/ramazann1/garso` (şimdilik Public — final'de Private yapılacak)
@@ -821,4 +838,33 @@ açıklama satırı. "Her yerde ikon" kuralı Claude'un kalıcı hafızasına da
 
 ### Sonraki seansın ilk işi
 Tahsilat zenginleştirme: Hızlı Öde, bahşiş (üstünü tamamla), ödeme tipi
+ÖKC/klasik ayrımı, ürün bazlı 1/n ve ürün bazlı indirim.
+
+---
+
+## 11. SEANS GÜNLÜĞÜ — 7 AĞU 2026 (ikinci oturum)
+
+### Yapılanlar
+- ✅ **Hızlı Öde** (`components/HizliOde.tsx` yeni) — sipariş ekranının alt
+  barından ve Salon'da masa üç nokta menüsünden açılıyor. Tutar kutusu (boşsa
+  kalanın tamamı), indirim kısayolu, "Öde ve kapat / Öde, açık kalsın" seçici,
+  ödeme tipi kartları. Kısmi tutarda adisyon kapanmıyor (karar 57).
+- ✅ **`adisyonOzeti()`** (`adisyonlar.ts`) — ara toplam / toplam / ödenen /
+  kalan tek yerden. Salon ile sipariş ekranı farklı sayı göstermesin diye.
+- ✅ **Salon ödemeyi görüyor** — `tumAdisyonlar()` artık tahsilatları da çekip
+  masa başına `tutar / odenen / kalan` döndürüyor (`MasaOzeti`). Öncesinde
+  ödeme alınmış masa ile hiç ödenmemiş masa aynı görünüyordu.
+- ✅ **Masa kartı yeniden düzenlendi** — sabit yükseklik, üç rakam sütunu, süre
+  rozeti, durum renkleri (karar 56). Kartın odak çerçevesi düzeltildi:
+  tarayıcının varsayılan beyaz halkası tıklanan kartta asılı kalıyordu, artık
+  yalnız klavyeyle gezende mercan halka çıkıyor.
+- ✅ **Adisyonu kapat** — tahsilatı tamamlanmış masanın üç nokta menüsünde
+  "Hızlı Öde" yerine bu çıkıyor, onay modalıyla adisyon kapalıya çekiliyor.
+
+### Kararlar
+Bölüm 6'ya **56-57** numaralarıyla işlendi: masa kartı düzeni ve durum renkleri
+(geçici), Hızlı Öde'nin bilinçli sadeliği.
+
+### Sonraki seansın ilk işi
+Tahsilat zenginleştirmenin kalanı: bahşiş (üstünü tamamla), ödeme tipi
 ÖKC/klasik ayrımı, ürün bazlı 1/n ve ürün bazlı indirim.

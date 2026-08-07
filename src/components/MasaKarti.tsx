@@ -1,6 +1,6 @@
 import { useEffect, useRef, useState } from "react";
 import type { ReactNode } from "react";
-import { Clock, MoreVertical, Plus } from "lucide-react";
+import { CircleCheckBig, Clock, MoreVertical, Plus } from "lucide-react";
 import type { Masa, MasaDurumu } from "../types";
 
 // Salon kartında kuruş yer kaplıyor; tam lira yeterli, garson tutarı tek bakışta
@@ -45,11 +45,19 @@ export default function MasaKarti({ masa, durum, aksiyonlar, onClick }: Props) {
     };
   }, [menuAcik]);
 
+  // Hesabı kapanmış ama henüz kalkmamış masa: kart yeşile dönüyor ki garson
+  // uzaktan "burada iş bitti" desin. Kısmi ödemede hesap sürüyor, kart mercan
+  // kalıyor ama tutar artık kalanı gösteriyor.
+  const odenen = durum?.odenen ?? 0;
+  const kalan = durum?.kalan ?? durum?.tutar ?? 0;
+  const odendi = !!durum && durum.tutar > 0 && odenen > 0 && kalan <= 0;
+
   const sinif = [
     "masa-kart",
     durum ? "dolu" : "bos",
     masa.sekil === "daire" ? "daire" : "",
     durum?.gecikti ? "gecikti" : "",
+    odendi ? "odendi" : odenen > 0 ? "kismi" : "",
   ]
     .filter(Boolean)
     .join(" ");
@@ -69,14 +77,40 @@ export default function MasaKarti({ masa, durum, aksiyonlar, onClick }: Props) {
             {durum.garson && <span className="masa-garson">{durum.garson}</span>}
           </span>
 
-          <span className="masa-ad">{masa.ad}</span>
-
-          <span className="masa-satir">
+          {/* Süre masa adının sağında: üç nokta düğmesinin tam altındaki satır,
+              düğmeyle aynı hizaya düşüp sıkışmıyor. */}
+          <span className="masa-baslik">
+            <span className="masa-ad">{masa.ad}</span>
             <span className="masa-sure">
-              {durum.gecikti && <Clock size={13} />}
+              <Clock size={12} />
               {durum.sure}
             </span>
-            <strong className="masa-tutar">{tutarYaz(durum.tutar)}</strong>
+          </span>
+
+          {/* Rakamlar her dolu masada aynı düzende: masadan masaya kayan bir
+              yerleşim yerine üç sütun hep aynı yerde duruyor. */}
+          <span className="masa-rakamlar">
+            <span className="masa-rakam">
+              <em>Toplam</em>
+              <strong>{tutarYaz(durum.tutar)}</strong>
+            </span>
+            <span className="masa-rakam">
+              <em>Ödenen</em>
+              <strong>{tutarYaz(odenen)}</strong>
+            </span>
+            <span className="masa-rakam kalan">
+              <em>{odendi ? "Durum" : "Kalan"}</em>
+              <strong>
+                {odendi ? (
+                  <>
+                    <CircleCheckBig size={14} />
+                    Ödendi
+                  </>
+                ) : (
+                  tutarYaz(kalan)
+                )}
+              </strong>
+            </span>
           </span>
         </button>
       )}

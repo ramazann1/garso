@@ -1,16 +1,25 @@
 import { useEffect, useState } from "react";
 import { useNavigate } from "react-router-dom";
-import { ArrowRightLeft, Combine, LayoutGrid } from "lucide-react";
+import { ArrowRightLeft, CircleCheckBig, Combine, LayoutGrid, Zap } from "lucide-react";
 import MasaKarti from "../components/MasaKarti";
 import MasaSecim from "../components/MasaSecim";
 import MasaPlani, { yerlesimiVar } from "../components/MasaPlani";
 import OnayModal from "../components/OnayModal";
+import HizliOde from "../components/HizliOde";
 import Duzen from "../components/Duzen";
-import { masaBirlestir, masaTasi, tumAdisyonlar } from "../adisyonlar";
+import {
+  adisyonGetir,
+  adisyonKaydet,
+  adisyonOzeti,
+  masaBirlestir,
+  masaTasi,
+  tumAdisyonlar,
+} from "../adisyonlar";
+import type { AdisyonVerisi, MasaOzeti } from "../adisyonlar";
 import { bolgeleriGetir } from "../masalar";
 import type { Bolge, Masa } from "../types";
 
-type Acik = { tutar: number; adet: number; acilis?: string; garson?: string };
+type Acik = MasaOzeti;
 
 function sureFarki(acilis: string): string {
   const dk = Math.floor((Date.now() - new Date(acilis).getTime()) / 60000);
@@ -38,6 +47,8 @@ export default function Salon() {
   const [islem, setIslem] = useState<{ tip: "tasi" | "birlestir"; masa: Masa } | null>(null);
   const [onay, setOnay] = useState<{ mesaj: string; onOnay: () => void } | null>(null);
   const [uyari, setUyari] = useState<string | null>(null);
+  // Hızlı Öde masadan açılıyor; adisyonun tamamı okunup panele veriliyor.
+  const [hizli, setHizli] = useState<{ masa: Masa; veri: AdisyonVerisi } | null>(null);
 
   useEffect(() => {
     Promise.all([bolgeleriGetir(), tumAdisyonlar()]).then(([b, a]) => {
@@ -79,18 +90,66 @@ export default function Salon() {
     });
   }
 
-  const aksiyonlar = (masa: Masa) => [
-    {
-      ad: "Masayı taşı",
-      ikon: <ArrowRightLeft size={16} />,
-      onSec: () => setIslem({ tip: "tasi", masa }),
-    },
-    {
-      ad: "Adisyonu birleştir",
-      ikon: <Combine size={16} />,
-      onSec: () => setIslem({ tip: "birlestir", masa }),
-    },
-  ];
+  // Masadan tek dokunuşla tahsilat: adisyon okunup panel açılıyor, ödenecek
+  // bir şey kalmamışsa panel yerine uyarı çıkıyor.
+  async function hizliOdeAc(masa: Masa) {
+    try {
+      const veri = await adisyonGetir(masa.id);
+      if (adisyonOzeti(veri).kalan <= 0) {
+        setUyari(`${masa.ad} masasında tahsil edilecek tutar kalmadı.`);
+        return;
+      }
+      setHizli({ masa, veri });
+    } catch {
+      setUyari("Adisyon okunamadı.");
+    }
+  }
+
+  // Tahsilatı tamamlanmış masada yeni ödeme almanın anlamı yok; oradaki iş
+  // hesabı kapatmak.
+  function kapatmaSor(masa: Masa) {
+    setOnay({
+      mesaj: `${masa.ad} masasının hesabı tamamen ödendi. Adisyon kapatılsın mı?`,
+      onOnay: async () => {
+        setOnay(null);
+        try {
+          const veri = await adisyonGetir(masa.id);
+          await adisyonKaydet(masa.id, veri, true);
+          await yenile();
+        } catch (e) {
+          setUyari(e instanceof Error ? e.message : "Adisyon kapatılamadı.");
+        }
+      },
+    });
+  }
+
+  const aksiyonlar = (masa: Masa) => {
+    const acik = adisyonlar[masa.id];
+    const odendi = !!acik && acik.tutar > 0 && acik.odenen > 0 && acik.kalan <= 0;
+    return [
+      odendi
+        ? {
+            ad: "Adisyonu kapat",
+            ikon: <CircleCheckBig size={16} />,
+            onSec: () => kapatmaSor(masa),
+          }
+        : {
+            ad: "Hızlı Öde",
+            ikon: <Zap size={16} />,
+            onSec: () => hizliOdeAc(masa),
+          },
+      {
+        ad: "Masayı taşı",
+        ikon: <ArrowRightLeft size={16} />,
+        onSec: () => setIslem({ tip: "tasi", masa }),
+      },
+      {
+        ad: "Adisyonu birleştir",
+        ikon: <Combine size={16} />,
+        onSec: () => setIslem({ tip: "birlestir", masa }),
+      },
+    ];
+  };
 
   // Masa kartı iki yerde de aynı: ızgarada da planda da bu çıkıyor.
   const kart = (masa: Masa) => {
@@ -101,6 +160,8 @@ export default function Salon() {
         durum={
           acik && {
             tutar: acik.tutar,
+            odenen: acik.odenen,
+            kalan: acik.kalan,
             sure: acik.acilis ? sureFarki(acik.acilis) : "şimdi",
             garson: acik.garson,
             gecikti: dakika(acik.acilis) >= UZUN_SURE_DK,
@@ -198,6 +259,48 @@ export default function Salon() {
             onKapat={() => setIslem(null)}
           />
         )}
+
+        {hizli && (() => {
+          const { araToplam, toplam, odenen, kalan } = adisyonOzeti(hizli.veri);
+          return (
+            <HizliOde
+              baslik={hizli.masa.ad}
+              araToplam={araToplam}
+              indirim={hizli.veri.indirim}
+              toplam={toplam}
+              odenen={odenen}
+              kalan={kalan}
+              onKapat={() => setHizli(null)}
+              // Salon'da "kaydet" adımı yok; indirim verilir verilmez diske yazılıyor,
+              // pencere kapatılsa bile masa kartındaki tutar doğru kalsın.
+              onIndirimDegis={async (tutar) => {
+                const { masa, veri } = hizli;
+                const yeni = { ...veri, indirim: tutar };
+                setHizli({ masa, veri: yeni });
+                try {
+                  await adisyonKaydet(masa.id, yeni);
+                  await yenile();
+                } catch (e) {
+                  setUyari(e instanceof Error ? e.message : "İndirim kaydedilemedi.");
+                }
+              }}
+              onSec={async (tip, tutar, kapat) => {
+                const { masa, veri } = hizli;
+                setHizli(null);
+                try {
+                  await adisyonKaydet(
+                    masa.id,
+                    { ...veri, tahsilatlar: [...veri.tahsilatlar, { tip, tutar }] },
+                    kapat
+                  );
+                  await yenile();
+                } catch (e) {
+                  setUyari(e instanceof Error ? e.message : "Tahsilat kaydedilemedi.");
+                }
+              }}
+            />
+          );
+        })()}
 
         {onay && (
           <OnayModal
