@@ -2,6 +2,7 @@ import { useEffect, useState } from "react";
 import { Check, CircleCheckBig, Delete, Percent, Save, X } from "lucide-react";
 import { OdemeIkon } from "../odemeIkon";
 import IndirimModal from "./IndirimModal";
+import type { IndirimKaynagi } from "../indirimler";
 import OnayModal from "./OnayModal";
 import KdvDokum from "./KdvDokum";
 import OdemeTipDugmeleri from "./OdemeTipDugmeleri";
@@ -38,8 +39,8 @@ type Props = {
   kdvSatirlari: KdvSatiri[];
   kayitliTahsilatlar: Tahsilat[];
   onKaydet: (tahsilatlar: Tahsilat[]) => void;
-  onIndirimDegis: (tutar: number) => void;
-  onKalemIndirim: (paylar: Record<number, number>) => void;
+  onIndirimDegis: (tutar: number, kaynak?: IndirimKaynagi) => void;
+  onKalemIndirim: (paylar: Record<number, number>, kaynak?: IndirimKaynagi) => void;
   onKapat: () => void;
   onOdendi: (tahsilatlar: Tahsilat[]) => void;
 };
@@ -91,7 +92,7 @@ export default function TahsilatPanel({ kalemler, toplam, araToplam, indirim, kd
    * dağıtılır. Kuruş artığı en büyük satıra yazılıyor ki indirimin toplamı
    * girilenle birebir tutsun.
    */
-  const kalemIndirimiDagit = (tutar: number) => {
+  const kalemIndirimiDagit = (tutar: number, kaynak?: IndirimKaynagi) => {
     const secililer = Object.keys(secilen)
       .map((id) => kalemler.find((k) => k.id === Number(id)))
       .filter((k): k is SepetKalemi => !!k);
@@ -111,7 +112,7 @@ export default function TahsilatPanel({ kalemler, toplam, araToplam, indirim, kd
       const en = secililer.reduce((a, b) => (kalemTutari(b) > kalemTutari(a) ? b : a));
       paylar[en.id!] = kurus(paylar[en.id!] + fark);
     }
-    onKalemIndirim(paylar);
+    onKalemIndirim(paylar, kaynak);
     setSecilen({});
     setGirilen("");
   };
@@ -377,9 +378,9 @@ export default function TahsilatPanel({ kalemler, toplam, araToplam, indirim, kd
           araToplam={secimVar ? seciliTutar(secilen) : araToplam}
           mevcutIndirim={secimVar ? 0 : indirim}
           onKapat={() => setIndirimAcik(false)}
-          onUygula={(tutar) => {
-            if (secimVar) kalemIndirimiDagit(tutar);
-            else onIndirimDegis(tutar);
+          onUygula={(tutar, kaynak) => {
+            if (secimVar) kalemIndirimiDagit(tutar, kaynak);
+            else onIndirimDegis(tutar, kaynak);
             setIndirimAcik(false);
           }}
         />

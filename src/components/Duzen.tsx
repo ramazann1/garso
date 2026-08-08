@@ -9,6 +9,7 @@ import { kilitKaldir, kilitliMi } from "../cikisKilidi";
 export const ayarBolumleri = [
   { yol: "/ayarlar/masalar", ad: "Bölgeler ve Masalar" },
   { yol: "/ayarlar/odeme-tipleri", ad: "Ödeme Tipleri" },
+  { yol: "/ayarlar/satis", ad: "Satış" },
 ];
 
 export const menuBolumleri = [

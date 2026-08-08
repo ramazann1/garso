@@ -1,6 +1,6 @@
 import { useEffect, useState } from "react";
 import { useNavigate, useParams } from "react-router-dom";
-import { ArrowUpDown, ChevronDown, Copy, Pencil, Plus, Trash2, X } from "lucide-react";
+import { ArrowUpDown, ChevronDown, Copy, Pencil, Plus, Star, Trash2, X } from "lucide-react";
 import Duzen from "../components/Duzen";
 import Bilgi from "../components/Bilgi";
 import UrunPaneli from "../components/UrunPaneli";
@@ -140,7 +140,7 @@ function KategoriPenceresi({
   );
 }
 
-type SecenekSatiri = { ad: string; ekFiyat: number };
+type SecenekSatiri = { ad: string; ekFiyat: number; varsayilan?: boolean };
 
 function GrupPaneli({
   grup,
@@ -154,6 +154,7 @@ function GrupPaneli({
     ad: string,
     tekli: boolean,
     zorunlu: boolean,
+    enAz: number,
     liste: SecenekSatiri[]
   ) => void;
   onSil?: () => void;
@@ -161,9 +162,10 @@ function GrupPaneli({
   const [ad, setAd] = useState(grup?.ad ?? "");
   const [tekli, setTekli] = useState(grup?.tekli ?? true);
   const [zorunlu, setZorunlu] = useState(grup?.zorunlu ?? false);
+  const [enAz, setEnAz] = useState(String(grup?.enAz || 1));
   const [liste, setListe] = useState<SecenekSatiri[]>(
     grup?.liste.length
-      ? grup.liste.map((s) => ({ ad: s.ad, ekFiyat: s.ekFiyat }))
+      ? grup.liste.map((s) => ({ ad: s.ad, ekFiyat: s.ekFiyat, varsayilan: s.varsayilan }))
       : [{ ad: "", ekFiyat: 0 }]
   );
   const [siralama, setSiralama] = useState(false);
@@ -178,10 +180,33 @@ function GrupPaneli({
     setListe((l) => l.filter((_, j) => j !== i));
   };
 
+  // Tekli grupta önceden işaretli tek seçenek olur; yenisi eskisini söndürür.
+  const varsayilanDegis = (i: number) => {
+    setListe((l) =>
+      l.map((s, j) => ({
+        ...s,
+        varsayilan: j === i ? !s.varsayilan : tekli ? false : s.varsayilan,
+      }))
+    );
+  };
+
   const gecerli = ad.trim().length > 0 && liste.some((s) => s.ad.trim());
 
+  // En az kaç seçim isteneceği yalnız çoklu ve zorunlu grupta sorulur; tekli
+  // grupta zorunlu zaten "bir tane" demek.
+  const enAzSorulur = zorunlu && !tekli;
+  const enAzSayi = Math.max(1, Number(enAz) || 1);
+
   const kaydet = () => {
-    onKaydet(ad.trim(), tekli, zorunlu, liste.filter((s) => s.ad.trim()));
+    const secenekler = liste.filter((s) => s.ad.trim());
+    // Tekli grupta önceden işaretli tek seçenek olabilir.
+    const temiz = tekli
+      ? secenekler.map((s, i) => ({
+          ...s,
+          varsayilan: s.varsayilan && i === secenekler.findIndex((x) => x.varsayilan),
+        }))
+      : secenekler;
+    onKaydet(ad.trim(), tekli, zorunlu, enAzSorulur ? enAzSayi : 0, temiz);
   };
 
   return (
@@ -210,6 +235,19 @@ function GrupPaneli({
             degistir={setZorunlu}
           />
 
+          {enAzSorulur && (
+            <div className="alan">
+              <span>En az kaç seçim yapılmalı</span>
+              <input
+                className="kisa"
+                value={enAz}
+                onChange={(e) => setEnAz(e.target.value.replace(/[^0-9]/g, ""))}
+                inputMode="numeric"
+                placeholder="1"
+              />
+            </div>
+          )}
+
           <div className="bolum">
             <div className="ekle-satir">
               <button
@@ -220,7 +258,10 @@ function GrupPaneli({
               </button>
               <button onClick={() => setListe([...liste, { ad: "", ekFiyat: 0 }])}><Plus size={14} /> Seçenek</button>
             </div>
-            <Bilgi>Ek fiyat boş bırakılırsa ücretsiz sayılır.</Bilgi>
+            <Bilgi>
+              Ek fiyat boş bırakılırsa ücretsiz sayılır. Yıldızlı seçenekler ürün
+              penceresi açılınca işaretli gelir.
+            </Bilgi>
             {liste.map((s, i) => (
               <div key={i} className="satir-alan">
                 <input value={s.ad} onChange={(e) => satirDegis(i, "ad", e.target.value)} placeholder="Sade" />
@@ -231,6 +272,13 @@ function GrupPaneli({
                   placeholder="₺"
                   inputMode="decimal"
                 />
+                <button
+                  className={s.varsayilan ? "satir-varsayilan aktif" : "satir-varsayilan"}
+                  onClick={() => varsayilanDegis(i)}
+                  title="Önceden işaretli gelsin"
+                >
+                  <Star size={15} />
+                </button>
                 <button className="satir-sil" onClick={() => satirSil(i)} disabled={liste.length === 1}>
                   <X size={15} />
                 </button>
@@ -622,9 +670,10 @@ export default function MenuStudyosu() {
     ad: string,
     tekli: boolean,
     zorunlu: boolean,
+    enAz: number,
     liste: SecenekSatiri[]
   ) => {
-    await grupKaydet(grupPencere?.grup?.id, ad, tekli, zorunlu, liste);
+    await grupKaydet(grupPencere?.grup?.id, ad, tekli, zorunlu, enAz, liste);
     setGrupPencere(null);
     yukle();
   };
@@ -856,7 +905,12 @@ export default function MenuStudyosu() {
                   <div className="urun-bilgi">
                     <span>{g.ad}</span>
                     <small>
-                      {[g.tekli ? "tekli" : "çoklu", g.zorunlu && "zorunlu", `${g.liste.length} seçenek`]
+                      {[
+                        g.tekli ? "tekli" : "çoklu",
+                        g.zorunlu && (g.enAz > 1 ? `en az ${g.enAz}` : "zorunlu"),
+                        g.liste.some((s) => s.varsayilan) && "önceden işaretli",
+                        `${g.liste.length} seçenek`,
+                      ]
                         .filter(Boolean)
                         .join(" · ")}
                     </small>

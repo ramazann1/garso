@@ -31,11 +31,20 @@ export default function MasasizSiparis({
     <div className="panel-fon" onClick={onKapat}>
       <div className="ayar-panel" onClick={(e) => e.stopPropagation()}>
         <header className="panel-ust">
-          <h3>{mevcut ? "Sipariş bilgileri" : "Yeni sipariş"}</h3>
+          <h3>
+            {mevcut
+              ? "Sipariş bilgileri"
+              : tip === "paket"
+                ? "Yeni paket siparişi"
+                : "Yeni gel al siparişi"}
+          </h3>
           <button className="panel-kapat" onClick={onKapat}><X size={19} /></button>
         </header>
 
         <div className="panel-govde">
+          {/* Yeni siparişte tür zaten girilen karttan belli; sadece var olan
+              siparişin türü düzeltilirken seçici gösteriliyor. */}
+          {mevcut && (
           <div className="alan">
             <label>Sipariş türü</label>
             <div className="mod-sec">
@@ -51,6 +60,7 @@ export default function MasasizSiparis({
               Ürünün o türe ait fiyatı tanımlıysa satışta o fiyat kullanılır.
             </Bilgi>
           </div>
+          )}
 
           <div className="alan">
             <label>Müşteri adı</label>

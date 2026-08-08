@@ -3,6 +3,7 @@ import { useNavigate } from "react-router-dom";
 import {
   ArrowRightLeft,
   Bike,
+  ChevronLeft,
   CircleCheckBig,
   Clock,
   Combine,
@@ -108,13 +109,27 @@ function MasasizKart({
   );
 }
 
+const SEKME_ANAHTAR = "salon.sekme";
+
+function sekmeOku(): number | "tumu" | "masasiz" | null {
+  const kayit = localStorage.getItem(SEKME_ANAHTAR);
+  if (!kayit) return null;
+  if (kayit === "tumu" || kayit === "masasiz") return kayit;
+  const id = Number(kayit);
+  return Number.isFinite(id) ? id : null;
+}
+
 export default function Salon() {
   const navigate = useNavigate();
   const [bolgeler, setBolgeler] = useState<Bolge[]>([]);
   const [adisyonlar, setAdisyonlar] = useState<Record<number, Acik>>({});
-  const [seciliId, setSeciliId] = useState<number | "tumu" | "masasiz" | null>(null);
+  // Sekme tarayıcıda saklanıyor: masaya girip dönünce veya sayfa yenilenince
+  // garson kendini başka bölgede bulmasın.
+  const [seciliId, setSeciliId] = useState<number | "tumu" | "masasiz" | null>(sekmeOku);
   // Gel al / paket siparişleri masaya bağlı değil; kendi sekmesinde listeleniyor.
   const [masasizlar, setMasasizlar] = useState<MasasizAdisyon[]>([]);
+  // Sekmeye girince önce tür seçiliyor (paket mi gel al mı), liste sonra geliyor.
+  const [masasizTip, setMasasizTip] = useState<"gelal" | "paket" | null>(null);
   const [yeniSiparis, setYeniSiparis] = useState(false);
   const [duzenlenen, setDuzenlenen] = useState<MasasizAdisyon | null>(null);
   const [yukleniyor, setYukleniyor] = useState(true);
@@ -133,10 +148,19 @@ export default function Salon() {
       setBolgeler(b);
       setAdisyonlar(a);
       setMasasizlar(m);
-      setSeciliId((s) => s ?? b[0]?.id ?? "tumu");
+      // Kayıtlı bölge silinmiş olabilir; öyleyse ilk bölgeye dönülüyor.
+      setSeciliId((s) =>
+        s === "tumu" || s === "masasiz" || b.some((x) => x.id === s)
+          ? s
+          : b[0]?.id ?? "tumu"
+      );
       setYukleniyor(false);
     });
   }, []);
+
+  useEffect(() => {
+    if (seciliId !== null) localStorage.setItem(SEKME_ANAHTAR, String(seciliId));
+  }, [seciliId]);
 
   useEffect(() => {
     const zaman = setInterval(() => setTik((t) => t + 1), 60000);
@@ -277,6 +301,9 @@ export default function Salon() {
   const tumMasalar = bolgeler.flatMap((b) => b.masalar);
   const doluSayisi = tumMasalar.filter((m) => adisyonlar[m.id]).length;
   const doluluk = (bolge: Bolge) => bolge.masalar.filter((m) => adisyonlar[m.id]).length;
+  const paketler = masasizlar.filter((a) => a.tip === "paket");
+  const gelaller = masasizlar.filter((a) => a.tip === "gelal");
+  const listelenen = masasizTip === "paket" ? paketler : gelaller;
 
   return (
     <Duzen>
@@ -318,8 +345,8 @@ export default function Salon() {
               {/* Masaya oturmayan satışlar salonun kendi dilinde: ayrı ekran
                   değil, şeridin sonunda duran sabit bir sekme. */}
               <button
-                className={seciliId === "masasiz" ? "aktif" : ""}
-                onClick={() => setSeciliId("masasiz")}
+                className={seciliId === "masasiz" ? "masasiz-sekme aktif" : "masasiz-sekme"}
+                onClick={() => { setSeciliId("masasiz"); setMasasizTip(null); }}
               >
                 <ShoppingBag size={15} />
                 Paket &amp; Gel Al
@@ -327,15 +354,44 @@ export default function Salon() {
               </button>
             </nav>
 
-            {seciliId === "masasiz" && (
+            {seciliId === "masasiz" && masasizTip === null && (
               <section className="bolge">
+                <div className="tur-secim">
+                  <button className="tur-kart" onClick={() => setMasasizTip("paket")}>
+                    <Bike size={40} />
+                    <strong>Paket</strong>
+                    <span>
+                      {paketler.length > 0 ? `${paketler.length} açık sipariş` : "Açık sipariş yok"}
+                    </span>
+                  </button>
+                  <button className="tur-kart" onClick={() => setMasasizTip("gelal")}>
+                    <ShoppingBag size={40} />
+                    <strong>Gel Al</strong>
+                    <span>
+                      {gelaller.length > 0 ? `${gelaller.length} açık sipariş` : "Açık sipariş yok"}
+                    </span>
+                  </button>
+                </div>
+              </section>
+            )}
+
+            {seciliId === "masasiz" && masasizTip !== null && (
+              <section className="bolge">
+                <h2 className="masasiz-baslik">
+                  <button className="masasiz-geri" onClick={() => setMasasizTip(null)}>
+                    <ChevronLeft size={18} />
+                  </button>
+                  {masasizTip === "paket" ? "Paket" : "Gel Al"}
+                  <span>{listelenen.length}</span>
+                </h2>
+
                 <div className="masa-grid">
                   <button className="masasiz-yeni" onClick={() => setYeniSiparis(true)}>
                     <Plus size={22} />
                     Yeni sipariş
                   </button>
 
-                  {masasizlar.map((a) => (
+                  {listelenen.map((a) => (
                     <MasasizKart
                       key={a.id}
                       adisyon={a}
@@ -407,9 +463,9 @@ export default function Salon() {
               onKapat={() => setHizli(null)}
               // Salon'da "kaydet" adımı yok; indirim verilir verilmez diske yazılıyor,
               // pencere kapatılsa bile masa kartındaki tutar doğru kalsın.
-              onIndirimDegis={async (tutar) => {
+              onIndirimDegis={async (tutar, kaynak) => {
                 const { masa, veri } = hizli;
-                const yeni = { ...veri, indirim: tutar };
+                const yeni = { ...veri, indirim: tutar, indirimTanim: kaynak };
                 setHizli({ masa, veri: yeni });
                 try {
                   await adisyonKaydet(masa.id, yeni);
@@ -438,6 +494,7 @@ export default function Salon() {
 
         {(yeniSiparis || duzenlenen) && (
           <MasasizSiparis
+            baslangicTipi={masasizTip ?? "gelal"}
             mevcut={
               duzenlenen
                 ? {

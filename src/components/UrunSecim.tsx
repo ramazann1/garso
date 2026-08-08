@@ -15,15 +15,29 @@ export default function UrunSecim({ urun, gruplar, tur = "masa", onEkle, onKapat
   const [porsiyon, setPorsiyon] = useState<MenuPorsiyon | undefined>(
     urun.porsiyonlar.find((p) => p.varsayilan) ?? urun.porsiyonlar[0]
   );
-  const [secilenler, setSecilenler] = useState<Record<number, number[]>>({});
+  const grupları = (p?: MenuPorsiyon) => gruplar.filter((g) => p?.grupIdler.includes(g.id));
 
-  const urunGruplari = gruplar.filter((g) => porsiyon?.grupIdler.includes(g.id));
+  // İşletme "önceden işaretli" dediyse o seçenekler hazır gelir; demediyse
+  // pencere boş açılır, garson sormadan Ekle'ye basmış olmaz.
+  const hazirSecimler = (p?: MenuPorsiyon) => {
+    const baslangic: Record<number, number[]> = {};
+    for (const g of grupları(p)) {
+      const isaretli = g.liste.filter((x) => x.varsayilan).map((x) => x.id!);
+      if (isaretli.length) baslangic[g.id] = g.tekli ? isaretli.slice(0, 1) : isaretli;
+    }
+    return baslangic;
+  };
 
-  // Seçim hiçbir zaman hazır gelmez — garson yoğunlukta sormadan Ekle'ye basmasın.
-  // Porsiyon değişince eski seçimler geçersiz olduğu için sıfırlanıyor.
+  const [secilenler, setSecilenler] = useState<Record<number, number[]>>(() =>
+    hazirSecimler(urun.porsiyonlar.find((p) => p.varsayilan) ?? urun.porsiyonlar[0])
+  );
+
+  const urunGruplari = grupları(porsiyon);
+
+  // Porsiyon değişince eski seçimler geçersiz; grupları da değişebiliyor.
   const porsiyonSec = (p: MenuPorsiyon) => {
     setPorsiyon(p);
-    setSecilenler({});
+    setSecilenler(hazirSecimler(p));
   };
 
   const sec = (grup: MenuSecenekGrubu, secenekId: number) => {
@@ -50,8 +64,12 @@ export default function UrunSecim({ urun, gruplar, tur = "masa", onEkle, onKapat
 
   const fiyat = (porsiyon ? porsiyonFiyat(porsiyon, tur) : 0) + ekToplam;
 
-  // Zorunlu gruptan seçim yapılmadan ürün sepete eklenemez.
-  const eksikler = urunGruplari.filter((g) => g.zorunlu && !(secilenler[g.id] ?? []).length);
+  // Zorunlu gruptan seçim yapılmadan ürün sepete eklenemez; çoklu grupta
+  // istenen sayıya ulaşılmadan da eklenemiyor.
+  const enAzi = (g: MenuSecenekGrubu) => (g.tekli ? 1 : Math.max(1, g.enAz || 1));
+  const eksikler = urunGruplari.filter(
+    (g) => g.zorunlu && (secilenler[g.id] ?? []).length < enAzi(g)
+  );
 
   return (
     <div className="perde" onClick={onKapat}>
@@ -79,7 +97,11 @@ export default function UrunSecim({ urun, gruplar, tur = "masa", onEkle, onKapat
           <div className="grup" key={grup.id}>
             <span className="grup-ad">
               {grup.ad}
-              {grup.zorunlu && <em className="zorunlu-im">zorunlu</em>}
+              {grup.zorunlu && (
+                <em className="zorunlu-im">
+                  {enAzi(grup) > 1 ? `en az ${enAzi(grup)}` : "zorunlu"}
+                </em>
+              )}
             </span>
             <div className="secim-liste">
               {grup.liste.map((secenek) => (
@@ -97,7 +119,12 @@ export default function UrunSecim({ urun, gruplar, tur = "masa", onEkle, onKapat
         ))}
 
         {eksikler.length > 0 && (
-          <p className="secim-uyari">Önce seçilmeli: {eksikler.map((g) => g.ad).join(", ")}</p>
+          <p className="secim-uyari">
+            Önce seçilmeli:{" "}
+            {eksikler
+              .map((g) => (enAzi(g) > 1 ? g.ad + " (en az " + enAzi(g) + ")" : g.ad))
+              .join(", ")}
+          </p>
         )}
 
         <button

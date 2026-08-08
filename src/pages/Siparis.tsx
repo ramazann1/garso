@@ -1,4 +1,4 @@
-import { useEffect, useState } from "react";
+import { Fragment, useEffect, useState } from "react";
 import { useNavigate, useParams } from "react-router-dom";
 import {
   ArrowLeft,
@@ -35,6 +35,9 @@ import OnayModal from "../components/OnayModal";
 import KalemPaneli from "../components/KalemPaneli";
 import { kilitKaldir, kilitKur } from "../cikisKilidi";
 import { kdvDokumu } from "../kdv";
+import { paraGoster } from "../para";
+import { ayarlar } from "../isletmeAyarlari";
+import type { IndirimKaynagi } from "../indirimler";
 import type {
   MenuKategori,
   MenuKdv,
@@ -58,9 +61,19 @@ function adisyonImzasi(sepet: SepetKalemi[], indirim: number, tahsilatlar: Tahsi
 // geri alınınca adisyon yeniden sadeleşsin. Ödemesi işlenmiş kalem birleşmez;
 // birleşseydi ödenen adet başka kaleme yazılırdı.
 function satirlariBirlestir(sepet: SepetKalemi[], odenmisIdler: Set<number>) {
+  // Tur da anahtara giriyor: aynı ürün ikinci turda tekrar istendiyse iki satır
+  // kalmalı, yoksa sepette hangi turda ne geldiği kaybolur.
   const anahtar = (k: SepetKalemi) =>
-    [k.durum ?? "normal", k.ad, k.porsiyon, k.fiyat, k.indirim ?? 0, k.not, ...(k.secimler ?? [])]
-      .join("|");
+    [
+      k.durum ?? "normal",
+      k.turSira ?? "yeni",
+      k.ad,
+      k.porsiyon,
+      k.fiyat,
+      k.indirim ?? 0,
+      k.not,
+      ...(k.secimler ?? []),
+    ].join("|");
 
   const sonuc: SepetKalemi[] = [];
   for (const k of sepet) {
@@ -112,6 +125,8 @@ export default function Siparis() {
   const [menuYukleniyor, setMenuYukleniyor] = useState(true);
   const [sepet, setSepet] = useState<SepetKalemi[]>([]);
   const [indirim, setIndirim] = useState(0);
+  // İndirim ön tanımlıysa kaynağı da taşınıyor; rapor hangi indirim olduğunu görecek.
+  const [indirimTanim, setIndirimTanim] = useState<IndirimKaynagi | undefined>();
   const [kayitliTahsilatlar, setKayitliTahsilatlar] = useState<Tahsilat[]>([]);
   const [secimUrunu, setSecimUrunu] = useState<MenuUrun | null>(null);
   const [kampanyaUrunu, setKampanyaUrunu] = useState<MenuUrun | null>(null);
@@ -154,6 +169,7 @@ export default function Siparis() {
     adisyonuOku().then((veri) => {
       setSepet(veri.sepet);
       setIndirim(veri.indirim);
+      setIndirimTanim(veri.indirimTanim);
       setKayitliTahsilatlar(veri.tahsilatlar);
       setKayitliImza(adisyonImzasi(veri.sepet, veri.indirim, veri.tahsilatlar));
       if (masasiz) setMasasizBilgi(veri);
@@ -206,9 +222,12 @@ export default function Siparis() {
     const kdvOran = urunKdv(urun, kdvler)?.oran;
     const anahtar = [ad, porsiyon, ...(secimler ?? [])].join("|");
     setSepet((s) => {
-      // Yeni ürün yalnızca normal satırla birleşir; ikram/iptal satırı ayrı durur.
+      // Yeni ürün yalnızca bu turun normal satırıyla birleşir: kaydedilmiş bir
+      // tura eklenirse o ürünün sonradan istendiği kaybolur. İkram/iptal satırı
+      // da ayrı durur.
       const var_mi = s.find(
         (k) =>
+          k.turSira == null &&
           (k.durum ?? "normal") === "normal" &&
           [k.ad, k.porsiyon, ...(k.secimler ?? [])].join("|") === anahtar
       );
@@ -241,9 +260,29 @@ export default function Siparis() {
     return m;
   }, {});
 
+  // Kaydedilmemiş kalemlerin turu yok; onlar listenin sonunda "Yeni" başlığı alır.
+  const turSayisi = new Set(sepet.map((k) => k.turSira ?? "yeni")).size;
+  // Henüz kaydedilmemiş kalemler listenin başında durur — garson yazdığı şeyi
+  // aramasın. Kaydedince kendi turuna, yani listenin sonuna geçiyorlar.
+  const gosterilen = [
+    ...sepet.filter((k) => k.turSira == null),
+    ...sepet.filter((k) => k.turSira != null),
+  ];
+  const turEtiketi = (k: SepetKalemi) => {
+    if (k.turSira == null) return "Yeni";
+    const saat = k.turSaat
+      ? new Date(k.turSaat).toLocaleTimeString("tr-TR", { hour: "2-digit", minute: "2-digit" })
+      : null;
+    return saat ? `${k.turSira}. tur · ${saat}` : `${k.turSira}. tur`;
+  };
+
   const araToplam = odenecekler.reduce((t, k) => t + kalemTutari(k), 0);
-  const toplam = Math.max(0, araToplam - indirim);
   const kdvSatirlari = kdvDokumu(odenecekler, indirim, kdvler.find((k) => k.varsayilan)?.oran);
+  // Fiyatlar KDV hariçse vergi toplamın üstüne ekleniyor.
+  const eklenenKdv = ayarlar().kdvDahil
+    ? 0
+    : kdvSatirlari.reduce((t, s) => t + s.kdv, 0);
+  const toplam = Math.max(0, araToplam - indirim) + eklenenKdv;
   const odenen = kayitliTahsilatlar.reduce((t, o) => t + o.tutar, 0);
   const kalan = Math.max(0, toplam - odenen);
 
@@ -271,7 +310,7 @@ export default function Siparis() {
   const kalemiTasi = async (kalem: SepetKalemi, hedefMasaId: number, adet: number) => {
     setSeciliKalem(null);
     try {
-      const kayitli = await adisyonuYaz({ sepet, indirim, tahsilatlar: kayitliTahsilatlar });
+      const kayitli = await adisyonuYaz({ sepet, indirim, indirimTanim, tahsilatlar: kayitliTahsilatlar });
       const guncel = kayitli.sepet.find(
         (k) => k.id === kalem.id || (kalem.id && kalem.id < 0 && k.ad === kalem.ad)
       );
@@ -286,7 +325,7 @@ export default function Siparis() {
   };
 
   const kaydet = async () => {
-    await adisyonuYaz({ sepet, indirim, tahsilatlar: kayitliTahsilatlar });
+    await adisyonuYaz({ sepet, indirim, indirimTanim, tahsilatlar: kayitliTahsilatlar });
     kilitKaldir();
     navigate("/");
   };
@@ -430,7 +469,12 @@ export default function Siparis() {
           <div className="sepet-liste">
             {yukleniyor && <div className="yukleniyor"><div className="cember" /></div>}
             {!yukleniyor && sepet.length === 0 && <p className="bos">Henüz ürün yok</p>}
-            {sepet.map((k) => {
+            {gosterilen.map((k, sira) => {
+              // Kalemler tur tur girildi; sepette araya turun başlığı konuyor.
+              // Tek turluk adisyonda başlık gereksiz gürültü, gösterilmiyor.
+              const oncekiTur = sira > 0 ? gosterilen[sira - 1].turSira : undefined;
+              const turBasligi =
+                turSayisi > 1 && k.turSira !== oncekiTur ? turEtiketi(k) : null;
               const detay = [
                 k.porsiyon,
                 ...(k.secimler ?? []),
@@ -438,8 +482,9 @@ export default function Siparis() {
                 k.durum === "ikram" ? "ikram" : k.durum === "iptal" ? "iptal" : null,
               ].filter(Boolean);
               return (
+              <Fragment key={k.id}>
+              {turBasligi && <div className="tur-basligi">{turBasligi}</div>}
               <div
-                key={k.id}
                 className={k.durum && k.durum !== "normal" ? `sepet-satir ${k.durum}` : "sepet-satir"}
                 onClick={() => setSeciliKalem(k)}
               >
@@ -453,10 +498,10 @@ export default function Siparis() {
                 <span className="tutar">
                   {hesaba(k) && k.indirim ? (
                     <>
-                      <s className="eski-tutar">₺{k.fiyat * k.adet}</s> ₺{kalemTutari(k)}
+                      <s className="eski-tutar">{paraGoster(k.fiyat * k.adet)}</s> {paraGoster(kalemTutari(k))}
                     </>
                   ) : (
-                    `₺${hesaba(k) ? kalemTutari(k) : 0}`
+                    paraGoster(hesaba(k) ? kalemTutari(k) : 0)
                   )}
                 </span>
                 <span className="kalem-duzenle" title="Kalem işlemleri">
@@ -469,37 +514,34 @@ export default function Siparis() {
                   −
                 </button>
               </div>
+              </Fragment>
               );
             })}
           </div>
           <footer>
             <div className="sepet-ozet">
-              <div className="ozet-satir">
-                <span>Ara Toplam</span>
-                <span>₺{araToplam}</span>
-              </div>
+              <KdvDokum satirlar={kdvSatirlari} araToplam={araToplam} />
               {indirim > 0 && (
                 <div className="ozet-satir indirim">
                   <span>İndirim</span>
-                  <span>−₺{indirim}</span>
+                  <span>−{paraGoster(indirim)}</span>
                 </div>
               )}
-              <KdvDokum satirlar={kdvSatirlari} />
               {kayitliTahsilatlar.length > 0 && (
                 <>
                   <div className="ozet-satir odendi">
                     <span>Ödenen</span>
-                    <span>₺{odenen}</span>
+                    <span>{paraGoster(odenen)}</span>
                   </div>
                   <div className="ozet-satir kalan">
                     <span>Kalan</span>
-                    <span>₺{kalan}</span>
+                    <span>{paraGoster(kalan)}</span>
                   </div>
                 </>
               )}
               <div className="ozet-satir toplam-satir">
                 <span>Toplam</span>
-                <strong>₺{toplam}</strong>
+                <strong>{paraGoster(toplam)}</strong>
               </div>
             </div>
             <div className="sepet-aksiyonlar">
@@ -508,7 +550,7 @@ export default function Siparis() {
                 disabled={sepet.length === 0}
                 onClick={() => setIndirimAcik(true)}
               >
-                <Percent size={17} />
+                <Percent size={15} />
                 İndirim
               </button>
               <button
@@ -516,7 +558,7 @@ export default function Siparis() {
                 disabled={sepet.length === 0}
                 onClick={() => setTahsilatAcik(true)}
               >
-                <Wallet size={18} />
+                <Wallet size={15} />
                 Öde
               </button>
               <button
@@ -524,12 +566,12 @@ export default function Siparis() {
                 disabled={sepet.length === 0 || kalan <= 0}
                 onClick={() => setHizliAcik(true)}
               >
-                <Zap size={18} />
+                <Zap size={15} />
                 Hızlı Öde
               </button>
             </div>
             <button className="kaydet" onClick={kaydet}>
-              <Check size={18} />
+              <Check size={16} />
               Kaydet
             </button>
           </footer>
@@ -545,16 +587,20 @@ export default function Siparis() {
           kdvSatirlari={kdvSatirlari}
           kayitliTahsilatlar={kayitliTahsilatlar}
           onKaydet={(t) => setKayitliTahsilatlar(t)}
-          onIndirimDegis={(tutar) => setIndirim(tutar)}
-          onKalemIndirim={(paylar) =>
+          onIndirimDegis={(tutar, kaynak) => { setIndirim(tutar); setIndirimTanim(kaynak); }}
+          onKalemIndirim={(paylar, kaynak) =>
             setSepet((s) =>
-              s.map((k) => (k.id != null && paylar[k.id] != null ? { ...k, indirim: paylar[k.id] } : k))
+              s.map((k) =>
+                k.id != null && paylar[k.id] != null
+                  ? { ...k, indirim: paylar[k.id], indirimTanimId: kaynak?.id, indirimAd: kaynak?.ad }
+                  : k
+              )
             )
           }
           onKapat={() => setTahsilatAcik(false)}
           onOdendi={async (tahsilatlar) => {
             // Kapanan adisyon silinmiyor, kapalıya çekiliyor — gün sonu raporu ona bakacak.
-            await adisyonuYaz({ sepet, indirim, tahsilatlar }, true);
+            await adisyonuYaz({ sepet, indirim, indirimTanim, tahsilatlar }, true);
             kilitKaldir();
             navigate("/");
           }}
@@ -569,11 +615,11 @@ export default function Siparis() {
           toplam={toplam}
           odenen={odenen}
           kalan={kalan}
-          onIndirimDegis={(tutar) => setIndirim(tutar)}
+          onIndirimDegis={(tutar, kaynak) => { setIndirim(tutar); setIndirimTanim(kaynak); }}
           onKapat={() => setHizliAcik(false)}
           onSec={async (tip, tutar, kapat, bahsis) => {
             const tahsilatlar = [...kayitliTahsilatlar, { tip, tutar, bahsis }];
-            await adisyonuYaz({ sepet, indirim, tahsilatlar }, kapat);
+            await adisyonuYaz({ sepet, indirim, indirimTanim, tahsilatlar }, kapat);
             if (kapat) {
               kilitKaldir();
               navigate("/");
@@ -592,7 +638,7 @@ export default function Siparis() {
           araToplam={araToplam}
           mevcutIndirim={indirim}
           onKapat={() => setIndirimAcik(false)}
-          onUygula={(tutar: number) => { setIndirim(tutar); setIndirimAcik(false); }}
+          onUygula={(tutar, kaynak) => { setIndirim(tutar); setIndirimTanim(kaynak); setIndirimAcik(false); }}
         />
       )}
 

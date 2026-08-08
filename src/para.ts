@@ -10,3 +10,8 @@ export const paraSayi = (s: string) => {
 };
 
 export const paraYaz = (s: string) => s.replace(/[^0-9.,]/g, "");
+
+// Ekranda gösterilen tutar her yerde kuruşlu ve Türkçe biçimli olsun: 1110 değil
+// "₺1.110,00". Toplam ile döküm arasında biçim farkı kalmıyor.
+export const paraGoster = (v: number) =>
+  "₺" + v.toLocaleString("tr-TR", { minimumFractionDigits: 2, maximumFractionDigits: 2 });

@@ -128,7 +128,7 @@ export async function menuGetir() {
       ),
     supabase
       .from("secenek_gruplari")
-      .select("id, ad, tekli, zorunlu, sira, secenekler(id, ad, ek_fiyat, sira)")
+      .select("id, ad, tekli, zorunlu, en_az, sira, secenekler(id, ad, ek_fiyat, sira, varsayilan)")
       .order("sira"),
     supabase.from("birimler").select("id, ad, sira, varsayilan").order("sira"),
     supabase.from("kdv_gruplari").select("id, ad, oran, varsayilan, sira").order("sira"),
@@ -203,10 +203,16 @@ export async function menuGetir() {
     ad: g.ad,
     tekli: g.tekli,
     zorunlu: g.zorunlu,
+    enAz: g.en_az ?? 0,
     liste: (g.secenekler ?? [])
       .slice()
       .sort((a: any, b: any) => a.sira - b.sira)
-      .map((s: any) => ({ id: s.id, ad: s.ad, ekFiyat: Number(s.ek_fiyat) })),
+      .map((s: any) => ({
+        id: s.id,
+        ad: s.ad,
+        ekFiyat: Number(s.ek_fiyat),
+        varsayilan: s.varsayilan ?? false,
+      })),
   }));
 
   return { kategoriler, urunler, gruplar, birimler, kdvler };
@@ -539,16 +545,17 @@ export async function grupKaydet(
   ad: string,
   tekli: boolean,
   zorunlu: boolean,
-  liste: { ad: string; ekFiyat: number }[]
+  enAz: number,
+  liste: { ad: string; ekFiyat: number; varsayilan?: boolean }[]
 ) {
   let grupId = id;
 
   if (grupId) {
-    await supabase.from("secenek_gruplari").update({ ad, tekli, zorunlu }).eq("id", grupId);
+    await supabase.from("secenek_gruplari").update({ ad, tekli, zorunlu, en_az: enAz }).eq("id", grupId);
   } else {
     const { data } = await supabase
       .from("secenek_gruplari")
-      .insert({ ad, tekli, zorunlu })
+      .insert({ ad, tekli, zorunlu, en_az: enAz })
       .select("id")
       .single();
     grupId = data?.id;
@@ -558,7 +565,13 @@ export async function grupKaydet(
   await supabase.from("secenekler").delete().eq("grup_id", grupId);
   if (liste.length) {
     await supabase.from("secenekler").insert(
-      liste.map((s, i) => ({ grup_id: grupId, ad: s.ad, ek_fiyat: s.ekFiyat, sira: i + 1 }))
+      liste.map((s, i) => ({
+        grup_id: grupId,
+        ad: s.ad,
+        ek_fiyat: s.ekFiyat,
+        sira: i + 1,
+        varsayilan: s.varsayilan ?? false,
+      }))
     );
   }
 }

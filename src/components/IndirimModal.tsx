@@ -1,13 +1,20 @@
-import { useState } from "react";
+import { useEffect, useState } from "react";
 import { Check, Delete, Percent } from "lucide-react";
 import OnayModal from "./OnayModal";
+import {
+  indirimTanimlariniGetir,
+  tanimEtiketi,
+  tanimTutari,
+  type IndirimKaynagi,
+  type IndirimTanimi,
+} from "../indirimler";
 
 type Props = {
   baslik?: string;
   araToplam: number;
   mevcutIndirim: number;
   onKapat: () => void;
-  onUygula: (tutar: number) => void;
+  onUygula: (tutar: number, kaynak?: IndirimKaynagi) => void;
 };
 
 export default function IndirimModal({ baslik, araToplam, mevcutIndirim, onKapat, onUygula }: Props) {
@@ -15,9 +22,15 @@ export default function IndirimModal({ baslik, araToplam, mevcutIndirim, onKapat
   const [tutarGirdi, setTutarGirdi] = useState(mevcutIndirim > 0 ? String(mevcutIndirim) : "");
   const [yuzdeGirdi, setYuzdeGirdi] = useState("");
   const [uyari, setUyari] = useState<string | null>(null);
+  // Ön tanımlı indirimler; tanım yoksa pencere eskisi gibi yalnız serbest giriş.
+  const [tanimlar, setTanimlar] = useState<IndirimTanimi[]>([]);
   const girdi = mod === "tutar" ? tutarGirdi : yuzdeGirdi;
   const setGirdi = (guncelle: (onceki: string) => string) =>
     mod === "tutar" ? setTutarGirdi(guncelle) : setYuzdeGirdi(guncelle);
+
+  useEffect(() => {
+    indirimTanimlariniGetir().then(setTanimlar);
+  }, []);
 
   const hesapla = () => {
     const sayi = Number(girdi);
@@ -46,6 +59,21 @@ export default function IndirimModal({ baslik, araToplam, mevcutIndirim, onKapat
           <Percent size={18} />
           {baslik ?? "İndirim Uygula"}
         </h3>
+
+        {tanimlar.length > 0 && (
+          <div className="tanimli-indirimler">
+            {tanimlar.map((t) => (
+              <button
+                key={t.id}
+                onClick={() => onUygula(tanimTutari(t, araToplam), { id: t.id, ad: t.ad })}
+              >
+                <strong>{t.ad}</strong>
+                <span>{tanimEtiketi(t)}</span>
+              </button>
+            ))}
+          </div>
+        )}
+
         <div className="mod-sec">
           <button className={mod === "tutar" ? "aktif" : ""} onClick={() => setMod("tutar")}>Tutar</button>
           <button className={mod === "yuzde" ? "aktif" : ""} onClick={() => setMod("yuzde")}>Yüzde</button>

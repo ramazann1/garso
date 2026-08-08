@@ -1,6 +1,6 @@
 import { useState } from "react";
 import Bilgi from "./Bilgi";
-import { ChevronDown, Plus, X } from "lucide-react";
+import { Check, ChevronDown, Plus, X } from "lucide-react";
 import Anahtar from "./Anahtar";
 import RenkSecici from "./RenkSecici";
 import { paraMetin, paraSayi, paraYaz } from "../para";
@@ -112,6 +112,11 @@ export default function UrunPaneli({
     (k) => !k.ustId || !kategoriler.some((x) => x.id === k.ustId)
   );
   const [altAcik, setAltAcik] = useState<number[]>([]);
+  // Seçenek grupları porsiyonun içinde kapalı duruyor; rozet kaç grubun bağlı
+  // olduğunu söylüyor, açmadan da görünüyor.
+  const [grupAcik, setGrupAcik] = useState<number[]>([]);
+  const grupKatla = (i: number) =>
+    setGrupAcik((l) => (l.includes(i) ? l.filter((x) => x !== i) : [...l, i]));
   const altKatla = (id: number) =>
     setAltAcik((l) => (l.includes(id) ? l.filter((x) => x !== id) : [...l, id]));
 
@@ -305,26 +310,49 @@ export default function UrunPaneli({
                           </label>
                         </div>
 
-                        <Bilgi>
-                          Seçenek grupları bu porsiyona bağlanır — "Tam" ve "Yarım" farklı
-                          seçenek taşıyabilir.
-                        </Bilgi>
-                        {gruplar.length === 0 ? (
-                          <Bilgi>Henüz seçenek grubu yok.</Bilgi>
-                        ) : (
-                          <div className="cipler">
-                            {gruplar.map((g) => (
-                              <button
-                                key={g.id}
-                                className={p.grupIdler.includes(g.id) ? "cip secili" : "cip"}
-                                onClick={() => grupDegis(i, g.id)}
-                              >
-                                {g.ad}
-                                <small>{g.tekli ? "tekli" : "çoklu"} · {g.liste.length}</small>
-                              </button>
-                            ))}
-                          </div>
-                        )}
+                        <div className="bolum">
+                          <button className="bolum-basi" onClick={() => grupKatla(i)}>
+                            <span>Seçenek grupları</span>
+                            <small>{p.grupIdler.length} seçili</small>
+                            <ChevronDown
+                              size={18}
+                              className={grupAcik.includes(i) ? "bolum-ok donuk" : "bolum-ok"}
+                            />
+                          </button>
+
+                          {grupAcik.includes(i) && (
+                            <>
+                              <Bilgi>
+                                Seçenek grupları bu porsiyona bağlanır — "Tam" ve "Yarım"
+                                farklı seçenek taşıyabilir.
+                              </Bilgi>
+                              {gruplar.length === 0 ? (
+                                <Bilgi>Henüz seçenek grubu yok.</Bilgi>
+                              ) : (
+                                <div className="grup-secim">
+                                  {gruplar.map((g) => {
+                                    const secili = p.grupIdler.includes(g.id);
+                                    return (
+                                      <button
+                                        key={g.id}
+                                        className={secili ? "secili" : undefined}
+                                        onClick={() => grupDegis(i, g.id)}
+                                      >
+                                        <span className="grup-secim-im">
+                                          {secili && <Check size={14} />}
+                                        </span>
+                                        <span className="grup-secim-ad">{g.ad}</span>
+                                        <small>
+                                          {g.tekli ? "tekli" : "çoklu"} · {g.liste.length} seçenek
+                                        </small>
+                                      </button>
+                                    );
+                                  })}
+                                </div>
+                              )}
+                            </>
+                          )}
+                        </div>
                       </div>
                     )}
                   </div>

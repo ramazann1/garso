@@ -43,8 +43,11 @@ export type SepetKalemi = {
   kdvOran?: number; // satış anındaki oran; eski adisyonlarda boş, varsayılana düşer
   durum?: "normal" | "ikram" | "iptal";
   indirim?: number; // yalnız bu satıra verilen indirim tutarı
+  indirimTanimId?: number; // ön tanımlı indirimden geldiyse hangisi
+  indirimAd?: string; // tanım sonradan silinse de raporda adı kalsın
   not?: string;
   turSira?: number;
+  turSaat?: string; // turun kaydedildiği an; sepette tur başlığında görünüyor
 };
 export type Tahsilat = {
   tip: string;
@@ -102,6 +105,7 @@ export type MenuSecenek = {
   id?: number;
   ad: string;
   ekFiyat: number;
+  varsayilan?: boolean; // ürün penceresi açılınca işaretli gelsin
 };
 
 export type MenuSecenekGrubu = {
@@ -109,6 +113,7 @@ export type MenuSecenekGrubu = {
   ad: string;
   tekli: boolean;
   zorunlu: boolean;
+  enAz: number; // çoklu grupta en az kaç seçenek işaretlenmeli
   liste: MenuSecenek[];
 };
 

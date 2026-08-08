@@ -1,7 +1,9 @@
-// KDV hesabının tek kaynağı. Fiyatlar KDV DAHİL yazılır (Türkiye'de restoran
-// menüsü böyle); burada yapılan iş fiyatı değiştirmek değil, içindeki KDV'yi
-// ayırmak. "Fiyatlar KDV hariç" seçeneği İşletme Ayarları ekranıyla gelecek.
+// KDV hesabının tek kaynağı. Varsayılan olarak fiyatlar KDV DAHİL yazılır
+// (Türkiye'de restoran menüsü böyle) ve burada yapılan iş fiyatın içindeki
+// vergiyi ayırmaktır. İşletme "fiyatlar KDV hariç" seçerse fiyat matrah sayılır,
+// vergi üstüne eklenir.
 
+import { ayarlar } from "./isletmeAyarlari";
 import type { SepetKalemi } from "./types";
 
 const kurus = (v: number) => Math.round(v * 100) / 100;
@@ -39,21 +41,26 @@ export function kdvDokumu(
   // İndirim kalemlere tutarları oranında dağıtılır.
   const katsayi = araToplam > 0 ? Math.max(0, araToplam - indirim) / araToplam : 1;
 
+  // "Hariç" düzeninde fiyat matrahtır, vergi üstüne eklenir; satırın tutarı
+  // matrah + KDV olur.
+  const dahil = ayarlar().kdvDahil;
+  const hesapla = (oran: number, paye: number) =>
+    dahil
+      ? { oran, tutar: paye, ...kdvAyir(paye, oran) }
+      : { oran, tutar: kurus(paye * (1 + oran / 100)), matrah: paye, kdv: kurus((paye * oran) / 100) };
+
   const satirlar = [...oranlar.entries()]
-    .map(([oran, ham]) => {
-      const tutar = kurus(ham * katsayi);
-      return { oran, tutar, ...kdvAyir(tutar, oran) };
-    })
+    .map(([oran, ham]) => hesapla(oran, kurus(ham * katsayi)))
     .filter((s) => s.tutar > 0)
     .sort((a, b) => b.oran - a.oran);
 
   // Yuvarlama artığı en büyük satıra yazılır; dökümün toplamı adisyon toplamını tutsun.
-  const toplam = satirlar.reduce((t, s) => t + s.tutar, 0);
-  const fark = kurus(Math.max(0, araToplam - indirim) - toplam);
+  const payeToplam = satirlar.reduce((t, s) => t + (dahil ? s.tutar : s.matrah), 0);
+  const fark = kurus(Math.max(0, araToplam - indirim) - payeToplam);
   if (fark !== 0 && satirlar.length) {
     const en = satirlar.reduce((a, b) => (b.tutar > a.tutar ? b : a));
-    en.tutar = kurus(en.tutar + fark);
-    const yeni = kdvAyir(en.tutar, en.oran);
+    const yeni = hesapla(en.oran, kurus((dahil ? en.tutar : en.matrah) + fark));
+    en.tutar = yeni.tutar;
     en.matrah = yeni.matrah;
     en.kdv = yeni.kdv;
   }

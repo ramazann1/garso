@@ -1,6 +1,7 @@
 import { useEffect, useState } from "react";
 import { CircleCheckBig, Percent, Wallet, X, Zap } from "lucide-react";
 import IndirimModal from "./IndirimModal";
+import type { IndirimKaynagi } from "../indirimler";
 import OnayModal from "./OnayModal";
 import OdemeTipDugmeleri from "./OdemeTipDugmeleri";
 import { odemeTipleriniGetir } from "../odemeTipleri";
@@ -13,7 +14,7 @@ type Props = {
   toplam: number;
   odenen: number;
   kalan: number;
-  onIndirimDegis: (tutar: number) => void;
+  onIndirimDegis: (tutar: number, kaynak?: IndirimKaynagi) => void;
   onSec: (tip: string, tutar: number, kapat: boolean, bahsis?: number) => void;
   onKapat: () => void;
 };
@@ -158,8 +159,8 @@ export default function HizliOde({
           araToplam={araToplam}
           mevcutIndirim={indirim}
           onKapat={() => setIndirimAcik(false)}
-          onUygula={(tutar) => {
-            onIndirimDegis(tutar);
+          onUygula={(tutar, kaynak) => {
+            onIndirimDegis(tutar, kaynak);
             setGirilen("");
             setIndirimAcik(false);
           }}

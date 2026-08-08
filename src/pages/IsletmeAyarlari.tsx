@@ -17,6 +17,18 @@ import {
   X,
 } from "lucide-react";
 import Duzen, { ayarBolumleri } from "../components/Duzen";
+import { acikAdisyonSayisi } from "../adisyonlar";
+import { ayarlar, ayarlariKaydet } from "../isletmeAyarlari";
+import {
+  indirimTanimiEkle,
+  indirimTanimiGuncelle,
+  indirimTanimiSil,
+  indirimTanimlariniGetir,
+  tanimEtiketi,
+  type IndirimAlanlari,
+  type IndirimTanimi,
+  type IndirimTipi,
+} from "../indirimler";
 import Bildirim from "../components/Bildirim";
 import Bilgi from "../components/Bilgi";
 import Anahtar from "../components/Anahtar";
@@ -366,11 +378,107 @@ function OdemeTipiPaneli({
   );
 }
 
+/** Ön tanımlı indirim ekleme/düzenleme penceresi. */
+function IndirimPaneli({
+  tanim,
+  onKapat,
+  onSil,
+  onKaydet,
+}: {
+  tanim: IndirimTanimi | null;
+  onKapat: () => void;
+  onSil?: () => void;
+  onKaydet: (alanlar: IndirimAlanlari) => void;
+}) {
+  const [ad, setAd] = useState(tanim?.ad ?? "");
+  const [tip, setTip] = useState<IndirimTipi>(tanim?.tip ?? "yuzde");
+  const [deger, setDeger] = useState(tanim ? String(tanim.deger) : "");
+  const [aktif, setAktif] = useState(tanim?.aktif ?? true);
+
+  const sayi = Number(deger.replace(",", "."));
+  const gecerli = ad.trim().length > 0 && sayi > 0 && (tip !== "yuzde" || sayi <= 100);
+
+  return (
+    <div className="panel-fon" onClick={onKapat}>
+      <div className="ayar-panel" onClick={(e) => e.stopPropagation()}>
+        <header className="panel-ust">
+          <h3>{tanim ? "İndirimi düzenle" : "Yeni indirim"}</h3>
+          <button className="panel-kapat" onClick={onKapat}><X size={19} /></button>
+        </header>
+
+        <div className="panel-govde">
+          <div className="alan">
+            <label>İndirimin adı</label>
+            <input
+              value={ad}
+              onChange={(e) => setAd(e.target.value)}
+              placeholder="Personel, Öğrenci, Kampanya…"
+              autoFocus
+            />
+          </div>
+
+          <div className="alan">
+            <label>İndirim türü</label>
+            <div className="mod-sec">
+              <button className={tip === "yuzde" ? "aktif" : ""} onClick={() => setTip("yuzde")}>
+                Yüzde
+              </button>
+              <button className={tip === "tutar" ? "aktif" : ""} onClick={() => setTip("tutar")}>
+                Tutar
+              </button>
+            </div>
+          </div>
+
+          <div className="alan">
+            <label>{tip === "yuzde" ? "Oran (%)" : "Tutar (₺)"}</label>
+            <input
+              value={deger}
+              onChange={(e) => setDeger(e.target.value)}
+              placeholder={tip === "yuzde" ? "25" : "50"}
+              inputMode="decimal"
+            />
+          </div>
+
+          <Anahtar
+            etiket="Satış ekranında görünsün"
+            ipucu="Kapatırsanız tanım silinmez, indirim penceresinde listelenmez"
+            acik={aktif}
+            degistir={setAktif}
+          />
+        </div>
+
+        <footer className="modal-aksiyonlar">
+          {onSil && (
+            <button className="sil-buton" onClick={onSil}>
+              <Trash2 size={15} /> Sil
+            </button>
+          )}
+          <button className="iptal" onClick={onKapat}>Vazgeç</button>
+          <button
+            className="uygula"
+            disabled={!gecerli}
+            onClick={() => onKaydet({ ad: ad.trim(), tip, deger: sayi, sira: tanim?.sira ?? 0, aktif })}
+          >
+            Kaydet
+          </button>
+        </footer>
+      </div>
+    </div>
+  );
+}
+
 export default function IsletmeAyarlari() {
   const { bolum } = useParams();
   const navigate = useNavigate();
   const { pathname } = useLocation();
-  const masalarBolumu = bolum !== "odeme-tipleri";
+  const odemeBolumu = bolum === "odeme-tipleri";
+  const satisBolumu = bolum === "satis";
+  const masalarBolumu = !odemeBolumu && !satisBolumu;
+
+  const [kdvDahil, setKdvDahil] = useState(ayarlar().kdvDahil);
+  const [indirimler, setIndirimler] = useState<IndirimTanimi[]>([]);
+  const [indirimPaneli, setIndirimPaneli] = useState<IndirimTanimi | null | undefined>(undefined);
+  const [silinecekIndirim, setSilinecekIndirim] = useState<IndirimTanimi | null>(null);
 
   const [bolgeler, setBolgeler] = useState<Bolge[]>([]);
   const [seciliId, setSeciliId] = useState<number | null>(null);
@@ -390,6 +498,23 @@ export default function IsletmeAyarlari() {
   const [silinecekOdeme, setSilinecekOdeme] = useState<OdemeTipi | null>(null);
 
   const odemeleriTazele = async () => setOdemeTipleri(await odemeTipleriniGetir(true));
+  const indirimleriTazele = async () => setIndirimler(await indirimTanimlariniGetir(true));
+
+  // Ayar açık adisyonların toplamını değiştireceği için önce salon boş mu bakılıyor.
+  const kdvAyariDegistir = async (yeni: boolean) => {
+    if (yeni === kdvDahil) return;
+    if ((await acikAdisyonSayisi()) > 0) {
+      setUyari("Açık adisyon varken bu ayar değiştirilemez. Önce tüm adisyonları kapatın.");
+      return;
+    }
+    try {
+      await ayarlariKaydet({ kdvDahil: yeni });
+      setKdvDahil(yeni);
+      setBildirim(yeni ? "Fiyatlar KDV dahil" : "Fiyatlar KDV hariç");
+    } catch (e) {
+      setUyari(e instanceof Error ? e.message : "Ayar kaydedilemedi.");
+    }
+  };
 
   // Sıra numaraları listedeki yerden geliyor; komşuyla takas edilir.
   const odemeTasi = async (tip: OdemeTipi, yon: -1 | 1) => {
@@ -415,7 +540,9 @@ export default function IsletmeAyarlari() {
   };
 
   useEffect(() => {
-    Promise.all([tazele(), odemeleriTazele()]).then(() => setYukleniyor(false));
+    Promise.all([tazele(), odemeleriTazele(), indirimleriTazele()]).then(() =>
+      setYukleniyor(false)
+    );
   }, []);
 
   const secili = bolgeler.find((b) => b.id === seciliId) ?? bolgeler[0];
@@ -502,7 +629,9 @@ export default function IsletmeAyarlari() {
         <Bilgi>
           {masalarBolumu
             ? "Salonunuzdaki bölgeleri ve masaları buradan düzenlersiniz."
-            : "Kasada hangi ödeme düğmelerinin çıkacağını buradan belirlersiniz."}
+            : odemeBolumu
+              ? "Kasada hangi ödeme düğmelerinin çıkacağını buradan belirlersiniz."
+              : "Satışın genel kurallarını buradan belirlersiniz."}
         </Bilgi>
 
         {yukleniyor ? (
@@ -638,7 +767,59 @@ export default function IsletmeAyarlari() {
           </section>
           )}
 
-          {!masalarBolumu && (
+          {satisBolumu && (
+          <section className="ayar-bolum ayar-liste">
+            <div className="ayar-satir">
+              <div className="ayar-satir-yazi">
+                <strong>Menü fiyatları</strong>
+                <span>
+                  {kdvDahil
+                    ? "Vergi fiyatın içinde; ₺100 ürünün ₺9,09'u KDV (%10)."
+                    : "Vergi toplama eklenir; ₺100 ürün kasada ₺110 (%10)."}
+                </span>
+              </div>
+              <div className="mod-sec kompakt">
+                <button className={kdvDahil ? "aktif" : ""} onClick={() => kdvAyariDegistir(true)}>
+                  KDV dahil
+                </button>
+                <button className={!kdvDahil ? "aktif" : ""} onClick={() => kdvAyariDegistir(false)}>
+                  KDV hariç
+                </button>
+              </div>
+            </div>
+
+            <div className="ayar-satir">
+              <div className="ayar-satir-yazi">
+                <strong>İndirim tanımları</strong>
+                <span>
+                  {indirimler.length === 0
+                    ? "Satışta listeden seçilecek hazır indirimler."
+                    : `${indirimler.length} tanım · satışta listeden seçilir`}
+                </span>
+              </div>
+              <button className="ayar-satir-ekle" onClick={() => setIndirimPaneli(null)}>
+                <Plus size={15} /> Ekle
+              </button>
+            </div>
+
+            {indirimler.length > 0 && (
+              <ul className="indirim-liste">
+                {indirimler.map((t) => (
+                  <li key={t.id} className={t.aktif ? undefined : "kapali"}>
+                    <span className="indirim-ad">{t.ad}</span>
+                    <span className="indirim-deger">{tanimEtiketi(t)}</span>
+                    {!t.aktif && <span className="indirim-gizli">Gizli</span>}
+                    <button onClick={() => setIndirimPaneli(t)} title="Düzenle">
+                      <Pencil size={14} />
+                    </button>
+                  </li>
+                ))}
+              </ul>
+            )}
+          </section>
+          )}
+
+          {odemeBolumu && (
           <section className="ayar-bolum">
             <div className="ayar-bolum-ust">
               <h2><Wallet size={17} /> Ödeme Tipleri</h2>
@@ -774,6 +955,49 @@ export default function IsletmeAyarlari() {
             setBildirim("Masa silindi");
           }}
           onKapat={() => setSilinecekMasa(null)}
+        />
+      )}
+
+      {indirimPaneli !== undefined && (
+        <IndirimPaneli
+          key={indirimPaneli?.id ?? "yeni"}
+          tanim={indirimPaneli}
+          onKapat={() => setIndirimPaneli(undefined)}
+          onSil={
+            indirimPaneli
+              ? () => {
+                  const hedef = indirimPaneli;
+                  setIndirimPaneli(undefined);
+                  setSilinecekIndirim(hedef);
+                }
+              : undefined
+          }
+          onKaydet={async (alanlar) => {
+            try {
+              if (indirimPaneli) await indirimTanimiGuncelle(indirimPaneli.id, alanlar);
+              else await indirimTanimiEkle({ ...alanlar, sira: indirimler.length });
+              setIndirimPaneli(undefined);
+              await indirimleriTazele();
+              setBildirim(indirimPaneli ? "İndirim güncellendi" : "İndirim eklendi");
+            } catch (e) {
+              setIndirimPaneli(undefined);
+              setUyari(e instanceof Error ? e.message : "İndirim kaydedilemedi.");
+            }
+          }}
+        />
+      )}
+
+      {silinecekIndirim && (
+        <OnayModal
+          mesaj={`${silinecekIndirim.ad} indirimi silinsin mi?`}
+          tehlikeli
+          onOnay={async () => {
+            await indirimTanimiSil(silinecekIndirim.id);
+            setSilinecekIndirim(null);
+            await indirimleriTazele();
+            setBildirim("İndirim silindi");
+          }}
+          onKapat={() => setSilinecekIndirim(null)}
         />
       )}
 

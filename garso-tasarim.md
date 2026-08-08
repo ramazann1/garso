@@ -1,7 +1,7 @@
 # GARSO — Teknik Tasarım: Veri Modeli & Ekran Haritası
 *Restoran ve cafe'ler için bulut tabanlı satış ve işletme yönetim sistemi.*
 
-## 0. SIRADAKİ İŞ (8 Ağu 2026 oturumunda güncellendi)
+## 0. SIRADAKİ İŞ (9 Ağu 2026 oturumunda güncellendi)
 
 *Ramazan seansa "devam edelim" diye giriyor — sıradaki iş bu listenin en üstündeki
 maddedir. Seans sonunda bu liste güncellenir: biten madde silinir, kalanlar
@@ -11,24 +11,15 @@ yukarı kayar, yeni çıkanlar sıraya girer.*
 zenginleştirmesi ve Gel Al / Paket akışı bitti.** Eksik envanteri bölüm 6'da,
 Adisyo turları `pos-yol-haritasi.md` bölüm 7 ve 8'de.
 
-1. **Paket & Gel Al revizyonu — SEANS AÇILIŞINDA İLK BUNU HATIRLAT.** Ramazan
-   8 Ağu oturumunun sonunda "bu bölümde değişmesini istediğim şeyler var, önce
-   bunu hatırlat" dedi; ne istediğini henüz söylemedi. Yeni işe geçmeden önce
-   sor, isteklerini al.
-2. **Fiyatlar KDV hariç ayarı** — işletme geneli tek ayar, varsayılan "dahil".
-   İşletme Ayarları ekranı açıldı, oraya girecek.
-3. **Ön tanımlı indirimler** — ad + tip + değer; satışta serbest tutar yerine
-   listeden seçim. (Adisyo Tanımlamalar turu, 6 Ağu)
-4. **Seçenek grubunda zorunlu seçim sayısı ve varsayılan seçenek** — bizde
-   tekli/çoklu ve zorunlu var, "en az kaç tane" ile "önceden işaretli" yok.
-5. **Turların arayüze çıkması** — `turlar` tablosu doluyor, sepet hâlâ düz liste.
-   Adisyonda "1. tur / 14:20" başlıkları görünecek.
-6. **Adisyon düzeyi alanlar** — adisyon no, serbest isim, kişi sayısı, adisyon
+1. **Adisyon düzeyi alanlar** — adisyon no, serbest isim, kişi sayısı, adisyon
    notu, müşteri. Tabloda `adisyon_no` var, ekranda kullanılmıyor.
-7. **Kapanmış adisyonlar listesi** — kapanan adisyon `durum = kapali` olarak
+2. **Kapanmış adisyonlar listesi** — kapanan adisyon `durum = kapali` olarak
    duruyor; onları gösteren ekran yok.
-8. **Masa yazdırma ve adisyon iptali** — masa üç nokta menüsünde yerleri boş
+3. **Masa yazdırma ve adisyon iptali** — masa üç nokta menüsünde yerleri boş
    duruyor; yazdırma yazıcı altyapısına, iptal kapanmış adisyon ekranına bağlı.
+4. **Personel + PIN, tur bazlı garson** — masa kartındaki isim adisyonu açan
+   garson, tur başlığındaki isim o turu yazan garson (`turlar.garson_id`).
+   Yol haritası kararı 7; personel sistemiyle birlikte yapılacak.
 
 **Ödenmezler** ve **Kuver/Garsoniye** Faz 2'ye yazıldı (yol haritası bölüm 8);
 bu listeye satış çekirdeği bitince girecekler.
@@ -608,6 +599,38 @@ görüntüle" ve aktif/pasif ürün — 1 Ağu 2026 ikinci seansında tamamland�
    Müşteri alanları isteğe bağlı, paket siparişte ödeme tipi baştan zorunlu
    değil. *(8 Ağu 2026)*
 
+62. **Paket ve Gel Al iki adımda açılır.** Salon şeridinde sekme bölgelerden
+   ayrı, en sağda durur. Sekmeye basınca liste değil iki büyük kart gelir
+   (Paket / Gel Al, açık sipariş sayısıyla); türün içine girilince sipariş
+   listesi ve "Yeni sipariş" çıkar. Tür karttan belli olduğu için yeni sipariş
+   penceresinde tür seçici yok, yalnız düzenlemede var. *(9 Ağu 2026)*
+63. **Salon sekmesi tarayıcıda saklanır.** Masaya girip dönünce veya sayfa
+   yenilenince garson kendini başka bölgede bulmuyor; kayıtlı bölge silinmişse
+   ilk bölgeye düşülür (`localStorage: salon.sekme`). *(9 Ağu 2026)*
+64. **KDV dahil/hariç işletme geneli tek ayardır.** `isletme_ayarlari` tek
+   satırlık tablo; ayar bir kez okunup önbellekte tutulur, hesaplar senkron
+   çalışır. Açık adisyon varken değiştirilemez — tutarları kaydırırdı. Sonraki
+   genel ayarlar (kuver, servis bedeli) aynı satıra sütun olarak girecek.
+   *(9 Ağu 2026)*
+65. **İndirim tutarıyla birlikte kaynağı da saklanır.** Ön tanımlı indirimler
+   `indirim_tanimlari` tablosunda; uygulanınca adisyona/kaleme `indirim_tanim_id`
+   ve `indirim_ad` yazılır. Ad da yazılıyor ki tanım sonradan silinse bile eski
+   adisyon hangi indirimi aldığını unutmasın — rapor buradan çıkacak.
+   *(9 Ağu 2026)*
+66. **Ayar ekranları satır düzenindedir.** Her ayar için ikon başlıklı ayrı kart
+   değil; tek kart içinde ince çizgiyle ayrılmış satırlar — solda mercan başlık
+   ve tek cümlelik karşılığı, sağda kumandası. İki şıklı seçimler sayfayı
+   kaplayan iki blok değil, kendi genişliği kadar duran segment
+   (`.mod-sec.kompakt`). *(9 Ağu 2026)*
+67. **Turlar adisyonda saatiyle görünür.** Sepette tur değişince "2. tur · 14:55"
+   başlığı girer (tek turlu adisyonda çıkmaz). Aynı ürün ikinci turda tekrar
+   istendiyse satırlar birleşmez ve kaydedilmiş tura eklenmez — hangi partide ne
+   geldiği kaybolmasın. Kaydedilmemiş kalemler listenin **başında** "Yeni"
+   başlığı altında durur, kaydedilince kendi turuna, sona geçer. *(9 Ağu 2026)*
+68. **Ekranda görünen her tutar kuruşludur.** Tek biçimlendirici
+   (`para.ts → paraGoster`): "₺1.110,00". Toplam ile döküm arasında biçim farkı
+   olmuyor. *(9 Ağu 2026)*
+
 ## 7. KOD PAYLAŞIM DÜZENİ
 - Kod GitHub'da: `github.com/ramazann1/garso` (şimdilik Public — final'de Private yapılacak)
 - **Claude'un repoya erişim yöntemi:** seans başında bash ile tarball indirilir:
@@ -917,3 +940,38 @@ Bölüm 6'ya **58-61** numaralarıyla işlendi.
 ### Sonraki seansın ilk işi
 **Paket & Gel Al revizyonu.** Ramazan bu bölümde değişiklik istiyor, ne
 olduğunu henüz söylemedi — seansa girer girmez sor.
+
+## 13. SEANS GÜNLÜĞÜ — 9 AĞU 2026
+
+### Yapılanlar
+- ✅ **Paket & Gel Al revizyonu** — sekme bölgelerden ayrılıp şeridin en sağına
+  alındı; sekmeye girince iki büyük kart (Paket / Gel Al), türün içinde sipariş
+  listesi ve "Yeni sipariş". Tür seçici yeni siparişten kalktı (karar 62).
+- ✅ **Salon sekmesi hatırlanıyor** — masaya girip dönünce veya sayfa
+  yenilenince seçili bölge sıfırlanıyordu; `localStorage`'a alındı (karar 63).
+- ✅ **KDV dahil / hariç ayarı** — `isletme_ayarlari` tablosu, İşletme
+  Ayarları'nda yeni **Satış** sekmesi. Hariç modda vergi adisyon toplamının
+  üstüne biniyor; `kdv.ts` ve `adisyonOzeti` ayarı okuyor (karar 64).
+- ✅ **Ön tanımlı indirimler** — `indirim_tanimlari`; Satış sekmesinden tanım,
+  indirim penceresinde hazır düğmeler. Uygulanan indirimin kaynağı adisyona ve
+  kaleme yazılıyor, rapor için veri hazır (karar 65).
+- ✅ **Satış ayar ekranı yeniden tasarlandı** — ikon başlıklı iki kart yerine
+  tek kart içinde ayar satırları; soluk yazı temizlendi (karar 66).
+- ✅ **Seçenek grubunda en az seçim ve varsayılan seçenek** — `secenek_gruplari.en_az`,
+  `secenekler.varsayilan`. Grup panelinde sayı alanı ve satır yıldızı; satışta
+  yıldızlı seçenek işaretli geliyor, "en az 2" tutmadan Ekle açılmıyor.
+- ✅ **Turlar arayüze çıktı** — sepette "2. tur · 14:55" başlıkları; birleştirme
+  kuralları tura göre düzeltildi, yeni kalemler listenin başında (karar 67).
+- ✅ **Adisyon paneli toparlandı** — genişlik 280 → 360px, kalem satırları ve
+  alt bölüm daraltıldı, üç ödeme düğmesi tek satıra indi, Ara Toplam açılır
+  kapanır KDV kapağı oldu, tüm tutarlar kuruşlu (karar 68).
+- ✅ **Ürün panelinde seçenek grupları** — akordeon oldu, çip yığını yerine alt
+  alta işaretleme listesi. Kategori şeridi 190 → 240px.
+
+### Kararlar
+Bölüm 6'ya **62-68** numaralarıyla işlendi. Yol haritasına da kritik karar 7
+eklendi: garson iki düzeyde tutulur (masayı açan / turu yazan).
+
+### Sonraki seansın ilk işi
+**Adisyon düzeyi alanlar** — adisyon no, serbest isim, kişi sayısı, adisyon
+notu, müşteri.

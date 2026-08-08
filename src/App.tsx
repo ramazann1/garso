@@ -1,10 +1,21 @@
+import { useEffect, useState } from "react";
 import { BrowserRouter, Navigate, Routes, Route } from "react-router-dom";
+import { ayarlariGetir } from "./isletmeAyarlari";
 import Salon from "./pages/Salon";
 import Siparis from "./pages/Siparis";
 import MenuStudyosu from "./pages/MenuStudyosu";
 import IsletmeAyarlari from "./pages/IsletmeAyarlari";
 
 function App() {
+  // İşletme ayarları toplam hesabına giriyor; okunmadan hiçbir ekran çizilmiyor
+  // ki fiyatlar bir an yanlış görünüp sonra düzelmesin.
+  const [hazir, setHazir] = useState(false);
+  useEffect(() => {
+    ayarlariGetir().finally(() => setHazir(true));
+  }, []);
+
+  if (!hazir) return <div className="yukleniyor"><div className="cember" /></div>;
+
   return (
     <BrowserRouter>
       <Routes>

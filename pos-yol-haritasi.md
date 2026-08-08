@@ -108,6 +108,8 @@ Amaç: Yoğun bir restoranın mutfak-servis akışını taşıyabilmeli.
 - [ ] Paket servis + gel-al akışı, müşteri/adres kayıtları
 - [ ] Kurye atama ve teslimat durumu takibi
 - [ ] Garson mobil sipariş ekranı (PWA)
+- [ ] Personel + PIN girişi; adisyonu açan garson masa kartında, turu yazan
+      garson tur başlığında (`turlar.garson_id`) — karar 7
 - [ ] Offline dayanıklılık: bağlantı kopunca kuyruklama, senkronizasyon
 
 ### FAZ 3 — Büyüme Özellikleri (6-8 hafta)
@@ -136,6 +138,12 @@ Amaç: Yoğun bir restoranın mutfak-servis akışını taşıyabilmeli.
 4. **Yazdırma soyutlaması:** "Print job" kuyruğu → hedef yazıcı eşlemesi; KDS ekranı da aynı kuyruğun bir tüketicisi.
 5. **Olay tabanlı senkron:** Sipariş olayları (eklendi, hazır, ödendi) WebSocket ile yayınlanır; KDS, garson ekranı, kasa hepsi aynı olay akışını dinler.
 6. **Yetki matrisi:** İptal, indirim, ikram gibi hassas işlemler rol bazlı; her işlemde "kim yaptı" logu.
+7. **Garson iki düzeyde tutulur:** Masa kartında görünen isim adisyonu **açan**
+   garsondur (salonda "bu masa kimin" sorusunun cevabı, tek isim). Sonradan ürün
+   yazan garson ise **turun** sahibidir — `turlar.garson_id` ile tutulur ve
+   adisyondaki tur başlığında görünür ("2. tur · 00:42 · Ayşe"). Prim/hakediş
+   raporu tur bazlı çıkar. Personel + PIN sistemiyle birlikte yapılacak, sütun
+   şimdiden boş açılmıyor. *(9 Ağu 2026)*
 
 ---
 
