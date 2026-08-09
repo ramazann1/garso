@@ -6,9 +6,12 @@ import {
   Check,
   ChevronDown,
   Percent,
+  Pencil,
   ShoppingBag,
   SlidersHorizontal,
   Star,
+  StickyNote,
+  Users,
   Wallet,
   X,
   Zap,
@@ -33,6 +36,8 @@ import IndirimModal from "../components/IndirimModal";
 import KdvDokum from "../components/KdvDokum";
 import OnayModal from "../components/OnayModal";
 import KalemPaneli from "../components/KalemPaneli";
+import AdisyonBilgi from "../components/AdisyonBilgi";
+import type { AdisyonBilgisi } from "../components/AdisyonBilgi";
 import { kilitKaldir, kilitKur } from "../cikisKilidi";
 import { kdvDokumu } from "../kdv";
 import { paraGoster } from "../para";
@@ -49,12 +54,29 @@ import type {
 } from "../types";
 
 // Adisyonun kaydedilmiş hâliyle karşılaştırmak için sadeleştirilmiş imzası.
-function adisyonImzasi(sepet: SepetKalemi[], indirim: number, tahsilatlar: Tahsilat[]) {
+function adisyonImzasi(
+  sepet: SepetKalemi[],
+  indirim: number,
+  tahsilatlar: Tahsilat[],
+  bilgi: AdisyonBilgisi = {}
+) {
   return JSON.stringify({
     sepet: sepet.map((k) => [k.id, k.adet, k.fiyat, k.durum ?? "normal", k.indirim ?? 0]),
     indirim,
     tahsilat: tahsilatlar.map((t) => [t.tip, t.tutar]),
+    bilgi: [bilgi.ad ?? "", bilgi.kisiSayisi ?? 0, bilgi.not ?? "", bilgi.musteriAd ?? "", bilgi.musteriTelefon ?? ""],
   });
+}
+
+// Adisyon satırından ekranın kullandığı bilgi kutusu.
+function adisyondanBilgi(veri: AdisyonVerisi): AdisyonBilgisi {
+  return {
+    ad: veri.ad,
+    kisiSayisi: veri.kisiSayisi,
+    not: veri.not,
+    musteriAd: veri.musteri?.ad,
+    musteriTelefon: veri.musteri?.telefon,
+  };
 }
 
 // Aynı ürünün aynı durumdaki satırları tek satırda toplanır — ikram veya iptal
@@ -112,8 +134,6 @@ export default function Siparis() {
     : "masa";
 
   const adisyonuOku = () => (masasiz ? masasizGetir(adisyonId) : adisyonGetir(masaId));
-  const adisyonuYaz = (veri: AdisyonVerisi, kapat = false) =>
-    masasiz ? masasizKaydet(adisyonId, veri, kapat) : adisyonKaydet(masaId, veri, kapat);
   const navigate = useNavigate();
   const [kategoriler, setKategoriler] = useState<MenuKategori[]>([]);
   const [urunler, setUrunler] = useState<MenuUrun[]>([]);
@@ -144,6 +164,24 @@ export default function Siparis() {
   const [cikisSorusu, setCikisSorusu] = useState(false);
   const [seciliKalem, setSeciliKalem] = useState<SepetKalemi | null>(null);
   const [tasimaUyarisi, setTasimaUyarisi] = useState<string | null>(null);
+  // Adisyonun kendi bilgileri: ad, kişi sayısı, not ve müşteri. Sepetle birlikte
+  // kaydediliyor — masalı adisyon ilk ürün girilene kadar diskte yok.
+  const [bilgi, setBilgi] = useState<AdisyonBilgisi>({});
+  const [bilgiAcik, setBilgiAcik] = useState(false);
+  const [adisyonNo, setAdisyonNo] = useState<number | undefined>();
+
+  // Kaydetme çağrılarının hepsi buradan geçiyor ki adisyon bilgisi hiçbir
+  // yoldan düşmesin.
+  const adisyonuYaz = (veri: AdisyonVerisi, kapat = false) => {
+    const tam: AdisyonVerisi = {
+      ...veri,
+      ad: bilgi.ad ?? "",
+      kisiSayisi: bilgi.kisiSayisi ?? 0,
+      not: bilgi.not ?? "",
+      musteri: { ad: bilgi.musteriAd ?? "", telefon: bilgi.musteriTelefon ?? "" },
+    };
+    return masasiz ? masasizKaydet(adisyonId, tam, kapat) : adisyonKaydet(masaId, tam, kapat);
+  };
 
   useEffect(() => {
     menuGetir().then((veri) => {
@@ -171,7 +209,11 @@ export default function Siparis() {
       setIndirim(veri.indirim);
       setIndirimTanim(veri.indirimTanim);
       setKayitliTahsilatlar(veri.tahsilatlar);
-      setKayitliImza(adisyonImzasi(veri.sepet, veri.indirim, veri.tahsilatlar));
+      setKayitliImza(
+        adisyonImzasi(veri.sepet, veri.indirim, veri.tahsilatlar, adisyondanBilgi(veri))
+      );
+      setAdisyonNo(veri.no);
+      setBilgi(adisyondanBilgi(veri));
       if (masasiz) setMasasizBilgi(veri);
       setYukleniyor(false);
     });
@@ -286,7 +328,8 @@ export default function Siparis() {
   const odenen = kayitliTahsilatlar.reduce((t, o) => t + o.tutar, 0);
   const kalan = Math.max(0, toplam - odenen);
 
-  const kirli = !yukleniyor && adisyonImzasi(sepet, indirim, kayitliTahsilatlar) !== kayitliImza;
+  const kirli =
+    !yukleniyor && adisyonImzasi(sepet, indirim, kayitliTahsilatlar, bilgi) !== kayitliImza;
 
   // Sol menü de aynı kilide bakıyor; sipariş ekranı bugün menüsüz açılıyor ama
   // kural tek yerden işlesin.
@@ -302,7 +345,10 @@ export default function Siparis() {
     setSepet(veri.sepet);
     setIndirim(veri.indirim);
     setKayitliTahsilatlar(veri.tahsilatlar);
-    setKayitliImza(adisyonImzasi(veri.sepet, veri.indirim, veri.tahsilatlar));
+    setBilgi(adisyondanBilgi(veri));
+    setKayitliImza(
+      adisyonImzasi(veri.sepet, veri.indirim, veri.tahsilatlar, adisyondanBilgi(veri))
+    );
   };
 
   // Taşıma veritabanı üstünde çalışıyor: ekrandaki henüz kaydedilmemiş kalemin
@@ -347,13 +393,41 @@ export default function Siparis() {
             <>
               {masasizBilgi?.tip === "paket" ? <Bike size={19} /> : <ShoppingBag size={19} />}
               {masasizBilgi?.tip === "paket" ? "Paket" : "Gel Al"}
-              {masasizBilgi?.no ? ` #${masasizBilgi.no}` : ""}
-              {masasizBilgi?.musteri?.ad ? ` · ${masasizBilgi.musteri.ad}` : ""}
+              {adisyonNo ? ` #${adisyonNo}` : ""}
+              {bilgi.musteriAd ? ` · ${bilgi.musteriAd}` : ""}
             </>
           ) : (
-            masaAdi
+            <>
+              {masaAdi}
+              {adisyonNo ? <em className="adisyon-no">#{adisyonNo}</em> : null}
+            </>
           )}
         </h1>
+
+        {/* Adisyonun kendi bilgileri başlığın altında duruyor: girilmişse
+            görünür, girilmemişse düğme onları eklemeye çağırıyor. */}
+        <button className="adisyon-bilgi-tus" onClick={() => setBilgiAcik(true)}>
+          {bilgi.ad && <span className="bilgi-oge">{bilgi.ad}</span>}
+          {!!bilgi.kisiSayisi && (
+            <span className="bilgi-oge">
+              <Users size={14} />
+              {bilgi.kisiSayisi} kişi
+            </span>
+          )}
+          {bilgi.musteriAd && !masasiz && <span className="bilgi-oge">{bilgi.musteriAd}</span>}
+          {bilgi.not && (
+            <span className="bilgi-oge">
+              <StickyNote size={14} />
+              {bilgi.not}
+            </span>
+          )}
+          <span className="bilgi-duzenle">
+            <Pencil size={14} />
+            {bilgi.ad || bilgi.kisiSayisi || bilgi.not || bilgi.musteriAd
+              ? "Düzenle"
+              : "Adisyon bilgisi ekle"}
+          </span>
+        </button>
       </header>
 
       <div className="siparis-govde">
@@ -688,6 +762,16 @@ export default function Siparis() {
             );
             setSeciliKalem(null);
           }}
+        />
+      )}
+
+      {bilgiAcik && (
+        <AdisyonBilgi
+          baslik={masasiz ? (masasizBilgi?.tip === "paket" ? "Paket" : "Gel Al") : masaAdi}
+          no={adisyonNo}
+          bilgi={bilgi}
+          onKapat={() => setBilgiAcik(false)}
+          onKaydet={(yeni) => { setBilgi(yeni); setBilgiAcik(false); }}
         />
       )}
 

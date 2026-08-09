@@ -1,6 +1,6 @@
 import { useEffect, useRef, useState } from "react";
 import type { ReactNode } from "react";
-import { CircleCheckBig, Clock, MoreVertical, Plus } from "lucide-react";
+import { CircleCheckBig, Clock, MoreVertical, Plus, Users } from "lucide-react";
 import type { Masa, MasaDurumu } from "../types";
 
 // Salon kartında kuruş yer kaplıyor; tam lira yeterli, garson tutarı tek bakışta
@@ -86,6 +86,15 @@ export default function MasaKarti({ masa, durum, aksiyonlar, onClick }: Props) {
               {durum.sure}
             </span>
           </span>
+
+          {/* Kişi sayısı üç nokta düğmesinin solunda, onunla aynı hizada:
+              satır akışına girmiyor ki kart düzeni masadan masaya kaymasın. */}
+          {!!durum.kisiSayisi && (
+            <span className="masa-kisi">
+              <Users size={13} />
+              {durum.kisiSayisi}
+            </span>
+          )}
 
           {/* Rakamlar her dolu masada aynı düzende: masadan masaya kayan bir
               yerleşim yerine üç sütun hep aynı yerde duruyor. */}

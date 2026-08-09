@@ -516,3 +516,174 @@ kuver/garsoniye, ön tanımlı indirimler.
 7. **Modüllerin eklenti olarak satılması** — Adisyo'da KDS, Stok/Reçete,
    Kuver&Garsoniye, Maliyet Analizi "Uygulama Mağazası"ndan ekleniyor, bazıları
    Pro Plan'a bağlı. Garso ticarileşirken paketleme modeli için örnek. → Faz 4
+
+---
+
+## 9. AYARLAR, KULLANICILAR & MÜŞTERİ CARİSİ — CANLI DERİN TUR (9 Ağu 2026)
+*Adisyo panelinde ayar ve tanım tarafı baştan sona gezildi. Bölüm 8'de anlatılan
+Tanımlamalar ekranları (masa/bölge, özellikler, mutfak grupları, kuver, ödenmezler)
+burada tekrarlanmıyor; bu bölüm o turda hiç görülmemiş ekranları anlatıyor.*
+
+### 9.1 Kullanıcılar (`/app/users`)
+Liste: No · Ad/Soyad (sıralanabilir) · E-posta · Telefon (kopyalanabilir) · Görev ·
+**Son Giriş / Çıkış tarihi**. Başlıkta "Kullanıcı Sayısı".
+
+**Kullanıcı formu:** Görev*, Ad Soyad*, E-posta (isteğe bağlı), Telefon*, Şifre*,
+**Bölge seçimi (çoklu onay kutusu)** — garsonun hangi bölgelere bakacağı; üç anahtar:
+- *CallerID kullanıcısı*
+- *Kullanıcı Girişi Engellensin* — "aktifken kullanıcı giriş yapamaz" (silmeden askıya alma)
+- *Pin Kullanılsın* → açılınca **Pin Numarası (0 ile başlayamaz)** alanı çıkıyor, 4 hane.
+  Açıklaması: "Birden fazla kullanıcının tek bir ekranı kullandığı durumlarda hızlıca
+  geçiş yapmak için; mail ve şifre ile giriş zorunluluğu ortadan kalkar."
+
+Düzenlemede aynı form + **Sil**. Görevler **sabit ve kapalı liste**: Garson, Mutfak,
+Kurye, Kasa, Müdür, Çağrı Merkezi (üst plan) ve **Teknik** ("yazıcı kullanımı için,
+kullanıcı limitine dahil değildir"). Hesap sahibi ayrıca "Yönetici" olarak görünüyor.
+→ **Garso kararı:** roller kapalı liste değil, `roles` tablosu olacak; ama kurulumda
+bu 6 rol hazır gelecek (hazır şablon deseni).
+
+### 9.2 Yetki / İzin ekranı (`/app/rights`)
+Tek tablo: satır = izin, sütun = 6 rol, tek **Kaydet**. Kullanıcıya değil **role**
+veriliyor. Gruplar ve satır sayıları:
+- **Restaurant Tanım (11):** masa/bölge, genel tanımlamalar, genel kullanıcı işlemleri,
+  yetkilendirme, stok girişi/sayımı, paket entegrasyon durumu, B2B sipariş, stok
+  miktarı görüntüleme, merkezi entegrasyon, merkezi eşleştirme, entegrasyon ekranı
+- **Gider (2):** gider ekleme / düzenleme-silme (ayrı!)
+- **Sipariş (22):** sipariş alma · üründen çıkarma · ödemede indirim · **sadece ön
+  tanımlı indirim** · ikram · ödeme alma · sipariş iptali · **sipariş iadesi** · paket
+  alma · gel-al alma · ürün taşıma · **kapatılmış/iptal siparişi görüntüleme** · açık
+  hesaba aktarma · şube değiştirme · masa değiştirme-birleştirme-adisyon aktarma ·
+  ürün fiyatı değiştirme · miktar değiştirme · manuel sipariş yazdırma · manuel mutfak
+  çıktısı · ÖKC kapatma · para çekmecesi açma · kuver/garsoniye ekleme
+- **Mutfak (1)**, **Kurye (2):** kurye işlemleri, ödeme tipini değiştirme
+- **Rapor (4):** tüm raporlar, gün sonu, gider, **kasa açılış/kapanış tutarını değiştirme**
+- **Ürün (4):** ürün/özellik/menü/reçete/birim tanımlama, fiyat düzenleme, entegrasyon
+  ürünleri ve fiyatları
+
+### 9.3 Restaurant Ayarları (`/app/settings`) — hesap menüsünde, sol menüde DEĞİL
+Hesap menüsü: Profil · **Restaurant Ayarları** · Hesap Bilgileri · Sosyal Medya · Çıkış.
+Ekran 6 sekme, tek **Güncelle** düğmesi:
+
+**a) Genel Ayarlar:** Restaurant Adı · **Gün Başlangıç / Gün Bitiş** (08:45 → 08:40 =
+kasa günü) · Bildirim Sesi + "Dene" · **Ekran kilit süresi (sn, 0 = kapalı)** ·
+**Çalışma Tipleri** (Masa/Paket/Gel Al — kullanılmayan tip arayüzden kalkıyor) ·
+"Konumu Kaydet" · **Gelir Merkezlerini Düzenle** (satış kanalı tanımı; varsayılan
+"Ana Kanal", raporlarda ve stok hareketlerinde sütun olarak çıkıyor).
+
+**b) Ödeme Tipleri:** hazır katalog (Nakit, Kredi Kartı, Multinet, SetCard, Smart
+Ticket, Pluxee, Ticket Kupon, Getir Online, YemekSepeti Vale, Paye...) her biri
+**aç/kapa anahtarı + sürükleyerek sıralama**; ayrıca "Ödeme Tiplerini Düzenle" →
+**Dinamik Ödeme Tipleri** (işletmenin kendi tanımladığı tipler).
+
+**c) Parametreler — 25 anahtar.** Tam liste:
+1. Kasa açılış/kapanış işlemleri kullanıcı tarafından yönetilsin
+2. Gün sonu çıktısı alabilmek için açıkta sipariş olmasın
+3. Perakende Modülü
+4. Sipariş hazır olduğunda zili çal (mutfak→garson sesli+yazılı bildirim)
+5. **Misafir sayısı girişi zorunlu olsun**
+6. **Adisyon gruplama aktif** — aynı masada birden fazla adisyon (ayrı ödeyen gruplar)
+7. Siparişi marşlı şekilde gönderme (mutfağa hazırlama sırası bilgisi)
+8. Her işlemden sonra kilit ekranı otomatik açılsın
+9. Pin ile girişi engelle
+10. Telefon çaldığında müşteri ekranına gitsin (CallerID)
+11. Sipariş durum ekranı kullanılsın (gel-al için TV ekranı)
+12. Mutfak yazıcısı için manuel yazdırma yapılsın
+13. Ödemesi alınmış siparişleri otomatik kapat ("hazır" komutunda)
+14. Gel Al siparişte direkt kapatma pasif olsun
+15. Adisyon fişleri cihaz özelinde çıksın
+16. **Yazıcı ve sipariş ekranında ürün fiyatı KDV hariç gösterilsin**
+17. Kuryeler sadece kendilerine atanan siparişleri görebilsin
+18. Yazar kasadan ödemesi alınan gel-al siparişler otomatik kapansın
+19. Müşteri ekranlarında KVKK/e-posta/SMS izin durumlarını göster
+20. **Ödeme alındığında para çekmecesi açılsın**
+21. **Hızlı ödemede para üstü kullanılsın**
+22. Garson ve Kurye satış raporlarını sadece mobilde görebilsin
+23. Kurye atanmamış siparişlerde adres mobilde gizlensin
+24. **Eksi stoğa izin verilsin**
+25. Sipariş kaydedildiğinde kasa yazıcısından da fiş çıksın — **Masa / Paket / Gel Al
+    için ayrı ayrı anahtar**
+
+**d) Döviz Ayarları:** "Döviz ile ödeme aktif" + para birimi başına kur.
+**e) Adres Bilgileri:** ülke/şehir/ilçe/mahalle/sokak/bina no/posta kodu.
+**f) Entegrasyon:** Mobil App Key, Web App Key, App Secret (dış entegrasyon).
+
+**Ekran İşlemleri (üst ⋮):** Tam Ekran · **Uzantıyı Yükle** (yazıcı köprüsü) ·
+**Kilit Ekranı**. **Profil:** Kullanıcı Bilgileri (ad, soyad, telefon, e-posta,
+**kendi PIN'i**) · Parola Değişikliği · Gizlilik ve Güvenlik · Dil ve Bölge · Hesap Ayarları.
+
+### 9.4 Müşteriler ve cari hesap (`/app/restaurant-customers`)
+Liste başlığında **Müşteri Sayısı + Toplam Bakiye**; Excel **Yükle/İndir**; arama;
+**Filtreler: "Yalnızca açık hesap müşterileri" / "Yalnızca borcu olanlar"**.
+Sütunlar: No (#) · Ad Soyad · Telefon · Adres · **Açık Hesap Müşterisi** · Bakiye.
+
+**Müşteri formu:** Ad*, Soyad, Telefon, **Telefon 2**, **Açılış Bakiyesi**, çoklu adres.
+**Adres formu:** Başlık (Ev/İşyeri/Diğer, en fazla 15 karakter)*, Adres*, **Adres
+Tarifi/Notu**, İl / İlçe / Mahalle (bağlı açılır listeler), **Varsayılan Adres**.
+
+**Müşteri Detay (`/app/customer-detail/{id}`) — cari kartın kalbi.**
+Üst aksiyonlar: Geri · İndir · **Bakiye Güncelle** · **Ödeme Al**.
+Sol sütun: **Açık Hesap anahtarı**, ad, **Toplam Tutar / Ödenen Tutar / Kalan Bakiye**,
+telefon, adres, Sil / Düzenle. Sağda 4 sekme:
+- **Aktiviteler** — zaman çizelgesi; her satır tarih + olay ("Bakiye Güncellendi =>
+  Eski Bakiye: 3044,00 - Yeni Bakiye: 0,00", "818 tutarında Açık Hesap ödemesi alındı").
+  Üstte **serbest not ekleme** kutusu var (müşteriye elle not düşülüyor).
+- **Adisyonlar** — Adisyon No (tıklanabilir) · Ödeme Tarihi · Ödeme Tipi · Tutar;
+  üstte "Sadece açık hesap tahsilatları gösterilsin" kutusu.
+- **Yapılan Ödemeler** — Tahsilat No · Tarih · Ödeme Tipi ("Açık Hesap Alacak Fişi") · Tutar.
+- **Hesap Ekstresi** — üstte **BORÇ / ALACAK / BAKİYE**; satırlar: Tarih · Hareket
+  (Satış, Bakiye Güncelleme) · Ödeme Tipi · Borç · Alacak · **yürüyen bakiye**.
+
+**Ödeme Al modalı:** Toplam Tutar (borç) · **İndirim Tutarı + "Uygula"** · Ödenecek
+Tutar · Ödeme Tipi · Kaydet. **Bakiye Güncelleme modalı:** tek alan "Yeni Bakiye";
+fark ekstreye "Açık Hesap Alacak Fişi" olarak düşüyor.
+
+### 9.5 KAPANMIŞ ADİSYON DETAYI — aradığımız ekran burasıymış
+Adisyon numarasına tıklanınca açılan pencere (müşteri kartından ve raporlardan aynı
+pencere açılıyor). Üst aksiyonlar: **Geri · Siparişe git · Siparişi İade Et ·
+Siparişi Aktif Et (kapanmış adisyonu yeniden açma) · Sipariş geçmişi · Yazdır.**
+Üç sütun:
+1. **Sipariş Bilgileri** — katlanır "Zaman Bilgileri" (Siparişin Eklendiği Zaman,
+   Güncelleme Zamanı), Sipariş Türü, Entegrasyon Tipi, Müşteri, **Durum (Kapandı)**,
+   Sipariş Notu, Müşteri Adresi, **İndirim Adı**.
+2. **Ürünler** — her satır: adet · porsiyon · **tarih-saat (ürünü giren kullanıcı)** ·
+   ürün adı · tutar. Altında Ara Toplam / **Brüt Tutar** / KDV / Toplam Tutar.
+3. **Tahsilatlar** — ödeme tipi (açık hesapsa müşteri adı) + tutar, TOPLAM TAHSİL EDİLEN.
+
+**Sipariş geçmişi** ayrı bir zaman çizelgesi: "Sipariş Açıldı (Hülya Hn)" → "Yeni ürün
+veya ürünler eklendi (Hülya Hn)" + **Ürünler** bağlantısı (o turda eklenenler balonda
+"(1) COCA-COLA") → "Ödeme işlemi yapıldı (Açık Hesap - 818) (İLYAS AKTAŞ)" →
+"Sipariş kapatıldı". Yani `audit_log` tasarımımızın birebir arayüz karşılığı.
+
+### 9.6 Gider / Masraf (`/app/restaurant-expenses`)
+İlk açılışta **hazır gider grubu seçtirme modalı** (Faturalar, Vergi ve Resmi Giderler,
+Personel, Temizlik ve Hijyen, Gıda ve İçecek, Teknik Servis ve Bakım, Kira ve Aidat,
+Diğer) + "Manuel Tanımla". Liste: tarih aralığı (varsayılan **kasa günü**) + 2 filtre +
+"Tümünü Göster"; sütunlar: Masraf Tipi · Masraf Tarihi · **Eklenme Tarihi** · Kullanıcı ·
+Ödeme Tipi · Tutar · Masraf Detayı · İşlemler. **Masraf Ekle:** masraf tipi*, ödeme
+tipi*, tarih*, saat*, tutar*, açıklama*.
+
+### 9.7 Bu turda çıkan kararlar ve Garso'ya alınacaklar
+1. **Kapanmış adisyon ayrı bir liste ekranı değil, ortak bir "adisyon detay penceresi".**
+   Müşteri kartından, raporlardan, ileride masa geçmişinden hep aynı pencere açılır.
+   Garso'da da tek bileşen olacak. → Faz 1
+2. **"Siparişi Aktif Et"** — yanlışlıkla kapatılan adisyonu geri açma. Bizim
+   `durum = kapali → acik` dönüşümümüz; iptal etmekten daha çok işe yarıyor. → Faz 1
+3. **Sipariş geçmişi zaman çizelgesi** — audit_log'un kullanıcıya görünen yüzü.
+   Kim açtı, kim ürün ekledi, kim ödedi, kim kapattı. Personel sistemiyle birlikte. → Faz 1
+4. **Kalem satırında ürünü giren kullanıcı ve saat** — bizde tur bazında var, Adisyo
+   kalem bazında gösteriyor. `turlar.garson_id` bunu zaten karşılayacak. → Faz 1
+5. **İşletme ayarlarımıza alınacak parametreler** (bizde İşletme Ayarları → Satış
+   sekmesi zaten var): kasa günü başlangıç/bitiş saati, misafir/kişi sayısı zorunlu,
+   ekran kilit süresi, para üstü, çalışma tipleri (kullanılmayan sipariş türünü
+   gizleme), adisyon gruplama. Yazıcı ve ÖKC'ye bağlı olanlar Faz 2'ye. → Faz 1
+6. **Hazır şablon deseni her yerde:** gider grupları, roller, ödeme tipleri hazır
+   listeyle geliyor, kullanıcı seçip başlıyor. Garso'nun ilk kurulum akışı da böyle
+   olacak. → Faz 1
+7. **Cari/açık hesap modülünün gerçek kapsamı** bu turda netleşti: müşteri kartı +
+   ekstre (borç/alacak/yürüyen bakiye) + tahsilat + bakiye düzeltme + aktivite notu.
+   Adisyondaki "açık hesaba aktar" bunun tetikleyicisi. → Faz 2/3
+8. **Kullanıcı silmek yerine girişi engelleme** — geçmiş kayıtlar kullanıcıya bağlı
+   kaldığı için silme değil pasifleştirme doğru yol. Garso'da da böyle olacak. → Faz 1
+9. **Bölge–kullanıcı ataması** kullanıcı formunda çoklu seçim olarak duruyor; bizde
+   bölge tanımı var, kullanıcı tarafı personel modülüyle gelecek. → Faz 1
+

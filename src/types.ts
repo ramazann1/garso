@@ -30,6 +30,8 @@ export type MasaDurumu = {
   sure?: string;
   garson?: string;
   gecikti?: boolean;
+  ad?: string; // adisyona verilen serbest ad
+  kisiSayisi?: number;
 };
 export type SepetKalemi = {
   id?: number; // kalem kimliği; negatifse henüz kaydedilmemiş

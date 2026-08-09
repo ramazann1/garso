@@ -332,6 +332,50 @@ body {
   color: var(--metin);
 }
 
+/* Adisyon numarası masa adının yanında, ondan bir tık geride. */
+.siparis-ust h1 .adisyon-no {
+  margin-left: 10px;
+  font-size: 15px;
+  font-weight: 500;
+  font-style: normal;
+  color: var(--soluk);
+}
+
+/* Adisyonun serbest bilgileri: girilenler etiket etiket duruyor, sonda da
+   düzenleme çağrısı var. Tümü tek düğme — nereye basılacağı aranmıyor. */
+.adisyon-bilgi-tus {
+  display: flex;
+  align-items: center;
+  flex-wrap: wrap;
+  gap: 8px 14px;
+  margin-top: 8px;
+  padding: 0;
+  border: none;
+  background: none;
+  font-family: inherit;
+  font-size: 14px;
+  color: var(--metin);
+  cursor: pointer;
+  text-align: left;
+}
+
+.adisyon-bilgi-tus .bilgi-oge {
+  display: inline-flex;
+  align-items: center;
+  gap: 6px;
+  padding: 4px 10px;
+  border-radius: 999px;
+  background: var(--zemin);
+}
+
+.adisyon-bilgi-tus .bilgi-duzenle {
+  display: inline-flex;
+  align-items: center;
+  gap: 6px;
+  font-weight: 500;
+  color: var(--mercan);
+}
+
 .siparis-govde {
   flex: 1;
   display: flex;
@@ -4412,6 +4456,64 @@ body {
   margin-bottom: 7px;
 }
 
+/* Çok satırlı not alanı; kutu görünümü metin kutularıyla aynı. */
+.alan textarea {
+  width: 100%;
+  padding: 11px 12px;
+  border: 1px solid #eee6dc;
+  border-radius: 11px;
+  font-size: 15px;
+  color: var(--metin);
+  background: var(--zemin);
+  resize: vertical;
+  transition: border-color 0.15s ease, box-shadow 0.15s ease, background 0.15s ease;
+}
+
+.alan textarea:focus {
+  outline: none;
+  background: var(--kart);
+  border-color: var(--mercan);
+  box-shadow: 0 0 0 3px rgba(255, 122, 89, 0.16);
+}
+
+/* Kişi sayısı gibi küçük sayılar için artı/eksi; klavye açmadan girilsin. */
+.sayi-secici {
+  display: flex;
+  align-items: center;
+  gap: 14px;
+}
+
+.sayi-secici button {
+  width: 40px;
+  height: 40px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  border: 1px solid #eee6dc;
+  border-radius: 11px;
+  background: var(--zemin);
+  color: var(--metin);
+  cursor: pointer;
+}
+
+.sayi-secici button:hover:not(:disabled) {
+  border-color: var(--mercan);
+  color: var(--mercan);
+}
+
+.sayi-secici button:disabled {
+  opacity: 0.45;
+  cursor: default;
+}
+
+.sayi-secici strong {
+  min-width: 44px;
+  text-align: center;
+  font-size: 19px;
+  font-weight: 600;
+  color: var(--metin);
+}
+
 .ayar-panel .sil-buton {
   display: inline-flex;
   align-items: center;
@@ -5663,6 +5765,24 @@ body {
 
 .masa-baslik .masa-ad {
   min-width: 0;
+}
+
+/* Kişi sayısı üç nokta düğmesinin solunda, onunla aynı yükseklikte. */
+.masa-kisi {
+  position: absolute;
+  top: 10px;
+  right: 46px;
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  gap: 5px;
+  height: 30px;
+  padding: 0 10px;
+  border-radius: 9px;
+  background: rgba(255, 255, 255, 0.2);
+  font-size: 14px;
+  font-weight: 500;
+  color: var(--kart-yazi);
 }
 
 /* Plan görünümünde kutu dar: üç rakam sıkışsın diye aralık ve punto kısılıyor. */

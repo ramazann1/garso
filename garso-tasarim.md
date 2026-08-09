@@ -1,7 +1,7 @@
 # GARSO — Teknik Tasarım: Veri Modeli & Ekran Haritası
 *Restoran ve cafe'ler için bulut tabanlı satış ve işletme yönetim sistemi.*
 
-## 0. SIRADAKİ İŞ (9 Ağu 2026 oturumunda güncellendi)
+## 0. SIRADAKİ İŞ (9 Ağu 2026, 2. oturumda güncellendi)
 
 *Ramazan seansa "devam edelim" diye giriyor — sıradaki iş bu listenin en üstündeki
 maddedir. Seans sonunda bu liste güncellenir: biten madde silinir, kalanlar
@@ -11,15 +11,30 @@ yukarı kayar, yeni çıkanlar sıraya girer.*
 zenginleştirmesi ve Gel Al / Paket akışı bitti.** Eksik envanteri bölüm 6'da,
 Adisyo turları `pos-yol-haritasi.md` bölüm 7 ve 8'de.
 
-1. **Adisyon düzeyi alanlar** — adisyon no, serbest isim, kişi sayısı, adisyon
-   notu, müşteri. Tabloda `adisyon_no` var, ekranda kullanılmıyor.
-2. **Kapanmış adisyonlar listesi** — kapanan adisyon `durum = kapali` olarak
-   duruyor; onları gösteren ekran yok.
-3. **Masa yazdırma ve adisyon iptali** — masa üç nokta menüsünde yerleri boş
-   duruyor; yazdırma yazıcı altyapısına, iptal kapanmış adisyon ekranına bağlı.
-4. **Personel + PIN, tur bazlı garson** — masa kartındaki isim adisyonu açan
-   garson, tur başlığındaki isim o turu yazan garson (`turlar.garson_id`).
-   Yol haritası kararı 7; personel sistemiyle birlikte yapılacak.
+**Sıra 9 Ağu 2026'da değişti.** Rapor ve kapanmış adisyon ekranı öne alınmıştı;
+ikisi de "kim yaptı" bilgisine dayandığı için personel sistemi olmadan yarısı
+baştan yazılacaktı. Önce Ayarlar'ın eksik yarısı (personel/yetki), sonra kasa,
+en son raporlar. Adisyo'nun ayar ve kullanıcı ekranları `pos-yol-haritasi.md`
+bölüm 9'da (9 Ağu 2026 canlı turu) detaylı duruyor.
+
+1. **Personel + PIN + roller/yetkiler** — kullanıcı tanımı (ad, telefon, e-posta,
+   şifre, bölge ataması, PIN, "girişi engellensin"), rol tablosu (Garson, Kasa,
+   Müdür, Mutfak, Kurye hazır gelir), işlem bazlı yetki matrisi. Adisyonu açan
+   garson masa kartında, turu yazan garson tur başlığında (`turlar.garson_id`).
+   İndirim/ikram/iptal yetkiye bağlanır. Yol haritası kararı 7 + bölüm 9.1/9.2.
+2. **İşletme ayarlarına yeni parametreler** — kasa günü başlangıç/bitiş saati,
+   kişi sayısı zorunlu olsun, ekran kilit süresi, para üstü, çalışma tipleri
+   (kullanılmayan sipariş türünü gizle). Bölüm 9.3'teki 25 parametrenin bize
+   uyan kısmı.
+3. **Kasa + gider** — kasa günü açma/kapatma, açılış/kapanış tutarı, masraf tipi
+   tanımları (hazır şablonla) ve masraf girişi. Bölüm 9.6.
+4. **Adisyon detay penceresi + kapanmış adisyonlar** — Adisyo'da ayrı liste ekranı
+   yok; her yerden açılan **tek bir detay penceresi** var (sipariş bilgileri /
+   ürünler / tahsilatlar + "siparişi aktif et", "sipariş geçmişi" zaman çizelgesi).
+   Bizde de tek bileşen olacak. Bölüm 9.5.
+5. **Raporlar → Gün Sonu** — yukarıdaki üçü bittikten sonra tek seferde.
+6. **Masa yazdırma ve adisyon iptali** — masa üç nokta menüsünde yerleri boş
+   duruyor; yazdırma yazıcı altyapısına, iptal adisyon detay penceresine bağlı.
 
 **Ödenmezler** ve **Kuver/Garsoniye** Faz 2'ye yazıldı (yol haritası bölüm 8);
 bu listeye satış çekirdeği bitince girecekler.
@@ -110,6 +125,12 @@ discounts      (id, branch_id, ad, tip ENUM('yuzde','tutar'), deger)
 check_discounts(id, check_id, discount_id NULL, tutar_kurus, user_id, ts)
 audit_log      (id, tenant_id, user_id, eylem, hedef_tablo, hedef_id, detay JSONB, ts)
 ```
+9 Ağu 2026'da adisyon düzeyi alanlar geldi: `adisyonlar.ad` (serbest ad — "Doğum
+günü"), `kisi_sayisi`, `not_metni`; müşteri alanları (`musteri_ad`,
+`musteri_telefon`, `adres`) artık masalı adisyonda da doldurulabiliyor. Bu alanlar
+sipariş ekranının başlığından tek pencerede giriliyor ve sepetle birlikte
+kaydediliyor — kaydetme çağrısı alanı taşımıyorsa sütuna dokunulmuyor.
+
 **Tasarım ilkeleri:** (1) Hiçbir satış kaydı fiziksel silinmez; iptal/ikram durum değişikliği + audit_log. (2) `rounds` katmanı sayesinde mutfağa tur tur gönderim ve adisyonda zaman damgalı gruplama doğal olarak çıkar. (3) `check_items.odenen_kurus` sayesinde ürün bazlı hesap bölme ekstra tablo istemez.
 
 ### Cari, Kasa, Stok (Faz 1.5)

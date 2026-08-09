@@ -16,6 +16,10 @@ export type AdisyonVerisi = {
   garson?: string;
   tip?: AdisyonTipi;
   musteri?: MusteriBilgisi;
+  /** Adisyona verilen serbest ad — "Doğum günü", "Ahmet Bey" gibi. */
+  ad?: string;
+  kisiSayisi?: number;
+  not?: string;
 };
 
 /**
@@ -94,7 +98,7 @@ function kalemeCevir(s: KalemSatiri): SepetKalemi {
 }
 
 const ADISYON_ALANLARI = `id, adisyon_no, indirim, indirim_tanim_id, indirim_ad, acilis, garson, tip,
-       musteri_ad, musteri_telefon, adres,
+       ad, kisi_sayisi, not_metni, musteri_ad, musteri_telefon, adres,
        turlar (sira, olusturma, adisyon_kalemleri (${KALEM_ALANLARI})),
        tahsilatlar (id, tip, tutar, bahsis, kalem_adetleri)`;
 
@@ -152,6 +156,9 @@ function adisyonaCevir(data: any): AdisyonVerisi {
     acilis: (data as any).acilis,
     garson: (data as any).garson ?? undefined,
     tip: ((data as any).tip ?? "masa") as AdisyonTipi,
+    ad: (data as any).ad ?? undefined,
+    kisiSayisi: (data as any).kisi_sayisi ?? undefined,
+    not: (data as any).not_metni ?? undefined,
     musteri: {
       ad: (data as any).musteri_ad ?? undefined,
       telefon: (data as any).musteri_telefon ?? undefined,
@@ -265,6 +272,8 @@ export type MasaOzeti = {
   adet: number;
   acilis?: string;
   garson?: string;
+  ad?: string;
+  kisiSayisi?: number;
 };
 
 // Salon ekranı için: açık adisyonların masa bazlı özeti. Tahsilatlar da geliyor —
@@ -282,7 +291,7 @@ export async function tumAdisyonlar(): Promise<Record<number, MasaOzeti>> {
   const { data } = await supabase
     .from("adisyonlar")
     .select(
-      `masa_id, acilis, garson, indirim,
+      `masa_id, acilis, garson, indirim, ad, kisi_sayisi,
        turlar (adisyon_kalemleri (adet, fiyat, durum, indirim)),
        tahsilatlar (tutar)`
     )
@@ -313,6 +322,8 @@ export async function tumAdisyonlar(): Promise<Record<number, MasaOzeti>> {
       adet,
       acilis: satir.acilis,
       garson: satir.garson ?? undefined,
+      ad: satir.ad ?? undefined,
+      kisiSayisi: satir.kisi_sayisi ?? undefined,
     };
   }
   return sonuc;
@@ -349,14 +360,23 @@ export async function adisyonKaydet(
   if (!adisyon) {
     const { data } = await supabase
       .from("adisyonlar")
-      .insert({ masa_id: masaId, ...indirimAlanlari(veri), garson: veri.garson ?? null })
+      .insert({
+        masa_id: masaId,
+        ...indirimAlanlari(veri),
+        ...bilgiAlanlari(veri),
+        garson: veri.garson ?? null,
+      })
       .select("id, acilis, indirim")
       .single();
     adisyon = data as { id: number; acilis: string; indirim: number };
   } else {
     await supabase
       .from("adisyonlar")
-      .update({ ...indirimAlanlari(veri), guncelleme: new Date().toISOString() })
+      .update({
+        ...indirimAlanlari(veri),
+        ...bilgiAlanlari(veri),
+        guncelleme: new Date().toISOString(),
+      })
       .eq("id", adisyon.id);
   }
 
@@ -374,10 +394,33 @@ export async function masasizKaydet(
 ): Promise<AdisyonVerisi> {
   await supabase
     .from("adisyonlar")
-    .update({ ...indirimAlanlari(veri), guncelleme: new Date().toISOString() })
+    .update({
+      ...indirimAlanlari(veri),
+      ...bilgiAlanlari(veri),
+      guncelleme: new Date().toISOString(),
+    })
     .eq("id", adisyonId);
 
   return kalemleriYaz(adisyonId, veri, kapat);
+}
+
+/**
+ * Adisyon başlığındaki serbest alanlar. Kaydetme çağrısı bu alanları taşımıyorsa
+ * (sipariş ekranı çoğu zaman yalnız sepeti yazıyor) sütunlara dokunulmuyor —
+ * yoksa daha önce girilmiş isim ve not her kayıtta silinirdi.
+ */
+function bilgiAlanlari(veri: AdisyonVerisi) {
+  const alanlar: Record<string, unknown> = {};
+  if (veri.ad !== undefined) alanlar.ad = veri.ad.trim() || null;
+  if (veri.kisiSayisi !== undefined) alanlar.kisi_sayisi = veri.kisiSayisi || null;
+  if (veri.not !== undefined) alanlar.not_metni = veri.not.trim() || null;
+  if (veri.musteri) {
+    const m = veri.musteri;
+    if (m.ad !== undefined) alanlar.musteri_ad = m.ad.trim() || null;
+    if (m.telefon !== undefined) alanlar.musteri_telefon = m.telefon.trim() || null;
+    if (m.adres !== undefined) alanlar.adres = m.adres.trim() || null;
+  }
+  return alanlar;
 }
 
 // Hesap geneli indirim tutarıyla birlikte hangi tanımdan geldiğini de yazıyor.

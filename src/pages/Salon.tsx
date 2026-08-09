@@ -289,6 +289,8 @@ export default function Salon() {
             sure: acik.acilis ? sureFarki(acik.acilis) : "şimdi",
             garson: acik.garson,
             gecikti: dakika(acik.acilis) >= UZUN_SURE_DK,
+            ad: acik.ad,
+            kisiSayisi: acik.kisiSayisi,
           }
         }
         aksiyonlar={aksiyonlar(masa)}
