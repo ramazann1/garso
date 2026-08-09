@@ -5,6 +5,8 @@ import Salon from "./pages/Salon";
 import Siparis from "./pages/Siparis";
 import MenuStudyosu from "./pages/MenuStudyosu";
 import IsletmeAyarlari from "./pages/IsletmeAyarlari";
+import Personel from "./pages/Personel";
+import Yetkiler from "./pages/Yetkiler";
 
 function App() {
   // İşletme ayarları toplam hesabına giriyor; okunmadan hiçbir ekran çizilmiyor
@@ -25,6 +27,9 @@ function App() {
         <Route path="/menu" element={<Navigate to="/menu/kategoriler" replace />} />
         <Route path="/menu/:bolum" element={<MenuStudyosu />} />
         <Route path="/ayarlar" element={<Navigate to="/ayarlar/masalar" replace />} />
+        <Route path="/ayarlar/personel" element={<Personel />} />
+        <Route path="/ayarlar/yetkiler" element={<Yetkiler />} />
+        <Route path="/ayarlar/kisi-yetkileri" element={<Yetkiler />} />
         <Route path="/ayarlar/:bolum" element={<IsletmeAyarlari />} />
       </Routes>
     </BrowserRouter>

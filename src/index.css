@@ -5797,3 +5797,471 @@ body {
 .plan-masa .masa-rakam.kalan strong {
   font-size: 15px;
 }
+
+/* ---- Personel ---- */
+
+/* Görev ve bölge seçimi: az sayıda seçenek olduğu için açılır liste yerine
+   hepsi görünen çipler; kasada tek dokunuşla seçiliyor. */
+.cip-secim {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 6px;
+}
+
+.cip-secim button {
+  padding: 7px 13px;
+  border: 1px solid #eee6dc;
+  border-radius: 999px;
+  background: var(--kart);
+  color: var(--metin);
+  font-family: inherit;
+  font-size: 14px;
+  cursor: pointer;
+}
+
+.cip-secim button:hover {
+  border-color: var(--mercan);
+  color: var(--mercan);
+}
+
+.cip-secim button.aktif {
+  background: var(--mercan);
+  border-color: var(--mercan);
+  color: #fff;
+}
+
+/* Personel formu: alanlar birbirine yakın dursun, kısa olanlar yan yana. */
+.personel-form .alan { margin-bottom: 14px; }
+
+.personel-form .alan label em {
+  float: right;
+  font-style: normal;
+  font-weight: 400;
+  color: var(--soluk);
+}
+
+.alan-ikili {
+  display: grid;
+  grid-template-columns: 1fr 1fr;
+  gap: 12px;
+}
+
+/* Anahtarlar tek bir kutuda toplanıyor; form alanlarından ayrıldığı belli olsun. */
+.alan-anahtarlar {
+  margin-top: 4px;
+  padding: 4px 12px;
+  border: 1px solid #f0e8de;
+  border-radius: 12px;
+  background: var(--zemin);
+}
+
+/* Kutunun içinde her satırın kendi çerçevesi olması gerekmiyor; aralarında
+   ince bir çizgi yeter. */
+.alan-anahtarlar .anahtar-satir {
+  margin: 0;
+  padding: 11px 0;
+  border: none;
+  border-bottom: 1px solid #f0e8de;
+  border-radius: 0;
+  background: none;
+}
+
+.alan-anahtarlar .anahtar-satir:last-child { border-bottom: none; }
+
+.pin-alan {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  padding: 0 0 12px;
+}
+
+.pin-alan input {
+  flex: 0 0 96px;
+  padding: 9px 12px;
+  border: 1px solid #eee6dc;
+  border-radius: 10px;
+  background: var(--kart);
+  font-family: inherit;
+  font-size: 15px;
+  letter-spacing: 3px;
+  text-align: center;
+  color: var(--metin);
+}
+
+.pin-alan input:focus { outline: none; border-color: var(--mercan); }
+.pin-alan span { font-size: 14px; color: var(--soluk); }
+
+.alan-uyari {
+  display: block;
+  margin-top: 6px;
+  font-size: 14px;
+  color: var(--mercan);
+}
+
+.personel-liste {
+  display: flex;
+  flex-direction: column;
+  gap: 8px;
+  margin-top: 12px;
+}
+
+.personel-satir {
+  display: grid;
+  grid-template-columns: minmax(160px, 1fr) 130px minmax(140px, 1fr) auto;
+  align-items: center;
+  gap: 12px;
+  padding: 10px 12px;
+  border: 1px solid #eee6dc;
+  border-radius: 10px;
+  background: var(--kart);
+}
+
+.personel-satir.kapali { opacity: 0.6; }
+
+.personel-ad {
+  display: flex;
+  flex-direction: column;
+  gap: 2px;
+  font-size: 15px;
+  font-weight: 600;
+}
+
+.personel-ad small {
+  font-size: 14px;
+  font-weight: 400;
+  color: var(--soluk);
+}
+
+.personel-rol {
+  padding: 5px 10px;
+  border-radius: 8px;
+  background: var(--zemin);
+  font-size: 14px;
+  font-weight: 500;
+  text-align: center;
+}
+
+.personel-bilgi {
+  font-size: 14px;
+  color: var(--soluk);
+}
+
+.personel-satir > button {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  width: 30px;
+  height: 30px;
+  border: 1px solid #eee6dc;
+  border-radius: 8px;
+  background: var(--zemin);
+  color: var(--metin);
+  cursor: pointer;
+}
+
+/* Şifre kuralları: yazarken hangi şart tutuyor, hangisi eksik görünsün. */
+.sifre-kurallar {
+  list-style: none;
+  margin: 8px 0 0;
+  padding: 0;
+  display: flex;
+  flex-direction: column;
+  gap: 4px;
+}
+
+.sifre-kurallar li {
+  display: flex;
+  align-items: center;
+  gap: 7px;
+  font-size: 14px;
+  color: var(--soluk);
+}
+
+.sifre-kurallar li svg { flex: 0 0 auto; opacity: 0.55; }
+.sifre-kurallar li.tamam { color: var(--metin); }
+.sifre-kurallar li.tamam svg { color: #4a9e78; opacity: 1; }
+
+/* ---- Yetkiler ---- */
+
+/* Tablo kendi içinde kayıyor: görev başlıkları sayfa aşağı indikçe kaybolmasın,
+   satır adı sola yapışık kalsın. Yükseklik ekrana göre; alttaki kaydet şeridine
+   ve üstteki başlığa yer bırakılıyor. */
+.yetki-tablo-sar {
+  margin-top: 12px;
+  max-height: calc(100vh - 330px);
+  min-height: 320px;
+  overflow: auto;
+  border: 1px solid #f0e8de;
+  border-radius: 14px;
+}
+
+.yetki-tablo {
+  width: 100%;
+  border-collapse: separate;
+  border-spacing: 0;
+  font-size: 14px;
+}
+
+.yetki-tablo th,
+.yetki-tablo td {
+  padding: 8px 10px;
+  text-align: center;
+}
+
+.yetki-tablo tbody td {
+  border-top: 1px solid #f6f0e8;
+}
+
+/* İşlem sütunu: yatay kaydırmada yerinde kalsın ki hangi satıra baktığın belli olsun. */
+.yetki-tablo th:first-child,
+.yetki-tablo td:first-child {
+  position: sticky;
+  left: 0;
+  z-index: 2;
+  min-width: 240px;
+  padding-left: 16px;
+  background: var(--kart);
+  text-align: left;
+}
+
+.yetki-tablo thead th {
+  position: sticky;
+  top: 0;
+  z-index: 3;
+  padding: 14px 10px 12px;
+  background: var(--kart);
+  border-bottom: 1px solid #ece1d4;
+  font-size: 14px;
+  font-weight: 600;
+  color: var(--metin);
+  white-space: nowrap;
+}
+
+.yetki-tablo thead th:first-child {
+  z-index: 4;
+  color: var(--soluk);
+  font-weight: 500;
+}
+
+/* Rol başlığı sütununu tanımlayan küçük rozet. */
+.yetki-tablo thead th span {
+  display: inline-block;
+  padding: 5px 12px;
+  border-radius: 999px;
+  background: var(--zemin);
+}
+
+.yetki-tablo thead th svg {
+  margin-left: 5px;
+  color: var(--soluk);
+  vertical-align: -1px;
+}
+
+.yetki-tablo thead th:first-child span {
+  padding: 0;
+  background: none;
+}
+
+/* Grup başlığı: satırı ortadan kesen büyük harf yerine sola yaslı ince şerit. */
+.yetki-grup-satir td {
+  padding: 0;
+  border-top: 1px solid #f0e8de;
+  background: #faf5ee;
+  text-align: left;
+}
+
+.yetki-grup-satir td span {
+  display: inline-block;
+  padding: 7px 16px;
+  font-size: 14px;
+  font-weight: 600;
+  color: var(--mercan);
+}
+
+/* Tarayıcının kendi tik kutusu siteye yabancı duruyordu; kendi kutumuz. */
+.yetki-kutu {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  width: 26px;
+  height: 26px;
+  border: 1.5px solid #e5d9ca;
+  border-radius: 9px;
+  background: var(--kart);
+  color: #fff;
+  cursor: pointer;
+  transition: border-color 0.12s ease, background 0.12s ease;
+}
+
+.yetki-kutu:hover { border-color: var(--mercan); }
+
+.yetki-kutu.acik {
+  background: var(--mercan);
+  border-color: var(--mercan);
+}
+
+.yetki-kutu:disabled {
+  background: var(--zemin);
+  border-color: #ece1d4;
+  color: var(--soluk);
+  cursor: default;
+}
+
+.yetki-tablo tbody tr:hover td { background: #fdfaf6; }
+.yetki-tablo tbody tr:hover td:first-child { background: #fdfaf6; }
+
+/* Kaydedilmemiş değişiklik varken ekranın altına oturan şerit; uzun tabloda
+   kaydetmek için başa dönmek gerekmesin. */
+.kaydet-serit {
+  position: fixed;
+  left: 50%;
+  bottom: 22px;
+  transform: translateX(-50%);
+  display: flex;
+  align-items: center;
+  gap: 12px;
+  padding: 11px 14px 11px 20px;
+  border: 1px solid #ece1d4;
+  border-radius: 16px;
+  background: var(--kart);
+  box-shadow: 0 8px 28px rgba(45, 52, 54, 0.16);
+  animation: serit-gir 0.2s ease;
+  z-index: 40;
+}
+
+@keyframes serit-gir {
+  from { opacity: 0; transform: translate(-50%, 12px); }
+  to { opacity: 1; transform: translate(-50%, 0); }
+}
+
+.kaydet-serit span {
+  font-size: 15px;
+  font-weight: 500;
+}
+
+.kaydet-serit .iptal,
+.kaydet-serit .uygula {
+  padding: 10px 18px;
+  border-radius: 11px;
+  font-family: inherit;
+  font-size: 14px;
+  font-weight: 600;
+  cursor: pointer;
+}
+
+.kaydet-serit .iptal {
+  border: 1px solid #eee6dc;
+  background: var(--kart);
+  color: var(--metin);
+}
+
+.kaydet-serit .uygula {
+  border: none;
+  background: var(--mercan);
+  color: #fff;
+}
+
+.kaydet-serit .uygula:hover { background: #f26a48; }
+
+/* Kişiye özel yetki penceresi geniş: üç durumlu seçim yan yana sığsın. */
+.ayar-panel.genis { width: 560px; }
+
+.yetki-grup h4 {
+  margin: 16px 0 8px;
+  font-size: 14px;
+  font-weight: 600;
+  color: var(--mercan);
+  letter-spacing: 0.3px;
+  text-transform: uppercase;
+}
+
+.kisi-yetki-satir {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 14px;
+  padding: 7px 0;
+  border-bottom: 1px solid #f4ece2;
+}
+
+.kisi-yetki-satir:last-child { border-bottom: none; }
+
+.kisi-yetki-satir > span {
+  display: flex;
+  flex-direction: column;
+  gap: 2px;
+  font-size: 15px;
+}
+
+.kisi-yetki-satir > span small {
+  font-size: 14px;
+  color: var(--soluk);
+}
+
+.kisi-yetki-satir .mod-sec {
+  flex: 0 0 auto;
+  margin: 0;
+}
+
+.kisi-yetki-satir .mod-sec button {
+  flex: 0 0 auto;
+  padding: 6px 11px;
+  border-radius: 8px;
+  font-size: 14px;
+}
+
+/* Kaydedilecek değişiklik yokken düğme sönük dursun. */
+.ayar-ekle:disabled {
+  opacity: 0.4;
+  cursor: default;
+}
+
+.ayar-ekle:disabled:hover { background: var(--mercan); }
+
+/* Alt şerit: ana bölümün kendi sekmeleri. Üsttekiyle karışmasın diye çerçevesiz
+   ve bir tık küçük duruyor. */
+.ms-sekmeler.alt {
+  /* Blok seviyesinde: üst şeridin yanına değil altına insin. */
+  display: flex;
+  flex-wrap: wrap;
+  justify-content: flex-start;
+  margin-top: 10px;
+  padding: 0;
+  gap: 2px;
+  border: none;
+  background: none;
+}
+
+.ms-sekmeler.alt button {
+  padding: 7px 14px;
+  border-radius: 999px;
+  font-size: 14px;
+}
+
+.ms-sekmeler.alt button.aktif {
+  background: var(--kart);
+  border: 1px solid #ece1d4;
+  color: var(--mercan);
+  box-shadow: none;
+}
+
+/* Kendi alt başlıkları olan menü satırı: adın sağında açılır ok durur. */
+.menu-alt-baglanti:has(.menu-ok) {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 8px;
+}
+
+.menu-alt-baglanti .menu-ok {
+  flex: 0 0 auto;
+  color: var(--soluk);
+}
+
+/* Üçüncü kademe: ikinci kademeyle aynı çizgi düzeni, bir tık içeride. */
+.menu-torun {
+  margin: 2px 0 4px 8px;
+  padding-left: 10px;
+  border-left: 2px solid #eee6dc;
+  animation: menu-alt-ac 0.16s ease;
+}

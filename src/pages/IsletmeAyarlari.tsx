@@ -1,5 +1,5 @@
 import { useEffect, useState } from "react";
-import { useLocation, useNavigate, useParams } from "react-router-dom";
+import { useParams } from "react-router-dom";
 import {
   ChevronDown,
   ChevronLeft,
@@ -16,7 +16,8 @@ import {
   Wallet,
   X,
 } from "lucide-react";
-import Duzen, { ayarBolumleri } from "../components/Duzen";
+import Duzen from "../components/Duzen";
+import AyarBasligi from "../components/AyarBasligi";
 import { acikAdisyonSayisi } from "../adisyonlar";
 import { ayarlar, ayarlariKaydet } from "../isletmeAyarlari";
 import {
@@ -469,8 +470,6 @@ function IndirimPaneli({
 
 export default function IsletmeAyarlari() {
   const { bolum } = useParams();
-  const navigate = useNavigate();
-  const { pathname } = useLocation();
   const odemeBolumu = bolum === "odeme-tipleri";
   const satisBolumu = bolum === "satis";
   const masalarBolumu = !odemeBolumu && !satisBolumu;
@@ -611,20 +610,7 @@ export default function IsletmeAyarlari() {
   return (
     <Duzen>
       <div className="sayfa">
-        <header className="menu-baslik">
-          <h1>İşletme Ayarları</h1>
-          <div className="ms-sekmeler">
-            {ayarBolumleri.map((b) => (
-              <button
-                key={b.yol}
-                className={pathname === b.yol ? "aktif" : ""}
-                onClick={() => navigate(b.yol)}
-              >
-                {b.ad}
-              </button>
-            ))}
-          </div>
-        </header>
+        <AyarBasligi />
 
         <Bilgi>
           {masalarBolumu

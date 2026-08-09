@@ -1,7 +1,7 @@
 # GARSO — Teknik Tasarım: Veri Modeli & Ekran Haritası
 *Restoran ve cafe'ler için bulut tabanlı satış ve işletme yönetim sistemi.*
 
-## 0. SIRADAKİ İŞ (9 Ağu 2026, 2. oturumda güncellendi)
+## 0. SIRADAKİ İŞ (12 Ağu 2026'da güncellendi)
 
 *Ramazan seansa "devam edelim" diye giriyor — sıradaki iş bu listenin en üstündeki
 maddedir. Seans sonunda bu liste güncellenir: biten madde silinir, kalanlar
@@ -17,11 +17,15 @@ baştan yazılacaktı. Önce Ayarlar'ın eksik yarısı (personel/yetki), sonra 
 en son raporlar. Adisyo'nun ayar ve kullanıcı ekranları `pos-yol-haritasi.md`
 bölüm 9'da (9 Ağu 2026 canlı turu) detaylı duruyor.
 
-1. **Personel + PIN + roller/yetkiler** — kullanıcı tanımı (ad, telefon, e-posta,
-   şifre, bölge ataması, PIN, "girişi engellensin"), rol tablosu (Garson, Kasa,
-   Müdür, Mutfak, Kurye hazır gelir), işlem bazlı yetki matrisi. Adisyonu açan
-   garson masa kartında, turu yazan garson tur başlığında (`turlar.garson_id`).
-   İndirim/ikram/iptal yetkiye bağlanır. Yol haritası kararı 7 + bölüm 9.1/9.2.
+**12 Ağu 2026:** Personel tanımı ve yetki ekranları bitti (aşağıdaki 1. maddenin
+ilk iki adımı). Kalan üçüncü adım — yetkinin satışta işletilmesi — listenin başında.
+
+1. **Yetkilerin satışta işletilmesi** — personel oturumu (telefon + şifre girişi,
+   ortak ekranda PIN ile hızlı geçiş), adisyonu açan personelin masa kartında ve
+   turu yazanın tur başlığında görünmesi (`turlar.garson_id`), indirim/ikram/iptal
+   gibi işlemlerin `etkinYetkiler()` ile denetlenmesi. Yetkisiz işlemde engellemek
+   yerine **müdür PIN'i isteyen onay penceresi** düşünüldü (Adisyo'da yok, karar
+   verilecek).
 2. **İşletme ayarlarına yeni parametreler** — kasa günü başlangıç/bitiş saati,
    kişi sayısı zorunlu olsun, ekran kilit süresi, para üstü, çalışma tipleri
    (kullanılmayan sipariş türünü gizle). Bölüm 9.3'teki 25 parametrenin bize
@@ -652,6 +656,32 @@ görüntüle" ve aktif/pasif ürün — 1 Ağu 2026 ikinci seansında tamamland�
    (`para.ts → paraGoster`): "₺1.110,00". Toplam ile döküm arasında biçim farkı
    olmuyor. *(9 Ağu 2026)*
 
+69. **Yetki role verilir, kişiye istisna tanımlanır.** Temel her zaman rolden
+   gelir; `personel_yetkileri` yalnızca "bu kişide farklı olsun" denen satırları
+   tutar (`izin = true` verildi, `false` alındı). Kayıt yoksa rol geçerli.
+   Adisyo'da bu katman yok — bizim farkımız. *(12 Ağu 2026)*
+70. **Roller ve yetkiler hazır dolu gelir.** Kurulumda 6 rol (Yönetici, Müdür,
+   Kasa, Garson, İstasyon, Kurye) ve her rolün makul yetkileri yüklü geliyor;
+   işletmeci boş matrisle karşılaşmıyor, gerekmeyenin tikini kaldırıyor. Hazır
+   yetki yalnızca **hiç yetkisi olmayan** role yazılır, elle yapılan ayar
+   bozulmaz. *(12 Ağu 2026)*
+71. **Personel silinmez, pasifleştirilir.** Geçmiş adisyonlar personele bağlı
+   kaldığı için "Personel listesinde görünsün" kapatılır; Sil düğmesi yalnız
+   yanlış açılmış kayıt için var ve onay penceresi doğru yolu hatırlatır.
+   *(12 Ağu 2026)*
+72. **Telefon giriş bilgisidir: zorunlu ve benzersiz.** Yalnız rakam olarak
+   saklanıyor ("0555 111 22 33" = "05551112233"), iki personelde aynı numara
+   olamaz. Şifre de zorunlu; en az 6 karakter, harf + rakam, yaygın şifre değil
+   (NIST çizgisi: uzunluk esas, karmaşıklık dayatması değil). Şifre ve PIN
+   veritabanına SHA-256 özetiyle yazılıyor. *(12 Ağu 2026)*
+73. **Mutfak değil "İstasyon".** Mutfağın yanı sıra bar, tatlı, ızgara gibi
+   hazırlık noktalarını da kapsıyor; Adisyo'nun "Mutfak" adı bu ekipleri
+   dışarıda bırakıyordu. *(12 Ağu 2026)*
+74. **Uzun tabloda başlıklar ve kaydetme yerinde durur.** Yetki matrisi kendi
+   çerçevesinde kayıyor: görev sütunları üstte, işlem adı solda sabit.
+   Kaydetme, sayfa altında beliren şeritte (Geri al + Kaydet) — kaydetmek için
+   başa dönmek gerekmiyor. *(12 Ağu 2026)*
+
 ## 7. KOD PAYLAŞIM DÜZENİ
 - Kod GitHub'da: `github.com/ramazann1/garso` (şimdilik Public — final'de Private yapılacak)
 - **Claude'un repoya erişim yöntemi:** seans başında bash ile tarball indirilir:
@@ -996,3 +1026,44 @@ eklendi: garson iki düzeyde tutulur (masayı açan / turu yazan).
 ### Sonraki seansın ilk işi
 **Adisyon düzeyi alanlar** — adisyon no, serbest isim, kişi sayısı, adisyon
 notu, müşteri.
+
+## 14. SEANS GÜNLÜĞÜ — 12 AĞU 2026
+
+### Yapılanlar
+- ✅ **Personel modülü** — `personel`, `roller`, `yetkiler`, `rol_yetkileri`,
+  `personel_bolgeleri` tabloları (`sql/2026-08-11-personel.sql`), veri katmanı
+  `src/personel.ts`, ekran `pages/Personel.tsx`. Form: ad, görev, telefon,
+  e-posta, şifre, bölge ataması, PIN ile hızlı geçiş, "girişi engellensin",
+  "listede görünsün". Telefon ve PIN benzersizliği kaydederken denetleniyor.
+- ✅ **Yetki ekranları** — `sql/2026-08-12-kisi-yetkileri.sql`, `src/yetkiler.ts`,
+  `pages/Yetkiler.tsx`. İki bölüm: **Genel Yetkiler** (satır = işlem, sütun = rol,
+  Yönetici sütunu kilitli) ve **Kişiye Özel Yetkiler** (her yetki üç durumlu:
+  Rolden / Verildi / Kaldırıldı). `etkinYetkiler()` satış tarafı için hazır.
+- ✅ **Hazır yetki şablonları** — `sql/2026-08-12-hazir-yetkiler.sql`. Müdür tam
+  yetki; Kasa satış + tahsilat + kasa günü; Garson sipariş + ödeme + yalnız ön
+  tanımlı indirim; Kurye paket + tahsilat; İstasyon boş.
+- ✅ **Ayarlar gezinmesi iki kademeye çıktı** — üst şeritte "Personel ve Yetkiler"
+  tek başlık (Bölgeler ve Masalar'ın hemen altında), altında üç sekme. Sol menüde
+  de açılır oklu üçüncü kademe. Şerit tek yerde toplandı: `components/AyarBasligi.tsx`
+  (önce üç ekranda kopyaydı).
+- ✅ **Yetki matrisi tasarım geçişi** — tarayıcı tik kutusu yerine kendi kutumuz,
+  Yönetici sütununda kilit ikonu, grup başlıkları sola yaslı şerit, sabit
+  başlıklar, altta beliren kaydetme şeridi.
+
+### Denenip vazgeçilenler
+- **"En az bir giriş yolu" kuralı** (e-posta + şifre *veya* PIN): Ramazan reddetti,
+  telefon ve şifre her personelde zorunlu olacak. PIN isteğe bağlı kaldı.
+- **Şifrede ad/telefon yasağı ve 8 karakter**: 6 karaktere indirildi, ad/telefon
+  kontrolü kaldırıldı.
+- **Yetkiler için Adisyo'dan farklı düzen önerileri** (rol odaklı liste, hazır
+  paketler, yönetici PIN onayı): Ramazan matrisi Adisyo gibi istedi; kişiye özel
+  katman eklendi. Yönetici PIN onayı Adım 3'e bırakıldı.
+
+### Kararlar
+Bölüm 6'ya **69-74** numaralarıyla işlendi. Ayrıca hafızaya "tasarımda Claude izi
+olmasın" geri bildirimi yazıldı: kalıp form, her alanın altında açıklama kutusu ve
+eşit boy kart yığını yapma; düzene önce karar ver.
+
+### Sonraki seansın ilk işi
+**Yetkilerin satışta işletilmesi** — personel oturumu (telefon + şifre, ortak
+ekranda PIN), `turlar.garson_id`, işlem denetimi.

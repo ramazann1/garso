@@ -6,13 +6,24 @@ import { kilitKaldir, kilitliMi } from "../cikisKilidi";
 
 // İşletme ayarları tek ekranda büyüdükçe kalabalıklaşıyor; başlıklar menüden
 // ayrı ayrı açılıyor, her biri kendi sayfası.
-export const ayarBolumleri = [
+export type Bolum = { yol: string; ad: string; alt?: Bolum[] };
+
+// Personel tarafı üç ekrana ayrıldı; üst şeridi kalabalıklaştırmamak için tek
+// başlık altında toplanıp kendi alt şeridiyle açılıyor.
+export const personelBolumleri: Bolum[] = [
+  { yol: "/ayarlar/personel", ad: "Personel" },
+  { yol: "/ayarlar/yetkiler", ad: "Genel Yetkiler" },
+  { yol: "/ayarlar/kisi-yetkileri", ad: "Kişiye Özel Yetkiler" },
+];
+
+export const ayarBolumleri: Bolum[] = [
   { yol: "/ayarlar/masalar", ad: "Bölgeler ve Masalar" },
+  { yol: "/ayarlar/personel", ad: "Personel ve Yetkiler", alt: personelBolumleri },
   { yol: "/ayarlar/odeme-tipleri", ad: "Ödeme Tipleri" },
   { yol: "/ayarlar/satis", ad: "Satış" },
 ];
 
-export const menuBolumleri = [
+export const menuBolumleri: Bolum[] = [
   { yol: "/menu/kategoriler", ad: "Kategori ve Ürünler" },
   { yol: "/menu/toplu", ad: "Toplu Düzenle" },
   { yol: "/menu/kampanya", ad: "Kampanyalı Menü" },
@@ -58,6 +69,11 @@ export default function Duzen({ children }: { children: React.ReactNode }) {
   // oradayken de kapatılabilir — açıklık konumdan değil, tıklamadan geliyor.
   const [acikBaslik, setAcikBaslik] = useState<string | null>(
     () => baglantilar.find((b) => b.alt && location.pathname.startsWith(b.yol))?.yol ?? null
+  );
+
+  // Alt başlığın kendi alt başlıkları (Personel ve Yetkiler) açık mı.
+  const [acikAltBaslik, setAcikAltBaslik] = useState<string | null>(() =>
+    personelBolumleri.some((b) => b.yol === location.pathname) ? "/ayarlar/personel" : null
   );
 
   const menuDegis = (yeni: boolean) => {
@@ -111,17 +127,55 @@ export default function Duzen({ children }: { children: React.ReactNode }) {
 
                 {altAcik && (
                   <div className="menu-alt">
-                    {b.alt!.map((a) => (
-                      <button
-                        key={a.yol}
-                        className={
-                          pathname === a.yol ? "menu-alt-baglanti aktif" : "menu-alt-baglanti"
-                        }
-                        onClick={() => git(a.yol)}
-                      >
-                        {a.ad}
-                      </button>
-                    ))}
+                    {b.alt!.map((a) => {
+                      // Kendi alt başlıkları olan bölüm (Personel ve Yetkiler)
+                      // menüde de okla açılıyor; sekmeleri sayfaya girmeden görünsün.
+                      const torunlar = a.alt;
+                      const torunAcik = torunlar && acikAltBaslik === a.yol;
+                      const altIcinde = torunlar
+                        ? torunlar.some((t) => t.yol === pathname)
+                        : pathname === a.yol;
+                      return (
+                        <div key={a.yol}>
+                          <button
+                            className={
+                              altIcinde ? "menu-alt-baglanti aktif" : "menu-alt-baglanti"
+                            }
+                            onClick={() => {
+                              if (!torunlar) return git(a.yol);
+                              setAcikAltBaslik(torunAcik ? null : a.yol);
+                              if (!altIcinde) git(torunlar[0].yol);
+                            }}
+                          >
+                            {a.ad}
+                            {torunlar && (
+                              <ChevronDown
+                                className={torunAcik ? "menu-ok acik" : "menu-ok"}
+                                size={15}
+                              />
+                            )}
+                          </button>
+
+                          {torunAcik && (
+                            <div className="menu-torun">
+                              {torunlar!.map((t) => (
+                                <button
+                                  key={t.yol}
+                                  className={
+                                    pathname === t.yol
+                                      ? "menu-alt-baglanti aktif"
+                                      : "menu-alt-baglanti"
+                                  }
+                                  onClick={() => git(t.yol)}
+                                >
+                                  {t.ad}
+                                </button>
+                              ))}
+                            </div>
+                          )}
+                        </div>
+                      );
+                    })}
                   </div>
                 )}
               </div>
