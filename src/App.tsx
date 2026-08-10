@@ -7,16 +7,31 @@ import MenuStudyosu from "./pages/MenuStudyosu";
 import IsletmeAyarlari from "./pages/IsletmeAyarlari";
 import Personel from "./pages/Personel";
 import Yetkiler from "./pages/Yetkiler";
+import Giris from "./pages/Giris";
+import KilitEkrani from "./components/KilitEkrani";
+import { girisKuruldu, oturumuYukle, useOturum } from "./oturum";
 
 function App() {
+  const { oturum, kilitli } = useOturum();
   // İşletme ayarları toplam hesabına giriyor; okunmadan hiçbir ekran çizilmiyor
   // ki fiyatlar bir an yanlış görünüp sonra düzelmesin.
   const [hazir, setHazir] = useState(false);
+  const [girisGerekli, setGirisGerekli] = useState(true);
   useEffect(() => {
-    ayarlariGetir().finally(() => setHazir(true));
+    Promise.all([
+      ayarlariGetir(),
+      oturumuYukle(),
+      girisKuruldu().then(setGirisGerekli),
+    ]).finally(() => setHazir(true));
   }, []);
 
   if (!hazir) return <div className="yukleniyor"><div className="cember" /></div>;
+
+  // Oturum yoksa hiçbir ekran açılmıyor; adresi elle yazmak da giriş ekranına düşer.
+  if (!oturum && girisGerekli) return <Giris />;
+
+  // Kilit oturumu kapatmıyor, üstünü örtüyor: açık adisyonlar yerinde duruyor.
+  if (oturum && kilitli) return <KilitEkrani />;
 
   return (
     <BrowserRouter>

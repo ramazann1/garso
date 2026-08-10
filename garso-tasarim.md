@@ -1,7 +1,7 @@
 # GARSO — Teknik Tasarım: Veri Modeli & Ekran Haritası
 *Restoran ve cafe'ler için bulut tabanlı satış ve işletme yönetim sistemi.*
 
-## 0. SIRADAKİ İŞ (12 Ağu 2026'da güncellendi)
+## 0. SIRADAKİ İŞ (13 Ağu 2026'da güncellendi)
 
 *Ramazan seansa "devam edelim" diye giriyor — sıradaki iş bu listenin en üstündeki
 maddedir. Seans sonunda bu liste güncellenir: biten madde silinir, kalanlar
@@ -17,27 +17,41 @@ baştan yazılacaktı. Önce Ayarlar'ın eksik yarısı (personel/yetki), sonra 
 en son raporlar. Adisyo'nun ayar ve kullanıcı ekranları `pos-yol-haritasi.md`
 bölüm 9'da (9 Ağu 2026 canlı turu) detaylı duruyor.
 
-**12 Ağu 2026:** Personel tanımı ve yetki ekranları bitti (aşağıdaki 1. maddenin
-ilk iki adımı). Kalan üçüncü adım — yetkinin satışta işletilmesi — listenin başında.
+**13 Ağu 2026:** Oturum kuruldu — giriş ekranı (telefon/e-posta + şifre + beni
+hatırla), kilit ekranı (PIN ile kişi değişimi), yan menüde açık kullanıcı.
+Ardından çok işletmeli yapıya geçiş başladı: `isletme_id` 25 tabloya eklendi
+(çalıştırıldı, doğrulandı) ve kimlik Supabase Auth'a taşındı (kod bitti, SQL
+çalıştırıldı; **giriş henüz çalışır hâlde doğrulanmadı** — elle açılan Auth
+kullanıcısında boş alan düzeltmesi `sql/2026-08-13-hesap-duzeltme.sql` ile
+verildi, sonucu görülmedi).
 
-1. **Yetkilerin satışta işletilmesi** — personel oturumu (telefon + şifre girişi,
-   ortak ekranda PIN ile hızlı geçiş), adisyonu açan personelin masa kartında ve
+1. **Auth geçişini bitir.** Giriş çalışıyor mu doğrula. Çalışmazsa hesap açmayı
+   Supabase Edge Function'a taşı (elle `auth.users` yazmak yerine yönetim API'si).
+   Ardından: `personel.sifre_hash` artık kullanılmıyor, temizlenecek; Personel
+   ekranındaki şifre alanının metni "giriş şifresi" olarak gözden geçirilecek;
+   telefon değişince hesabın da güncellendiği denenecek.
+2. **Satır güvenliği (RLS).** Her tabloda `isletme_id = oturum_isletmesi()`
+   politikası; `oturum_isletmesi()` ve `oturum_yetkisi()` fonksiyonları hazır.
+   Ardından `isletme_id` kolonlarındaki geçici `default 1` kaldırılacak ve kod
+   ekleme yaparken bu değeri kendi yazacak. Ayrıca PIN ve telefon benzersizlik
+   kontrolleri işletme içine daraltılacak (`pinKullanimda`, `telefonKullanimda`).
+3. **Yetkilerin satışta işletilmesi** — adisyonu açan personelin masa kartında ve
    turu yazanın tur başlığında görünmesi (`turlar.garson_id`), indirim/ikram/iptal
-   gibi işlemlerin `etkinYetkiler()` ile denetlenmesi. Yetkisiz işlemde engellemek
+   gibi işlemlerin `yetkiVar()` ile denetlenmesi. Yetkisiz işlemde engellemek
    yerine **müdür PIN'i isteyen onay penceresi** düşünüldü (Adisyo'da yok, karar
    verilecek).
-2. **İşletme ayarlarına yeni parametreler** — kasa günü başlangıç/bitiş saati,
+4. **İşletme ayarlarına yeni parametreler** — kasa günü başlangıç/bitiş saati,
    kişi sayısı zorunlu olsun, ekran kilit süresi, para üstü, çalışma tipleri
    (kullanılmayan sipariş türünü gizle). Bölüm 9.3'teki 25 parametrenin bize
    uyan kısmı.
-3. **Kasa + gider** — kasa günü açma/kapatma, açılış/kapanış tutarı, masraf tipi
+5. **Kasa + gider** — kasa günü açma/kapatma, açılış/kapanış tutarı, masraf tipi
    tanımları (hazır şablonla) ve masraf girişi. Bölüm 9.6.
-4. **Adisyon detay penceresi + kapanmış adisyonlar** — Adisyo'da ayrı liste ekranı
+6. **Adisyon detay penceresi + kapanmış adisyonlar** — Adisyo'da ayrı liste ekranı
    yok; her yerden açılan **tek bir detay penceresi** var (sipariş bilgileri /
    ürünler / tahsilatlar + "siparişi aktif et", "sipariş geçmişi" zaman çizelgesi).
    Bizde de tek bileşen olacak. Bölüm 9.5.
-5. **Raporlar → Gün Sonu** — yukarıdaki üçü bittikten sonra tek seferde.
-6. **Masa yazdırma ve adisyon iptali** — masa üç nokta menüsünde yerleri boş
+7. **Raporlar → Gün Sonu** — yukarıdaki üçü bittikten sonra tek seferde.
+8. **Masa yazdırma ve adisyon iptali** — masa üç nokta menüsünde yerleri boş
    duruyor; yazdırma yazıcı altyapısına, iptal adisyon detay penceresine bağlı.
 
 **Ödenmezler** ve **Kuver/Garsoniye** Faz 2'ye yazıldı (yol haritası bölüm 8);
@@ -681,6 +695,42 @@ görüntüle" ve aktif/pasif ürün — 1 Ağu 2026 ikinci seansında tamamland�
    çerçevesinde kayıyor: görev sütunları üstte, işlem adı solda sabit.
    Kaydetme, sayfa altında beliren şeritte (Geri al + Kaydet) — kaydetmek için
    başa dönmek gerekmiyor. *(12 Ağu 2026)*
+75. **Programa giriş her zaman şifreyledir; PIN yalnızca kilit ekranında
+   çalışır.** PIN kapalı programı açan bir anahtar değil, zaten açık olan
+   oturumun içinde kimin çalıştığını değiştiren kısayoldur. Böylece "bu PIN
+   hangi işletmenin personeline ait" sorusu hiç doğmuyor — oturum zaten bir
+   işletmeye ait. Adisyo'nun kasa modeli de bu (giriş e-posta/telefon + şifre,
+   ayrıca Kilit Ekranı). Mobilde kilit ekranı yok: kişisel cihaz, telefonun
+   kendi kilidi yeterli. *(13 Ağu 2026)*
+76. **Kilit ekranında oturumu kapatma yoktur.** Garson kilidi aşıp oturumu
+   düşürmesin; çıkışı, kilidi kendi PIN'iyle açan yönetici yan menüden yapar.
+   *(13 Ağu 2026)*
+77. **Kilit oturumu kapatmaz, üstünü örter.** Açık adisyonlar ve ekranın
+   bulunduğu yer korunur; kilit tarayıcıya yazıldığı için sayfa yenilense de
+   kalkmaz. *(13 Ağu 2026)*
+78. **Giriş alanı tektir: telefon veya e-posta.** İçinde `@` varsa e-posta
+   olarak aranıyor (harf duyarsız), yoksa telefon. Kullanıcıya "hangisini
+   giriyorsun" sorulmuyor. "Beni hatırla" işaretsizse oturum sekmeyle birlikte
+   biter. *(13 Ağu 2026)*
+79. **Çok işletmeli yapı satıştan önce değil, şimdi kuruluyor.** Her tabloda
+   `isletme_id` var (`yetkiler` hariç — o sistemin ortak tanımları). Gerekçe:
+   uygulama büyüdükçe geçiş maliyeti artıyor, kasa ve raporlar en baştan doğru
+   yazılsın. Satır güvenliği (RLS) tek başına yetmiyor; anonim anahtarla
+   bağlanan istemcide gerçek kimlik doğrulama şart. *(13 Ağu 2026)*
+80. **Personel numarasıyla giriyor, kimlik perde arkasında e-posta.**
+   Supabase Auth e-posta ile çalışıyor, telefon yolu SMS servisi ve masraf
+   istiyor. Numaradan adres üretiliyor: `05551112233@garso.app`. Kullanıcı bu
+   adresi hiç görmüyor; gerçek e-postası olan onunla da girebiliyor
+   (`eposta_hesabi`). Numara değişirse hesap adresi de güncelleniyor. *(13 Ağu 2026)*
+81. **Hesabı yönetici açar, personel kendi şifresini belirlemez.** Personel
+   ekranında telefon ve şifre zaten giriliyor; kaydedince `personel_hesabi_yaz`
+   hesabı açıyor veya güncelliyor. Yetki denetimi veritabanında
+   (`tanim.personel`); tek istisna ilk kurulumda ilk hesabın açılması.
+   *(13 Ağu 2026)*
+82. **Kilit ekranında kişi değişir, kimlik bileti değişmez.** Auth oturumu
+   kasayı açan hesapta kalıyor, PIN'le geçen kişi uygulama katmanında tutuluyor
+   — ortak terminalin çalışma şekli bu. "Kim yaptı" kayıtları bu kişiye
+   yazılacak. *(13 Ağu 2026)*
 
 ## 7. KOD PAYLAŞIM DÜZENİ
 - Kod GitHub'da: `github.com/ramazann1/garso` (şimdilik Public — final'de Private yapılacak)

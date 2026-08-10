@@ -1,8 +1,9 @@
 import { useState } from "react";
 import { useLocation, useNavigate } from "react-router-dom";
-import { ChevronDown, Settings } from "lucide-react";
+import { ChevronDown, Lock, LogOut, Settings } from "lucide-react";
 import OnayModal from "./OnayModal";
 import { kilitKaldir, kilitliMi } from "../cikisKilidi";
+import { kilitle, oturumuKapat, useOturum } from "../oturum";
 
 // İşletme ayarları tek ekranda büyüdükçe kalabalıklaşıyor; başlıklar menüden
 // ayrı ayrı açılıyor, her biri kendi sayfası.
@@ -63,6 +64,16 @@ function Ikon({ tip }: { tip: string }) {
 // kullanıcı kapatır — tercih tarayıcıda saklanıyor.
 const MENU_ANAHTARI = "garso-menu-acik";
 
+// Menü kapalıyken kişinin yerinde adı değil baş harfleri duruyor.
+function basHarfler(ad: string) {
+  return ad
+    .trim()
+    .split(/\s+/)
+    .slice(0, 2)
+    .map((p) => p[0]?.toLocaleUpperCase("tr"))
+    .join("");
+}
+
 export default function Duzen({ children }: { children: React.ReactNode }) {
   const [acik, setAcik] = useState(() => localStorage.getItem(MENU_ANAHTARI) === "1");
   // Hangi başlığın altı açık. Bulunduğun sayfanın başlığı açılmış gelir ama
@@ -81,6 +92,8 @@ export default function Duzen({ children }: { children: React.ReactNode }) {
     localStorage.setItem(MENU_ANAHTARI, yeni ? "1" : "0");
   };
   const [cikisYolu, setCikisYolu] = useState<string | null>(null);
+  const [oturumSor, setOturumSor] = useState(false);
+  const { oturum } = useOturum();
   const navigate = useNavigate();
   const { pathname } = useLocation();
 
@@ -182,6 +195,30 @@ export default function Duzen({ children }: { children: React.ReactNode }) {
             );
           })}
         </nav>
+
+        {/* Gündelik hareket kilitleme: kasanın başındaki kişi değişiyor, oturum
+            kapanmıyor. Çıkış onun yanında, ayrı ve küçük duruyor. */}
+        {oturum && (
+          <div className="menu-kisi">
+            <button className="kisi-kilit" onClick={kilitle} title="Ekranı kilitle">
+              <span className="bas-harf">{basHarfler(oturum.ad)}</span>
+              <span className="kisi-bilgi">
+                <strong>{oturum.ad}</strong>
+                <em>{oturum.rolAd}</em>
+              </span>
+              {acik && <Lock className="kisi-cik" size={16} />}
+            </button>
+            {acik && (
+              <button
+                className="kisi-cikis"
+                onClick={() => setOturumSor(true)}
+                title="Oturumu kapat"
+              >
+                <LogOut size={16} />
+              </button>
+            )}
+          </div>
+        )}
       </aside>
 
       <div className="icerik">{children}</div>
@@ -197,6 +234,15 @@ export default function Duzen({ children }: { children: React.ReactNode }) {
             setCikisYolu(null);
           }}
           onKapat={() => setCikisYolu(null)}
+        />
+      )}
+
+      {oturumSor && (
+        <OnayModal
+          mesaj={`${oturum?.ad} oturumu kapatılsın mı? Ekran giriş ekranına döner.`}
+          onayMetni="Evet, çık"
+          onOnay={oturumuKapat}
+          onKapat={() => setOturumSor(false)}
         />
       )}
     </div>

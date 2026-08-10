@@ -6265,3 +6265,493 @@ body {
   border-left: 2px solid #eee6dc;
   animation: menu-alt-ac 0.16s ease;
 }
+
+/* Giriş ekranı: solda marka, sağda giriş. Kasa ekranı gün boyu buna bakıyor,
+   bu yüzden form kalabalığı değil tek bir odak var. */
+.giris {
+  display: grid;
+  grid-template-columns: 1.05fr 1fr;
+  min-height: 100vh;
+}
+
+.giris-tanitim {
+  position: relative;
+  display: flex;
+  flex-direction: column;
+  justify-content: center;
+  gap: 14px;
+  padding: 0 64px;
+  overflow: hidden;
+  background: linear-gradient(155deg, #ff9270 0%, #ff7a59 46%, #ef5f3d 100%);
+  color: #fff;
+}
+
+/* Zeminde iki yumuşak ışık lekesi — düz renk fazla sert duruyordu. */
+.giris-tanitim::before,
+.giris-tanitim::after {
+  content: "";
+  position: absolute;
+  border-radius: 50%;
+  background: rgba(255, 255, 255, 0.14);
+}
+.giris-tanitim::before {
+  width: 460px;
+  height: 460px;
+  top: -170px;
+  right: -150px;
+}
+.giris-tanitim::after {
+  width: 300px;
+  height: 300px;
+  bottom: -110px;
+  left: -80px;
+  background: rgba(255, 255, 255, 0.09);
+}
+
+.giris-marka {
+  position: relative;
+  font-size: 46px;
+  font-weight: 600;
+  letter-spacing: -1px;
+}
+
+/* Markanın sonundaki nokta: adın bittiği yeri işaretliyor. */
+.giris-marka i {
+  display: inline-block;
+  width: 9px;
+  height: 9px;
+  margin-left: 3px;
+  border-radius: 50%;
+  background: #fff;
+  vertical-align: 6px;
+}
+
+.giris-tanitim p {
+  position: relative;
+  max-width: 330px;
+  font-size: 17px;
+  line-height: 1.55;
+  color: rgba(255, 255, 255, 0.94);
+}
+
+.giris-alan {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  padding: 40px 24px;
+  background: var(--zemin);
+}
+
+.giris-kart {
+  display: flex;
+  flex-direction: column;
+  width: 340px;
+}
+
+.giris-kart h1 {
+  font-size: 26px;
+  font-weight: 600;
+  letter-spacing: -0.4px;
+}
+
+.giris-alt {
+  margin: 6px 0 26px;
+  font-size: 15px;
+  color: var(--soluk);
+}
+
+/* PIN göstergesi: girilen hane sayısı dolan noktalarla belli oluyor. */
+.pin-nokta {
+  display: flex;
+  justify-content: center;
+  gap: 16px;
+  margin-bottom: 4px;
+}
+
+.pin-nokta i {
+  width: 15px;
+  height: 15px;
+  border-radius: 50%;
+  border: 2px solid #e3d7c9;
+  transition: background 0.15s ease, border-color 0.15s ease, transform 0.15s ease;
+}
+
+.pin-nokta i.dolu {
+  background: var(--mercan);
+  border-color: var(--mercan);
+  transform: scale(1.12);
+}
+
+.pin-nokta.sarsil {
+  animation: sarsil 0.32s ease;
+}
+
+@keyframes sarsil {
+  25% { transform: translateX(-7px); }
+  55% { transform: translateX(6px); }
+  80% { transform: translateX(-3px); }
+}
+
+.pin-tuslar {
+  display: grid;
+  grid-template-columns: repeat(3, 1fr);
+  gap: 12px;
+  margin-bottom: 22px;
+}
+
+.pin-tuslar button {
+  height: 62px;
+  border: 1px solid #ece1d4;
+  border-radius: 16px;
+  background: var(--kart);
+  color: var(--metin);
+  font-size: 22px;
+  font-weight: 500;
+  cursor: pointer;
+  transition: background 0.12s ease, border-color 0.12s ease, transform 0.08s ease;
+}
+
+.pin-tuslar button:hover {
+  border-color: var(--mercan);
+  color: var(--mercan);
+}
+
+.pin-tuslar button:active {
+  transform: scale(0.96);
+  background: #fff3ef;
+}
+
+.pin-tuslar button.sil {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  border: none;
+  background: none;
+  color: var(--soluk);
+}
+
+.pin-tuslar button.sil:hover {
+  color: var(--mercan);
+}
+
+.giris-satir {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  margin-bottom: 12px;
+  padding: 0 14px;
+  border: 1px solid #ece1d4;
+  border-radius: 13px;
+  background: var(--kart);
+  color: var(--soluk);
+  transition: border-color 0.15s ease, box-shadow 0.15s ease;
+}
+
+.giris-satir:focus-within {
+  border-color: var(--mercan);
+  box-shadow: 0 0 0 3px rgba(255, 122, 89, 0.15);
+}
+
+.giris-satir input {
+  flex: 1;
+  min-width: 0;
+  padding: 14px 0;
+  border: none;
+  background: none;
+  color: var(--metin);
+  font-size: 15px;
+}
+
+.giris-satir input:focus {
+  outline: none;
+}
+
+.giris-goz {
+  border: none;
+  background: none;
+  color: var(--soluk);
+  cursor: pointer;
+  display: flex;
+  padding: 4px;
+}
+
+.giris-hata {
+  min-height: 20px;
+  margin: 8px 0 14px;
+  font-size: 14px;
+  font-weight: 500;
+  color: #e74c3c;
+  text-align: center;
+}
+
+/* Hata satırı yokken de yerini koruyor; tuş takımı aşağı yukarı zıplamasın. */
+.giris-hata.bos {
+  visibility: hidden;
+}
+
+.giris-gonder {
+  padding: 14px;
+  border: none;
+  border-radius: 13px;
+  background: var(--mercan);
+  color: #fff;
+  font-size: 15px;
+  font-weight: 600;
+  cursor: pointer;
+}
+
+.giris-gonder:disabled {
+  opacity: 0.45;
+  cursor: default;
+}
+
+/* İki giriş yolu arasındaki geçiş — düğme değil, çağrı satırı. */
+.giris-mod {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  gap: 7px;
+  margin-top: 18px;
+  padding: 8px;
+  border: none;
+  background: none;
+  color: var(--mercan);
+  font-size: 14.5px;
+  font-weight: 500;
+  cursor: pointer;
+}
+
+@media (max-width: 860px) {
+  .giris {
+    grid-template-columns: 1fr;
+  }
+  .giris-tanitim {
+    padding: 34px 32px;
+    gap: 8px;
+  }
+  .giris-marka {
+    font-size: 34px;
+  }
+}
+
+/* Yan menünün altındaki açık kullanıcı: menü kapalıyken baş harfler, açıkken
+   ad ve rol görünüyor. */
+.menu-kisi {
+  display: flex;
+  align-items: center;
+  gap: 2px;
+  width: 100%;
+  margin-top: auto;
+  white-space: nowrap;
+}
+
+/* Kişi satırının kendisi kilitleme düğmesi; çıkış onun sağında ayrı duruyor. */
+.kisi-kilit {
+  display: flex;
+  align-items: center;
+  gap: 12px;
+  flex: 1;
+  min-width: 0;
+  padding: 10px;
+  border: none;
+  border-radius: 10px;
+  background: none;
+  font-family: inherit;
+  color: var(--metin);
+  cursor: pointer;
+}
+
+.kisi-kilit:hover,
+.kisi-cikis:hover {
+  background: var(--zemin);
+}
+
+.kisi-cikis {
+  display: flex;
+  flex-shrink: 0;
+  padding: 9px;
+  border: none;
+  border-radius: 10px;
+  background: none;
+  color: var(--soluk);
+  cursor: pointer;
+}
+
+.kisi-cikis:hover {
+  color: var(--mercan);
+}
+
+.kisi-kilit .bas-harf {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  flex-shrink: 0;
+  width: 34px;
+  height: 34px;
+  margin-left: -6px;
+  border-radius: 11px;
+  background: var(--mercan);
+  color: #fff;
+  font-size: 14px;
+  font-weight: 600;
+}
+
+.kisi-kilit .kisi-bilgi {
+  display: flex;
+  flex-direction: column;
+  align-items: flex-start;
+  gap: 1px;
+  overflow: hidden;
+  opacity: 0;
+  transition: opacity 0.15s ease;
+}
+
+.yan-menu.acik .kisi-kilit .kisi-bilgi {
+  opacity: 1;
+}
+
+.kisi-kilit .kisi-bilgi strong {
+  font-size: 14px;
+  font-weight: 600;
+}
+
+.kisi-kilit .kisi-bilgi em {
+  font-style: normal;
+  font-size: 12.5px;
+  color: var(--soluk);
+}
+
+.kisi-kilit .kisi-cik {
+  flex-shrink: 0;
+  margin-left: auto;
+  color: var(--soluk);
+}
+
+/* Beni hatırla: tarayıcının kendi kutusu sistemden sisteme değişiyor ve
+   yanındaki yazıyla hizalanmıyordu; kutu kendimiz çiziyoruz. */
+.giris-hatirla {
+  display: inline-flex;
+  align-items: center;
+  gap: 10px;
+  align-self: flex-start;
+  margin: 2px 0 2px;
+  padding: 4px 2px;
+  font-size: 14.5px;
+  color: var(--metin);
+  cursor: pointer;
+  user-select: none;
+}
+
+.giris-hatirla input {
+  position: absolute;
+  opacity: 0;
+  pointer-events: none;
+}
+
+.giris-hatirla em {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  width: 20px;
+  height: 20px;
+  flex-shrink: 0;
+  border: 1.5px solid #dfd2c4;
+  border-radius: 7px;
+  background: var(--kart);
+  color: #fff;
+  transition: background 0.14s ease, border-color 0.14s ease;
+}
+
+/* İşaret yalnızca seçiliyken görünüyor; kutu boşken tik yeri kaplamıyor. */
+.giris-hatirla em svg {
+  opacity: 0;
+  transform: scale(0.7);
+  transition: opacity 0.14s ease, transform 0.14s ease;
+}
+
+.giris-hatirla input:checked + em {
+  background: var(--mercan);
+  border-color: var(--mercan);
+}
+
+.giris-hatirla input:checked + em svg {
+  opacity: 1;
+  transform: none;
+}
+
+.giris-hatirla input:focus-visible + em {
+  box-shadow: 0 0 0 3px rgba(255, 122, 89, 0.22);
+}
+
+/* Kilit ekranı koyu zeminde: program kapanmadı, sadece üstü örtüldü — giriş
+   ekranıyla karıştırılmasın. */
+.kilit {
+  position: fixed;
+  inset: 0;
+  z-index: 80;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  padding: 24px;
+  background: linear-gradient(160deg, #3a2f2b 0%, #2d3436 55%, #241f1d 100%);
+}
+
+.kilit-kart {
+  display: flex;
+  flex-direction: column;
+  width: 320px;
+  color: #fff;
+  text-align: center;
+}
+
+.kilit-kart .giris-marka {
+  margin-bottom: 26px;
+  font-size: 26px;
+}
+
+.kilit-kart h1 {
+  font-size: 22px;
+  font-weight: 600;
+}
+
+.kilit-kart .giris-alt {
+  margin: 6px 0 24px;
+  color: rgba(255, 255, 255, 0.75);
+}
+
+.kilit-kart .pin-nokta i {
+  border-color: rgba(255, 255, 255, 0.45);
+}
+
+.kilit-kart .pin-nokta i.dolu {
+  background: #fff;
+  border-color: #fff;
+}
+
+.kilit-kart .pin-tuslar button {
+  border-color: rgba(255, 255, 255, 0.18);
+  background: rgba(255, 255, 255, 0.07);
+  color: #fff;
+}
+
+.kilit-kart .pin-tuslar button:hover {
+  border-color: rgba(255, 255, 255, 0.5);
+  color: #fff;
+}
+
+.kilit-kart .pin-tuslar button:active {
+  background: rgba(255, 255, 255, 0.18);
+}
+
+.kilit-kart .pin-tuslar button.sil {
+  background: none;
+  color: rgba(255, 255, 255, 0.75);
+}
+
+.kilit-kart .giris-hata {
+  color: #ff9f8c;
+}
+
+.kilit-kart .giris-mod {
+  color: rgba(255, 255, 255, 0.82);
+}

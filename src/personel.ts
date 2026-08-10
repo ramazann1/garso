@@ -151,6 +151,17 @@ async function bolgeleriYaz(personelId: number, bolgeIdler: number[]) {
     .insert(bolgeIdler.map((bolgeId) => ({ personel_id: personelId, bolge_id: bolgeId })));
 }
 
+// Giriş hesabı veritabanı tarafında açılıyor: telefon numarasından üretilen
+// adresle bir Auth kullanıcısı oluşturuluyor, şifre orada saklanıyor. Numara
+// veya şifre değişince aynı fonksiyon hesabı günceller.
+async function hesabiYaz(personelId: number, sifre?: string) {
+  const { error } = await supabase.rpc("personel_hesabi_yaz", {
+    p_personel_id: personelId,
+    p_sifre: sifre ?? "",
+  });
+  if (error) throw new Error(error.message);
+}
+
 export async function personelEkle(alanlar: PersonelAlanlari, sira: number) {
   const { data, error } = await supabase
     .from("personel")
@@ -160,6 +171,7 @@ export async function personelEkle(alanlar: PersonelAlanlari, sira: number) {
   if (error) throw new Error("Personel eklenemedi.");
   const id = (data as any).id as number;
   await bolgeleriYaz(id, alanlar.bolgeIdler);
+  await hesabiYaz(id, alanlar.sifre);
   return id;
 }
 
@@ -170,6 +182,7 @@ export async function personelGuncelle(id: number, alanlar: PersonelAlanlari) {
     .eq("id", id);
   if (error) throw new Error("Personel kaydedilemedi.");
   await bolgeleriYaz(id, alanlar.bolgeIdler);
+  await hesabiYaz(id, alanlar.sifre);
 }
 
 // Yanlış açılan kaydı temizlemek için. İşten ayrılanı silmek yerine listeden
