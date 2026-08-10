@@ -111,6 +111,16 @@ Amaç: Yoğun bir restoranın mutfak-servis akışını taşıyabilmeli.
 - [ ] Personel + PIN girişi; adisyonu açan garson masa kartında, turu yazan
       garson tur başlığında (`turlar.garson_id`) — karar 7
 - [ ] Offline dayanıklılık: bağlantı kopunca kuyruklama, senkronizasyon
+- [ ] **İşletme kaydı ekranı (yeni müşteri açılışı).** 14 Ağu 2026'da satır
+      güvenliği açılınca ortaya çıktı: artık giriş yapmamış bağlantı hiçbir
+      satır yazamıyor, dolayısıyla hiç hesabı olmayan yeni bir işletme kendi
+      ilk yöneticisini oluşturamıyor (hesap açmak için giriş, giriş için hesap
+      gerekiyor). Çözüm: işletme adı + telefon + şifre alan bir kayıt ekranı ve
+      bunu tek işlemde yapan, satır güvenliğini aşan bir veritabanı fonksiyonu
+      (`isletme_kur`) — hem `isletmeler` satırını, hem ilk yönetici personelini,
+      hem Auth hesabını açar. Kötüye kullanıma açık tek kapı burası olacağı için
+      hız sınırı/doğrulama düşünülmeli. Ramazan'ın kendi kurulumu bundan
+      etkilenmiyor; ürün satışa çıkmadan önce şart.
 
 ### FAZ 3 — Büyüme Özellikleri (6-8 hafta)
 - [ ] QR menü (public menü sayfası, anlık güncelleme)

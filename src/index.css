@@ -3282,6 +3282,44 @@ body {
   box-shadow: 0 1px 3px rgba(45, 52, 54, 0.12);
 }
 
+/* Üç-dört seçenekli gruplar: 132px'lik düğmeler yan yana sığmıyor. */
+.mod-sec.kompakt.dar button {
+  min-width: 78px;
+  padding: 9px 14px;
+}
+
+/* Kapatılamayan seçenek (masa servisi) seçili durur ama tıklanmaz. */
+.mod-sec.kompakt button.kilitli {
+  cursor: default;
+}
+
+/* Kasa günü: iki saat kutusu arasında tire. */
+.ayar-saatler {
+  display: inline-flex;
+  align-items: center;
+  gap: 10px;
+}
+
+.ayar-saatler input {
+  padding: 9px 12px;
+  border: 1px solid #e6ddd2;
+  border-radius: 11px;
+  background: var(--kart);
+  font-family: inherit;
+  font-size: 15px;
+  color: var(--metin);
+}
+
+.ayar-saatler input:focus {
+  border-color: var(--mercan);
+  outline: none;
+}
+
+.ayar-saatler em {
+  font-style: normal;
+  color: var(--soluk);
+}
+
 /* Ayar listesi: her satır solda ne olduğunu, sağda kumandasını taşır.
    Başlık kutusu yok, satırlar ince çizgiyle ayrılır. */
 .ayar-liste {
@@ -4923,6 +4961,17 @@ body {
   border-color: var(--mercan);
 }
 
+/* Fiyat yetkisi olmayanda kutu yerine düz rakam duruyor; girdi kutusuyla aynı
+   hizada kalsın diye aynı yüksekliği ve genişliği alıyor. */
+.kp-para-sabit {
+  display: flex;
+  align-items: center;
+  width: 142px;
+  padding: 0 13px;
+  font-size: 16px;
+  font-weight: 600;
+}
+
 .kp-para em {
   font-style: normal;
   font-size: 16px;
@@ -5577,6 +5626,124 @@ body {
   padding-top: 8px;
 }
 .hizli-satir.kalan strong { color: var(--mercan); font-size: 20px; }
+/* Misafir sayısı sorusu: masaya girildiği anda çıkan tek soruluk pencere.
+   Rakamlar iri ve kare — kasa dokunmatikse parmakla basılıyor. */
+.misafir-modal {
+  width: min(360px, 92vw);
+  padding: 24px;
+  border-radius: 16px;
+  background: var(--kart);
+  box-shadow: 0 8px 32px rgba(0, 0, 0, 0.15);
+}
+
+.misafir-modal .modal-baslik {
+  margin: 0;
+  font-size: 18px;
+}
+
+.misafir-tuslar {
+  display: grid;
+  grid-template-columns: repeat(4, 1fr);
+  gap: 9px;
+  margin: 18px 0 10px;
+}
+
+.misafir-tuslar button {
+  aspect-ratio: 1;
+  border: 1px solid #eee6dc;
+  border-radius: 14px;
+  background: var(--zemin);
+  font-family: inherit;
+  font-size: 21px;
+  font-weight: 600;
+  color: var(--metin);
+  cursor: pointer;
+  transition: background 0.12s ease, color 0.12s ease, border-color 0.12s ease;
+}
+
+.misafir-tuslar button:hover {
+  border-color: var(--mercan);
+  background: var(--mercan);
+  color: #fff;
+}
+
+.misafir-diger {
+  display: flex;
+  gap: 9px;
+}
+
+.misafir-diger input {
+  flex: 1;
+  min-width: 0;
+  padding: 12px 14px;
+  border: 1px solid #eee6dc;
+  border-radius: 13px;
+  background: var(--kart);
+  font-family: inherit;
+  font-size: 15px;
+  color: var(--metin);
+}
+
+.misafir-diger input:focus {
+  border-color: var(--mercan);
+  outline: none;
+}
+
+.misafir-diger button {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  width: 50px;
+  border: none;
+  border-radius: 13px;
+  background: var(--mercan);
+  color: #fff;
+  cursor: pointer;
+}
+
+/* Sayı girilmeden onay tuşu iş yapmıyor; silik değil, sakin duruyor. */
+.misafir-diger button:disabled {
+  background: #f0e7dc;
+  color: var(--soluk);
+  cursor: default;
+}
+
+.misafir-vazgec {
+  width: 100%;
+  margin-top: 16px;
+  padding: 10px;
+  border: none;
+  border-radius: 11px;
+  background: none;
+  font-family: inherit;
+  font-size: 14px;
+  color: var(--soluk);
+  cursor: pointer;
+}
+
+.misafir-vazgec:hover {
+  color: var(--metin);
+  background: var(--zemin);
+}
+
+/* Para üstü: kasadaki kişinin gözüne çarpsın diye kalan tutarla aynı dilde,
+   ama ondan ayrı bir şerit. */
+.hizli-para-ustu {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  margin-top: 10px;
+  padding: 11px 14px;
+  border-radius: 12px;
+  background: #f4ede4;
+  font-size: 15px;
+}
+
+.hizli-para-ustu strong {
+  font-size: 19px;
+  color: var(--mercan);
+}
+
 .hizli-aciklama {
   margin: 12px 0 14px;
   font-size: 14px;
@@ -6601,6 +6768,7 @@ body {
   flex-direction: column;
   align-items: flex-start;
   gap: 1px;
+  min-width: 0;
   overflow: hidden;
   opacity: 0;
   transition: opacity 0.15s ease;
@@ -6608,6 +6776,14 @@ body {
 
 .yan-menu.acik .kisi-kilit .kisi-bilgi {
   opacity: 1;
+}
+
+.kisi-kilit .kisi-bilgi strong,
+.kisi-kilit .kisi-bilgi em {
+  display: block;
+  max-width: 100%;
+  overflow: hidden;
+  text-overflow: ellipsis;
 }
 
 .kisi-kilit .kisi-bilgi strong {

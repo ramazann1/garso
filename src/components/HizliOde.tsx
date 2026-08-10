@@ -4,6 +4,9 @@ import IndirimModal from "./IndirimModal";
 import type { IndirimKaynagi } from "../indirimler";
 import OnayModal from "./OnayModal";
 import OdemeTipDugmeleri from "./OdemeTipDugmeleri";
+import { indirimYapabilir } from "../oturum";
+import { ayarlar } from "../isletmeAyarlari";
+import { paraGoster } from "../para";
 import { odemeTipleriniGetir } from "../odemeTipleri";
 import type { OdemeTipi } from "../odemeTipleri";
 
@@ -55,6 +58,9 @@ export default function HizliOde({
     document.addEventListener("keydown", kacisTusu);
     return () => document.removeEventListener("keydown", kacisTusu);
   }, [onKapat]);
+
+  const verilen = girilen ? Number(girilen) : 0;
+  const paraUstuVar = ayarlar().paraUstu && verilen > kalan ? verilen - kalan : 0;
 
   const tahsilEt = (tip: string) => {
     const tutar = girilen ? Number(girilen) : kalan;
@@ -137,11 +143,23 @@ export default function HizliOde({
             value={girilen}
             onChange={(e) => setGirilen(e.target.value)}
           />
-          <button className="hizli-indirim" onClick={() => setIndirimAcik(true)}>
-            <Percent size={15} />
-            İndirim
-          </button>
+          {indirimYapabilir() && (
+            <button className="hizli-indirim" onClick={() => setIndirimAcik(true)}>
+              <Percent size={15} />
+              İndirim
+            </button>
+          )}
         </div>
+
+        {/* Para üstü: müşterinin uzattığı tutar yazılınca kasadaki kişi kafadan
+            çıkarma yapmasın. Bahşiş sorusu ödeme tipine basınca ayrıca çıkıyor;
+            burada yalnız rakam gösteriliyor. */}
+        {paraUstuVar > 0 && (
+          <div className="hizli-para-ustu">
+            <span>Para üstü</span>
+            <strong>₺{paraGoster(paraUstuVar)}</strong>
+          </div>
+        )}
 
         <p className="hizli-aciklama">
           {kapat

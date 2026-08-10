@@ -7,6 +7,7 @@ import { porsiyonFiyat } from "../menu";
 import { tumAdisyonlar, yeniKalemId } from "../adisyonlar";
 import { bolgeleriGetir } from "../masalar";
 import { paraMetin, paraSayi, paraYaz } from "../para";
+import { yetkiVar } from "../oturum";
 import type { Bolge, MenuUrun, SepetKalemi } from "../types";
 
 type Props = {
@@ -85,6 +86,11 @@ export default function KalemPaneli({
 
   const satirToplami = (paraSayi(fiyat) ?? 0) * adet;
 
+  // Henüz kaydedilmemiş kalem (kimliği negatif) yanlış dokunuşun kendisidir;
+  // mutfağa da hesaba da gitmedi, herkes geri alabilir. Kaydedilmiş kalemi
+  // çıkarmak ise satışa müdahale — yetki istiyor.
+  const cikarabilir = !kalem.id || kalem.id < 0 || yetkiVar("siparis.urun_cikar");
+
   // Panelde tek açıklama satırı duruyor, o da duruma göre değişiyor: üst üste
   // dizilmiş bilgi kutuları paneli ders kitabına çeviriyordu.
   const aciklama =
@@ -145,16 +151,22 @@ export default function KalemPaneli({
             </div>
           </div>
 
+          {/* Fiyat yetkisi olmayan kişi rakamı görür ama değiştiremez; kutuyu
+              tamamen kaldırmak "bu ürün kaça satılıyor" bilgisini de götürürdü. */}
           <div className="kp-satir">
             <label>Birim fiyat</label>
-            <div className="kp-para">
-              <em>₺</em>
-              <input
-                value={fiyat}
-                onChange={(e) => setFiyat(paraYaz(e.target.value))}
-                inputMode="decimal"
-              />
-            </div>
+            {yetkiVar("siparis.fiyat") ? (
+              <div className="kp-para">
+                <em>₺</em>
+                <input
+                  value={fiyat}
+                  onChange={(e) => setFiyat(paraYaz(e.target.value))}
+                  inputMode="decimal"
+                />
+              </div>
+            ) : (
+              <strong className="kp-para-sabit">₺{fiyat}</strong>
+            )}
           </div>
 
           {porsiyonlar.length > 1 && (
@@ -189,26 +201,29 @@ export default function KalemPaneli({
               adet ve fiyat düzenlemesiyle aynı hizada durmasınlar. */}
           <div className="kp-islemler">
             {kalem.durum === "iptal" ? (
-              <button className="kp-islem geri-al" onClick={() => kaydet("normal")}>
-                <RotateCcw size={16} />
-                İptali geri al
-              </button>
+              cikarabilir && (
+                <button className="kp-islem geri-al" onClick={() => kaydet("normal")}>
+                  <RotateCcw size={16} />
+                  İptali geri al
+                </button>
+              )
             ) : (
               <>
-                {kalem.durum === "ikram" ? (
-                  <button className="kp-islem geri-al" onClick={() => kaydet("normal")}>
-                    <RotateCcw size={16} />
-                    İkramı geri al
-                  </button>
-                ) : (
-                  <button className="kp-islem" onClick={() => kaydet("ikram")}>
-                    <Gift size={16} />
-                    İkram et
-                    <em>Hesaba girmez</em>
-                  </button>
-                )}
+                {yetkiVar("siparis.ikram") &&
+                  (kalem.durum === "ikram" ? (
+                    <button className="kp-islem geri-al" onClick={() => kaydet("normal")}>
+                      <RotateCcw size={16} />
+                      İkramı geri al
+                    </button>
+                  ) : (
+                    <button className="kp-islem" onClick={() => kaydet("ikram")}>
+                      <Gift size={16} />
+                      İkram et
+                      <em>Hesaba girmez</em>
+                    </button>
+                  ))}
 
-                {tasinabilir && (
+                {tasinabilir && yetkiVar("siparis.kalem_tasi") && (
                   <button
                     className="kp-islem"
                     disabled={odenmis}
@@ -229,10 +244,12 @@ export default function KalemPaneli({
                   </button>
                 ) : null}
 
-                <button className="kp-islem tehlikeli" onClick={() => setIptalSorusu(true)}>
-                  <Ban size={16} />
-                  Kalemi iptal et
-                </button>
+                {cikarabilir && (
+                  <button className="kp-islem tehlikeli" onClick={() => setIptalSorusu(true)}>
+                    <Ban size={16} />
+                    Kalemi iptal et
+                  </button>
+                )}
               </>
             )}
           </div>

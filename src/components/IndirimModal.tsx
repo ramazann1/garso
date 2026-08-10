@@ -8,6 +8,7 @@ import {
   type IndirimKaynagi,
   type IndirimTanimi,
 } from "../indirimler";
+import { yetkiVar } from "../oturum";
 
 type Props = {
   baslik?: string;
@@ -18,6 +19,7 @@ type Props = {
 };
 
 export default function IndirimModal({ baslik, araToplam, mevcutIndirim, onKapat, onUygula }: Props) {
+  const serbest = yetkiVar("odeme.indirim");
   const [mod, setMod] = useState<"yuzde" | "tutar">("tutar");
   const [tutarGirdi, setTutarGirdi] = useState(mevcutIndirim > 0 ? String(mevcutIndirim) : "");
   const [yuzdeGirdi, setYuzdeGirdi] = useState("");
@@ -74,27 +76,35 @@ export default function IndirimModal({ baslik, araToplam, mevcutIndirim, onKapat
           </div>
         )}
 
-        <div className="mod-sec">
-          <button className={mod === "tutar" ? "aktif" : ""} onClick={() => setMod("tutar")}>Tutar</button>
-          <button className={mod === "yuzde" ? "aktif" : ""} onClick={() => setMod("yuzde")}>Yüzde</button>
-        </div>
-        <div className="onizleme">
-          Uygulanacak İndirim: <strong>{mod === "yuzde" ? `%${girdi || "0"}` : `₺${girdi || "0"}`}</strong>
-          {onizleme > 0 && <span> (₺{onizleme})</span>}
-        </div>
-        <div className="numpad">
-          {["7","8","9","4","5","6","1","2","3",".","0","←"].map((t) => (
-            <button key={t} onClick={() => numpadTus(t)}>
-              {t === "←" ? <Delete size={19} /> : t}
-            </button>
-          ))}
-        </div>
+        {/* Serbest indirim ayrı bir yetki: yalnız "ön tanımlı indirim" yetkisi
+            olan kişi listeden seçer, kendi tutarını yazamaz. */}
+        {serbest && (
+          <>
+            <div className="mod-sec">
+              <button className={mod === "tutar" ? "aktif" : ""} onClick={() => setMod("tutar")}>Tutar</button>
+              <button className={mod === "yuzde" ? "aktif" : ""} onClick={() => setMod("yuzde")}>Yüzde</button>
+            </div>
+            <div className="onizleme">
+              Uygulanacak İndirim: <strong>{mod === "yuzde" ? `%${girdi || "0"}` : `₺${girdi || "0"}`}</strong>
+              {onizleme > 0 && <span> (₺{onizleme})</span>}
+            </div>
+            <div className="numpad">
+              {["7","8","9","4","5","6","1","2","3",".","0","←"].map((t) => (
+                <button key={t} onClick={() => numpadTus(t)}>
+                  {t === "←" ? <Delete size={19} /> : t}
+                </button>
+              ))}
+            </div>
+          </>
+        )}
         <div className="modal-aksiyonlar">
           <button className="iptal" onClick={onKapat}>Kapat</button>
-          <button className="uygula" onClick={uygula}>
-            <Check size={17} />
-            Kaydet ve Kapat
-          </button>
+          {serbest && (
+            <button className="uygula" onClick={uygula}>
+              <Check size={17} />
+              Kaydet ve Kapat
+            </button>
+          )}
         </div>
       </div>
 

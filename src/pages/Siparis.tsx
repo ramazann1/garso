@@ -33,10 +33,12 @@ import KampanyaSecim from "../components/KampanyaSecim";
 import TahsilatPanel from "../components/TahsilatPanel";
 import HizliOde from "../components/HizliOde";
 import IndirimModal from "../components/IndirimModal";
+import { indirimYapabilir } from "../oturum";
 import KdvDokum from "../components/KdvDokum";
 import OnayModal from "../components/OnayModal";
 import KalemPaneli from "../components/KalemPaneli";
 import AdisyonBilgi from "../components/AdisyonBilgi";
+import MisafirSayisi from "../components/MisafirSayisi";
 import type { AdisyonBilgisi } from "../components/AdisyonBilgi";
 import { kilitKaldir, kilitKur } from "../cikisKilidi";
 import { kdvDokumu } from "../kdv";
@@ -163,11 +165,12 @@ export default function Siparis() {
   const [kayitliImza, setKayitliImza] = useState("");
   const [cikisSorusu, setCikisSorusu] = useState(false);
   const [seciliKalem, setSeciliKalem] = useState<SepetKalemi | null>(null);
-  const [tasimaUyarisi, setTasimaUyarisi] = useState<string | null>(null);
+  const [uyari, setUyari] = useState<string | null>(null);
   // Adisyonun kendi bilgileri: ad, kişi sayısı, not ve müşteri. Sepetle birlikte
   // kaydediliyor — masalı adisyon ilk ürün girilene kadar diskte yok.
   const [bilgi, setBilgi] = useState<AdisyonBilgisi>({});
   const [bilgiAcik, setBilgiAcik] = useState(false);
+  const [kisiSorusu, setKisiSorusu] = useState(false);
   const [adisyonNo, setAdisyonNo] = useState<number | undefined>();
 
   // Kaydetme çağrılarının hepsi buradan geçiyor ki adisyon bilgisi hiçbir
@@ -215,6 +218,9 @@ export default function Siparis() {
       setAdisyonNo(veri.no);
       setBilgi(adisyondanBilgi(veri));
       if (masasiz) setMasasizBilgi(veri);
+      // Misafir sayısı zorunluysa soru masaya girer girmez çıkıyor. Masasız
+      // siparişte (gel al / paket) kişi kavramı yok.
+      if (!masasiz && ayarlar().kisiSayisiZorunlu && !veri.kisiSayisi) setKisiSorusu(true);
       setYukleniyor(false);
     });
   }, [masaId, adisyonId, masasiz]);
@@ -315,7 +321,7 @@ export default function Siparis() {
     const saat = k.turSaat
       ? new Date(k.turSaat).toLocaleTimeString("tr-TR", { hour: "2-digit", minute: "2-digit" })
       : null;
-    return saat ? `${k.turSira}. tur · ${saat}` : `${k.turSira}. tur`;
+    return [`${k.turSira}. tur`, saat, k.turGarson].filter(Boolean).join(" · ");
   };
 
   const araToplam = odenecekler.reduce((t, k) => t + kalemTutari(k), 0);
@@ -366,11 +372,17 @@ export default function Siparis() {
       await adisyonuTazele();
     } catch (e) {
       await adisyonuTazele();
-      setTasimaUyarisi(e instanceof Error ? e.message : "Kalem taşınamadı.");
+      setUyari(e instanceof Error ? e.message : "Kalem taşınamadı.");
     }
   };
 
   const kaydet = async () => {
+    // Soru masaya girerken zaten çıkıyor; buradaki emniyet kemeri, sayı
+    // sonradan silinmişse kayıt yine de sayısız geçmesin.
+    if (!masasiz && ayarlar().kisiSayisiZorunlu && !bilgi.kisiSayisi) {
+      setKisiSorusu(true);
+      return;
+    }
     await adisyonuYaz({ sepet, indirim, indirimTanim, tahsilatlar: kayitliTahsilatlar });
     kilitKaldir();
     navigate("/");
@@ -619,14 +631,16 @@ export default function Siparis() {
               </div>
             </div>
             <div className="sepet-aksiyonlar">
-              <button
-                className="indirim-btn"
-                disabled={sepet.length === 0}
-                onClick={() => setIndirimAcik(true)}
-              >
-                <Percent size={15} />
-                İndirim
-              </button>
+              {indirimYapabilir() && (
+                <button
+                  className="indirim-btn"
+                  disabled={sepet.length === 0}
+                  onClick={() => setIndirimAcik(true)}
+                >
+                  <Percent size={15} />
+                  İndirim
+                </button>
+              )}
               <button
                 className="ode"
                 disabled={sepet.length === 0}
@@ -775,8 +789,18 @@ export default function Siparis() {
         />
       )}
 
-      {tasimaUyarisi && (
-        <OnayModal mesaj={tasimaUyarisi} tekTus onKapat={() => setTasimaUyarisi(null)} />
+      {uyari && (
+        <OnayModal mesaj={uyari} tekTus onKapat={() => setUyari(null)} />
+      )}
+
+      {kisiSorusu && (
+        <MisafirSayisi
+          onSec={(kisi) => {
+            setBilgi((b) => ({ ...b, kisiSayisi: kisi }));
+            setKisiSorusu(false);
+          }}
+          onVazgec={() => navigate("/")}
+        />
       )}
 
       {cikisSorusu && (

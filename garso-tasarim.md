@@ -1,7 +1,7 @@
 # GARSO — Teknik Tasarım: Veri Modeli & Ekran Haritası
 *Restoran ve cafe'ler için bulut tabanlı satış ve işletme yönetim sistemi.*
 
-## 0. SIRADAKİ İŞ (13 Ağu 2026'da güncellendi)
+## 0. SIRADAKİ İŞ (14 Ağu 2026'da güncellendi)
 
 *Ramazan seansa "devam edelim" diye giriyor — sıradaki iş bu listenin en üstündeki
 maddedir. Seans sonunda bu liste güncellenir: biten madde silinir, kalanlar
@@ -17,42 +17,29 @@ baştan yazılacaktı. Önce Ayarlar'ın eksik yarısı (personel/yetki), sonra 
 en son raporlar. Adisyo'nun ayar ve kullanıcı ekranları `pos-yol-haritasi.md`
 bölüm 9'da (9 Ağu 2026 canlı turu) detaylı duruyor.
 
-**13 Ağu 2026:** Oturum kuruldu — giriş ekranı (telefon/e-posta + şifre + beni
-hatırla), kilit ekranı (PIN ile kişi değişimi), yan menüde açık kullanıcı.
-Ardından çok işletmeli yapıya geçiş başladı: `isletme_id` 25 tabloya eklendi
-(çalıştırıldı, doğrulandı) ve kimlik Supabase Auth'a taşındı (kod bitti, SQL
-çalıştırıldı; **giriş henüz çalışır hâlde doğrulanmadı** — elle açılan Auth
-kullanıcısında boş alan düzeltmesi `sql/2026-08-13-hesap-duzeltme.sql` ile
-verildi, sonucu görülmedi).
+**14 Ağu 2026:** Kimlik ve yetki tarafı kapandı. Auth geçişi doğrulandı (giriş,
+telefon değişimi, şifre koruma çalışıyor; `personel.sifre_hash` kaldırıldı),
+**satır güvenliği açıldı** (25 tabloda `isletme_id = oturum_isletmesi()`),
+"kim yaptı" bilgisi satışa girdi (`adisyonlar.acan_id`, `turlar.garson_id`),
+yetki denetimi ekranlara bağlandı ve beş işletme parametresi eklendi.
 
-1. **Auth geçişini bitir.** Giriş çalışıyor mu doğrula. Çalışmazsa hesap açmayı
-   Supabase Edge Function'a taşı (elle `auth.users` yazmak yerine yönetim API'si).
-   Ardından: `personel.sifre_hash` artık kullanılmıyor, temizlenecek; Personel
-   ekranındaki şifre alanının metni "giriş şifresi" olarak gözden geçirilecek;
-   telefon değişince hesabın da güncellendiği denenecek.
-2. **Satır güvenliği (RLS).** Her tabloda `isletme_id = oturum_isletmesi()`
-   politikası; `oturum_isletmesi()` ve `oturum_yetkisi()` fonksiyonları hazır.
-   Ardından `isletme_id` kolonlarındaki geçici `default 1` kaldırılacak ve kod
-   ekleme yaparken bu değeri kendi yazacak. Ayrıca PIN ve telefon benzersizlik
-   kontrolleri işletme içine daraltılacak (`pinKullanimda`, `telefonKullanimda`).
-3. **Yetkilerin satışta işletilmesi** — adisyonu açan personelin masa kartında ve
-   turu yazanın tur başlığında görünmesi (`turlar.garson_id`), indirim/ikram/iptal
-   gibi işlemlerin `yetkiVar()` ile denetlenmesi. Yetkisiz işlemde engellemek
-   yerine **müdür PIN'i isteyen onay penceresi** düşünüldü (Adisyo'da yok, karar
-   verilecek).
-4. **İşletme ayarlarına yeni parametreler** — kasa günü başlangıç/bitiş saati,
-   kişi sayısı zorunlu olsun, ekran kilit süresi, para üstü, çalışma tipleri
-   (kullanılmayan sipariş türünü gizle). Bölüm 9.3'teki 25 parametrenin bize
-   uyan kısmı.
-5. **Kasa + gider** — kasa günü açma/kapatma, açılış/kapanış tutarı, masraf tipi
-   tanımları (hazır şablonla) ve masraf girişi. Bölüm 9.6.
-6. **Adisyon detay penceresi + kapanmış adisyonlar** — Adisyo'da ayrı liste ekranı
+1. **Kasa + gider** — kasa günü açma/kapatma, açılış/kapanış tutarı, masraf tipi
+   tanımları (hazır şablonla) ve masraf girişi. Bölüm 9.6. Planlanan yapı:
+   `kasa_gunleri` (açılış/kapanış saati, açan/kapatan kişi, açılış tutarı,
+   sayılan tutar), `masraf_tipleri` (hazır şablon: Faturalar, Personel, Temizlik,
+   Gıda ve İçecek, Kira, Bakım, Vergi, Diğer), `masraflar`. Sol menüye "Kasa"
+   başlığı, altında Kasa Günü (`kasa.ac_kapat`) ve Giderler (`kasa.gider`).
+   Bugün eklenen kasa günü saatleri burada kullanılacak.
+2. **Adisyon detay penceresi + kapanmış adisyonlar** — Adisyo'da ayrı liste ekranı
    yok; her yerden açılan **tek bir detay penceresi** var (sipariş bilgileri /
    ürünler / tahsilatlar + "siparişi aktif et", "sipariş geçmişi" zaman çizelgesi).
    Bizde de tek bileşen olacak. Bölüm 9.5.
-7. **Raporlar → Gün Sonu** — yukarıdaki üçü bittikten sonra tek seferde.
-8. **Masa yazdırma ve adisyon iptali** — masa üç nokta menüsünde yerleri boş
+3. **Raporlar → Gün Sonu** — yukarıdaki ikisi bittikten sonra tek seferde.
+4. **Masa yazdırma ve adisyon iptali** — masa üç nokta menüsünde yerleri boş
    duruyor; yazdırma yazıcı altyapısına, iptal adisyon detay penceresine bağlı.
+5. **İşletme kaydı ekranı** — satır güvenliği açılınca çıktı: hiç hesabı olmayan
+   yeni bir işletme kendi ilk yöneticisini oluşturamıyor. Ürün satışa çıkmadan
+   önce şart, Ramazan'ın kurulumunu etkilemiyor. Ayrıntı yol haritası Faz 2'de.
 
 **Ödenmezler** ve **Kuver/Garsoniye** Faz 2'ye yazıldı (yol haritası bölüm 8);
 bu listeye satış çekirdeği bitince girecekler.
@@ -731,6 +718,38 @@ görüntüle" ve aktif/pasif ürün — 1 Ağu 2026 ikinci seansında tamamland�
    kasayı açan hesapta kalıyor, PIN'le geçen kişi uygulama katmanında tutuluyor
    — ortak terminalin çalışma şekli bu. "Kim yaptı" kayıtları bu kişiye
    yazılacak. *(13 Ağu 2026)*
+83. **Yetkisiz işlemin düğmesi hiç görünmez.** Gri düğme veya "yetkin yok"
+   uyarısı yerine düğme ekrandan kalkıyor; müdür PIN'i isteyen onay penceresi
+   fikri de elendi. Gerekçe: kasadaki kişi yapamayacağı işle hiç karşılaşmasın,
+   müdür gerekiyorsa zaten kendi PIN'iyle geçiyor. *(14 Ağu 2026)*
+84. **Yeni satır ile kaydedilmiş satır ayrı şey.** Kaydedilmemiş kalem
+   (kimliği negatif) yanlış dokunuşun kendisidir — mutfağa da hesaba da
+   gitmedi, herkes çıkarabilir. Kaydedilmiş kalemi çıkarmak satışa müdahaledir,
+   `siparis.urun_cikar` istiyor. Aynı düğme, iki farklı anlam. *(14 Ağu 2026)*
+85. **Yetki kontrolü rotanın önünde, tek listede.** Menüden gizlemek koruma
+   değil: adres elle yazılabiliyor, kişi değişince tarayıcı öncekinin
+   sayfasında kalıyor. `src/rotaYetkileri.ts` hem menünün ne göstereceğini hem
+   hangi sayfanın açılacağını belirliyor; kapı `App.tsx`'te, sayfa hiç
+   kurulmadan çeviriyor. `/ayarlar` için taban kural var — sonradan eklenen bir
+   ayar ekranı listeye yazılmayı unutulsa bile korumasız kalmıyor.
+   *(14 Ağu 2026)*
+86. **Yeni satırın işletmesini kod değil veritabanı yazıyor.** `isletme_id`
+   varsayılanı `oturum_isletmesi()`. 25 tablonun her ekleme noktasını tek tek
+   düzeltmek yerine kural tek yerde; unutulan bir yer hatalı işletmeye
+   düşemiyor. *(14 Ağu 2026)*
+87. **Telefon bütün sistemde tek, PIN işletme içinde tek.** Giriş adresi
+   numaradan üretildiği için iki işletmede aynı numara olamaz — kontrol satır
+   güvenliğini aşan `telefon_kullanimda()` fonksiyonundan geçiyor. PIN ise
+   yalnız kendi kasandaki kişiyi seçtiği için işletme içinde tek olması yeterli.
+   *(14 Ağu 2026)*
+88. **İşletme parametreleri tek tek kaydediliyor, altta "Kaydet" şeridi yok.**
+   Her satır kendi başına anlamlı bir açma/kapama; dokununca kaydediliyor ve
+   ne olduğunu söyleyen bir bildirim çıkıyor ("Paket kapatıldı"). Onay sorusu
+   sorulmuyor — yanlış basan tekrar basıp geri alıyor. *(14 Ağu 2026)*
+89. **Misafir sayısı zorunluysa soru masaya girer girmez çıkar.** Kaydetme
+   anında uyarmak geç: garson siparişi yazmış, gitmek üzere. Kendi küçük
+   penceresi var (1-8 hazır tuş + kalabalık masa kutusu); vazgeçen salona
+   dönüyor, çünkü sayı girilmeden o masada satış yapılamıyor. *(14 Ağu 2026)*
 
 ## 7. KOD PAYLAŞIM DÜZENİ
 - Kod GitHub'da: `github.com/ramazann1/garso` (şimdilik Public — final'de Private yapılacak)
@@ -1117,3 +1136,60 @@ eşit boy kart yığını yapma; düzene önce karar ver.
 ### Sonraki seansın ilk işi
 **Yetkilerin satışta işletilmesi** — personel oturumu (telefon + şifre, ortak
 ekranda PIN), `turlar.garson_id`, işlem denetimi.
+
+---
+
+## 15. SEANS GÜNLÜĞÜ — 14 AĞU 2026
+
+### Yapılanlar
+- ✅ **Auth geçişi kapandı.** Giriş, telefon değişimi ve "şifre boş bırakılırsa
+  değişmez" davranışı canlıda doğrulandı. `personel.sifre_hash` kaldırıldı
+  (`sql/2026-08-14-sifre-hash-kaldir.sql`); "bu kişinin girişi var mı" sorusunun
+  cevabı artık `auth_id`. Personel formundaki alan "Giriş şifresi" oldu.
+- ✅ **Satır güvenliği (RLS)** — `sql/2026-08-14-satir-guvenligi.sql`. 25 tabloda
+  `isletme_id = oturum_isletmesi()` politikası, yalnız `authenticated` rolüne.
+  `isletmeler` kendi satırı, `yetkiler` herkese okunur/yazılamaz. `isletme_id`
+  varsayılanı `default 1` yerine `oturum_isletmesi()`. Giriş ekranının açılışta
+  sorduğu "hesap var mı" sorusu `giris_kuruldu()` fonksiyonuna taşındı,
+  telefon benzersizliği `telefon_kullanimda()` ile sistem geneline çıktı.
+  `isletme_ayarlari` tek satırlık tablodan işletme başına bir satıra geçti.
+- ✅ **"Kim yaptı"** — `sql/2026-08-14-kim-yapti.sql`: `adisyonlar.acan_id`,
+  `turlar.garson_id`. Masa kartında adisyonu açan, sepetteki tur başlığında turu
+  yazan görünüyor (`2. tur · 14:30 · Ramazan A.`). Ad kısaltma `kisaAd()` ile
+  tek yerde — yan menü de onu kullanıyor.
+- ✅ **Yetki denetimi satışta.** İkram, kalem iptali, ürün taşıma, masa taşıma/
+  birleştirme, fiyat değiştirme ve indirim yetkiye bağlandı; yetkisiz kişi
+  düğmeyi görmüyor. Fiyat kutusu yetkisizde düz rakama dönüyor. İndirim
+  penceresinde `odeme.indirim` yoksa numpad ve kaydet düğmesi yok, yalnız hazır
+  tanımlar seçilebiliyor.
+- ✅ **Rota koruması** — `src/rotaYetkileri.ts`. Menü gizleme yetmiyordu; adres
+  elle yazılınca ekran açılıyordu (Ramazan yakaladı: Deneme Garson'la
+  `/ayarlar/yetkiler` açık geldi). Kapı `App.tsx`'te, sayfa kurulmadan çeviriyor.
+- ✅ **İşletme parametreleri** — `sql/2026-08-14-isletme-parametreleri.sql`:
+  kasa günü başlangıç/bitiş, misafir sayısı zorunlu, ekran kilit süresi
+  (Kapalı/15sn/30sn/1dk/5dk), para üstü, çalışma tipleri. İşletme Ayarları'na
+  **Genel** sekmesi eklendi. Kapatılan sipariş türü Salon'dan tümüyle kalkıyor,
+  tek tür kalırsa sekme adını o tür alıyor ve tür seçim adımı atlanıyor.
+  Boşta kalan kasa kendiliğinden kilitleniyor, Hızlı Öde'de para üstü çıkıyor.
+- ✅ **Misafir sayısı penceresi** (`components/MisafirSayisi.tsx`) — zorunluysa
+  masaya girer girmez soruyor.
+- ✅ Garson rolünün ön tanımlı yetkilerinden `siparis.urun_cikar` ve
+  `odeme.indirim_tanimli` çıkarıldı (Ramazan'ın kararı).
+
+### Denenip vazgeçilenler
+- **Yetkisiz düğmeyi gri gösterme / müdür PIN'i isteyen onay penceresi:**
+  ikisi de elendi, düğme tümden gizleniyor (karar 83).
+- **Yan menüde ismi küçük puntoyla yazma:** silik yazı kuralına aykırı; onun
+  yerine soyad baş harfe indi (`Ramazan A.`).
+- **Misafir sayısı penceresinin ilk iki tasarımı:** ikon kutulu başlık ve alt
+  açıklama fazla geldi; sade tek satır başlık + kare rakam tuşlarında karar
+  kılındı.
+
+### Ortam notu
+Node.js makineden silinmişti, `npm.cmd` çalışmıyordu; yeniden kuruldu (v24).
+
+### Kararlar
+Bölüm 6'ya **83-89** numaralarıyla işlendi.
+
+### Sonraki seansın ilk işi
+**Kasa + gider modülü** — bölüm 0, madde 1'de planı duruyor.

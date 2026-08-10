@@ -14,7 +14,7 @@ export type Personel = {
   eposta: string;
   rolId: number | null;
   rolAd: string;
-  sifreVar: boolean;
+  hesapVar: boolean;
   pinVar: boolean;
   girisEngelli: boolean;
   aktif: boolean;
@@ -36,8 +36,8 @@ export type PersonelAlanlari = {
   pin?: string | null;
 };
 
-// Şifre ve PIN veritabanına düz metin gitmiyor. Gerçek oturum açma sunucu
-// tarafına taşınana kadar tarayıcının kendi kripto kütüphanesiyle özet alınıyor.
+// PIN veritabanına düz metin gitmiyor; tarayıcının kendi kripto kütüphanesiyle
+// özeti alınıyor. Giriş şifresi burada değil, Supabase Auth'ta duruyor.
 export async function ozet(metin: string): Promise<string> {
   const veri = new TextEncoder().encode(metin);
   const tampon = await crypto.subtle.digest("SHA-256", veri);
@@ -74,6 +74,15 @@ export function sifreGecerli(sifre: string) {
   return sifreKurallari(sifre).every((k) => k.tamam);
 }
 
+// Dar yerlerde (yan menü, masa kartı, tur başlığı) ad soyad sığmıyor; soyad
+// baş harfe iniyor. Kimin olduğunu ilk ad zaten söylüyor.
+export function kisaAd(ad: string) {
+  const parcalar = ad.trim().split(/\s+/);
+  if (parcalar.length < 2) return ad.trim();
+  const son = parcalar[parcalar.length - 1];
+  return `${parcalar.slice(0, -1).join(" ")} ${son[0].toLocaleUpperCase("tr")}.`;
+}
+
 export async function rolleriGetir(): Promise<Rol[]> {
   const { data } = await supabase
     .from("roller")
@@ -88,7 +97,7 @@ export async function rolleriGetir(): Promise<Rol[]> {
 }
 
 const ALANLAR =
-  "id, ad, telefon, eposta, sifre_hash, pin_hash, rol_id, giris_engelli, aktif, sira, roller (ad)";
+  "id, ad, telefon, eposta, auth_id, pin_hash, rol_id, giris_engelli, aktif, sira, roller (ad)";
 
 // Bölge ataması ayrı tabloda; personel listesi ekranda tek satır olarak
 // göründüğü için iki sorgu birleştirilip tek tipe indiriliyor.
@@ -114,7 +123,7 @@ export async function personeliGetir(hepsi = false): Promise<Personel[]> {
     eposta: p.eposta ?? "",
     rolId: p.rol_id ?? null,
     rolAd: p.roller?.ad ?? "",
-    sifreVar: !!p.sifre_hash,
+    hesapVar: !!p.auth_id,
     pinVar: !!p.pin_hash,
     girisEngelli: p.giris_engelli ?? false,
     aktif: p.aktif ?? true,
@@ -138,7 +147,6 @@ async function satirAlanlari(a: PersonelAlanlari) {
     giris_engelli: a.girisEngelli,
     aktif: a.aktif,
   };
-  if (a.sifre) satir.sifre_hash = await ozet(a.sifre);
   if (a.pin !== undefined) satir.pin_hash = a.pin ? await ozet(a.pin) : null;
   return satir;
 }
@@ -193,14 +201,20 @@ export async function personelSil(id: number) {
 }
 
 // Telefon giriş bilgisi; iki kişide aynı numara varsa kimin girdiği belli olmaz.
+// Kontrol bütün sistemi kapsıyor, çünkü giriş adresi numaradan üretiliyor ve o
+// adres her yerde tek. Başka işletmenin personelini göremediğimiz için soruyu
+// veritabanı fonksiyonu cevaplıyor; geriye yalnızca evet/hayır dönüyor.
 export async function telefonKullanimda(telefon: string, haricId?: number) {
-  let sorgu = supabase.from("personel").select("id").eq("telefon", telefonSade(telefon));
-  if (haricId) sorgu = sorgu.neq("id", haricId);
-  const { data } = await sorgu;
-  return ((data as any[]) ?? []).length > 0;
+  const { data } = await supabase.rpc("telefon_kullanimda", {
+    p_telefon: telefonSade(telefon),
+    p_haric: haricId ?? null,
+  });
+  return data === true;
 }
 
 // Aynı PIN iki kişide olursa hızlı geçişte kimin işlem yaptığı belirsizleşir.
+// Burada işletme içi yeterli: PIN yalnızca kendi kasandaki kişiyi seçiyor,
+// satır güvenliği de sorguyu kendi işletmene daraltıyor.
 export async function pinKullanimda(pin: string, haricId?: number) {
   let sorgu = supabase.from("personel").select("id").eq("pin_hash", await ozet(pin));
   if (haricId) sorgu = sorgu.neq("id", haricId);

@@ -1,6 +1,7 @@
 import { useEffect, useState } from "react";
-import { BrowserRouter, Navigate, Routes, Route } from "react-router-dom";
-import { ayarlariGetir } from "./isletmeAyarlari";
+import { BrowserRouter, Navigate, Routes, Route, useLocation } from "react-router-dom";
+import { yolaGirebilir } from "./rotaYetkileri";
+import { ayarlar, ayarlariGetir } from "./isletmeAyarlari";
 import Salon from "./pages/Salon";
 import Siparis from "./pages/Siparis";
 import MenuStudyosu from "./pages/MenuStudyosu";
@@ -9,7 +10,7 @@ import Personel from "./pages/Personel";
 import Yetkiler from "./pages/Yetkiler";
 import Giris from "./pages/Giris";
 import KilitEkrani from "./components/KilitEkrani";
-import { girisKuruldu, oturumuYukle, useOturum } from "./oturum";
+import { girisKuruldu, kilitle, oturumuYukle, useOturum } from "./oturum";
 
 function App() {
   const { oturum, kilitli } = useOturum();
@@ -25,6 +26,27 @@ function App() {
     ]).finally(() => setHazir(true));
   }, []);
 
+  // Boşta kalan kasa kendiliğinden kilitleniyor: tezgâhtan ayrılan garsonun
+  // oturumuyla başkası işlem yapmasın. Süre 0'sa özellik kapalı.
+  useEffect(() => {
+    const sure = ayarlar().kilitSuresi;
+    if (!oturum || kilitli || sure <= 0) return;
+
+    let zaman: number;
+    const kur = () => {
+      clearTimeout(zaman);
+      zaman = setTimeout(kilitle, sure * 1000);
+    };
+    const olaylar = ["mousedown", "keydown", "touchstart", "wheel"] as const;
+    for (const o of olaylar) window.addEventListener(o, kur);
+    kur();
+
+    return () => {
+      clearTimeout(zaman);
+      for (const o of olaylar) window.removeEventListener(o, kur);
+    };
+  }, [oturum, kilitli]);
+
   if (!hazir) return <div className="yukleniyor"><div className="cember" /></div>;
 
   // Oturum yoksa hiçbir ekran açılmıyor; adresi elle yazmak da giriş ekranına düşer.
@@ -35,7 +57,7 @@ function App() {
 
   return (
     <BrowserRouter>
-      <Routes>
+      <YetkiKapisi>
         <Route path="/" element={<Salon />} />
         <Route path="/siparis/:masaId" element={<Siparis />} />
         <Route path="/adisyon/:adisyonId" element={<Siparis />} />
@@ -46,9 +68,20 @@ function App() {
         <Route path="/ayarlar/yetkiler" element={<Yetkiler />} />
         <Route path="/ayarlar/kisi-yetkileri" element={<Yetkiler />} />
         <Route path="/ayarlar/:bolum" element={<IsletmeAyarlari />} />
-      </Routes>
+      </YetkiKapisi>
     </BrowserRouter>
   );
+}
+
+/**
+ * Yetkisiz adresi sayfa açılmadan çeviriyor. Kapı burada, rotaların önünde:
+ * ekranların içine tek tek kontrol koyarsak yeni eklenen bir sayfada unutulur.
+ * Sayfa hiç kurulmadığı için veri de çekilmiyor.
+ */
+function YetkiKapisi({ children }: { children: React.ReactNode }) {
+  const { pathname } = useLocation();
+  if (!yolaGirebilir(pathname)) return <Navigate to="/" replace />;
+  return <Routes>{children}</Routes>;
 }
 
 export default App;

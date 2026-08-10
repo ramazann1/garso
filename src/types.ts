@@ -50,6 +50,7 @@ export type SepetKalemi = {
   not?: string;
   turSira?: number;
   turSaat?: string; // turun kaydedildiği an; sepette tur başlığında görünüyor
+  turGarson?: string; // turu yazan kişi; tur başlığında saatin yanında
 };
 export type Tahsilat = {
   tip: string;

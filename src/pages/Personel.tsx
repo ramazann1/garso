@@ -62,7 +62,7 @@ function PersonelPaneli({
   // bırakılabilir — o zaman eski şifre korunuyor, yenisi istenmiyor demektir.
   const kurallar = sifreKurallari(sifre);
   const sifreTamam =
-    sifre === "" ? (kisi?.sifreVar ?? false) : kurallar.every((k) => k.tamam);
+    sifre === "" ? (kisi?.hesapVar ?? false) : kurallar.every((k) => k.tamam);
   const telefonTamam = telefon.replace(/\D/g, "").length >= 10;
 
   const gecerli =
@@ -144,8 +144,8 @@ function PersonelPaneli({
 
           <div className="alan">
             <label>
-              Şifre
-              {kisi?.sifreVar && <em>boş bırakırsanız değişmez</em>}
+              Giriş şifresi
+              {kisi?.hesapVar && <em>boş bırakırsanız değişmez</em>}
             </label>
             <input
               type="password"

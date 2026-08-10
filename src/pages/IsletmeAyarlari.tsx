@@ -20,6 +20,7 @@ import Duzen from "../components/Duzen";
 import AyarBasligi from "../components/AyarBasligi";
 import { acikAdisyonSayisi } from "../adisyonlar";
 import { ayarlar, ayarlariKaydet } from "../isletmeAyarlari";
+import type { IsletmeAyarlari as IsletmeAyarlariTipi } from "../isletmeAyarlari";
 import {
   indirimTanimiEkle,
   indirimTanimiGuncelle,
@@ -59,6 +60,10 @@ import {
 } from "../odemeTipleri";
 import type { OdemeSinifi, OdemeTipi, OdemeTipiAlanlari } from "../odemeTipleri";
 import type { Bolge, Masa } from "../types";
+
+// Kilit süresi hem düğmede hem açıklamada geçiyor; dakikaya bölünmesi tek yerde.
+const sureMetni = (saniye: number) =>
+  saniye < 60 ? `${saniye} sn` : `${saniye / 60} dk`;
 
 // Masa kartının şekli salon planında da kullanılacak; ayar ekranında da aynı
 // görünsün ki işletmeci ne seçtiğini görsün.
@@ -472,9 +477,13 @@ export default function IsletmeAyarlari() {
   const { bolum } = useParams();
   const odemeBolumu = bolum === "odeme-tipleri";
   const satisBolumu = bolum === "satis";
-  const masalarBolumu = !odemeBolumu && !satisBolumu;
+  const genelBolumu = bolum === "genel";
+  const masalarBolumu = !odemeBolumu && !satisBolumu && !genelBolumu;
 
   const [kdvDahil, setKdvDahil] = useState(ayarlar().kdvDahil);
+  // Genel parametreler tek tek kaydediliyor; her satır kendi başına anlamlı,
+  // altta "Kaydet" bekleyen bir şerit olmasın.
+  const [genel, setGenel] = useState(ayarlar());
   const [indirimler, setIndirimler] = useState<IndirimTanimi[]>([]);
   const [indirimPaneli, setIndirimPaneli] = useState<IndirimTanimi | null | undefined>(undefined);
   const [silinecekIndirim, setSilinecekIndirim] = useState<IndirimTanimi | null>(null);
@@ -511,6 +520,20 @@ export default function IsletmeAyarlari() {
       setKdvDahil(yeni);
       setBildirim(yeni ? "Fiyatlar KDV dahil" : "Fiyatlar KDV hariç");
     } catch (e) {
+      setUyari(e instanceof Error ? e.message : "Ayar kaydedilemedi.");
+    }
+  };
+
+  // Genel parametrelerin ortak kaydedicisi: ekranı hemen güncelliyor, yazma
+  // başarısızsa eski değere dönüyor ki ekran veriyle uyumsuz kalmasın.
+  const genelDegistir = async (degisen: Partial<IsletmeAyarlariTipi>, mesaj?: string) => {
+    const oncesi = genel;
+    setGenel({ ...genel, ...degisen });
+    try {
+      await ayarlariKaydet(degisen);
+      setBildirim(mesaj ?? "Ayar kaydedildi");
+    } catch (e) {
+      setGenel(oncesi);
       setUyari(e instanceof Error ? e.message : "Ayar kaydedilemedi.");
     }
   };
@@ -753,6 +776,89 @@ export default function IsletmeAyarlari() {
           </section>
           )}
 
+          {genelBolumu && (
+          <section className="ayar-bolum ayar-liste">
+            <div className="ayar-satir">
+              <div className="ayar-satir-yazi">
+                <strong>Kasa günü</strong>
+                <span>
+                  Gün {genel.kasaGunuBaslangic}'de başlar, ertesi gün{" "}
+                  {genel.kasaGunuBitis}'de biter. Gece yarısından sonraki satışlar
+                  aynı günün hesabına yazılır.
+                </span>
+              </div>
+              <div className="ayar-saatler">
+                <input
+                  type="time"
+                  value={genel.kasaGunuBaslangic}
+                  onChange={(e) => genelDegistir({ kasaGunuBaslangic: e.target.value }, "Kasa günü güncellendi")}
+                />
+                <em>—</em>
+                <input
+                  type="time"
+                  value={genel.kasaGunuBitis}
+                  onChange={(e) => genelDegistir({ kasaGunuBitis: e.target.value }, "Kasa günü güncellendi")}
+                />
+              </div>
+            </div>
+
+            <div className="ayar-satir">
+              <div className="ayar-satir-yazi">
+                <strong>Ekran kilit süresi</strong>
+                <span>
+                  {genel.kilitSuresi === 0
+                    ? "Kapalı — kilit yalnızca elle açılır."
+                    : `Kasaya ${sureMetni(genel.kilitSuresi)} dokunulmazsa kilit ekranı gelir.`}
+                </span>
+              </div>
+              <div className="mod-sec kompakt dar">
+                {[0, 15, 30, 60, 300].map((s) => (
+                  <button
+                    key={s}
+                    className={genel.kilitSuresi === s ? "aktif" : ""}
+                    onClick={() =>
+                      genelDegistir(
+                        { kilitSuresi: s },
+                        s === 0
+                          ? "Otomatik kilit kapalı"
+                          : `Ekran ${sureMetni(s)} sonra kilitlenecek`
+                      )
+                    }
+                  >
+                    {s === 0 ? "Kapalı" : sureMetni(s)}
+                  </button>
+                ))}
+              </div>
+            </div>
+
+            <div className="ayar-satir">
+              <div className="ayar-satir-yazi">
+                <strong>Çalışma tipleri</strong>
+                <span>
+                  Yapmadığınız iş arayüzde durmasın. Masa servisi kapatılamaz.
+                </span>
+              </div>
+              <div className="mod-sec kompakt dar">
+                <button className="aktif kilitli" disabled>
+                  Masa
+                </button>
+                <button
+                  className={genel.gelalAcik ? "aktif" : ""}
+                  onClick={() => genelDegistir({ gelalAcik: !genel.gelalAcik }, genel.gelalAcik ? "Gel Al kapatıldı" : "Gel Al açıldı")}
+                >
+                  Gel Al
+                </button>
+                <button
+                  className={genel.paketAcik ? "aktif" : ""}
+                  onClick={() => genelDegistir({ paketAcik: !genel.paketAcik }, genel.paketAcik ? "Paket kapatıldı" : "Paket açıldı")}
+                >
+                  Paket
+                </button>
+              </div>
+            </div>
+          </section>
+          )}
+
           {satisBolumu && (
           <section className="ayar-bolum ayar-liste">
             <div className="ayar-satir">
@@ -770,6 +876,55 @@ export default function IsletmeAyarlari() {
                 </button>
                 <button className={!kdvDahil ? "aktif" : ""} onClick={() => kdvAyariDegistir(false)}>
                   KDV hariç
+                </button>
+              </div>
+            </div>
+
+            <div className="ayar-satir">
+              <div className="ayar-satir-yazi">
+                <strong>Misafir sayısı</strong>
+                <span>
+                  {genel.kisiSayisiZorunlu
+                    ? "Adisyon kaydedilirken kişi sayısı boş bırakılamaz."
+                    : "İsteğe bağlı; kişi başı ciro raporu için doldurulması gerekir."}
+                </span>
+              </div>
+              <div className="mod-sec kompakt">
+                <button
+                  className={genel.kisiSayisiZorunlu ? "aktif" : ""}
+                  onClick={() => genelDegistir({ kisiSayisiZorunlu: true }, "Misafir sayısı artık zorunlu")}
+                >
+                  Zorunlu
+                </button>
+                <button
+                  className={!genel.kisiSayisiZorunlu ? "aktif" : ""}
+                  onClick={() => genelDegistir({ kisiSayisiZorunlu: false }, "Misafir sayısı isteğe bağlı")}
+                >
+                  İsteğe bağlı
+                </button>
+              </div>
+            </div>
+
+            <div className="ayar-satir">
+              <div className="ayar-satir-yazi">
+                <strong>Para üstü</strong>
+                <span>
+                  Hızlı Öde'de müşterinin verdiği tutar yazılınca para üstü
+                  hesaplanıp gösterilsin.
+                </span>
+              </div>
+              <div className="mod-sec kompakt">
+                <button
+                  className={genel.paraUstu ? "aktif" : ""}
+                  onClick={() => genelDegistir({ paraUstu: true }, "Para üstü gösterilecek")}
+                >
+                  Açık
+                </button>
+                <button
+                  className={!genel.paraUstu ? "aktif" : ""}
+                  onClick={() => genelDegistir({ paraUstu: false }, "Para üstü kapatıldı")}
+                >
+                  Kapalı
                 </button>
               </div>
             </div>

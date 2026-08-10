@@ -7,6 +7,7 @@ import OnayModal from "./OnayModal";
 import KdvDokum from "./KdvDokum";
 import OdemeTipDugmeleri from "./OdemeTipDugmeleri";
 import { kalemTutari } from "../adisyonlar";
+import { indirimYapabilir } from "../oturum";
 import { odemeTipleriniGetir } from "../odemeTipleri";
 import type { OdemeTipi } from "../odemeTipleri";
 import type { KdvSatiri } from "../kdv";
@@ -345,10 +346,12 @@ export default function TahsilatPanel({ kalemler, toplam, araToplam, indirim, kd
                     1/{n}
                   </button>
                 ))}
-                <button className="indirim-kisayol" onClick={() => setIndirimAcik(true)}>
-                  <Percent size={15} />
-                  {secimVar ? "Ürüne indirim" : "İndirim"}
-                </button>
+                {indirimYapabilir() && (
+                  <button className="indirim-kisayol" onClick={() => setIndirimAcik(true)}>
+                    <Percent size={15} />
+                    {secimVar ? "Ürüne indirim" : "İndirim"}
+                  </button>
+                )}
               </div>
             </div>
 

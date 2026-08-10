@@ -4,6 +4,8 @@ import { ChevronDown, Lock, LogOut, Settings } from "lucide-react";
 import OnayModal from "./OnayModal";
 import { kilitKaldir, kilitliMi } from "../cikisKilidi";
 import { kilitle, oturumuKapat, useOturum } from "../oturum";
+import { yolaGirebilir } from "../rotaYetkileri";
+import { kisaAd } from "../personel";
 
 // İşletme ayarları tek ekranda büyüdükçe kalabalıklaşıyor; başlıklar menüden
 // ayrı ayrı açılıyor, her biri kendi sayfası.
@@ -18,6 +20,7 @@ export const personelBolumleri: Bolum[] = [
 ];
 
 export const ayarBolumleri: Bolum[] = [
+  { yol: "/ayarlar/genel", ad: "Genel" },
   { yol: "/ayarlar/masalar", ad: "Bölgeler ve Masalar" },
   { yol: "/ayarlar/personel", ad: "Personel ve Yetkiler", alt: personelBolumleri },
   { yol: "/ayarlar/odeme-tipleri", ad: "Ödeme Tipleri" },
@@ -39,6 +42,19 @@ const baglantilar = [
   { yol: "/menu", ad: "Menü Stüdyosu", ikon: "menu", alt: menuBolumleri },
   { yol: "/ayarlar", ad: "İşletme Ayarları", ikon: "ayar", alt: ayarBolumleri },
 ];
+
+// Yetkisi olmayan ekranı menüde hiç görmüyor. Başlık, altındaki bölümlerin
+// hepsi kapalıysa kendisi de düşüyor — boş bir "İşletme Ayarları" kalmasın.
+// Kuralın kaynağı rotaYetkileri.ts; menü ile kapı aynı listeye bakıyor.
+function gorunenBolumler<T extends { yol: string; alt?: Bolum[] }>(bolumler: T[]): T[] {
+  return bolumler
+    .map((b) => (b.alt ? { ...b, alt: gorunenBolumler(b.alt) } : b))
+    .filter((b) =>
+      // Başlığın kendi adresi değil, altında kalan bölümler belirleyici: yalnızca
+      // masa yetkisi olan kişi "İşletme Ayarları"nı görüp altında tek satır bulur.
+      b.alt ? b.alt.length > 0 : yolaGirebilir(b.yol)
+    );
+}
 
 function Ikon({ tip }: { tip: string }) {
   if (tip === "salon") {
@@ -115,7 +131,7 @@ export default function Duzen({ children }: { children: React.ReactNode }) {
         </button>
 
         <nav>
-          {baglantilar.map((b) => {
+          {gorunenBolumler(baglantilar).map((b) => {
             const icinde = pathname === b.yol || pathname.startsWith(b.yol + "/");
             const altAcik = b.alt && acik && acikBaslik === b.yol;
             return (
@@ -203,7 +219,7 @@ export default function Duzen({ children }: { children: React.ReactNode }) {
             <button className="kisi-kilit" onClick={kilitle} title="Ekranı kilitle">
               <span className="bas-harf">{basHarfler(oturum.ad)}</span>
               <span className="kisi-bilgi">
-                <strong>{oturum.ad}</strong>
+                <strong>{kisaAd(oturum.ad)}</strong>
                 <em>{oturum.rolAd}</em>
               </span>
               {acik && <Lock className="kisi-cik" size={16} />}

@@ -2,6 +2,8 @@ import { supabase } from "./supabase";
 import { ayarlar } from "./isletmeAyarlari";
 import { kdvDokumu } from "./kdv";
 import type { IndirimKaynagi } from "./indirimler";
+import { acikOturum } from "./oturum";
+import { kisaAd } from "./personel";
 import type { SepetKalemi, Tahsilat } from "./types";
 
 export type AdisyonVerisi = {
@@ -74,6 +76,7 @@ type KalemSatiri = {
   indirim_ad?: string | null;
   tur_sira?: number;
   tur_saat?: string;
+  tur_garson?: string;
 };
 
 function kalemeCevir(s: KalemSatiri): SepetKalemi {
@@ -94,12 +97,14 @@ function kalemeCevir(s: KalemSatiri): SepetKalemi {
     indirimAd: s.indirim_ad ?? undefined,
     turSira: s.tur_sira,
     turSaat: s.tur_saat,
+    turGarson: s.tur_garson,
   };
 }
 
 const ADISYON_ALANLARI = `id, adisyon_no, indirim, indirim_tanim_id, indirim_ad, acilis, garson, tip,
        ad, kisi_sayisi, not_metni, musteri_ad, musteri_telefon, adres,
-       turlar (sira, olusturma, adisyon_kalemleri (${KALEM_ALANLARI})),
+       turlar (sira, olusturma, garson:personel!turlar_garson_id_fkey (ad),
+               adisyon_kalemleri (${KALEM_ALANLARI})),
        tahsilatlar (id, tip, tutar, bahsis, kalem_adetleri)`;
 
 export async function adisyonGetir(masaId: number): Promise<AdisyonVerisi> {
@@ -131,7 +136,14 @@ function adisyonaCevir(data: any): AdisyonVerisi {
   const sepet: SepetKalemi[] = [];
   for (const tur of (data as any).turlar ?? []) {
     for (const k of tur.adisyon_kalemleri ?? []) {
-      sepet.push(kalemeCevir({ ...k, tur_sira: tur.sira, tur_saat: tur.olusturma }));
+      sepet.push(
+        kalemeCevir({
+          ...k,
+          tur_sira: tur.sira,
+          tur_saat: tur.olusturma,
+          tur_garson: tur.garson?.ad ? kisaAd(tur.garson.ad) : undefined,
+        })
+      );
     }
   }
   sepet.sort((a, b) => (a.turSira ?? 0) - (b.turSira ?? 0) || (a.id ?? 0) - (b.id ?? 0));
@@ -195,6 +207,7 @@ export async function masasizAc(
     .from("adisyonlar")
     .insert({
       tip,
+      acan_id: acikOturum()?.id ?? null,
       musteri_ad: musteri.ad?.trim() || null,
       musteri_telefon: musteri.telefon?.trim() || null,
       adres: musteri.adres?.trim() || null,
@@ -291,7 +304,8 @@ export async function tumAdisyonlar(): Promise<Record<number, MasaOzeti>> {
   const { data } = await supabase
     .from("adisyonlar")
     .select(
-      `masa_id, acilis, garson, indirim, ad, kisi_sayisi,
+      `masa_id, acilis, indirim, ad, kisi_sayisi,
+       acan:personel!adisyonlar_acan_id_fkey (ad),
        turlar (adisyon_kalemleri (adet, fiyat, durum, indirim)),
        tahsilatlar (tutar)`
     )
@@ -321,7 +335,7 @@ export async function tumAdisyonlar(): Promise<Record<number, MasaOzeti>> {
       kalan: Math.max(0, net - odenen),
       adet,
       acilis: satir.acilis,
-      garson: satir.garson ?? undefined,
+      garson: satir.acan?.ad ? kisaAd(satir.acan.ad) : undefined,
       ad: satir.ad ?? undefined,
       kisiSayisi: satir.kisi_sayisi ?? undefined,
     };
@@ -364,7 +378,7 @@ export async function adisyonKaydet(
         masa_id: masaId,
         ...indirimAlanlari(veri),
         ...bilgiAlanlari(veri),
-        garson: veri.garson ?? null,
+        acan_id: acikOturum()?.id ?? null,
       })
       .select("id, acilis, indirim")
       .single();
@@ -474,7 +488,7 @@ async function kalemleriYaz(
     const sira = turlar.reduce((e, t) => Math.max(e, t.sira), 0) + 1;
     const { data: tur } = await supabase
       .from("turlar")
-      .insert({ adisyon_id: adisyonId, sira })
+      .insert({ adisyon_id: adisyonId, sira, garson_id: acikOturum()?.id ?? null })
       .select("id")
       .single();
     const turId = (tur as any).id;

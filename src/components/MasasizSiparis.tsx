@@ -2,6 +2,7 @@ import { useState } from "react";
 import { Bike, ShoppingBag, X } from "lucide-react";
 import Bilgi from "./Bilgi";
 import type { MusteriBilgisi } from "../adisyonlar";
+import { ayarlar } from "../isletmeAyarlari";
 
 type Tip = "gelal" | "paket";
 
@@ -44,7 +45,8 @@ export default function MasasizSiparis({
         <div className="panel-govde">
           {/* Yeni siparişte tür zaten girilen karttan belli; sadece var olan
               siparişin türü düzeltilirken seçici gösteriliyor. */}
-          {mevcut && (
+          {/* Tek tür açıksa seçilecek bir şey de yok. */}
+          {mevcut && ayarlar().gelalAcik && ayarlar().paketAcik && (
           <div className="alan">
             <label>Sipariş türü</label>
             <div className="mod-sec">

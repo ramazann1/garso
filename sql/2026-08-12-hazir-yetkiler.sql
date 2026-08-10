@@ -21,14 +21,16 @@ from roller r join yetkiler y on y.kod in (
 where r.ad = 'Kasa'
   and not exists (select 1 from rol_yetkileri v where v.rol_id = r.id);
 
--- Garson: sipariş alır, ödeme alır; indirimde yalnızca hazır tanımları seçebilir.
--- İptal, ikram ve fiyat değiştirme müdüre bırakılıyor.
+-- Garson: sipariş alır ve ödeme alır, o kadar. Hesabın tutarını değiştiren her
+-- şey müdürde: indirim (ön tanımlı olanı bile), ikram, fiyat değiştirme,
+-- adisyon iptali. Kaydedilmiş ürünü çıkarmak da ('siparis.urun_cikar') onda
+-- yok — kendi yanlış dokunuşunu zaten kaydetmeden düzeltebiliyor.
 insert into rol_yetkileri (rol_id, yetki_id)
 select r.id, y.id
 from roller r join yetkiler y on y.kod in (
-  'siparis.al', 'siparis.urun_cikar', 'siparis.miktar', 'siparis.tasi',
+  'siparis.al', 'siparis.miktar', 'siparis.tasi',
   'siparis.kalem_tasi', 'siparis.gelal', 'siparis.paket',
-  'odeme.al', 'odeme.indirim_tanimli'
+  'odeme.al'
 )
 where r.ad = 'Garson'
   and not exists (select 1 from rol_yetkileri v where v.rol_id = r.id);

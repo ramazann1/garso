@@ -21,6 +21,8 @@ import OnayModal from "../components/OnayModal";
 import HizliOde from "../components/HizliOde";
 import Duzen from "../components/Duzen";
 import MasasizSiparis from "../components/MasasizSiparis";
+import { yetkiVar } from "../oturum";
+import { ayarlar } from "../isletmeAyarlari";
 import {
   adisyonGetir,
   adisyonKaydet,
@@ -158,9 +160,23 @@ export default function Salon() {
     });
   }, []);
 
+  // Çalışma tipleri: kapatılan tür arayüzde hiç durmuyor. İkisi de kapalıysa
+  // sekmenin kendisi kalkıyor, tek tür açıksa sekme adını o tür alıyor.
+  const { gelalAcik, paketAcik } = ayarlar();
+  const masasizVar = gelalAcik || paketAcik;
+  const tekTip: "gelal" | "paket" | null =
+    gelalAcik && paketAcik ? null : paketAcik ? "paket" : "gelal";
+  const masasizBaslik = !tekTip ? "Paket & Gel Al" : tekTip === "paket" ? "Paket" : "Gel Al";
+
   useEffect(() => {
     if (seciliId !== null) localStorage.setItem(SEKME_ANAHTAR, String(seciliId));
   }, [seciliId]);
+
+  // Sekme tarayıcıdan geri geldiğinde de tek tür kuralı geçerli olsun; tek
+  // kartlık bir seçim ekranı gösterip kullanıcıyı boşuna tıklatmayalım.
+  useEffect(() => {
+    if (seciliId === "masasiz" && tekTip) setMasasizTip(tekTip);
+  }, [seciliId, tekTip]);
 
   useEffect(() => {
     const zaman = setInterval(() => setTik((t) => t + 1), 60000);
@@ -262,16 +278,22 @@ export default function Salon() {
             ikon: <Zap size={16} />,
             onSec: () => hizliOdeAc(masa),
           },
-      {
-        ad: "Masayı taşı",
-        ikon: <ArrowRightLeft size={16} />,
-        onSec: () => setIslem({ tip: "tasi", masa }),
-      },
-      {
-        ad: "Adisyonu birleştir",
-        ikon: <Combine size={16} />,
-        onSec: () => setIslem({ tip: "birlestir", masa }),
-      },
+      // Taşıma ve birleştirme yetkiye bağlı; yetkisi olmayan bu satırları hiç
+      // görmüyor, üç nokta menüsü onun için kısalıyor.
+      ...(yetkiVar("siparis.tasi")
+        ? [
+            {
+              ad: "Masayı taşı",
+              ikon: <ArrowRightLeft size={16} />,
+              onSec: () => setIslem({ tip: "tasi", masa }),
+            },
+            {
+              ad: "Adisyonu birleştir",
+              ikon: <Combine size={16} />,
+              onSec: () => setIslem({ tip: "birlestir", masa }),
+            },
+          ]
+        : []),
     ];
   };
 
@@ -346,33 +368,40 @@ export default function Salon() {
 
               {/* Masaya oturmayan satışlar salonun kendi dilinde: ayrı ekran
                   değil, şeridin sonunda duran sabit bir sekme. */}
-              <button
-                className={seciliId === "masasiz" ? "masasiz-sekme aktif" : "masasiz-sekme"}
-                onClick={() => { setSeciliId("masasiz"); setMasasizTip(null); }}
-              >
-                <ShoppingBag size={15} />
-                Paket &amp; Gel Al
-                {masasizlar.length > 0 && <em>{masasizlar.length}</em>}
-              </button>
+              {masasizVar && (
+                <button
+                  className={seciliId === "masasiz" ? "masasiz-sekme aktif" : "masasiz-sekme"}
+                  onClick={() => { setSeciliId("masasiz"); setMasasizTip(tekTip); }}
+                >
+                  <ShoppingBag size={15} />
+                  {masasizBaslik}
+                  {masasizlar.length > 0 && <em>{masasizlar.length}</em>}
+                </button>
+              )}
             </nav>
 
+            {/* Tek tür açıksa seçim adımı anlamsız; sekme doğrudan listeye giriyor. */}
             {seciliId === "masasiz" && masasizTip === null && (
               <section className="bolge">
                 <div className="tur-secim">
-                  <button className="tur-kart" onClick={() => setMasasizTip("paket")}>
-                    <Bike size={40} />
-                    <strong>Paket</strong>
-                    <span>
-                      {paketler.length > 0 ? `${paketler.length} açık sipariş` : "Açık sipariş yok"}
-                    </span>
-                  </button>
-                  <button className="tur-kart" onClick={() => setMasasizTip("gelal")}>
-                    <ShoppingBag size={40} />
-                    <strong>Gel Al</strong>
-                    <span>
-                      {gelaller.length > 0 ? `${gelaller.length} açık sipariş` : "Açık sipariş yok"}
-                    </span>
-                  </button>
+                  {paketAcik && (
+                    <button className="tur-kart" onClick={() => setMasasizTip("paket")}>
+                      <Bike size={40} />
+                      <strong>Paket</strong>
+                      <span>
+                        {paketler.length > 0 ? `${paketler.length} açık sipariş` : "Açık sipariş yok"}
+                      </span>
+                    </button>
+                  )}
+                  {gelalAcik && (
+                    <button className="tur-kart" onClick={() => setMasasizTip("gelal")}>
+                      <ShoppingBag size={40} />
+                      <strong>Gel Al</strong>
+                      <span>
+                        {gelaller.length > 0 ? `${gelaller.length} açık sipariş` : "Açık sipariş yok"}
+                      </span>
+                    </button>
+                  )}
                 </div>
               </section>
             )}

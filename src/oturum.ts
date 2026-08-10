@@ -205,13 +205,18 @@ export function yetkiVar(kod: string) {
   return !!acik?.yetkiler.includes(kod);
 }
 
+// İndirim düğmesi iki yetkiden birine bakıyor: serbest indirim yapabilen de,
+// yalnız hazır tanımlardan seçebilen de düğmeyi görüyor. İçeride ne kadarının
+// açık olduğuna İndirim penceresi karar veriyor.
+export function indirimYapabilir() {
+  return yetkiVar("odeme.indirim") || yetkiVar("odeme.indirim_tanimli");
+}
+
 // İlk kurulumda henüz kimsenin hesabı yoktur; giriş ekranı konsa işletme kendi
 // programına giremez. İlk hesap açılana kadar ekranlar açık kalıyor.
+// Soru giriş yapılmadan soruluyor; satır güvenliği personel tablosunu anonim
+// bağlantıya kapattığı için cevabı veritabanı fonksiyonu veriyor.
 export async function girisKuruldu() {
-  const { data } = await supabase
-    .from("personel")
-    .select("id")
-    .not("auth_id", "is", null)
-    .limit(1);
-  return ((data as any[]) ?? []).length > 0;
+  const { data } = await supabase.rpc("giris_kuruldu");
+  return data === true;
 }
