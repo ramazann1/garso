@@ -1,7 +1,7 @@
 # GARSO — Teknik Tasarım: Veri Modeli & Ekran Haritası
 *Restoran ve cafe'ler için bulut tabanlı satış ve işletme yönetim sistemi.*
 
-## 0. SIRADAKİ İŞ (15 Ağu 2026'da güncellendi)
+## 0. SIRADAKİ İŞ (11 Ağu 2026'da güncellendi)
 
 *Ramazan seansa "devam edelim" diye giriyor — sıradaki iş bu listenin en üstündeki
 maddedir. Seans sonunda bu liste güncellenir: biten madde silinir, kalanlar
@@ -23,7 +23,7 @@ telefon değişimi, şifre koruma çalışıyor; `personel.sifre_hash` kaldırı
 "kim yaptı" bilgisi satışa girdi (`adisyonlar.acan_id`, `turlar.garson_id`),
 yetki denetimi ekranlara bağlandı ve beş işletme parametresi eklendi.
 
-**15 Ağu 2026:** Adisyo'nun kasa ve gider tarafı canlı turlandı (yol haritası
+**11 Ağu 2026:** Adisyo'nun kasa ve gider tarafı canlı turlandı (yol haritası
 bölüm 10) ve **kasanın açma/kapatma çekirdeği bitti**. Turda planı değiştiren dört
 bulgu çıktı: kasa günü ile vardiya ayrı kavramlar, kasa ekranı sayfa değil pencere,
 para giriş/çıkış giderden ayrı bir işlem, gider ödeme tipi satışınkinden ayrı sabit
@@ -769,34 +769,34 @@ görüntüle" ve aktif/pasif ürün — 1 Ağu 2026 ikinci seansında tamamland�
    (Genel ayarlardaki saatler); vardiya kasanın fiilen açık olduğu süre. Bir kasa
    gününde birden fazla vardiya olabilir — devir teslimde kasa kapanıp yenisi
    açılır. Adisyo turunda ikisinin karıştığı görüldü, `kasa_vardiyalari` bu yüzden
-   kasa gününe bağlı değil. *(15 Ağu 2026)*
+   kasa gününe bağlı değil. *(11 Ağu 2026)*
 91. **Kasa ekranı sayfa değil pencere.** Salon şeridinin sağ ucunda durumu
    üstünde yazan bir düğme ("Kasa kapalı" / "Kasa açık · 4 sa 12 dk"), tıklayınca
    pencere açılıyor. Kasanın başındaki kişi işin ortasında masayı kaybetmiyor.
-   Yetkisi (`kasa.ac_kapat`) veya ayarı olmayan düğmeyi hiç görmüyor. *(15 Ağu 2026)*
+   Yetkisi (`kasa.ac_kapat`) veya ayarı olmayan düğmeyi hiç görmüyor. *(11 Ağu 2026)*
 92. **Kasadan para alma, gider girişinden ayrı bir işlem.** Gider işletmenin
    harcaması; para hareketi kasadaki nakdin fiziksel giriş/çıkışı (bankaya
    götürme, bozukluk getirme). Ayrı yetki (`kasa.para`, yalnız Yönetici ve
-   Müdür'de) ve ayrı işletme ayarı var. *(15 Ağu 2026)*
+   Müdür'de) ve ayrı işletme ayarı var. *(11 Ağu 2026)*
 93. **Açık adisyon varken kasa kapatılmıyor.** Kapatmaya çalışan kaç adisyonun
    açık olduğunu söyleyen bir uyarı alıyor. Adisyo'da da böyle; ödemesi
-   alınmamış hesap varken sayım anlamsız. *(15 Ağu 2026)*
+   alınmamış hesap varken sayım anlamsız. *(11 Ağu 2026)*
 94. **Ayar satırında açıklama cümlesi yok, ayarın solunda "i" işareti var.**
    Her satırın altına bir cümle yazmak satırı iki katına çıkarıyor ve sayfayı
    metin yığınına çeviriyordu. Açıklama imleç üstüne gelince balonda çıkıyor;
    işaret solda sabit sütunda durduğu için satırlar hizalı kalıyor. Açıklamalar
    ayarın **ne olduğunu** anlatır, o anki seçimini değil — ve işletmeye göre
-   değişen sabit örnek (saat, KDV oranı, ülke) vermez. *(15 Ağu 2026)*
+   değişen sabit örnek (saat, KDV oranı, ülke) vermez. *(11 Ağu 2026)*
 95. **İki şıklı ayarlar segment değil anahtar.** "Açık | Kapalı" iki düğmelik
    segment satır başına ~264px yer kaplıyordu; anahtar 40px. Gerçekten seçenek
    olanlar (KDV dahil/hariç, kilit süresi, çalışma tipleri) segment kaldı.
    Ayrıca satır başlıkları artık mercan değil: on satırda on vurgu olunca vurgu
-   diye bir şey kalmıyordu, mercan yalnızca seçili kontrolde. *(15 Ağu 2026)*
+   diye bir şey kalmıyordu, mercan yalnızca seçili kontrolde. *(11 Ağu 2026)*
 96. **Arama kutusunun yeri ekrana göre değişir, kutusu aynıdır.** Ortak bileşen
    `AramaKutusu`; Genel ve Satış'ta açıklama şeridinin sağ ucunda, Personel'de
    "Personel ekle" düğmesinin solunda, Genel Yetkiler'de başlıkla aynı hizada
    ortalarda. Arama ad ve açıklamada birlikte arıyor ("kdv" yazan "Menü
-   fiyatları"nı bulur), Türkçe harf ve şapka farkını yok sayıyor. *(15 Ağu 2026)*
+   fiyatları"nı bulur), Türkçe harf ve şapka farkını yok sayıyor. *(11 Ağu 2026)*
 
 ## 7. KOD PAYLAŞIM DÜZENİ
 - Kod GitHub'da: `github.com/ramazann1/garso` (şimdilik Public — final'de Private yapılacak)
@@ -1243,13 +1243,13 @@ Bölüm 6'ya **83-89** numaralarıyla işlendi.
 
 ---
 
-## 16. SEANS GÜNLÜĞÜ — 15 AĞU 2026
+## 16. SEANS GÜNLÜĞÜ — 11 AĞU 2026
 
 ### Yapılanlar
 - **Adisyo'nun kasa ve gider tarafı canlı turlandı** (yol haritası bölüm 10).
   Kasa modülü Adisyo'da varsayılan kapalı geliyor; ekranı görebilmek için
   Parametreler'deki anahtar geçici açıldı, tur bitince geri kapatıldı.
-- **Kasa çekirdeği yazıldı** (`sql/2026-08-15-kasa.sql`, `src/kasa.ts`,
+- **Kasa çekirdeği yazıldı** (`sql/2026-08-11-kasa.sql`, `src/kasa.ts`,
   `src/components/Kasa.tsx`): `kasa_vardiyalari` ve `kasa_hareketleri` tabloları,
   satır güvenliği, `kasa.para` yetkisi, salon şeridindeki kasa düğmesi ve
   penceresi (açma · para ekle/çıkar · kapanış ve fark).
