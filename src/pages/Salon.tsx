@@ -21,6 +21,7 @@ import OnayModal from "../components/OnayModal";
 import HizliOde from "../components/HizliOde";
 import Duzen from "../components/Duzen";
 import MasasizSiparis from "../components/MasasizSiparis";
+import Kasa from "../components/Kasa";
 import { yetkiVar } from "../oturum";
 import { ayarlar } from "../isletmeAyarlari";
 import {
@@ -378,6 +379,10 @@ export default function Salon() {
                   {masasizlar.length > 0 && <em>{masasizlar.length}</em>}
                 </button>
               )}
+
+              {/* Kasa şeridin sonunda, bölge sekmelerinden ayrı durur: sekme
+                  değil, durumu üstünde yazan bir düğme. */}
+              {ayarlar().kasaTakibi && yetkiVar("kasa.ac_kapat") && <Kasa />}
             </nav>
 
             {/* Tek tür açıksa seçim adımı anlamsız; sekme doğrudan listeye giriyor. */}

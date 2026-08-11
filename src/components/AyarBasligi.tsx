@@ -1,9 +1,18 @@
 import { useLocation, useNavigate } from "react-router-dom";
+import AramaKutusu from "./AramaKutusu";
 import { ayarBolumleri, personelBolumleri } from "./Duzen";
 
 // İşletme Ayarları'nın ortak başlığı: üstte ana bölümler, altında o bölümün
 // kendi sekmeleri. Üç ayar ekranı da aynı şeridi çizsin diye tek yerde duruyor.
-export default function AyarBasligi() {
+export default function AyarBasligi({
+  ara,
+  araDegistir,
+  araYer,
+}: {
+  ara?: string;
+  araDegistir?: (deger: string) => void;
+  araYer?: string;
+}) {
   const navigate = useNavigate();
   const { pathname } = useLocation();
 
@@ -13,7 +22,12 @@ export default function AyarBasligi() {
 
   return (
     <header className="menu-baslik">
-      <h1>İşletme Ayarları</h1>
+      <div className="ayar-baslik-ust">
+        <h1>İşletme Ayarları</h1>
+        {araDegistir && (
+          <AramaKutusu deger={ara ?? ""} degistir={araDegistir} yer={araYer} />
+        )}
+      </div>
       <div className="ms-sekmeler">
         {ayarBolumleri.map((b) => {
           const aktif = b.alt ? b.alt.some((a) => a.yol === pathname) : pathname === b.yol;

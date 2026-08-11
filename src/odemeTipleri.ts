@@ -10,9 +10,11 @@ export type OdemeTipi = {
   sinif: OdemeSinifi;
   acikHesap: boolean;
   aktif: boolean;
+  /** Bu tiple alınan ödeme kasadaki nakdi büyütür mü — kasa sayımı buna bakıyor. */
+  kasayaGirer: boolean;
 };
 
-const ALANLAR = "id, ad, renk, sira, sinif, acik_hesap, aktif";
+const ALANLAR = "id, ad, renk, sira, sinif, acik_hesap, aktif, kasaya_girer";
 
 function tipeCevir(s: any): OdemeTipi {
   return {
@@ -23,6 +25,7 @@ function tipeCevir(s: any): OdemeTipi {
     sinif: (s.sinif as OdemeSinifi) ?? "klasik",
     acikHesap: s.acik_hesap ?? false,
     aktif: s.aktif ?? true,
+    kasayaGirer: s.kasaya_girer ?? false,
   };
 }
 
@@ -41,6 +44,7 @@ export type OdemeTipiAlanlari = {
   sinif: OdemeSinifi;
   acikHesap: boolean;
   aktif: boolean;
+  kasayaGirer: boolean;
 };
 
 function satirAlanlari(a: Partial<OdemeTipiAlanlari> & { sira?: number }) {
@@ -50,6 +54,7 @@ function satirAlanlari(a: Partial<OdemeTipiAlanlari> & { sira?: number }) {
   if (a.sinif !== undefined) satir.sinif = a.sinif;
   if (a.acikHesap !== undefined) satir.acik_hesap = a.acikHesap;
   if (a.aktif !== undefined) satir.aktif = a.aktif;
+  if (a.kasayaGirer !== undefined) satir.kasaya_girer = a.kasayaGirer;
   if (a.sira !== undefined) satir.sira = a.sira;
   return satir;
 }

@@ -2,11 +2,13 @@ import { useEffect, useState } from "react";
 import { Check, Circle, Pencil, Plus, Trash2, UserRound, X } from "lucide-react";
 import Duzen from "../components/Duzen";
 import AyarBasligi from "../components/AyarBasligi";
+import AramaKutusu from "../components/AramaKutusu";
 import Bildirim from "../components/Bildirim";
 import Bilgi from "../components/Bilgi";
 import Anahtar from "../components/Anahtar";
 import OnayModal from "../components/OnayModal";
 import { bolgeleriGetir } from "../masalar";
+import { eslesiyor } from "../arama";
 import {
   personelEkle,
   personelGuncelle,
@@ -249,6 +251,7 @@ export default function PersonelEkrani() {
   const [panel, setPanel] = useState<Personel | null | undefined>(undefined);
   const [silinecek, setSilinecek] = useState<Personel | null>(null);
   const [bildirim, setBildirim] = useState("");
+  const [ara, setAra] = useState("");
 
   const tazele = async () => setListe(await personeliGetir(true));
 
@@ -291,9 +294,15 @@ export default function PersonelEkrani() {
       .join(", ");
   };
 
+  // Ada, göreve, telefona ve bölgesine göre süzülüyor: kalabalık ekipte kişiyi
+  // hangisini hatırlıyorsa ondan bulsun.
+  const gorunen = liste.filter((k) =>
+    eslesiyor(`${k.ad} ${k.rolAd} ${k.telefon} ${bolgeOzeti(k)}`, ara)
+  );
+
   return (
     <Duzen>
-      <div className="sayfa">
+      <div className="sayfa ayar-sayfa">
         <AyarBasligi />
 
         <Bilgi>
@@ -307,6 +316,8 @@ export default function PersonelEkrani() {
           <section className="ayar-bolum">
             <div className="ayar-bolum-ust">
               <h2><UserRound size={17} /> Personel</h2>
+              {/* Aranan kişi bulunamayınca eklenecek: kutu ekleme düğmesinin yanında. */}
+              <AramaKutusu deger={ara} degistir={setAra} yer="Personel ara" />
               <button className="ayar-ekle" onClick={() => setPanel(null)}>
                 <Plus size={15} /> Personel ekle
               </button>
@@ -317,9 +328,14 @@ export default function PersonelEkrani() {
                 <UserRound size={30} />
                 <p>Henüz personel yok. Kendinizi ekleyerek başlayın.</p>
               </div>
+            ) : gorunen.length === 0 ? (
+              <div className="ayar-bos">
+                <UserRound size={30} />
+                <p>"{ara}" ile eşleşen personel yok.</p>
+              </div>
             ) : (
               <div className="personel-liste">
-                {liste.map((k) => (
+                {gorunen.map((k) => (
                   <div key={k.id} className={k.aktif ? "personel-satir" : "personel-satir kapali"}>
                     <span className="personel-ad">
                       {k.ad}

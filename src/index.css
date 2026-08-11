@@ -3288,6 +3288,18 @@ body {
   padding: 9px 14px;
 }
 
+/* Ayar satırındaki segment kendi genişliği kadar: satır tek satır yüksekliğinde
+   kalsın diye düğmeler de alçak. */
+.ayar-satir .mod-sec.kompakt {
+  padding: 3px;
+}
+
+.ayar-satir .mod-sec.kompakt button {
+  min-width: 0;
+  padding: 6px 15px;
+  white-space: nowrap;
+}
+
 /* Kapatılamayan seçenek (masa servisi) seçili durur ama tıklanmaz. */
 .mod-sec.kompakt button.kilitli {
   cursor: default;
@@ -3301,12 +3313,12 @@ body {
 }
 
 .ayar-saatler input {
-  padding: 9px 12px;
+  padding: 6px 11px;
   border: 1px solid #e6ddd2;
-  border-radius: 11px;
+  border-radius: 9px;
   background: var(--kart);
   font-family: inherit;
-  font-size: 15px;
+  font-size: 14px;
   color: var(--metin);
 }
 
@@ -3326,38 +3338,69 @@ body {
   padding: 4px 24px;
 }
 
+/* Ayar satırı: solda ayarın adı, sağda kontrolü. Her satırın altında bir
+   açıklama cümlesi varken satırlar iki kata yakın yer kaplıyor, sayfa da
+   okunacak metin yığınına dönüyordu — ayarın adı zaten ne olduğunu söylüyor. */
 .ayar-satir {
   display: flex;
   align-items: center;
-  justify-content: space-between;
-  gap: 24px;
-  padding: 20px 0;
-  border-top: 1px solid #f1e9df;
+  gap: 11px;
+  padding: 9px 0;
+  border-top: 1px solid #f4ede4;
+}
+
+/* Açıklama işareti solda sabit sütunda: açıklaması olmayan satırda da yeri
+   duruyor, işaretler alt alta hizalı kalıyor. */
+.ayar-im {
+  flex: 0 0 17px;
+  display: flex;
+  align-items: center;
+}
+
+/* Ayarın adı ile kontrolü arasını bu açıyor. */
+.ayar-satir > strong {
+  margin-right: auto;
 }
 
 .ayar-liste > .ayar-satir:first-child {
   border-top: none;
 }
 
-.ayar-satir-yazi strong {
-  display: block;
+/* Vurgu rengi seçili kontrolde; başlıklar da mercan olunca sayfada vurgu diye
+   bir şey kalmıyordu. */
+.ayar-satir > strong {
+  display: flex;
+  align-items: center;
+  gap: 9px;
   font-size: 15px;
-  font-weight: 600;
-  color: var(--mercan);
+  font-weight: 500;
+  color: var(--metin);
 }
 
-.ayar-satir-yazi span {
-  display: block;
-  margin-top: 3px;
-  font-size: 14px;
-  color: var(--metin);
+.ayar-anahtar {
+  display: inline-flex;
+  cursor: pointer;
+}
+
+.ayar-anahtar input {
+  position: absolute;
+  opacity: 0;
+  pointer-events: none;
+}
+
+.ayar-anahtar.acik .anahtar {
+  background: var(--mercan);
+}
+
+.ayar-anahtar.acik .anahtar::after {
+  transform: translateX(17px);
 }
 
 .ayar-satir-ekle {
   display: inline-flex;
   align-items: center;
   gap: 6px;
-  padding: 9px 16px;
+  padding: 6px 14px;
   border: 1px solid #eadfd3;
   border-radius: 10px;
   background: var(--kart);
@@ -4236,10 +4279,16 @@ body {
   margin: 12px 0 0;
 }
 
+/* Ayar ekranları dar tutuluyor: 1100px'te başlık solda, düğme sağ uçta kalıp
+   arada okunmayan bir boşluk oluyordu. */
+.ayar-sayfa {
+  max-width: 880px;
+}
+
 .ayar-bolum {
   background: var(--kart);
   border-radius: 18px;
-  padding: 22px 24px 26px;
+  padding: 18px 22px 20px;
   box-shadow: 0 1px 2px rgba(45, 52, 54, 0.05);
 }
 
@@ -6930,4 +6979,489 @@ body {
 
 .kilit-kart .giris-mod {
   color: rgba(255, 255, 255, 0.82);
+}
+
+/* ---- Kasa ----
+   Kasa satış ekranından kopmuyor: şeridin sonunda duran düğme ve onun açtığı
+   pencere. Düğme durumu üstünde yazıyor, kasiyer bakınca anlıyor. */
+
+.kasa-dugme {
+  margin-left: auto;
+  align-self: center;
+  display: inline-flex;
+  align-items: center;
+  gap: 9px;
+  border: 1px solid #e8ded2;
+  border-radius: 999px;
+  background: var(--kart);
+  padding: 7px 15px 7px 13px;
+  cursor: pointer;
+  color: var(--soluk);
+  transition: border-color 0.15s ease, color 0.15s ease;
+}
+
+.kasa-dugme:hover {
+  border-color: #d8cbbc;
+  color: var(--metin);
+}
+
+.kasa-dugme span {
+  display: flex;
+  flex-direction: column;
+  align-items: flex-start;
+  line-height: 1.25;
+}
+
+.kasa-dugme strong {
+  font-size: 14px;
+  font-weight: 600;
+}
+
+.kasa-dugme em {
+  font-style: normal;
+  font-size: 12.5px;
+  color: var(--soluk);
+}
+
+/* Açık kasa mercanla işaretleniyor — salonda gözle aranmadan bulunuyor. */
+.kasa-dugme.acik {
+  border-color: var(--mercan);
+  color: var(--mercan);
+  background: #fff4f0;
+}
+
+.kasa-dugme.acik em {
+  color: #c4573a;
+}
+
+.kasa-pencere {
+  background: var(--kart);
+  border-radius: 18px;
+  padding: 22px 24px 24px;
+  width: 420px;
+  max-height: 88vh;
+  overflow-y: auto;
+  box-shadow: 0 10px 40px rgba(0, 0, 0, 0.18);
+}
+
+.kasa-pencere header {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  margin-bottom: 16px;
+}
+
+.kasa-pencere h3 {
+  font-size: 17px;
+  font-weight: 600;
+}
+
+.kasa-cik {
+  border: none;
+  background: none;
+  color: var(--soluk);
+  cursor: pointer;
+  display: flex;
+  padding: 4px;
+  border-radius: 8px;
+}
+
+.kasa-cik:hover {
+  background: var(--zemin);
+  color: var(--metin);
+}
+
+.kasa-kim {
+  font-size: 14px;
+  color: var(--soluk);
+  margin-bottom: 18px;
+}
+
+.kasa-kim strong {
+  color: var(--metin);
+  font-weight: 600;
+}
+
+.kasa-bos {
+  font-size: 14px;
+  color: var(--soluk);
+  line-height: 1.55;
+  margin-bottom: 4px;
+}
+
+.kasa-dokum {
+  border-top: 1px solid #f0e8de;
+}
+
+.kasa-dokum > div {
+  display: flex;
+  justify-content: space-between;
+  align-items: baseline;
+  gap: 16px;
+  padding: 11px 0;
+  border-bottom: 1px solid #f0e8de;
+  font-size: 14.5px;
+}
+
+.kasa-dokum dt {
+  color: var(--soluk);
+}
+
+.kasa-dokum dd {
+  font-weight: 600;
+  font-variant-numeric: tabular-nums;
+}
+
+/* Beklenen tutar dökümün sonucu; diğer satırlardan büyük ve koyu duruyor. */
+.kasa-dokum .kasa-beklenen {
+  border-bottom: none;
+  padding-top: 14px;
+}
+
+.kasa-dokum .kasa-beklenen dt {
+  color: var(--metin);
+  font-weight: 600;
+}
+
+.kasa-dokum .kasa-beklenen dd {
+  font-size: 19px;
+}
+
+.artan {
+  color: #1f9d76;
+}
+
+.azalan {
+  color: #c9503a;
+}
+
+.kasa-hareket {
+  list-style: none;
+  margin: 16px 0 4px;
+  border-top: 1px solid #f0e8de;
+}
+
+.kasa-hareket li {
+  display: flex;
+  align-items: center;
+  gap: 11px;
+  padding: 10px 0;
+  border-bottom: 1px solid #f7f1e9;
+}
+
+.kasa-hareket span {
+  display: flex;
+  flex-direction: column;
+  flex: 1;
+  min-width: 0;
+  line-height: 1.35;
+}
+
+.kasa-hareket strong {
+  font-size: 14px;
+  font-weight: 500;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+.kasa-hareket em {
+  font-style: normal;
+  font-size: 12.5px;
+  color: var(--soluk);
+}
+
+.kasa-hareket b {
+  font-size: 14.5px;
+  font-variant-numeric: tabular-nums;
+}
+
+.kasa-form {
+  display: flex;
+  flex-direction: column;
+  gap: 14px;
+}
+
+.kasa-form label {
+  display: flex;
+  flex-direction: column;
+  gap: 6px;
+  font-size: 14px;
+  font-weight: 500;
+  color: var(--soluk);
+}
+
+.kasa-form input {
+  border: 1px solid #e8ded2;
+  border-radius: 10px;
+  padding: 11px 13px;
+  font-size: 16px;
+  color: var(--metin);
+  background: var(--zemin);
+}
+
+.kasa-form input:focus {
+  outline: none;
+  border-color: var(--mercan);
+  background: var(--kart);
+}
+
+.kasa-form .kasa-dokum {
+  margin-top: 2px;
+}
+
+.kasa-aksiyon {
+  display: flex;
+  gap: 10px;
+  margin-top: 18px;
+}
+
+.kasa-birincil,
+.kasa-ikincil {
+  flex: 1;
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  gap: 8px;
+  border-radius: 11px;
+  padding: 12px 16px;
+  font-size: 15px;
+  font-weight: 600;
+  cursor: pointer;
+  border: 1px solid transparent;
+}
+
+.kasa-birincil {
+  background: var(--mercan);
+  color: #fff;
+}
+
+.kasa-birincil:hover {
+  background: #f26a47;
+}
+
+.kasa-birincil:disabled {
+  background: #f0e2dc;
+  color: #b09a92;
+  cursor: default;
+}
+
+.kasa-ikincil {
+  background: var(--kart);
+  border-color: #e8ded2;
+  color: var(--metin);
+}
+
+.kasa-ikincil:hover {
+  border-color: #d8cbbc;
+  background: var(--zemin);
+}
+
+/* Fark kaydetmeden önce, rengiyle konuşuyor: tutuyorsa yeşil onay, eksikse
+   kırmızı, fazlaysa amber — fazla para da bir hatadır ama başka türlüsü. */
+.kasa-fark {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  border-radius: 11px;
+  padding: 12px 14px;
+  font-size: 14.5px;
+  font-weight: 600;
+}
+
+.kasa-fark.tutuyor {
+  background: #eafaf4;
+  color: #1f9d76;
+}
+
+.kasa-fark.eksik {
+  background: #fdeeeb;
+  color: #c9503a;
+}
+
+.kasa-fark.fazla {
+  background: #fdf4e3;
+  color: #a3711b;
+}
+
+.kasa-hata {
+  margin-top: 14px;
+  font-size: 14px;
+  font-weight: 500;
+  color: #c9503a;
+}
+
+/* ---- Açıklama işareti ----
+   Ayarın solundaki küçük "i". Nabız hafif: her satırda bir tane olduğu için
+   sert yanıp sönme sayfayı huzursuz ediyordu. */
+
+.ipucu {
+  position: relative;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  width: 17px;
+  height: 17px;
+  border-radius: 50%;
+  color: var(--mercan);
+  cursor: help;
+  animation: ipucu-nabiz 2.6s ease-in-out infinite;
+}
+
+.ipucu:focus-visible {
+  outline: 2px solid var(--mercan);
+  outline-offset: 2px;
+}
+
+@keyframes ipucu-nabiz {
+  0%, 100% { opacity: 0.5; }
+  50% { opacity: 1; }
+}
+
+/* Üstüne gelindiğinde nabız durur — okurken hareket olmasın. */
+.ipucu:hover,
+.ipucu:focus {
+  animation: none;
+  opacity: 1;
+}
+
+.ipucu-balon {
+  position: absolute;
+  left: 0;
+  bottom: calc(100% + 9px);
+  z-index: 40;
+  width: 268px;
+  padding: 11px 13px;
+  border-radius: 11px;
+  background: var(--metin);
+  color: #fff;
+  font-size: 13.5px;
+  font-weight: 400;
+  line-height: 1.5;
+  box-shadow: 0 6px 22px rgba(45, 52, 54, 0.22);
+  opacity: 0;
+  visibility: hidden;
+  transform: translateY(4px);
+  transition: opacity 0.14s ease, transform 0.14s ease, visibility 0.14s;
+}
+
+.ipucu-balon::after {
+  content: "";
+  position: absolute;
+  top: 100%;
+  left: 5px;
+  border: 6px solid transparent;
+  border-top-color: var(--metin);
+}
+
+.ipucu:hover .ipucu-balon,
+.ipucu:focus .ipucu-balon {
+  opacity: 1;
+  visibility: visible;
+  transform: translateY(0);
+}
+
+/* ---- Ayar ekranlarının arama kutusu ---- */
+
+.ayar-baslik-ust {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 20px;
+}
+
+.ayar-arama {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  padding: 7px 12px;
+  border: 1px solid #e8ded2;
+  border-radius: 999px;
+  background: var(--kart);
+  transition: border-color 0.15s ease;
+}
+
+.ayar-arama:focus-within {
+  border-color: var(--mercan);
+}
+
+.ayar-arama svg {
+  color: var(--soluk);
+  flex-shrink: 0;
+}
+
+.ayar-arama input {
+  width: 168px;
+  border: none;
+  outline: none;
+  background: none;
+  font-size: 14px;
+  color: var(--metin);
+}
+
+.ayar-arama input::placeholder {
+  color: var(--soluk);
+}
+
+.ayar-arama button {
+  display: flex;
+  border: none;
+  background: none;
+  padding: 0;
+  color: var(--soluk);
+  cursor: pointer;
+}
+
+.ayar-arama button:hover {
+  color: var(--metin);
+}
+
+/* Satırın sağında sayı rozeti ile düğme birlikte durduğunda. */
+.ayar-satir-sag {
+  display: inline-flex;
+  align-items: center;
+  gap: 10px;
+}
+
+.ayar-sayi {
+  font-style: normal;
+  font-size: 12.5px;
+  font-weight: 600;
+  color: var(--soluk);
+  background: #f4ede4;
+  border-radius: 999px;
+  padding: 2px 10px;
+}
+
+.yetki-bos {
+  padding: 22px 4px;
+  font-size: 14px;
+  color: var(--soluk);
+}
+
+/* Açıklama kutusu ile arama kutusu aynı satırın iki ucunda. Arama olmadığı
+   ekranlarda açıklama tek başına, eskisi gibi tam genişlikte kalıyor. */
+.bilgi-serit {
+  display: flex;
+  align-items: center;
+  gap: 16px;
+}
+
+.bilgi-serit .bilgi-kutu {
+  flex: 1;
+  min-width: 0;
+}
+
+.bilgi-serit .ayar-arama {
+  flex-shrink: 0;
+}
+
+/* Yetki matrisinin süzgeci başlıkla aynı hizada ama sağ uçta değil: başlığın
+   sağındaki boşlukta ortalanıyor, tablo genişliğinin ortasına denk geliyor. */
+.yetki-ust h2 {
+  flex: none;
+}
+
+.yetki-ust .ayar-arama {
+  margin: 0 auto;
 }

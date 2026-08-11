@@ -18,6 +18,8 @@ import {
 } from "lucide-react";
 import Duzen from "../components/Duzen";
 import AyarBasligi from "../components/AyarBasligi";
+import AyarSatiri from "../components/AyarSatiri";
+import AramaKutusu from "../components/AramaKutusu";
 import { acikAdisyonSayisi } from "../adisyonlar";
 import { ayarlar, ayarlariKaydet } from "../isletmeAyarlari";
 import type { IsletmeAyarlari as IsletmeAyarlariTipi } from "../isletmeAyarlari";
@@ -60,6 +62,23 @@ import {
 } from "../odemeTipleri";
 import type { OdemeSinifi, OdemeTipi, OdemeTipiAlanlari } from "../odemeTipleri";
 import type { Bolge, Masa } from "../types";
+
+// Açık/kapalı ayarlar. İki düğmelik "Açık | Kapalı" segmenti her satırı
+// şişiriyordu; tek anahtar hem daha az yer kaplıyor hem durumu bir bakışta veriyor.
+function AyarAnahtari({
+  acik,
+  degistir,
+}: {
+  acik: boolean;
+  degistir: (deger: boolean) => void;
+}) {
+  return (
+    <label className={acik ? "ayar-anahtar acik" : "ayar-anahtar"}>
+      <input type="checkbox" checked={acik} onChange={(e) => degistir(e.target.checked)} />
+      <em className="anahtar" />
+    </label>
+  );
+}
 
 // Kilit süresi hem düğmede hem açıklamada geçiyor; dakikaya bölünmesi tek yerde.
 const sureMetni = (saniye: number) =>
@@ -308,6 +327,7 @@ function OdemeTipiPaneli({
   const [sinif, setSinif] = useState<OdemeSinifi>(tip?.sinif ?? "klasik");
   const [acikHesap, setAcikHesap] = useState(tip?.acikHesap ?? false);
   const [aktif, setAktif] = useState(tip?.aktif ?? true);
+  const [kasayaGirer, setKasayaGirer] = useState(tip?.kasayaGirer ?? false);
 
   return (
     <div className="panel-fon" onClick={onKapat}>
@@ -357,6 +377,13 @@ function OdemeTipiPaneli({
           />
 
           <Anahtar
+            etiket="Kasadaki paraya eklensin"
+            ipucu="Nakit gibi elden alınan ödemeler için; kasa sayımında bu tipler toplanır"
+            acik={kasayaGirer}
+            degistir={setKasayaGirer}
+          />
+
+          <Anahtar
             etiket="Satış ekranında görünsün"
             ipucu="Kapatırsanız tip silinmez, sadece ödeme ekranında listelenmez"
             acik={aktif}
@@ -374,7 +401,7 @@ function OdemeTipiPaneli({
           <button
             className="uygula"
             disabled={!ad.trim()}
-            onClick={() => onKaydet({ ad: ad.trim(), renk, sinif, acikHesap, aktif })}
+            onClick={() => onKaydet({ ad: ad.trim(), renk, sinif, acikHesap, aktif, kasayaGirer })}
           >
             Kaydet
           </button>
@@ -484,6 +511,7 @@ export default function IsletmeAyarlari() {
   // Genel parametreler tek tek kaydediliyor; her satır kendi başına anlamlı,
   // altta "Kaydet" bekleyen bir şerit olmasın.
   const [genel, setGenel] = useState(ayarlar());
+  const [ara, setAra] = useState("");
   const [indirimler, setIndirimler] = useState<IndirimTanimi[]>([]);
   const [indirimPaneli, setIndirimPaneli] = useState<IndirimTanimi | null | undefined>(undefined);
   const [silinecekIndirim, setSilinecekIndirim] = useState<IndirimTanimi | null>(null);
@@ -632,16 +660,25 @@ export default function IsletmeAyarlari() {
 
   return (
     <Duzen>
-      <div className="sayfa">
+      <div className="sayfa ayar-sayfa">
         <AyarBasligi />
 
-        <Bilgi>
-          {masalarBolumu
-            ? "Salonunuzdaki bölgeleri ve masaları buradan düzenlersiniz."
-            : odemeBolumu
-              ? "Kasada hangi ödeme düğmelerinin çıkacağını buradan belirlersiniz."
-              : "Satışın genel kurallarını buradan belirlersiniz."}
-        </Bilgi>
+        {/* Arama kutusu açıklama şeridinin karşı ucunda: iki uç da aynı
+            yükseklikte, sayfanın üstü simetrik duruyor. */}
+        <div className="bilgi-serit">
+          <Bilgi>
+            {masalarBolumu
+              ? "Salonunuzdaki bölgeleri ve masaları buradan düzenlersiniz."
+              : odemeBolumu
+                ? "Kasada hangi ödeme düğmelerinin çıkacağını buradan belirlersiniz."
+                : genelBolumu
+                  ? "İşletmenin çalışma düzenini buradan kurarsınız."
+                  : "Satışın genel kurallarını buradan belirlersiniz."}
+          </Bilgi>
+          {(genelBolumu || satisBolumu) && (
+            <AramaKutusu deger={ara} degistir={setAra} yer="Ayar ara" />
+          )}
+        </div>
 
         {yukleniyor ? (
           <div className="yukleniyor"><div className="cember" /></div>
@@ -778,15 +815,11 @@ export default function IsletmeAyarlari() {
 
           {genelBolumu && (
           <section className="ayar-bolum ayar-liste">
-            <div className="ayar-satir">
-              <div className="ayar-satir-yazi">
-                <strong>Kasa günü</strong>
-                <span>
-                  Gün {genel.kasaGunuBaslangic}'de başlar, ertesi gün{" "}
-                  {genel.kasaGunuBitis}'de biter. Gece yarısından sonraki satışlar
-                  aynı günün hesabına yazılır.
-                </span>
-              </div>
+            <AyarSatiri
+              ad="Kasa günü"
+              ara={ara}
+              ipucu="Takvim günü yerine işletmenin kendi günü. Gece yarısını geçtikten sonra yapılan satışlar, bitiş saatine kadar hâlâ aynı günün hesabına yazılır. Gün sonu ve raporlar bu aralığı kullanır."
+            >
               <div className="ayar-saatler">
                 <input
                   type="time"
@@ -800,17 +833,45 @@ export default function IsletmeAyarlari() {
                   onChange={(e) => genelDegistir({ kasaGunuBitis: e.target.value }, "Kasa günü güncellendi")}
                 />
               </div>
-            </div>
+            </AyarSatiri>
 
-            <div className="ayar-satir">
-              <div className="ayar-satir-yazi">
-                <strong>Ekran kilit süresi</strong>
-                <span>
-                  {genel.kilitSuresi === 0
-                    ? "Kapalı — kilit yalnızca elle açılır."
-                    : `Kasaya ${sureMetni(genel.kilitSuresi)} dokunulmazsa kilit ekranı gelir.`}
-                </span>
-              </div>
+            <AyarSatiri
+              ad="Kasa takibi"
+              ara={ara}
+              ipucu="Açıkken salon ekranına kasa düğmesi gelir: gün başında kasadaki para girilir, gün sonunda sayılır ve olması gerekenle farkı görünür. Kapalıyken o düğme ve kasa ekranları hiç çıkmaz, satış normal işler."
+            >
+              <AyarAnahtari
+                acik={genel.kasaTakibi}
+                degistir={(v) =>
+                  genelDegistir({ kasaTakibi: v }, v ? "Kasa takibi açıldı" : "Kasa takibi kapatıldı")
+                }
+              />
+            </AyarSatiri>
+
+            {/* Kasa kapalıyken alt ayarını göstermek boşuna yer kaplıyor. */}
+            {genel.kasaTakibi && (
+              <AyarSatiri
+                ad="Kasadan para alma"
+                ara={ara}
+                ipucu="Açıkken kasa penceresine para ekleme ve çıkarma düğmeleri gelir (bozukluk getirme, bankaya götürme). Kapalıyken kasadaki para yalnızca satışla değişir. Gider girişinden ayrıdır: bu para işletmeden çıkmaz, yalnızca kasadan çıkar."
+              >
+                <AyarAnahtari
+                  acik={genel.paraHareketiAcik}
+                  degistir={(v) =>
+                    genelDegistir(
+                      { paraHareketiAcik: v },
+                      v ? "Para hareketi açıldı" : "Para hareketi kapatıldı"
+                    )
+                  }
+                />
+              </AyarSatiri>
+            )}
+
+            <AyarSatiri
+              ad="Ekran kilidi"
+              ara={ara}
+              ipucu="Kasaya seçilen süre boyunca dokunulmazsa kilit ekranı kendiliğinden gelir; tezgâhtan ayrılan kişinin oturumuyla başkası işlem yapamaz. Kapalı seçilirse ekran yalnızca elle kilitlenir. Oturum kapanmaz, açık adisyonlar yerinde durur."
+            >
               <div className="mod-sec kompakt dar">
                 {[0, 15, 30, 60, 300].map((s) => (
                   <button
@@ -829,15 +890,13 @@ export default function IsletmeAyarlari() {
                   </button>
                 ))}
               </div>
-            </div>
+            </AyarSatiri>
 
-            <div className="ayar-satir">
-              <div className="ayar-satir-yazi">
-                <strong>Çalışma tipleri</strong>
-                <span>
-                  Yapmadığınız iş arayüzde durmasın. Masa servisi kapatılamaz.
-                </span>
-              </div>
+            <AyarSatiri
+              ad="Çalışma tipleri"
+              ara={ara}
+              ipucu="Yapmadığınız iş arayüzde durmasın. Masa servisi kapatılamaz — kapanırsa satış yapacak ekran kalmaz."
+            >
               <div className="mod-sec kompakt dar">
                 <button className="aktif kilitli" disabled>
                   Masa
@@ -855,21 +914,17 @@ export default function IsletmeAyarlari() {
                   Paket
                 </button>
               </div>
-            </div>
+            </AyarSatiri>
           </section>
           )}
 
           {satisBolumu && (
           <section className="ayar-bolum ayar-liste">
-            <div className="ayar-satir">
-              <div className="ayar-satir-yazi">
-                <strong>Menü fiyatları</strong>
-                <span>
-                  {kdvDahil
-                    ? "Vergi fiyatın içinde; ₺100 ürünün ₺9,09'u KDV (%10)."
-                    : "Vergi toplama eklenir; ₺100 ürün kasada ₺110 (%10)."}
-                </span>
-              </div>
+            <AyarSatiri
+              ad="Menü fiyatları"
+              ara={ara}
+              ipucu="Menüye yazdığınız fiyatın vergiyi içerip içermediği. Dahil: müşteri menüdeki fiyatı öder, vergi o fiyatın içinden hesaplanır. Hariç: menüdeki fiyata vergi eklenir, müşteri daha fazlasını öder. Oran ürünün KDV grubundan gelir."
+            >
               <div className="mod-sec kompakt">
                 <button className={kdvDahil ? "aktif" : ""} onClick={() => kdvAyariDegistir(true)}>
                   KDV dahil
@@ -878,72 +933,51 @@ export default function IsletmeAyarlari() {
                   KDV hariç
                 </button>
               </div>
-            </div>
+            </AyarSatiri>
 
-            <div className="ayar-satir">
-              <div className="ayar-satir-yazi">
-                <strong>Misafir sayısı</strong>
-                <span>
-                  {genel.kisiSayisiZorunlu
-                    ? "Adisyon kaydedilirken kişi sayısı boş bırakılamaz."
-                    : "İsteğe bağlı; kişi başı ciro raporu için doldurulması gerekir."}
-                </span>
-              </div>
-              <div className="mod-sec kompakt">
-                <button
-                  className={genel.kisiSayisiZorunlu ? "aktif" : ""}
-                  onClick={() => genelDegistir({ kisiSayisiZorunlu: true }, "Misafir sayısı artık zorunlu")}
-                >
-                  Zorunlu
-                </button>
-                <button
-                  className={!genel.kisiSayisiZorunlu ? "aktif" : ""}
-                  onClick={() => genelDegistir({ kisiSayisiZorunlu: false }, "Misafir sayısı isteğe bağlı")}
-                >
-                  İsteğe bağlı
-                </button>
-              </div>
-            </div>
+            <AyarSatiri
+              ad="Misafir sayısı zorunlu"
+              ara={ara}
+              ipucu="Açıkken masaya girer girmez kaç kişi olduğu sorulur ve boş geçilemez. Kapalıyken sorulur ama boş bırakılabilir. Kişi başı ciro raporu bu bilgiye dayandığı için boş kalan adisyonlar rapora girmez."
+            >
+              <AyarAnahtari
+                acik={genel.kisiSayisiZorunlu}
+                degistir={(v) =>
+                  genelDegistir(
+                    { kisiSayisiZorunlu: v },
+                    v ? "Misafir sayısı artık zorunlu" : "Misafir sayısı isteğe bağlı"
+                  )
+                }
+              />
+            </AyarSatiri>
 
-            <div className="ayar-satir">
-              <div className="ayar-satir-yazi">
-                <strong>Para üstü</strong>
-                <span>
-                  Hızlı Öde'de müşterinin verdiği tutar yazılınca para üstü
-                  hesaplanıp gösterilsin.
-                </span>
-              </div>
-              <div className="mod-sec kompakt">
-                <button
-                  className={genel.paraUstu ? "aktif" : ""}
-                  onClick={() => genelDegistir({ paraUstu: true }, "Para üstü gösterilecek")}
-                >
-                  Açık
-                </button>
-                <button
-                  className={!genel.paraUstu ? "aktif" : ""}
-                  onClick={() => genelDegistir({ paraUstu: false }, "Para üstü kapatıldı")}
-                >
-                  Kapalı
-                </button>
-              </div>
-            </div>
+            <AyarSatiri
+              ad="Para üstü"
+              ara={ara}
+              ipucu="Açıkken Hızlı Öde'de müşterinin verdiği tutar için ayrı bir alan çıkar ve para üstü hesaplanır. Kapalıyken o alan hiç görünmez, yalnızca hesap tutarı tahsil edilir."
+            >
+              <AyarAnahtari
+                acik={genel.paraUstu}
+                degistir={(v) =>
+                  genelDegistir({ paraUstu: v }, v ? "Para üstü gösterilecek" : "Para üstü kapatıldı")
+                }
+              />
+            </AyarSatiri>
 
-            <div className="ayar-satir">
-              <div className="ayar-satir-yazi">
-                <strong>İndirim tanımları</strong>
-                <span>
-                  {indirimler.length === 0
-                    ? "Satışta listeden seçilecek hazır indirimler."
-                    : `${indirimler.length} tanım · satışta listeden seçilir`}
-                </span>
-              </div>
-              <button className="ayar-satir-ekle" onClick={() => setIndirimPaneli(null)}>
-                <Plus size={15} /> Ekle
-              </button>
-            </div>
+            <AyarSatiri
+              ad="İndirim tanımları"
+              ara={ara}
+              ipucu="Satışta hazır listeden seçilen indirimler. Serbest indirim yetkisi olmayan personel yalnızca buradaki tanımları uygulayabilir; tanım yoksa indirim yapamaz."
+            >
+              <span className="ayar-satir-sag">
+                {indirimler.length > 0 && <i className="ayar-sayi">{indirimler.length}</i>}
+                <button className="ayar-satir-ekle" onClick={() => setIndirimPaneli(null)}>
+                  <Plus size={15} /> Ekle
+                </button>
+              </span>
+            </AyarSatiri>
 
-            {indirimler.length > 0 && (
+            {indirimler.length > 0 && !ara && (
               <ul className="indirim-liste">
                 {indirimler.map((t) => (
                   <li key={t.id} className={t.aktif ? undefined : "kapali"}>

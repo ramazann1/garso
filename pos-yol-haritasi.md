@@ -697,3 +697,90 @@ tipi*, tarih*, saat*, tutar*, açıklama*.
 9. **Bölge–kullanıcı ataması** kullanıcı formunda çoklu seçim olarak duruyor; bizde
    bölge tanımı var, kullanıcı tarafı personel modülüyle gelecek. → Faz 1
 
+---
+
+## 10. KASA & GİDER — CANLI DERİN TUR (11 Ağu 2026)
+*Adisyo'nun kasa ve gider tarafı canlı hesapta baştan sona gezildi.*
+
+Kasa modülü Adisyo'da **varsayılan olarak kapalı geliyor**. Ayarlar → Restaurant
+Ayarları → Parametreler → *"Kasa açılış/kapanış işlemleri kullanıcı tarafından
+yönetilsin"* açılmadan hiçbir yerde görünmüyor: ne menüde, ne üst çubukta, ne de
+raporda. Kasa Raporu ekranı bile boş açılıp "bu parametreyi aktif edin" diyor.
+Tur için parametre geçici olarak açıldı, tur bitince geri kapatıldı.
+
+### 10.1 Parametre ve alt ayarları
+Anahtar açılınca altında dört ayar beliriyor:
+- **Kasa kapanışı zorunlu olsun** — kapanışı mecburi kılar.
+- **Kasa kapanış uyarı saati** — 15 dakikalık aralıklı saat listesi. Parametre
+  açıksa bu alan **boş bırakılamıyor**, kaydetmeye çalışınca hata veriyor.
+- **Para giriş ve çıkışı kullanılmasın** — kasadan para alma/koyma işlemini kapatır.
+- **Aktif vardiya varken gün sonu çıktısı alınamasın**.
+
+### 10.2 Kasa İşlemleri penceresi
+Sol menüde **yok**. Salon ekranının üst çubuğunda **₺ ikonu** ("Kasa İşlemleri"),
+tıklayınca ayrı sayfa değil **modal pencere** açılıyor. Üstte "Vardiya Raporuna git"
+bağlantısı ve duruma göre "Kasayı Aç" / "Kasayı Kapat" düğmesi.
+
+**Kasa kapalıyken:** "İşlem yapabilmeniz için kasayı açmanız gerekiyor". Kasa Açılış
+Tutarı ve Kasada Olması Gereken Tutar ₺0,00; Para Ekle / Para Çıkar düğmeleri ölü.
+
+**Kasayı Aç** (sağ panel olarak açılıyor): Kasa Açılış Tutarı · **Önceki kasa kapanış
+tutarı** (salt bilgi, dünden devreden para) · Açıklama.
+
+**Kasa açıkken:** "Kasa, Ramazan tarafından 11.08.2026 tarihinde açıldı." Alt kalemler
+canlanıyor: **Nakit Girişi · Nakit Çıkışı · Nakit Satışlar**. Nakit Satışlar yalnızca
+kasa açıldıktan sonraki nakit tahsilatları sayıyor — kasa açılmadan önce alınan nakit
+bu toplama girmiyor.
+
+**Para Ekle / Para Çıkar:** ikisi de aynı küçük form — Tutar* + Açıklama. Bu bir gider
+değil; kasadaki nakdin fiziksel giriş/çıkışı.
+
+**Kasayı Kapat:** Sayılan Tutarı Giriniz · Kasada olması gereken nakit tutar ·
+**Aradaki fark** (tutar girilir girilmez beliriyor, sıfırsa yeşil) · Açıklama.
+
+### 10.3 Kritik iş kuralı
+**Açık adisyon varken kasa kapatılamıyor.** Denendi, engelledi:
+*"Açıkta bekleyen 9752,10₺ tutarındaki siparişiniz var, kasayı kapatamazsınız."*
+Masalar kapatılınca kapanış sorunsuz geçti.
+
+### 10.4 Kasa Raporu
+Raporlar → **Vardiya Satış Raporu** altında üç sekme: Ödeme Raporu · Adisyon Raporu ·
+**Kasa Raporu**. Sütunlar: Kullanıcı Adı · Açılış Tarihi · Kapanış Tarihi · Durum
+("Aktif Vardiya") · Ödeme Tipi ("0 Adet Tahsilat", tıklanabilir) · Sipariş Sayısı ·
+Toplam Satış · Açıklama.
+
+Satıra tıklayınca **Vardiya Detayı** penceresi: Vardiya No + Vardiya Bilgileri
+(sahibi, açılış saati, kapanış saati, durum) ve Tutar Bilgileri (Kasa Açılış Tutarı,
+**Beklenen (Kapanış) Tutarı, Sayılan Tutar, Aradaki Fark**).
+
+### 10.5 Gider / Masraf (9.6'nın doğrulaması)
+İlk açılışta hazır gider grubu modalı çıkıyor (8 grup + "Manuel Tanımla" +
+"Seçilenleri Ekle"). Liste üstünde İndir · **Masraf Tiplerini Düzenle** · Masraf Ekle.
+
+**Masraf Tiplerini Düzenle** ayrı bir ekran değil, küçük bir pencere: tek alan
+"Masraf Grupları*" + *"+ Ön Tanımlı Masraf Gruplarından Ekle"* bağlantısı. Masraf tipi
+tek seviyeli düz bir liste, alt kırılımı yok.
+
+**Masraf Ekle:** Masraf tipi* (aranabilir liste + "Yeni masraf tipi ekle veya düzenle")
+· Ödeme Tipi* · Masraf tarihi* · Masraf saati* · Fiyat ₺* · Açıklama*.
+
+**Gider ödeme tipi, satışın ödeme tipleriyle aynı liste DEĞİL.** Sabit beş seçenek:
+Nakit · Kredi Kartı · Havale · Çek-Senet · Diğer.
+
+### 10.6 Bu turda çıkan kararlar ve Garso'ya alınacaklar
+1. **"Kasa günü" ile "vardiya" iki ayrı kavram.** Kasa günü rapor aralığı (08:45–08:40,
+   Genel Ayarlar'da); vardiya ise açılış/kapanış kaydı. Birbirine bağlı değiller —
+   bir kasa gününde birden fazla vardiya olabilir. Garso'da da ayrı tutulacak. → Faz 1
+2. **Kasa ekranı sayfa değil pencere.** Satış ekranından çıkmadan açılıyor; kasanın
+   başındaki kişi masayı kaybetmiyor. Bizde de aynı desen. → Faz 1
+3. **Para giriş/çıkış ayrı bir işlem.** Gider değil, kasadaki nakdin hareketi. Gider
+   ekranıyla karıştırılmamalı; kasa penceresinin kendi işlemi. → Faz 1
+4. **Açık adisyon varken kapanış engellenir.** Bizde de aynı kural, kendi
+   modalımızla ("Açık N adisyon var, önce onları kapatın"). → Faz 1
+5. **Gider ödeme tipi ayrı ve sabit liste.** `odeme_tipleri`ne bağlanmayacak. → Faz 1
+6. **Fark hesabı kapanış anında görünür.** Beklenen–sayılan farkı kullanıcı tutarı
+   girer girmez, kaydetmeden önce görünüyor. → Faz 1
+7. **Modül kapatılabilir olmalı.** Kasa takibi yapmayan işletme için arayüzde hiç
+   durmasın — Adisyo'nun parametre deseni doğru. Bizde de işletme ayarı. → Faz 1
+8. **Kasa kapanış uyarı saati** parametre açıkken zorunlu alan. Bizde de aynı
+   zorunluluk kurulacak, boş bırakılırsa kaydetme engellenecek. → Faz 1

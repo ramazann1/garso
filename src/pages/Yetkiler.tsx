@@ -3,9 +3,11 @@ import { useLocation } from "react-router-dom";
 import { Check, KeyRound, Lock, ShieldCheck, UserRound, X } from "lucide-react";
 import Duzen from "../components/Duzen";
 import AyarBasligi from "../components/AyarBasligi";
+import AramaKutusu from "../components/AramaKutusu";
 import Bildirim from "../components/Bildirim";
 import Bilgi from "../components/Bilgi";
 import { kilitKaldir, kilitKur } from "../cikisKilidi";
+import { eslesiyor } from "../arama";
 import { personeliGetir, rolleriGetir, type Personel, type Rol } from "../personel";
 import {
   gruplara,
@@ -127,6 +129,7 @@ export default function YetkilerEkrani() {
   const [degisti, setDegisti] = useState(false);
   const [kisiPaneli, setKisiPaneli] = useState<Personel | null>(null);
   const [bildirim, setBildirim] = useState("");
+  const [ara, setAra] = useState("");
 
   // İki bölüm aynı veriyi kullanıyor; ayrı sayfa yapmak yerine yol hangisiyse
   // o bölüm çiziliyor.
@@ -160,6 +163,9 @@ export default function YetkilerEkrani() {
   // Yönetici sütunu kilitli: tüm yetkiler hep açık kalır, yoksa işletmeci
   // kendi erişimini kapatıp ayar ekranına giremez hâle gelebilir.
   const yoneticiId = roller.find((r) => r.ad === "Yönetici")?.id ?? null;
+
+  // İşlemin kendi adı da grubu da aranıyor: "kasa" yazan tüm Kasa grubunu görür.
+  const gorunenYetkiler = yetkiler.filter((y) => eslesiyor(`${y.ad} ${y.grup}`, ara));
 
   const kutuDegis = (rolId: number, yetkiId: number) => {
     const anahtar = `${rolId}-${yetkiId}`;
@@ -210,8 +216,12 @@ export default function YetkilerEkrani() {
           <>
             {genelBolum && (
             <section className="ayar-bolum">
-              <div className="ayar-bolum-ust">
+              {/* Matris uzun; işlemi adından ya da grubundan ("ödeme", "kasa")
+                  bulmak için süzgeç. Başlıkla aynı hizada ama sağ uçta değil:
+                  tablonun üstünde göz zaten ortaya bakıyor. */}
+              <div className="ayar-bolum-ust yetki-ust">
                 <h2><ShieldCheck size={17} /> Genel Yetkiler</h2>
+                <AramaKutusu deger={ara} degistir={setAra} yer="İşlem ara" />
               </div>
 
               <div className="yetki-tablo-sar">
@@ -228,7 +238,14 @@ export default function YetkilerEkrani() {
                     </tr>
                   </thead>
                   <tbody>
-                    {gruplara(yetkiler).map((grup) => (
+                    {gorunenYetkiler.length === 0 && (
+                      <tr>
+                        <td colSpan={roller.length + 1} className="yetki-bos">
+                          "{ara}" ile eşleşen işlem yok.
+                        </td>
+                      </tr>
+                    )}
+                    {gruplara(gorunenYetkiler).map((grup) => (
                       <Fragment key={grup.ad}>
                         <tr className="yetki-grup-satir">
                           <td colSpan={roller.length + 1}>

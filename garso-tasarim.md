@@ -1,7 +1,7 @@
 # GARSO — Teknik Tasarım: Veri Modeli & Ekran Haritası
 *Restoran ve cafe'ler için bulut tabanlı satış ve işletme yönetim sistemi.*
 
-## 0. SIRADAKİ İŞ (14 Ağu 2026'da güncellendi)
+## 0. SIRADAKİ İŞ (15 Ağu 2026'da güncellendi)
 
 *Ramazan seansa "devam edelim" diye giriyor — sıradaki iş bu listenin en üstündeki
 maddedir. Seans sonunda bu liste güncellenir: biten madde silinir, kalanlar
@@ -23,23 +23,38 @@ telefon değişimi, şifre koruma çalışıyor; `personel.sifre_hash` kaldırı
 "kim yaptı" bilgisi satışa girdi (`adisyonlar.acan_id`, `turlar.garson_id`),
 yetki denetimi ekranlara bağlandı ve beş işletme parametresi eklendi.
 
-1. **Kasa + gider** — kasa günü açma/kapatma, açılış/kapanış tutarı, masraf tipi
-   tanımları (hazır şablonla) ve masraf girişi. Bölüm 9.6. Planlanan yapı:
-   `kasa_gunleri` (açılış/kapanış saati, açan/kapatan kişi, açılış tutarı,
-   sayılan tutar), `masraf_tipleri` (hazır şablon: Faturalar, Personel, Temizlik,
-   Gıda ve İçecek, Kira, Bakım, Vergi, Diğer), `masraflar`. Sol menüye "Kasa"
-   başlığı, altında Kasa Günü (`kasa.ac_kapat`) ve Giderler (`kasa.gider`).
-   Bugün eklenen kasa günü saatleri burada kullanılacak.
-2. **Adisyon detay penceresi + kapanmış adisyonlar** — Adisyo'da ayrı liste ekranı
+**15 Ağu 2026:** Adisyo'nun kasa ve gider tarafı canlı turlandı (yol haritası
+bölüm 10) ve **kasanın açma/kapatma çekirdeği bitti**. Turda planı değiştiren dört
+bulgu çıktı: kasa günü ile vardiya ayrı kavramlar, kasa ekranı sayfa değil pencere,
+para giriş/çıkış giderden ayrı bir işlem, gider ödeme tipi satışınkinden ayrı sabit
+liste. Ayrıca **ayar ekranlarının düzeni yeniden kuruldu** (aşağıda).
+
+1. **Kasa Geçmişi + Giderler** — kasanın kalan yarısı. Kasa Geçmişi: vardiya
+   listesi ve detayı (açan/kapatan, açılış tutarı, beklenen, sayılan, fark);
+   veri `kasa_vardiyalari` ve `kasa_hareketleri`'nde hazır duruyor. Giderler:
+   `masraf_tipleri` (hazır şablonla: Faturalar, Vergi, Personel, Temizlik, Gıda ve
+   İçecek, Teknik Servis, Kira, Diğer) + `masraflar` (tip, ödeme tipi, tarih, saat,
+   tutar, açıklama). **Gider ödeme tipi ayrı ve sabit liste**: Nakit · Kredi Kartı ·
+   Havale · Çek-Senet · Diğer — `odeme_tipleri`ne bağlanmıyor (bölüm 10.5).
+   Nakit gider kasadan düşecek. Sol menüye "Kasa" başlığı, altında Kasa Geçmişi
+   (`kasa.ac_kapat`) ve Giderler (`kasa.gider`).
+2. **Kasa kapanış hatırlatması ve zorunlu kapanış** — `isletme_ayarlari` içinde
+   `kasa_kapanis_zorunlu` ve `kasa_kapanis_uyari` sütunları hazır ama arayüzleri
+   yok; mantığı yazılmadan ayar koymak boş düğme olurdu. Uyarı saatinden sonra
+   kasa hâlâ açıksa hatırlatma, zorunluysa gün sonu alınamaması.
+3. **Adisyon detay penceresi + kapanmış adisyonlar** — Adisyo'da ayrı liste ekranı
    yok; her yerden açılan **tek bir detay penceresi** var (sipariş bilgileri /
    ürünler / tahsilatlar + "siparişi aktif et", "sipariş geçmişi" zaman çizelgesi).
    Bizde de tek bileşen olacak. Bölüm 9.5.
-3. **Raporlar → Gün Sonu** — yukarıdaki ikisi bittikten sonra tek seferde.
-4. **Masa yazdırma ve adisyon iptali** — masa üç nokta menüsünde yerleri boş
+4. **Raporlar → Gün Sonu** — yukarıdakiler bittikten sonra tek seferde.
+5. **Masa yazdırma ve adisyon iptali** — masa üç nokta menüsünde yerleri boş
    duruyor; yazdırma yazıcı altyapısına, iptal adisyon detay penceresine bağlı.
-5. **İşletme kaydı ekranı** — satır güvenliği açılınca çıktı: hiç hesabı olmayan
+6. **İşletme kaydı ekranı** — satır güvenliği açılınca çıktı: hiç hesabı olmayan
    yeni bir işletme kendi ilk yöneticisini oluşturamıyor. Ürün satışa çıkmadan
    önce şart, Ramazan'ın kurulumunu etkilemiyor. Ayrıntı yol haritası Faz 2'de.
+7. **Yurt dışına açılırsa değişmesi gerekenler** — para birimi (₺ arayüzde sabit
+   yazılı), tarih/saat biçimi (`tr-TR`) ve "KDV" teriminin kendisi. Bugünün işi
+   değil, akılda dursun diye burada.
 
 **Ödenmezler** ve **Kuver/Garsoniye** Faz 2'ye yazıldı (yol haritası bölüm 8);
 bu listeye satış çekirdeği bitince girecekler.
@@ -750,6 +765,38 @@ görüntüle" ve aktif/pasif ürün — 1 Ağu 2026 ikinci seansında tamamland�
    anında uyarmak geç: garson siparişi yazmış, gitmek üzere. Kendi küçük
    penceresi var (1-8 hazır tuş + kalabalık masa kutusu); vazgeçen salona
    dönüyor, çünkü sayı girilmeden o masada satış yapılamıyor. *(14 Ağu 2026)*
+90. **Kasa günü ile vardiya ayrı kavramlar.** Kasa günü raporların tarih aralığı
+   (Genel ayarlardaki saatler); vardiya kasanın fiilen açık olduğu süre. Bir kasa
+   gününde birden fazla vardiya olabilir — devir teslimde kasa kapanıp yenisi
+   açılır. Adisyo turunda ikisinin karıştığı görüldü, `kasa_vardiyalari` bu yüzden
+   kasa gününe bağlı değil. *(15 Ağu 2026)*
+91. **Kasa ekranı sayfa değil pencere.** Salon şeridinin sağ ucunda durumu
+   üstünde yazan bir düğme ("Kasa kapalı" / "Kasa açık · 4 sa 12 dk"), tıklayınca
+   pencere açılıyor. Kasanın başındaki kişi işin ortasında masayı kaybetmiyor.
+   Yetkisi (`kasa.ac_kapat`) veya ayarı olmayan düğmeyi hiç görmüyor. *(15 Ağu 2026)*
+92. **Kasadan para alma, gider girişinden ayrı bir işlem.** Gider işletmenin
+   harcaması; para hareketi kasadaki nakdin fiziksel giriş/çıkışı (bankaya
+   götürme, bozukluk getirme). Ayrı yetki (`kasa.para`, yalnız Yönetici ve
+   Müdür'de) ve ayrı işletme ayarı var. *(15 Ağu 2026)*
+93. **Açık adisyon varken kasa kapatılmıyor.** Kapatmaya çalışan kaç adisyonun
+   açık olduğunu söyleyen bir uyarı alıyor. Adisyo'da da böyle; ödemesi
+   alınmamış hesap varken sayım anlamsız. *(15 Ağu 2026)*
+94. **Ayar satırında açıklama cümlesi yok, ayarın solunda "i" işareti var.**
+   Her satırın altına bir cümle yazmak satırı iki katına çıkarıyor ve sayfayı
+   metin yığınına çeviriyordu. Açıklama imleç üstüne gelince balonda çıkıyor;
+   işaret solda sabit sütunda durduğu için satırlar hizalı kalıyor. Açıklamalar
+   ayarın **ne olduğunu** anlatır, o anki seçimini değil — ve işletmeye göre
+   değişen sabit örnek (saat, KDV oranı, ülke) vermez. *(15 Ağu 2026)*
+95. **İki şıklı ayarlar segment değil anahtar.** "Açık | Kapalı" iki düğmelik
+   segment satır başına ~264px yer kaplıyordu; anahtar 40px. Gerçekten seçenek
+   olanlar (KDV dahil/hariç, kilit süresi, çalışma tipleri) segment kaldı.
+   Ayrıca satır başlıkları artık mercan değil: on satırda on vurgu olunca vurgu
+   diye bir şey kalmıyordu, mercan yalnızca seçili kontrolde. *(15 Ağu 2026)*
+96. **Arama kutusunun yeri ekrana göre değişir, kutusu aynıdır.** Ortak bileşen
+   `AramaKutusu`; Genel ve Satış'ta açıklama şeridinin sağ ucunda, Personel'de
+   "Personel ekle" düğmesinin solunda, Genel Yetkiler'de başlıkla aynı hizada
+   ortalarda. Arama ad ve açıklamada birlikte arıyor ("kdv" yazan "Menü
+   fiyatları"nı bulur), Türkçe harf ve şapka farkını yok sayıyor. *(15 Ağu 2026)*
 
 ## 7. KOD PAYLAŞIM DÜZENİ
 - Kod GitHub'da: `github.com/ramazann1/garso` (şimdilik Public — final'de Private yapılacak)
@@ -1193,3 +1240,49 @@ Bölüm 6'ya **83-89** numaralarıyla işlendi.
 
 ### Sonraki seansın ilk işi
 **Kasa + gider modülü** — bölüm 0, madde 1'de planı duruyor.
+
+---
+
+## 16. SEANS GÜNLÜĞÜ — 15 AĞU 2026
+
+### Yapılanlar
+- **Adisyo'nun kasa ve gider tarafı canlı turlandı** (yol haritası bölüm 10).
+  Kasa modülü Adisyo'da varsayılan kapalı geliyor; ekranı görebilmek için
+  Parametreler'deki anahtar geçici açıldı, tur bitince geri kapatıldı.
+- **Kasa çekirdeği yazıldı** (`sql/2026-08-15-kasa.sql`, `src/kasa.ts`,
+  `src/components/Kasa.tsx`): `kasa_vardiyalari` ve `kasa_hareketleri` tabloları,
+  satır güvenliği, `kasa.para` yetkisi, salon şeridindeki kasa düğmesi ve
+  penceresi (açma · para ekle/çıkar · kapanış ve fark).
+- **Beklenen kasa tutarı** = açılış + nakit satış + giriş − çıkış. Hangi ödeme
+  tipinin kasaya para koyduğu `odeme_tipleri.kasaya_girer` ile belirleniyor;
+  ödeme tipi formuna anahtarı eklendi, kurulumda adı "nakit" geçenler işaretlendi.
+- **Dört yeni işletme ayarı:** kasa takibi, kasadan para alma, kasa kapanışı
+  zorunlu, kasa kapanış uyarı saati. İlk ikisinin arayüzü var; son ikisi
+  veritabanında hazır ama mantığı yazılmadığı için ekrana konmadı.
+- **Ayar ekranlarının düzeni yeniden kuruldu:** satır altı açıklamalar kalktı,
+  yerine soldaki "i" işareti ve balon geldi (`Ipucu`, `AyarSatiri`); ikili
+  ayarlar anahtara döndü; satır yüksekliği yarıya indi; sayfa 1100px'ten 880px'e
+  daraldı; satır başlıklarındaki mercan kaldırıldı.
+- **Arama kutusu** dört ekrana eklendi (`AramaKutusu`, `src/arama.ts`): Genel,
+  Satış, Personel, Genel Yetkiler.
+
+### Turda planı değiştiren bulgular
+1. Kasa günü ile vardiya ayrı kavramlar — ikisini tek tabloda birleştirecektik.
+2. Kasa ekranı ayrı sayfa değil, satış ekranından açılan pencere.
+3. Para giriş/çıkış diye gider dışında bir işlem var.
+4. Gider ödeme tipi satışın ödeme tipleriyle aynı liste değil, sabit beş seçenek.
+5. Açık adisyon varken kasa kapanmıyor (Adisyo'da denendi, engelledi).
+
+### Denenip vazgeçilenler
+- **Ayar satırlarını 320px sabit kolona hizalama:** iri duruşu çözmedi, asıl
+  sorun satır altı açıklamalarmış.
+- **Açıklamaları tümden atmak:** bilgi kaybı oldu; "i" işareti + balon ile geri
+  getirildi.
+- **Arama kutusunu dört ekranda da başlık şeridine koymak:** her ekranın kendi
+  doğal yeri varmış (karar 96).
+
+### Kararlar
+Bölüm 6'ya **90-96** numaralarıyla işlendi.
+
+### Sonraki seansın ilk işi
+**Kasa Geçmişi + Giderler** — bölüm 0, madde 1'de planı duruyor.

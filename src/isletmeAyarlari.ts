@@ -16,6 +16,13 @@ export type IsletmeAyarlari = {
   /** Kullanılmayan sipariş türü arayüzde hiç durmasın. */
   gelalAcik: boolean;
   paketAcik: boolean;
+  /** Kasa takibi yapılmıyorsa kasa ekranları arayüzde hiç durmaz. */
+  kasaTakibi: boolean;
+  kasaKapanisZorunlu: boolean;
+  /** Bu saatten sonra kasa açıksa kapatma hatırlatılır; boşsa uyarı yok. */
+  kasaKapanisUyari: string;
+  /** Kasadan para alma/koyma işlemi kullanılıyor mu. */
+  paraHareketiAcik: boolean;
 };
 
 const VARSAYILAN: IsletmeAyarlari = {
@@ -27,6 +34,10 @@ const VARSAYILAN: IsletmeAyarlari = {
   paraUstu: true,
   gelalAcik: true,
   paketAcik: true,
+  kasaTakibi: false,
+  kasaKapanisZorunlu: false,
+  kasaKapanisUyari: "",
+  paraHareketiAcik: true,
 };
 
 // Ayar her hesapta lazım ama satış sırasında değişmiyor; bir kez okunup burada
@@ -56,6 +67,10 @@ export async function ayarlariGetir(): Promise<IsletmeAyarlari> {
     paraUstu: s?.para_ustu ?? VARSAYILAN.paraUstu,
     gelalAcik: s?.gelal_acik ?? VARSAYILAN.gelalAcik,
     paketAcik: s?.paket_acik ?? VARSAYILAN.paketAcik,
+    kasaTakibi: s?.kasa_takibi ?? VARSAYILAN.kasaTakibi,
+    kasaKapanisZorunlu: s?.kasa_kapanis_zorunlu ?? VARSAYILAN.kasaKapanisZorunlu,
+    kasaKapanisUyari: saat(s?.kasa_kapanis_uyari, VARSAYILAN.kasaKapanisUyari),
+    paraHareketiAcik: s?.para_hareketi_acik ?? VARSAYILAN.paraHareketiAcik,
   };
   return onbellek;
 }
@@ -78,6 +93,11 @@ export async function ayarlariKaydet(degisen: Partial<IsletmeAyarlari>) {
       para_ustu: yeni.paraUstu,
       gelal_acik: yeni.gelalAcik,
       paket_acik: yeni.paketAcik,
+      kasa_takibi: yeni.kasaTakibi,
+      kasa_kapanis_zorunlu: yeni.kasaKapanisZorunlu,
+      // Saat alanı boşsa uyarı kapalı demektir; boş metin time'a yazılamıyor.
+      kasa_kapanis_uyari: yeni.kasaKapanisUyari || null,
+      para_hareketi_acik: yeni.paraHareketiAcik,
     },
     { onConflict: "isletme_id" }
   );
