@@ -36,26 +36,36 @@ kapsamı kararı: **Adisyo'daki her rapor Garso'da da olacak, üstüne bizim
 eklediklerimizle daha zengin.** Eksik görünenler vazgeçilmiş değil, dayandığı
 modüle bağlı (stok, cari hesap, entegrasyon). Sıralama kısıtı var, kapsam kısıtı yok.
 
-1. **Raporlar ekranı — iskelet.** Adisyo'daki gibi ayrı ayrı rapor sayfaları
-   değil, **tek ekran + üst sekmeler**: Özet · Adisyonlar · Ürünler · Personel ·
-   Giderler · Denetim. Aynı adisyon listesi Adisyo'da üç yerde tekrarlanıyor
-   (Gün Sonu → Tüm Adisyonlar, Masa Siparişleri, Vardiya → Adisyon Raporu);
-   bizde tek liste, gerisi filtre. Kararlar yol haritası 11.8'de.
-   - **Özet başrolde günün cirosu** (Ramazan'ın ilk baktığı şey). Şık ve
-     Adisyo'dan daha kullanışlı olması istendi — kart yığını değil, okunur bir
-     düzen.
-   - **Ortak filtre bileşeni** (`RaporFiltre`): dönem (Bugün · Dün · Bu hafta ·
-     Geçen hafta · Bu ay · Son 30 gün · Özel aralık, hepsi kasa gününe oturur) ·
-     **vardiya seçimi** · bölge/masa · garson · sipariş tipi · ödeme tipi ·
-     durum · indirimli · tutar aralığı · arama (adisyon no, masa, müşteri).
-     Seçilenler başlık altında çip olarak durur, sekmeler arası korunur.
-     İleride "kayıtlı görünüm" eklenebilecek şekilde kurulacak.
-2. **Adisyon detay penceresi** — her yerden açılan tek bileşen (yol haritası 11.3).
-   Sipariş bilgileri / ürünler (tur tur, kalemde saat + kullanıcı) / tahsilatlar +
-   döküm (Ara Toplam · İndirim · Brüt · KDV · Toplam) + **sipariş geçmişi zaman
-   çizelgesi** (açıldı · ürün eklendi · ödeme alındı · kapatıldı; turun ürünleri
-   balonda). Aksiyonlar: Siparişe git · Siparişi aktif et. Raporlar → Adisyonlar
-   listesi bunun giriş noktası; ikisi birlikte yazılacak.
+**16 Ağu 2026:** Rapor ekranının iskeleti kuruldu ve **adı "Analiz" oldu** —
+Adisyo'nun kelimesini kullanmama kararı, adres `/analiz`, veri katmanı
+`analiz.ts`. Tek ekran + üst sekmeler (Özet · Adisyonlar · Ürünler · Personel ·
+Giderler · Denetim), ortak `AnalizFiltre` bileşeni (dönem hepsi kasa gününe
+oturuyor, vardiya seçimi vardiyanın kendi aralığını geçiriyor, seçilenler çip
+olarak duruyor) ve **adisyon detay penceresi** bitti. Detay penceresi Adisyo'nun
+düzeninde: üç sütun (sipariş bilgileri / ürünler + döküm / tahsilatlar), sipariş
+geçmişi ayrı görünüm olarak sütunların yerini alıyor — ikisi aynı anda ekranda
+durunca kalabalık oluyordu. Adisyonlar listesi Adisyo'nun sütunlarıyla gerçek
+bir tablo; **"Eksik tahsilat" durumu bizim eklememiz** (kapanmış ama parası
+eksik kalan hesap Adisyo'da ayrı işaretlenmiyor). Yeni yetki:
+`siparis.aktif_et` (kapanmış adisyonu yeniden açma).
+
+**Göç notu:** satır güvenliği açıldığından beri `isletme_id` oturumdan geliyor;
+SQL editöründe oturum olmadığı için göç dosyalarında bu sütun **elle
+yazılmalı** (kaynağı ilgili satırın kendi işletmesi). `rol_yetkileri`'ne yetki
+eklerken bu yüzden hata alındı.
+
+1. **Özet sekmesinin tasarımı yeniden** — 16 Ağu 2026'da yazılan hâli Ramazan'a
+   beğendirmedi. Şu an: büyük ciro sayısı + 3×2 metrik ızgarası, altında hesap
+   dökümü / ödeme dağılımı / sipariş tipi / saat çubukları. Sorun düzenin
+   kendisinde; sayılar doğru çalışıyor. Yeniden kurgulanacak, kart yığınına
+   dönmeden ve ekranı gereksiz genişletmeden.
+   - **Açık adisyon uyarısı ayrıca ele alınacak.** Şu an bilgi kutusuyla
+     "Bu dönemde 1 adisyon hâlâ açık (₺150,00)" yazıyor; beğenilmedi. Bilgi
+     doğru ve gerekli (açık hesap ciroya yazılmıyor) ama anlatımı ekranın
+     içine daha doğal oturmalı — kutu değil, özetin kendi parçası olmalı.
+2. **Analiz'in kalan dört sekmesi** — Ürünler · Personel · Giderler · Denetim.
+   Şu an "hazırlanıyor" açıklamasıyla duruyorlar. İçerikleri yol haritası 11.2,
+   11.4 ve 11.6'da; Denetim sekmesi 3. maddedeki veri eksiklerine bağlı.
 3. **Turdan çıkan iki veri eksiği** — rapor yazılmadan kapatılmalı:
    `adisyon_kalemleri`'nde **kimin iptal ettiği ve iptal sebebi yok** (Adisyo'nun
    "Silinen Ürünler" raporu bunu tutuyor), silinen tahsilat için de aynısı gerekli.

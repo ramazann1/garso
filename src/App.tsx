@@ -7,6 +7,7 @@ import Siparis from "./pages/Siparis";
 import MenuStudyosu from "./pages/MenuStudyosu";
 import KasaGecmisi from "./pages/KasaGecmisi";
 import Giderler from "./pages/Giderler";
+import Analiz from "./pages/Analiz";
 import IsletmeAyarlari from "./pages/IsletmeAyarlari";
 import Personel from "./pages/Personel";
 import Yetkiler from "./pages/Yetkiler";
@@ -74,6 +75,8 @@ function App() {
         />
         <Route path="/kasa/gecmis" element={<KasaGecmisi />} />
         <Route path="/kasa/giderler" element={<Giderler />} />
+        <Route path="/analiz" element={<Navigate to="/analiz/ozet" replace />} />
+        <Route path="/analiz/:bolum" element={<Analiz />} />
         <Route path="/ayarlar" element={<Navigate to="/ayarlar/masalar" replace />} />
         <Route path="/ayarlar/personel" element={<Personel />} />
         <Route path="/ayarlar/yetkiler" element={<Yetkiler />} />

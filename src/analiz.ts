@@ -1,0 +1,539 @@
+import type { AdisyonTipi } from "./adisyonlar";
+import { ayarlar } from "./isletmeAyarlari";
+import { kdvDokumu } from "./kdv";
+import { masraflariGetir, type Masraf } from "./masraflar";
+import { kisaAd } from "./personel";
+import { supabase } from "./supabase";
+import type { SepetKalemi } from "./types";
+
+/**
+ * Analiz ekranının ortak veri katmanı. Bütün sekmeler aynı adisyon listesini okuyup
+ * kendi açısından toparlıyor — özet, ürün dökümü ve personel dökümü ayrı ayrı
+ * sorgu atsaydı üç farklı ciro çıkma ihtimali doğardı.
+ */
+
+export type DonemKodu =
+  | "bugun"
+  | "dun"
+  | "buHafta"
+  | "gecenHafta"
+  | "buAy"
+  | "son30"
+  | "ozel";
+
+export const DONEMLER: { kod: DonemKodu; ad: string }[] = [
+  { kod: "bugun", ad: "Bugün" },
+  { kod: "dun", ad: "Dün" },
+  { kod: "buHafta", ad: "Bu hafta" },
+  { kod: "gecenHafta", ad: "Geçen hafta" },
+  { kod: "buAy", ad: "Bu ay" },
+  { kod: "son30", ad: "Son 30 gün" },
+  { kod: "ozel", ad: "Özel aralık" },
+];
+
+export type AnalizFiltre = {
+  donem: DonemKodu;
+  /** Özel aralıkta gün (yyyy-aa-gg); dönem özel değilse kullanılmıyor. */
+  ozelBas: string;
+  ozelBit: string;
+  /**
+   * Seçiliyse tarih aralığının yerine vardiyanın kendi aralığı geçer. Vardiya
+   * bir güne oturmuyor — gece yarısını aşan bir vardiya iki takvim gününe
+   * yayıldığı için aralık tarihten değil, açılış/kapanış anından çıkıyor.
+   */
+  vardiyaId: number | null;
+  vardiyaBas: string;
+  vardiyaBit: string;
+  bolgeId: number | null;
+  masaId: number | null;
+  garsonId: number | null;
+  tip: AdisyonTipi | null;
+  odemeTipi: string | null;
+  durum: "hepsi" | "acik" | "kapali";
+  indirimli: boolean;
+  enAz: number | null;
+  enCok: number | null;
+  arama: string;
+};
+
+export const BOS_FILTRE: AnalizFiltre = {
+  donem: "bugun",
+  ozelBas: "",
+  ozelBit: "",
+  vardiyaId: null,
+  vardiyaBas: "",
+  vardiyaBit: "",
+  bolgeId: null,
+  masaId: null,
+  garsonId: null,
+  tip: null,
+  odemeTipi: null,
+  durum: "hepsi",
+  indirimli: false,
+  enAz: null,
+  enCok: null,
+  arama: "",
+};
+
+/** Tarih dışında bir şey seçilmiş mi — çip şeridi ve "temizle" bunu soruyor. */
+export function filtreSayisi(f: AnalizFiltre) {
+  return [
+    f.vardiyaId,
+    f.bolgeId,
+    f.masaId,
+    f.garsonId,
+    f.tip,
+    f.odemeTipi,
+    f.durum !== "hepsi" ? f.durum : null,
+    f.indirimli ? true : null,
+    f.enAz,
+    f.enCok,
+    f.arama.trim() || null,
+  ].filter((d) => d !== null && d !== undefined).length;
+}
+
+const gunEkle = (t: Date, gun: number) => {
+  const yeni = new Date(t);
+  yeni.setDate(yeni.getDate() + gun);
+  return yeni;
+};
+
+/**
+ * Verilen anın ait olduğu kasa gününün başlangıcı. Gece 01:00'de alınan sipariş
+ * takvimde yeni güne geçmiş olsa da işletme için hâlâ dünün cirosu.
+ */
+export function kasaGunuBasi(an: Date) {
+  const [saat, dakika] = ayarlar().kasaGunuBaslangic.split(":").map(Number);
+  const bas = new Date(an);
+  bas.setHours(saat, dakika, 0, 0);
+  return bas > an ? gunEkle(bas, -1) : bas;
+}
+
+/** Haftanın ilk günü pazartesi; JavaScript'te pazar 0 olduğu için kaydırılıyor. */
+function haftaBasi(t: Date) {
+  const gun = (t.getDay() + 6) % 7;
+  return gunEkle(t, -gun);
+}
+
+export function donemAraligi(f: AnalizFiltre): { bas: Date; bit: Date } {
+  if (f.vardiyaId && f.vardiyaBas) {
+    return {
+      bas: new Date(f.vardiyaBas),
+      bit: f.vardiyaBit ? new Date(f.vardiyaBit) : new Date(),
+    };
+  }
+
+  const bugun = kasaGunuBasi(new Date());
+  const yarin = gunEkle(bugun, 1);
+
+  switch (f.donem) {
+    case "dun":
+      return { bas: gunEkle(bugun, -1), bit: bugun };
+    case "buHafta":
+      return { bas: haftaBasi(bugun), bit: yarin };
+    case "gecenHafta": {
+      const bu = haftaBasi(bugun);
+      return { bas: gunEkle(bu, -7), bit: bu };
+    }
+    case "buAy": {
+      const bas = new Date(bugun);
+      bas.setDate(1);
+      return { bas, bit: yarin };
+    }
+    case "son30":
+      return { bas: gunEkle(bugun, -29), bit: yarin };
+    case "ozel": {
+      // Özel aralıkta girilen günler de kasa gününe oturuyor: 12 Ağustos
+      // seçildiyse 12 Ağustos sabahından 13 Ağustos sabahına kadar.
+      const bas = f.ozelBas ? kasaGunuBasi(new Date(`${f.ozelBas}T12:00`)) : bugun;
+      const bit = f.ozelBit ? kasaGunuBasi(new Date(`${f.ozelBit}T12:00`)) : bas;
+      return { bas, bit: gunEkle(bit, 1) };
+    }
+    default:
+      return { bas: bugun, bit: yarin };
+  }
+}
+
+/** Başlıkta duran okunur aralık metni: "12 Ağustos" veya "1 – 12 Ağustos". */
+export function donemMetni(f: AnalizFiltre) {
+  if (f.vardiyaId && f.vardiyaBas) {
+    const bas = new Date(f.vardiyaBas);
+    return `${bas.toLocaleDateString("tr-TR", { day: "numeric", month: "long" })} vardiyası`;
+  }
+
+  const hazir = DONEMLER.find((d) => d.kod === f.donem);
+  if (f.donem !== "ozel") return hazir?.ad ?? "";
+
+  const { bas, bit } = donemAraligi(f);
+  const son = gunEkle(bit, -1);
+  const bicim = (t: Date) =>
+    t.toLocaleDateString("tr-TR", { day: "numeric", month: "long" });
+  return bas.toDateString() === son.toDateString()
+    ? bicim(bas)
+    : `${bicim(bas)} – ${bicim(son)}`;
+}
+
+export type AnalizAdisyon = {
+  id: number;
+  no: number;
+  tip: AdisyonTipi;
+  durum: "acik" | "kapali";
+  masaId: number | null;
+  masaAd: string;
+  bolgeId: number | null;
+  bolgeAd: string;
+  garsonId: number | null;
+  garson: string;
+  acilis: string;
+  kapanis: string | null;
+  kisiSayisi: number;
+  ad: string;
+  musteri: string;
+  kalemler: SepetKalemi[];
+  adet: number;
+  araToplam: number;
+  indirim: number;
+  ikram: number;
+  matrah: number;
+  kdv: number;
+  toplam: number;
+  odenen: number;
+  kalan: number;
+  bahsis: number;
+  odemeler: { tip: string; tutar: number }[];
+};
+
+const ALANLAR = `id, adisyon_no, tip, durum, acilis, kapanis, indirim, ad, kisi_sayisi,
+       musteri_ad, masa_id,
+       masa:masalar (ad, bolge_id, bolgeler (ad)),
+       acan:personel!adisyonlar_acan_id_fkey (id, ad),
+       turlar (adisyon_kalemleri (id, ad, adet, fiyat, kdv_oran, durum, indirim)),
+       tahsilatlar (tip, tutar, bahsis)`;
+
+async function varsayilanKdvOrani() {
+  const { data } = await supabase
+    .from("kdv_gruplari")
+    .select("oran")
+    .eq("varsayilan", true)
+    .maybeSingle();
+  return data ? Number((data as any).oran) : undefined;
+}
+
+function satiraCevir(s: any, varsayilanKdv?: number): AnalizAdisyon {
+  const kalemler: SepetKalemi[] = [];
+  for (const tur of s.turlar ?? []) {
+    for (const k of tur.adisyon_kalemleri ?? []) {
+      kalemler.push({
+        id: k.id,
+        ad: k.ad,
+        adet: Number(k.adet),
+        fiyat: Number(k.fiyat),
+        kdvOran: k.kdv_oran ?? undefined,
+        durum: k.durum ?? "normal",
+        indirim: Number(k.indirim ?? 0) || undefined,
+      });
+    }
+  }
+
+  const satilanlar = kalemler.filter((k) => (k.durum ?? "normal") === "normal");
+  const tutar = (k: SepetKalemi) =>
+    Math.max(0, Math.round((k.fiyat * k.adet - (k.indirim ?? 0)) * 100) / 100);
+
+  const araToplam = satilanlar.reduce((t, k) => t + tutar(k), 0);
+  const indirim = Number(s.indirim ?? 0);
+  const ikram = kalemler
+    .filter((k) => k.durum === "ikram")
+    .reduce((t, k) => t + tutar(k), 0);
+
+  const dokum = kdvDokumu(satilanlar, indirim, varsayilanKdv);
+  const kdv = dokum.reduce((t, d) => t + d.kdv, 0);
+  const matrah = dokum.reduce((t, d) => t + d.matrah, 0);
+  // KDV dahil düzende vergi zaten fiyatın içinde; hariç düzende toplamın üstüne
+  // biniyor. Adisyon ekranındaki hesapla aynı kural.
+  const toplam = Math.max(0, araToplam - indirim) + (ayarlar().kdvDahil ? 0 : kdv);
+
+  const tahsilatlar = (s.tahsilatlar ?? []) as any[];
+  const odenen = tahsilatlar.reduce((t, o) => t + Number(o.tutar), 0);
+
+  return {
+    id: s.id,
+    no: s.adisyon_no,
+    tip: (s.tip ?? "masa") as AdisyonTipi,
+    durum: s.durum,
+    masaId: s.masa_id ?? null,
+    masaAd: s.masa?.ad ?? "",
+    bolgeId: s.masa?.bolge_id ?? null,
+    bolgeAd: s.masa?.bolgeler?.ad ?? "",
+    garsonId: s.acan?.id ?? null,
+    garson: s.acan?.ad ? kisaAd(s.acan.ad) : "",
+    acilis: s.acilis,
+    kapanis: s.kapanis ?? null,
+    kisiSayisi: Number(s.kisi_sayisi ?? 0),
+    ad: s.ad ?? "",
+    musteri: s.musteri_ad ?? "",
+    kalemler,
+    adet: kalemler
+      .filter((k) => k.durum !== "iptal")
+      .reduce((t, k) => t + k.adet, 0),
+    araToplam,
+    indirim,
+    ikram,
+    matrah,
+    kdv,
+    toplam,
+    odenen,
+    kalan: Math.max(0, toplam - odenen),
+    bahsis: tahsilatlar.reduce((t, o) => t + Number(o.bahsis ?? 0), 0),
+    odemeler: tahsilatlar.map((o) => ({ tip: o.tip, tutar: Number(o.tutar) })),
+  };
+}
+
+/**
+ * Aralık kasa gününe göre çıkıyor ama adisyon "kapandığı" ana yazılıyor: açılışı
+ * dün olup bugün kapanan hesap bugünün cirosunda görünsün. Açık adisyonlar
+ * henüz kapanmadığı için açılışlarına bakılıyor.
+ */
+export async function analizAdisyonlari(f: AnalizFiltre): Promise<AnalizAdisyon[]> {
+  const { bas, bit } = donemAraligi(f);
+
+  const [{ data }, varsayilanKdv] = await Promise.all([
+    supabase
+      .from("adisyonlar")
+      .select(ALANLAR)
+      .or(
+        `and(kapanis.gte.${bas.toISOString()},kapanis.lt.${bit.toISOString()}),` +
+          `and(kapanis.is.null,acilis.gte.${bas.toISOString()},acilis.lt.${bit.toISOString()})`
+      )
+      .order("acilis", { ascending: false })
+      .limit(2000),
+    varsayilanKdvOrani(),
+  ]);
+
+  const satirlar = ((data as any[]) ?? []).map((s) => satiraCevir(s, varsayilanKdv));
+  return satirlar.filter((a) => uyuyor(a, f));
+}
+
+// Tarih dışındaki süzgeçler veritabanında değil burada çalışıyor: aynı liste
+// altı sekmeye birden besleniyor, her filtre değişiminde yeniden sorgu atmak
+// yerine gelen liste yerinde daraltılıyor.
+function uyuyor(a: AnalizAdisyon, f: AnalizFiltre) {
+  if (f.bolgeId && a.bolgeId !== f.bolgeId) return false;
+  if (f.masaId && a.masaId !== f.masaId) return false;
+  if (f.garsonId && a.garsonId !== f.garsonId) return false;
+  if (f.tip && a.tip !== f.tip) return false;
+  if (f.durum !== "hepsi" && a.durum !== f.durum) return false;
+  if (f.indirimli && a.indirim <= 0) return false;
+  if (f.odemeTipi && !a.odemeler.some((o) => o.tip === f.odemeTipi)) return false;
+  if (f.enAz != null && a.toplam < f.enAz) return false;
+  if (f.enCok != null && a.toplam > f.enCok) return false;
+
+  const ara = f.arama.trim().toLocaleLowerCase("tr");
+  if (ara) {
+    const metin = `${a.no} ${a.masaAd} ${a.bolgeAd} ${a.garson} ${a.ad} ${a.musteri}`
+      .toLocaleLowerCase("tr");
+    if (!metin.includes(ara)) return false;
+  }
+  return true;
+}
+
+export type DetayTur = {
+  sira: number;
+  saat: string;
+  garson: string;
+  kalemler: SepetKalemi[];
+};
+
+export type DetayTahsilat = {
+  id: number;
+  tip: string;
+  tutar: number;
+  bahsis: number;
+  olusturma: string;
+};
+
+/** Detay penceresinin ihtiyacı liste satırından fazlası: turlar ve saatler. */
+export type AdisyonDetay = AnalizAdisyon & {
+  turlar: DetayTur[];
+  tahsilatlar: DetayTahsilat[];
+  indirimAd: string;
+  not: string;
+  telefon: string;
+  adres: string;
+};
+
+const DETAY_ALANLARI = `id, adisyon_no, tip, durum, acilis, kapanis, indirim, indirim_ad,
+       ad, kisi_sayisi, not_metni, musteri_ad, musteri_telefon, adres, masa_id,
+       masa:masalar (ad, bolge_id, bolgeler (ad)),
+       acan:personel!adisyonlar_acan_id_fkey (id, ad),
+       turlar (sira, olusturma, garson:personel!turlar_garson_id_fkey (ad),
+               adisyon_kalemleri (id, ad, porsiyon, secimler, adet, fiyat, kdv_oran,
+                                  durum, not_metni, indirim, indirim_ad)),
+       tahsilatlar (id, tip, tutar, bahsis, olusturma)`;
+
+export async function adisyonDetayi(adisyonId: number): Promise<AdisyonDetay | null> {
+  const [{ data }, varsayilanKdv] = await Promise.all([
+    supabase.from("adisyonlar").select(DETAY_ALANLARI).eq("id", adisyonId).maybeSingle(),
+    varsayilanKdvOrani(),
+  ]);
+  if (!data) return null;
+
+  const s = data as any;
+  const turlar: DetayTur[] = ((s.turlar ?? []) as any[])
+    .map((t) => ({
+      sira: t.sira,
+      saat: t.olusturma,
+      garson: t.garson?.ad ? kisaAd(t.garson.ad) : "",
+      kalemler: ((t.adisyon_kalemleri ?? []) as any[]).map((k) => ({
+        id: k.id,
+        ad: k.ad,
+        porsiyon: k.porsiyon ?? undefined,
+        secimler: k.secimler ?? undefined,
+        adet: Number(k.adet),
+        fiyat: Number(k.fiyat),
+        kdvOran: k.kdv_oran ?? undefined,
+        durum: (k.durum ?? "normal") as SepetKalemi["durum"],
+        not: k.not_metni ?? undefined,
+        indirim: Number(k.indirim ?? 0) || undefined,
+        indirimAd: k.indirim_ad ?? undefined,
+      })),
+    }))
+    .sort((a, b) => a.sira - b.sira);
+
+  return {
+    ...satiraCevir(s, varsayilanKdv),
+    indirimAd: s.indirim_ad ?? "",
+    not: s.not_metni ?? "",
+    telefon: s.musteri_telefon ?? "",
+    adres: s.adres ?? "",
+    turlar,
+    tahsilatlar: ((s.tahsilatlar ?? []) as any[])
+      .map((t) => ({
+        id: t.id,
+        tip: t.tip,
+        tutar: Number(t.tutar),
+        bahsis: Number(t.bahsis ?? 0),
+        olusturma: t.olusturma,
+      }))
+      .sort((a, b) => a.olusturma.localeCompare(b.olusturma)),
+  };
+}
+
+/**
+ * Kapanmış adisyonu yeniden açar. Masası hâlâ boşsa hesap kaldığı yerden devam
+ * eder; masada başka bir adisyon açıldıysa eskisi geri alınamaz, yoksa iki
+ * açık adisyon aynı masaya düşerdi.
+ */
+export async function adisyonAktifEt(adisyon: AnalizAdisyon) {
+  if (adisyon.masaId) {
+    const { data } = await supabase
+      .from("adisyonlar")
+      .select("id")
+      .eq("masa_id", adisyon.masaId)
+      .eq("durum", "acik")
+      .maybeSingle();
+    if (data) throw new Error("Bu masada açık bir adisyon var. Önce onu kapatın.");
+  }
+
+  const { error } = await supabase
+    .from("adisyonlar")
+    .update({ durum: "acik", kapanis: null, guncelleme: new Date().toISOString() })
+    .eq("id", adisyon.id);
+  if (error) throw new Error("Adisyon yeniden açılamadı.");
+}
+
+export type OzetDilimi = { ad: string; tutar: number; adet: number };
+
+export type AnalizOzeti = {
+  ciro: number;
+  adisyon: number;
+  misafir: number;
+  ortalama: number;
+  kisiBasi: number;
+  araToplam: number;
+  indirim: number;
+  ikram: number;
+  matrah: number;
+  kdv: number;
+  bahsis: number;
+  /** Kapanmamış adisyonlar ciroya girmiyor; ayrı gösteriliyor. */
+  acik: number;
+  acikTutar: number;
+  odemeler: OzetDilimi[];
+  tipler: OzetDilimi[];
+  saatler: { saat: number; tutar: number; adet: number }[];
+  gider: number;
+  net: number;
+};
+
+const TIP_ADLARI: Record<AdisyonTipi, string> = {
+  masa: "Masa",
+  gelal: "Gel Al",
+  paket: "Paket",
+};
+
+export function analizOzeti(adisyonlar: AnalizAdisyon[], giderler: Masraf[]): AnalizOzeti {
+  const kapanan = adisyonlar.filter((a) => a.durum === "kapali");
+  const acikOlanlar = adisyonlar.filter((a) => a.durum === "acik");
+
+  const topla = (liste: AnalizAdisyon[], alan: (a: AnalizAdisyon) => number) =>
+    liste.reduce((t, a) => t + alan(a), 0);
+
+  const ciro = topla(kapanan, (a) => a.toplam);
+  const misafir = topla(kapanan, (a) => a.kisiSayisi);
+
+  const odemeler = new Map<string, OzetDilimi>();
+  for (const a of kapanan) {
+    for (const o of a.odemeler) {
+      const dilim = odemeler.get(o.tip) ?? { ad: o.tip, tutar: 0, adet: 0 };
+      dilim.tutar += o.tutar;
+      dilim.adet += 1;
+      odemeler.set(o.tip, dilim);
+    }
+  }
+
+  const tipler = new Map<AdisyonTipi, OzetDilimi>();
+  for (const a of kapanan) {
+    const dilim = tipler.get(a.tip) ?? { ad: TIP_ADLARI[a.tip], tutar: 0, adet: 0 };
+    dilim.tutar += a.toplam;
+    dilim.adet += 1;
+    tipler.set(a.tip, dilim);
+  }
+
+  // Saat dökümü adisyonun kapandığı saate göre; yoğunluk grafiği hesabın
+  // kapandığı anı değil masanın dolduğu saati sorsa açık masalar hiç sayılmazdı.
+  const saatler = Array.from({ length: 24 }, (_, saat) => ({ saat, tutar: 0, adet: 0 }));
+  for (const a of kapanan) {
+    const saat = new Date(a.kapanis ?? a.acilis).getHours();
+    saatler[saat].tutar += a.toplam;
+    saatler[saat].adet += 1;
+  }
+
+  const gider = giderler.reduce((t, g) => t + g.tutar, 0);
+
+  return {
+    ciro,
+    adisyon: kapanan.length,
+    misafir,
+    ortalama: kapanan.length ? ciro / kapanan.length : 0,
+    kisiBasi: misafir ? ciro / misafir : 0,
+    araToplam: topla(kapanan, (a) => a.araToplam),
+    indirim: topla(kapanan, (a) => a.indirim),
+    ikram: topla(kapanan, (a) => a.ikram),
+    matrah: topla(kapanan, (a) => a.matrah),
+    kdv: topla(kapanan, (a) => a.kdv),
+    bahsis: topla(kapanan, (a) => a.bahsis),
+    acik: acikOlanlar.length,
+    acikTutar: topla(acikOlanlar, (a) => a.toplam),
+    odemeler: [...odemeler.values()].sort((a, b) => b.tutar - a.tutar),
+    tipler: [...tipler.values()].sort((a, b) => b.tutar - a.tutar),
+    saatler,
+    gider,
+    net: ciro - gider,
+  };
+}
+
+/** Dönemin giderleri — özet ekranındaki net kâr satırı buna dayanıyor. */
+export function analizGiderleri(f: AnalizFiltre) {
+  const { bas, bit } = donemAraligi(f);
+  return masraflariGetir(bas.toISOString(), bit.toISOString());
+}

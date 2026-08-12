@@ -19,6 +19,11 @@ const ROTA_YETKILERI: [string, string][] = [
   ["/menu", "tanim.menu"],
   ["/kasa/gecmis", "kasa.ac_kapat"],
   ["/kasa/giderler", "kasa.gider"],
+  // Özet ile adisyon listesi gün sonu yetkisine açık; ciroyu kapatan kasiyer
+  // kendi gününü görebilsin. Personel dökümü ve denetim kayıtları yönetici işi.
+  ["/analiz", "rapor.tumu"],
+  ["/analiz/ozet", "rapor.gun_sonu"],
+  ["/analiz/adisyonlar", "rapor.gun_sonu"],
   ["/ayarlar", "tanim.ayar"],
   ["/ayarlar/masalar", "tanim.masa"],
   ["/ayarlar/personel", "tanim.personel"],
