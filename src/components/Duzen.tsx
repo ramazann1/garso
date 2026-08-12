@@ -1,8 +1,9 @@
 import { useState } from "react";
 import { useLocation, useNavigate } from "react-router-dom";
-import { Banknote, ChartColumn, ChevronDown, Lock, LogOut, Settings } from "lucide-react";
+import { Banknote, ChartColumn, ChevronDown, Lock, LogOut, Settings, Store } from "lucide-react";
 import OnayModal from "./OnayModal";
 import { kilitKaldir, kilitliMi } from "../cikisKilidi";
+import { isletmeAdi, isletmeKodu } from "../isletmeAyarlari";
 import { kilitle, oturumuKapat, useOturum } from "../oturum";
 import { yolaGirebilir } from "../rotaYetkileri";
 import { kisaAd } from "../personel";
@@ -148,6 +149,18 @@ export default function Duzen({ children }: { children: React.ReactNode }) {
           </svg>
           <span>Garso</span>
         </button>
+
+        {/* Çok işletmeli yapıda kullanıcı hangi işletmede olduğunu her ekranda
+            görmeli. Menü kapalıyken yazacak yer yok, yalnız açıkken duruyor. */}
+        {acik && isletmeAdi() && (
+          <div className="menu-isletme" title={isletmeAdi()}>
+            <Store size={15} />
+            <div className="menu-isletme-yazi">
+              <strong>{isletmeAdi()}</strong>
+              {isletmeKodu() > 0 && <em>Kod {isletmeKodu()}</em>}
+            </div>
+          </div>
+        )}
 
         <nav>
           {gorunenBolumler(baglantilar).map((b) => {

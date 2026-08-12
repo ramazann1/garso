@@ -104,3 +104,26 @@ export async function ayarlariKaydet(degisen: Partial<IsletmeAyarlari>) {
   if (error) throw new Error("Ayar kaydedilemedi.");
   onbellek = yeni;
 }
+
+// İşletmenin kimliği ayrı tabloda (`isletmeler`) duruyor ama ayarlarla aynı
+// anda lazım oluyor: yan menü her ekranda adı gösteriyor. Ayarlarla birlikte
+// bir kez okunup burada tutuluyor.
+//
+// İkisi de kayıt anında belirlenip bir daha değişmiyor; kaydetme fonksiyonu
+// yok, satır güvenliği de güncellemeye kapalı.
+let kimlik = { ad: "", kod: 0 };
+
+export function isletmeAdi() {
+  return kimlik.ad;
+}
+
+export function isletmeKodu() {
+  return kimlik.kod;
+}
+
+export async function isletmeKimliginiGetir() {
+  const { data } = await supabase.from("isletmeler").select("ad, kod").maybeSingle();
+  const s = data as any;
+  kimlik = { ad: s?.ad ?? "", kod: s?.kod ?? 0 };
+  return kimlik;
+}

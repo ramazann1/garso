@@ -1,7 +1,7 @@
 import { useEffect, useState } from "react";
 import { BrowserRouter, Navigate, Routes, Route, useLocation } from "react-router-dom";
 import { yolaGirebilir } from "./rotaYetkileri";
-import { ayarlar, ayarlariGetir } from "./isletmeAyarlari";
+import { ayarlar, ayarlariGetir, isletmeKimliginiGetir } from "./isletmeAyarlari";
 import Salon from "./pages/Salon";
 import Siparis from "./pages/Siparis";
 import MenuStudyosu from "./pages/MenuStudyosu";
@@ -35,7 +35,9 @@ function App() {
   const [ayarTik, setAyarTik] = useState(0);
   useEffect(() => {
     if (!oturum) return;
-    ayarlariGetir().then(() => setAyarTik((t) => t + 1));
+    Promise.all([ayarlariGetir(), isletmeKimliginiGetir()]).then(() =>
+      setAyarTik((t) => t + 1)
+    );
   }, [oturum?.isletmeId]);
 
   // Boşta kalan kasa kendiliğinden kilitleniyor: tezgâhtan ayrılan garsonun

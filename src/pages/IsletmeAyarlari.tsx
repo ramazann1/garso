@@ -1,13 +1,16 @@
 import { useEffect, useState } from "react";
 import { useParams } from "react-router-dom";
 import {
+  Check,
   ChevronDown,
   ChevronLeft,
   ChevronRight,
   ChevronUp,
+  Copy,
   Grid3x3,
   LayoutGrid,
   List,
+  Lock,
   Map,
   Pencil,
   Plus,
@@ -21,7 +24,8 @@ import AyarBasligi from "../components/AyarBasligi";
 import AyarSatiri from "../components/AyarSatiri";
 import AramaKutusu from "../components/AramaKutusu";
 import { acikAdisyonSayisi } from "../adisyonlar";
-import { ayarlar, ayarlariKaydet } from "../isletmeAyarlari";
+import { ayarlar, ayarlariKaydet, isletmeAdi, isletmeKodu } from "../isletmeAyarlari";
+import { eslesiyor } from "../arama";
 import type { IsletmeAyarlari as IsletmeAyarlariTipi } from "../isletmeAyarlari";
 import {
   indirimTanimiEkle,
@@ -511,6 +515,7 @@ export default function IsletmeAyarlari() {
   // Genel parametreler tek tek kaydediliyor; her satır kendi başına anlamlı,
   // altta "Kaydet" bekleyen bir şerit olmasın.
   const [genel, setGenel] = useState(ayarlar());
+  const [kodKopyalandi, setKodKopyalandi] = useState(false);
   const [ara, setAra] = useState("");
   const [indirimler, setIndirimler] = useState<IndirimTanimi[]>([]);
   const [indirimPaneli, setIndirimPaneli] = useState<IndirimTanimi | null | undefined>(undefined);
@@ -554,6 +559,23 @@ export default function IsletmeAyarlari() {
 
   // Genel parametrelerin ortak kaydedicisi: ekranı hemen güncelliyor, yazma
   // başarısızsa eski değere dönüyor ki ekran veriyle uyumsuz kalmasın.
+  const isletmeBasHarfi = (isletmeAdi() || "?").trim().charAt(0).toLocaleUpperCase("tr");
+  // Ayar arandığında kart da diğer satırlar gibi süzülüyor.
+  const isletmeKartiGorunur = !ara || eslesiyor("İşletme adı kodu ünvan isim", ara);
+
+  // Destek görüşmelerinde kod okunup yazılıyor; elle not almak yerine tek
+  // dokunuşla panoya gitsin.
+  const kodKopyala = async () => {
+    if (!isletmeKodu()) return;
+    try {
+      await navigator.clipboard.writeText(String(isletmeKodu()));
+      setKodKopyalandi(true);
+      setTimeout(() => setKodKopyalandi(false), 1800);
+    } catch {
+      setUyari("Kod kopyalanamadı. Elle not alabilirsiniz.");
+    }
+  };
+
   const genelDegistir = async (degisen: Partial<IsletmeAyarlariTipi>, mesaj?: string) => {
     const oncesi = genel;
     setGenel({ ...genel, ...degisen });
@@ -811,6 +833,29 @@ export default function IsletmeAyarlari() {
               </>
             )}
           </section>
+          )}
+
+          {genelBolumu && isletmeKartiGorunur && (
+            <section className="isletme-karti">
+              <div className="isletme-amblem">{isletmeBasHarfi}</div>
+              <div className="isletme-alan">
+                <label>İşletme</label>
+                <strong>{isletmeAdi() || "—"}</strong>
+                <p>
+                  <Lock size={13} /> İşletme adı ve kodu kayıt sırasında
+                  belirlenir, sonradan değiştirilemez.
+                </p>
+              </div>
+              <button
+                className="isletme-kod"
+                title="Kodu kopyala"
+                onClick={kodKopyala}
+              >
+                <span>İŞLETME KODU</span>
+                <strong>{isletmeKodu() || "—"}</strong>
+                {kodKopyalandi ? <Check size={14} /> : <Copy size={14} />}
+              </button>
+            </section>
           )}
 
           {genelBolumu && (

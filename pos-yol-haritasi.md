@@ -93,13 +93,15 @@ Amaç: Sonradan asla değişmeyecek kararları doğru vermek.
 
 ### FAZ 1 — Satış Çekirdeği / MVP (4-6 hafta)
 Amaç: Tek şubeli bir cafe'nin günlük operasyonu tamamen dönebilmeli.
-- [ ] Masa haritası (bölge/salon desteği), masa açma-taşıma-birleştirme
-- [ ] Adisyon: ürün ekleme/çıkarma, not, ikram, indirim, iptal (yetki kontrollü)
-- [ ] Kategori/ürün/varyant/seçenek yönetimi
-- [ ] Ödeme: nakit, kart, parçalı ödeme, hesap bölme (ürün bazlı + tutar bazlı)
-- [ ] Kasa: açılış/kapanış, gider girişi, gün sonu (Z raporu mantığı)
-- [ ] Temel raporlar: gün sonu, ürün satışları, ödeme dağılımı
-- [ ] Basit personel girişi (PIN ile hızlı kullanıcı değişimi)
+**20 Ağu 2026'da tamamlandı.** Bir cafe'nin günlük operasyonu baştan sona
+Garso'da dönüyor.
+- [x] Masa haritası (bölge/salon desteği), masa açma-taşıma-birleştirme
+- [x] Adisyon: ürün ekleme/çıkarma, not, ikram, indirim, iptal (yetki kontrollü)
+- [x] Kategori/ürün/varyant/seçenek yönetimi
+- [x] Ödeme: nakit, kart, parçalı ödeme, hesap bölme (ürün bazlı + tutar bazlı)
+- [x] Kasa: açılış/kapanış, gider girişi, gün sonu (Z raporu mantığı)
+- [x] Temel raporlar: gün sonu, ürün satışları, ödeme dağılımı — "Analiz" ekranı
+- [x] Basit personel girişi (PIN ile hızlı kullanıcı değişimi)
 
 ### FAZ 2 — Operasyon (4-6 hafta)
 Amaç: Yoğun bir restoranın mutfak-servis akışını taşıyabilmeli.
@@ -113,8 +115,8 @@ Amaç: Yoğun bir restoranın mutfak-servis akışını taşıyabilmeli.
 - [ ] Offline dayanıklılık: bağlantı kopunca kuyruklama, senkronizasyon
 - [x] **İşletme kaydı ekranı (yeni müşteri açılışı).** 19 Ağu 2026'da yapıldı —
       `isletme_kur` fonksiyonu ve `pages/Kayit.tsx`. Örnek salon ve menüyle
-      birlikte kuruluyor. Kötüye kullanım koruması hâlâ yok, tasarım dosyasının
-      sıradaki iş listesinde 1. madde. Aşağıdaki not neden gerektiğini anlatıyor.
+      birlikte kuruluyor. Kötüye kullanım koruması da eklendi.
+      Aşağıdaki not neden gerektiğini anlatıyor.
       14 Ağu 2026'da satır
       güvenliği açılınca ortaya çıktı: artık giriş yapmamış bağlantı hiçbir
       satır yazamıyor, dolayısıyla hiç hesabı olmayan yeni bir işletme kendi
@@ -124,7 +126,9 @@ Amaç: Yoğun bir restoranın mutfak-servis akışını taşıyabilmeli.
       (`isletme_kur`) — hem `isletmeler` satırını, hem ilk yönetici personelini,
       hem Auth hesabını açar. Kötüye kullanıma açık tek kapı burası olacağı için
       hız sınırı/doğrulama düşünülmeli. Ramazan'ın kendi kurulumu bundan
-      etkilenmiyor; ürün satışa çıkmadan önce şart.
+      etkilenmiyor; ürün satışa çıkmadan önce şart. **20 Ağu 2026'da kapandı:**
+      IP başına hız sınırı (24 saatte 2, 7 günde 5 işletme) ve değişmez işletme
+      kodu — ayrıntısı `garso-tasarim.md`'de.
 
 ### FAZ 3 — Büyüme Özellikleri (6-8 hafta)
 - [ ] QR menü (public menü sayfası, anlık güncelleme)

@@ -1,7 +1,7 @@
 ﻿# GARSO — Teknik Tasarım: Veri Modeli & Ekran Haritası
 *Restoran ve cafe'ler için bulut tabanlı satış ve işletme yönetim sistemi.*
 
-## 0. SIRADAKİ İŞ (19 Ağu 2026'da güncellendi)
+## 0. SIRADAKİ İŞ (20 Ağu 2026'da güncellendi)
 
 *Ramazan seansa "devam edelim" diye giriyor — sıradaki iş bu listenin en üstündeki
 maddedir. Seans sonunda bu liste güncellenir: biten madde silinir, kalanlar
@@ -144,17 +144,41 @@ SQL editöründe oturum olmadığı için göç dosyalarında bu sütun **elle
 yazılmalı** (kaynağı ilgili satırın kendi işletmesi). `rol_yetkileri`'ne yetki
 eklerken bu yüzden hata alındı.
 
-1. **Kayıt ekranına kötüye kullanım koruması.** `isletme_kur` internete açık
-   tek uç: giriş yapmamış herkes çağırabiliyor, çünkü kaydın anlamı bu. Bugün
-   hiçbir sınır yok — aynı yerden arka arkaya yüzlerce işletme açılabilir.
-   SQL'de gerçek bir hız sınırı kurulamıyor; çözüm Supabase'in kendi ayarları
-   ya da araya girecek bir Edge Function. Satışa çıkmadan önce şart.
-2. **İşletme adı hiçbir ekranda yazmıyor.** Ayarlar'da işletme adı alanı yok;
-   kayıt ekranında girilen ad sonradan ne görülebiliyor ne değiştirilebiliyor.
-   Çok işletmeli yapıda kullanıcının hangi işletmede olduğunu görmesi gerek.
-3. **Masa yazdırma** — üç nokta menüsünde yeri boş; yazıcı altyapısına bağlı,
-   o gelmeden yapılamaz.
-4. **Yurt dışına açılırsa değişmesi gerekenler** — para birimi (₺ arayüzde sabit
+**20 Ağu 2026:** **Kayıt ekranı korumaya alındı ve işletme kimliği kuruldu.**
+Bu iki maddeyle birlikte sıradaki iş listesinin yapılabilir kısmı bitti; Faz 1
+(satış çekirdeği) tamamlandı, sıra Faz 2'de.
+- **Kayıt hız sınırı** (`sql/2026-08-20-kayit-koruma.sql`). Tasarım notunda
+  "SQL'de hız sınırı kurulamaz, Edge Function gerekir" yazıyordu — yanlış
+  çıktı: PostgREST isteğin başlıklarını veritabanına geçiriyor, IP oradan
+  okunabiliyor (`istek_ip()`). Sınır IP'ye göre: **24 saatte 2, 7 günde 5**
+  işletme. Telefona göre sınırlamak işe yaramaz, saldırgan her seferinde başka
+  numara yazar. **Yalnız başarılı kayıtlar sayılıyor** — kurulum hata verince
+  işlem geri alınıyor, deftere yazılan satır da onunla gidiyor; engellenmek
+  istenen zaten toplu işletme açma. Defteri (`kayit_denemeleri`) kimse okuyamaz,
+  30 günden eskisi silinir. Kurulumun gövdesi `isletme_kur_uygula` adını alıp
+  dışarıya kapatıldı; `isletme_kur` artık önce sınıra bakan ince bir kapı.
+- **İşletme adı ve kodu değişmez** (`sql/2026-08-20-isletme-kodu.sql`). Ürün
+  satılacağı için işletmenin sabit bir kimliği olmalı: `isletmeler.kod`, kendi
+  dizisiyle **15000'den** başlıyor, kayıt sırasında sorulmuyor, veritabanı
+  atıyor. Tablonun `id`'si bu iş için kullanılmadı — o iç numaralandırma,
+  dışarıya verilmez. `isletmeler_duzenle` politikası tamamen kaldırıldı: ad da
+  kod da programdan değiştirilemiyor, arayüzü atlayan istek de değiştiremiyor.
+  Ad düzeltmesi gerekirse SQL editöründen elle yapılıyor.
+- **Kimlik iki yerde görünüyor.** Yan menüde marka adının altında işletme adı
+  ve kodu (menü katlanınca gizleniyor); Ayarlar → Genel'in en üstünde okunur
+  kimlik kartı — baş harf amblemi, ad, kilit ikonlu açıklama ve tıklayınca
+  panoya kopyalanan kod rozeti. Ad ve kod ayarlarla birlikte tek seferde
+  okunuyor (`isletmeKimliginiGetir`), önbellekte duruyor.
+
+1. **Yazıcı modülü — önce Adisyo turu.** Faz 2'nin ilk işi. Turlanmamış modül,
+   kural gereği plan değil önce canlı tur. Bakılacaklar: yazıcı tanımında
+   sorulan bilgiler (ad, IP, bağlantı tipi, kağıt boyutu), ürün/kategori →
+   yazıcı yönlendirmesi, mutfak fişi ile müşteri adisyonunun farkı, ESC/POS
+   tarafı. **Tur biçimi değişti:** Ramazan Adisyo'ya giriş yapıyor, Claude
+   kendi tarayıcı araçlarıyla bağlanıp ekranları kendisi geziyor.
+   "Masa yazdırma" maddesi de bu modüle bağlı, onunla birlikte kapanacak.
+2. **Mutfak ekranı (KDS)** — Faz 2'nin ikinci büyük modülü, o da turlanmamış.
+3. **Yurt dışına açılırsa değişmesi gerekenler** — para birimi (₺ arayüzde sabit
    yazılı), tarih/saat biçimi (`tr-TR`) ve "KDV" teriminin kendisi. Bugünün işi
    değil, akılda dursun diye burada.
 
