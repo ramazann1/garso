@@ -5,6 +5,7 @@ import KasaBasligi from "../components/KasaBasligi";
 import Bilgi from "../components/Bilgi";
 import Bildirim from "../components/Bildirim";
 import OnayModal from "../components/OnayModal";
+import { kasaGunuBasi } from "../analiz";
 import { eslesiyor } from "../arama";
 import { paraGoster, paraSayi, paraYaz } from "../para";
 import { kisaAd } from "../personel";
@@ -40,7 +41,7 @@ const gunMetni = (t: string) =>
 const saatMetni = (t: string) =>
   new Date(t).toLocaleTimeString("tr-TR", { hour: "2-digit", minute: "2-digit" });
 
-/** Listenin üstündeki dönem seçimi; hepsi bugünün gün başlangıcına göre. */
+/** Listenin üstündeki dönem seçimi; hepsi kasa gününün başlangıcına göre. */
 const DONEMLER = [
   { kod: "bugun", ad: "Bugün", gun: 0 },
   { kod: "hafta", ad: "Son 7 gün", gun: 6 },
@@ -48,10 +49,14 @@ const DONEMLER = [
   { kod: "tumu", ad: "Tümü", gun: null },
 ] as const;
 
+/**
+ * "Bugün" takvim günü değil kasa günü: gece 01:00'de girilen gider işletme için
+ * hâlâ dünün gideri. Analiz ekranı da aynı aralığı kullanıyor — ikisi farklı
+ * saydığı için aynı gider bir ekranda görünüp diğerinde kaybolabiliyordu.
+ */
 function donemBaslangici(gun: number | null) {
   if (gun === null) return undefined;
-  const t = new Date();
-  t.setHours(0, 0, 0, 0);
+  const t = kasaGunuBasi(new Date());
   t.setDate(t.getDate() - gun);
   return t.toISOString();
 }

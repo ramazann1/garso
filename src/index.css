@@ -8010,26 +8010,30 @@ body {
   gap: 18px;
 }
 
-.ciro-kart {
-  display: grid;
-  grid-template-columns: 260px minmax(0, 1fr);
-  gap: 28px;
-  padding: 24px 26px;
+.ozet-serit {
   border-radius: 20px;
   background: var(--kart);
   box-shadow: 0 1px 2px rgba(45, 52, 54, 0.05);
+  overflow: hidden;
 }
 
-.ciro-ana {
+/* Üç sayı bir toplama işlemi gibi okunuyor: ciro + açık = toplam. */
+.serit-satir {
+  display: flex;
+  align-items: stretch;
+  gap: 4px;
+  padding: 26px 28px 22px;
+}
+
+.serit-sayi {
   display: flex;
   flex-direction: column;
-  justify-content: center;
-  gap: 4px;
-  padding-right: 28px;
-  border-right: 1px solid #f0e7db;
+  gap: 5px;
+  flex: 1;
+  min-width: 0;
 }
 
-.ciro-etiket {
+.serit-etiket {
   display: inline-flex;
   align-items: center;
   gap: 7px;
@@ -8038,42 +8042,63 @@ body {
   color: var(--soluk);
 }
 
-.ciro-etiket svg {
+.serit-etiket svg {
   color: var(--mercan);
 }
 
-.ciro-ana strong {
-  font-size: 40px;
+.serit-sayi strong {
+  font-size: 36px;
   font-weight: 700;
   letter-spacing: -1px;
-  line-height: 1.15;
+  line-height: 1.1;
+  white-space: nowrap;
 }
 
-.ciro-ana em {
+.serit-sayi em {
   font-size: 14px;
   font-style: normal;
   color: var(--soluk);
 }
 
-.ciro-yan {
-  display: grid;
-  grid-template-columns: repeat(3, 1fr);
-  gap: 18px 26px;
-  align-content: center;
+/* Açık masalar henüz kesinleşmemiş para; sayı aynı boyda ama tonu daha sakin. */
+.serit-acik strong {
+  color: var(--soluk);
 }
 
-.ciro-yan dt {
+.serit-toplam strong {
+  color: var(--mercan);
+}
+
+.serit-islem {
+  display: flex;
+  align-items: center;
+  padding: 22px 20px 0;
+  font-size: 22px;
+  font-weight: 600;
+  color: #cbbcab;
+}
+
+.serit-kunye {
+  display: grid;
+  grid-template-columns: repeat(5, 1fr);
+  gap: 16px 22px;
+  padding: 16px 28px 18px;
+  border-top: 1px solid #f0e7db;
+  background: #fdfbf8;
+}
+
+.serit-kunye dt {
   font-size: 14px;
   color: var(--soluk);
-  margin-bottom: 3px;
+  margin-bottom: 2px;
 }
 
-.ciro-yan dd {
-  font-size: 19px;
+.serit-kunye dd {
+  font-size: 18px;
   font-weight: 600;
 }
 
-.ciro-net dd {
+.kunye-net dd {
   color: var(--mercan);
 }
 
@@ -8084,33 +8109,94 @@ body {
   align-items: stretch;
 }
 
-/* Dar ekranda iki kart alt alta iniyor; yarım kalan sütun düzeni kaydırıyordu. */
-@media (max-width: 900px) {
-  .analiz-ikili,
-  .ciro-kart {
-    grid-template-columns: 1fr;
-  }
+.analiz-uclu {
+  display: grid;
+  grid-template-columns: repeat(3, minmax(0, 1fr));
+  gap: 18px;
+  align-items: stretch;
+}
 
-  .ciro-ana {
-    padding-right: 0;
-    padding-bottom: 18px;
-    border-right: none;
-    border-bottom: 1px solid #f0e7db;
+/* Eksik tahsilat sıfırsa satır hiç çıkmıyor; çıktığında tıklanır ve mercan. */
+.dokum-eksik dt {
+  color: #c1503a;
+}
+
+.dokum-eksik dd button {
+  display: inline-flex;
+  align-items: center;
+  gap: 2px;
+  padding: 0;
+  border: none;
+  background: none;
+  font: inherit;
+  font-weight: 600;
+  color: #c1503a;
+  cursor: pointer;
+}
+
+.dokum-eksik dd button:hover {
+  text-decoration: underline;
+}
+
+.analiz-cip-eksik {
+  display: inline-flex;
+  align-items: center;
+  gap: 7px;
+  padding: 7px 12px;
+  border: 1px solid var(--mercan);
+  border-radius: 999px;
+  background: #fff1ec;
+  font-size: 14px;
+  font-weight: 600;
+  color: #c1503a;
+  cursor: pointer;
+}
+
+/* Liste bomboş kaldığında çip tek başına duruyor; nefes payı kendinden. */
+.ayar-bolum > .analiz-cip-eksik {
+  margin-bottom: 14px;
+}
+
+@media (max-width: 1180px) {
+  .analiz-uclu {
+    grid-template-columns: 1fr;
   }
 }
 
+/* Dar ekranda toplama işlemi alt alta iniyor; +/= işaretleri yatayda kalıyor. */
+@media (max-width: 900px) {
+  .analiz-ikili {
+    grid-template-columns: 1fr;
+  }
+
+  .serit-satir {
+    flex-direction: column;
+    gap: 18px;
+  }
+
+  .serit-islem {
+    display: none;
+  }
+
+  .serit-kunye {
+    grid-template-columns: repeat(2, 1fr);
+  }
+}
+
+/*
+  Izgara listenin kendisinde: her satır ayrı grid olsaydı sütun genişliği
+  içeriğe göre satırdan satıra kayar, çubuklar birbirini tutmazdı.
+*/
 .analiz-dagilim {
   list-style: none;
-  display: flex;
-  flex-direction: column;
+  display: grid;
+  grid-template-columns: minmax(110px, 1fr) minmax(60px, 1.2fr) max-content;
+  align-items: center;
   gap: 14px;
 }
 
 .analiz-dagilim li {
-  display: grid;
-  grid-template-columns: minmax(110px, 1fr) minmax(60px, 1.2fr) auto;
-  align-items: center;
-  gap: 14px;
+  display: contents;
 }
 
 .dagilim-ad {
@@ -8214,6 +8300,123 @@ body {
 
 .analiz-liste-ust h2 svg {
   color: var(--mercan);
+}
+
+/* ---- Ürünler sekmesi ---- */
+
+/* Sıralama düğmeleri başlığın sağına yaslanıyor, sekme şeridinin küçük hâli. */
+/* Arama başlığın sağına yaslanıyor, sıralama düğmeleri onun devamında. */
+.ayar-bolum-ust .ayar-arama,
+.analiz-liste-ust .ayar-arama {
+  margin-left: auto;
+  width: 240px;
+}
+
+/* Sıralama başlığın kendisinde: hangi sütuna göre dizildiği okla görünüyor. */
+.analiz-tablo th button {
+  display: inline-flex;
+  align-items: center;
+  gap: 5px;
+  padding: 0;
+  border: none;
+  background: none;
+  font: inherit;
+  color: inherit;
+  cursor: pointer;
+}
+
+.analiz-tablo th.sag button {
+  flex-direction: row-reverse;
+}
+
+.analiz-tablo th button svg {
+  color: #c3b2a0;
+}
+
+.analiz-tablo th button:hover {
+  color: var(--metin);
+}
+
+.analiz-tablo th.sirali button,
+.analiz-tablo th.sirali button svg {
+  color: var(--mercan);
+}
+
+.hucre-urun {
+  font-weight: 600;
+}
+
+/* Kategori rengi menüde kullanıcının kendi verdiği renk; tablo onu tekrarlıyor. */
+.urun-kategori,
+.kategori-ad {
+  display: inline-flex;
+  align-items: center;
+  gap: 8px;
+}
+
+.urun-kategori i,
+.kategori-ad i {
+  width: 9px;
+  height: 9px;
+  border-radius: 50%;
+  flex: none;
+}
+
+/* Hücrenin kendisi tablo hücresi kalıyor; flex olsaydı sütun genişliğini
+   tablodan koparıp başlıkların hizasını kaydırıyordu. */
+.hucre-pay {
+  width: 190px;
+}
+
+.pay-kutu {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+}
+
+.pay-cubuk {
+  flex: 1;
+  height: 8px;
+  border-radius: 999px;
+  background: #f3ebe1;
+  overflow: hidden;
+}
+
+.pay-cubuk i {
+  display: block;
+  height: 100%;
+  border-radius: 999px;
+  background: var(--mercan);
+  opacity: 0.85;
+}
+
+/* Yüzdeye sabit yer ayrılıyor; yoksa "%9" ile "%42" çubukları farklı yerde bitiriyor. */
+.hucre-pay em {
+  min-width: 42px;
+  font-size: 13.5px;
+  font-style: normal;
+  font-weight: 600;
+  color: var(--soluk);
+  text-align: right;
+  white-space: nowrap;
+}
+
+/* Açıklama uzun olabiliyor; tabloyu yana kaydırmak yerine kendi içinde kısalıyor. */
+.hucre-aciklama {
+  max-width: 320px;
+  overflow: hidden;
+  text-overflow: ellipsis;
+}
+
+.tablo-bos-satir td {
+  padding: 26px 0;
+  text-align: center;
+  color: var(--soluk);
+}
+
+/* Ürün tablosu tıklanmıyor; satır vurgusu imleci yanıltmasın diye sade. */
+.urun-tablo tbody tr {
+  cursor: default;
 }
 
 /* Sütunlar dar ekranda sıkışıp kaymasın: tablo kendi içinde yana kayıyor. */

@@ -1,15 +1,25 @@
 import { useEffect, useMemo, useState } from "react";
 import { useNavigate, useParams } from "react-router-dom";
 import {
+  ArrowDown,
+  ArrowUp,
   BarChart3,
+  ChevronRight,
+  ChevronsUpDown,
   ClipboardList,
   CreditCard,
+  DoorOpen,
+  Layers,
+  Package,
   Receipt,
   TrendingUp,
+  Users,
+  Wallet,
+  X,
 } from "lucide-react";
 import Duzen, { analizBolumleri } from "../components/Duzen";
-import Bilgi from "../components/Bilgi";
 import AnalizFiltre from "../components/AnalizFiltre";
+import AramaKutusu from "../components/AramaKutusu";
 import AdisyonDetay from "../components/AdisyonDetay";
 import { yolaGirebilir } from "../rotaYetkileri";
 import { paraGoster } from "../para";
@@ -18,12 +28,22 @@ import {
   BOS_FILTRE,
   analizAdisyonlari,
   analizGiderleri,
+  analizGiderOzeti,
   analizOzeti,
+  analizPersoneli,
+  analizUrunleri,
+  urunKategorileri,
   type AnalizAdisyon,
   type AnalizFiltre as Filtre,
   type AnalizOzeti,
+  type GiderOzeti,
+  type PersonelOzeti,
+  type PersonelSatiri,
+  type UrunKategorisi,
+  type UrunOzeti,
+  type UrunSatiri,
 } from "../analiz";
-import type { Masraf } from "../masraflar";
+import { odemeAdi, type Masraf } from "../masraflar";
 
 export default function Analiz() {
   const { bolum = "ozet" } = useParams();
@@ -36,6 +56,14 @@ export default function Analiz() {
   const [secili, setSecili] = useState<number | null>(null);
   // Adisyon yeniden açılınca liste eskiyor; sayaç değişince sorgu tekrarlanıyor.
   const [tazele, setTazele] = useState(0);
+  // Özetteki eksik tahsilat satırından gelindiğinde liste o hesaplara daralıyor.
+  const [sadeceEksik, setSadeceEksik] = useState(false);
+  // Ürün → kategori eşlemesi filtreden bağımsız; bir kez çekilip saklanıyor.
+  const [kategoriler, setKategoriler] = useState(new Map<number, UrunKategorisi>());
+
+  useEffect(() => {
+    urunKategorileri().then(setKategoriler);
+  }, []);
 
   // Filtre değişince tek sorgu atılıyor; altı sekme de aynı listeden besleniyor.
   useEffect(() => {
@@ -53,6 +81,12 @@ export default function Analiz() {
   }, [filtre, tazele]);
 
   const ozet = useMemo(() => analizOzeti(adisyonlar, giderler), [adisyonlar, giderler]);
+  const urunler = useMemo(
+    () => analizUrunleri(adisyonlar, kategoriler),
+    [adisyonlar, kategoriler]
+  );
+  const personel = useMemo(() => analizPersoneli(adisyonlar), [adisyonlar]);
+  const giderOzeti = useMemo(() => analizGiderOzeti(giderler), [giderler]);
 
   return (
     <Duzen>
@@ -83,9 +117,26 @@ export default function Analiz() {
             <div className="cember" />
           </div>
         ) : bolum === "ozet" ? (
-          <Ozet ozet={ozet} />
+          <Ozet
+            ozet={ozet}
+            onEksigeGit={() => {
+              setSadeceEksik(true);
+              navigate("/analiz/adisyonlar");
+            }}
+          />
         ) : bolum === "adisyonlar" ? (
-          <Adisyonlar adisyonlar={adisyonlar} onSec={setSecili} />
+          <Adisyonlar
+            adisyonlar={adisyonlar}
+            onSec={setSecili}
+            sadeceEksik={sadeceEksik}
+            onEksigiBirak={() => setSadeceEksik(false)}
+          />
+        ) : bolum === "urunler" ? (
+          <Urunler ozet={urunler} />
+        ) : bolum === "personel" ? (
+          <Personel ozet={personel} />
+        ) : bolum === "giderler" ? (
+          <Giderler giderler={giderler} ozet={giderOzeti} ciro={ozet.ciro} />
         ) : (
           <Yapiliyor bolum={bolum} />
         )}
@@ -115,15 +166,38 @@ const gunMetni = (t: string) =>
  * Vardiya Raporu); bizde tek liste var, gerisini filtre yapıyor.
  */
 function Adisyonlar({
-  adisyonlar,
+  adisyonlar: hepsi,
   onSec,
+  sadeceEksik,
+  onEksigiBirak,
 }: {
   adisyonlar: AnalizAdisyon[];
   onSec: (id: number) => void;
+  sadeceEksik: boolean;
+  onEksigiBirak: () => void;
 }) {
+  const [arama, setArama] = useState("");
+
+  const adisyonlar = useMemo(() => {
+    const ara = arama.trim().toLocaleLowerCase("tr");
+    return hepsi.filter((a) => {
+      if (sadeceEksik && !(a.durum === "kapali" && a.kalan > 0)) return false;
+      if (!ara) return true;
+      const metin = `${a.no} ${a.masaAd} ${a.bolgeAd} ${a.garson} ${a.ad} ${a.musteri}`;
+      return metin.toLocaleLowerCase("tr").includes(ara);
+    });
+  }, [hepsi, sadeceEksik, arama]);
+
   if (adisyonlar.length === 0) {
     return (
       <section className="ayar-bolum">
+        <div className="analiz-liste-ust">
+          <h2>
+            <ClipboardList size={17} /> Adisyonlar
+          </h2>
+          {sadeceEksik && <EksikCipi onBirak={onEksigiBirak} />}
+          <AramaKutusu deger={arama} degistir={setArama} yer="Adisyon no, masa, müşteri" />
+        </div>
         <div className="ayar-bos">
           <ClipboardList size={30} />
           <p>Seçilen dönem ve filtrelerle eşleşen adisyon yok.</p>
@@ -141,6 +215,8 @@ function Adisyonlar({
         <h2>
           <ClipboardList size={17} /> {adisyonlar.length} adisyon
         </h2>
+        {sadeceEksik && <EksikCipi onBirak={onEksigiBirak} />}
+        <AramaKutusu deger={arama} degistir={setArama} yer="Adisyon no, masa, müşteri" />
       </div>
 
       <div className="tablo-kaydir">
@@ -197,6 +273,16 @@ function Adisyonlar({
 
 const zamanMetni = (t: string) => `${gunMetni(t)} ${saatMetni(t)}`;
 
+/** Özetten daraltarak gelindiğini gösteren, tek tıkla bırakılan çip. */
+function EksikCipi({ onBirak }: { onBirak: () => void }) {
+  return (
+    <button type="button" className="analiz-cip-eksik" onClick={onBirak}>
+      Eksik tahsilatı olanlar
+      <X size={14} />
+    </button>
+  );
+}
+
 /**
  * Adisyo'da tek bir "Durum" sütunu var; bizde kapanmış ama parası eksik kalan
  * hesap ayrıca işaretleniyor — gün sonunda gözden kaçan en pahalı şey o.
@@ -217,22 +303,48 @@ function tahsilatMetni(a: AnalizAdisyon) {
     : `${a.odemeler.length} tahsilat`;
 }
 
-function Ozet({ ozet }: { ozet: AnalizOzeti }) {
+function Ozet({ ozet, onEksigeGit }: { ozet: AnalizOzeti; onEksigeGit: () => void }) {
   const kdvDahil = ayarlar().kdvDahil;
 
   return (
     <div className="analiz-ozet">
-      {/* Ekranın başrolü tek sayı: işletmecinin sabah ilk baktığı şey ciro. */}
-      <section className="ciro-kart">
-        <div className="ciro-ana">
-          <span className="ciro-etiket">
-            <TrendingUp size={16} /> Ciro
-          </span>
-          <strong>{paraGoster(ozet.ciro)}</strong>
-          <em>{ozet.adisyon} kapanmış adisyon</em>
+      {/*
+        Şeridin okunuşu bir toplama işlemi: kapanan ciro + açık masalar = toplam.
+        Açık masa yoksa tek sayı kalıyor; "₺0,00 açık" göstermek gereksiz gürültü.
+      */}
+      <section className="ozet-serit">
+        <div className="serit-satir">
+          <div className="serit-sayi">
+            <span className="serit-etiket">
+              <TrendingUp size={15} /> Kapanan ciro
+            </span>
+            <strong>{paraGoster(ozet.ciro)}</strong>
+            <em>{ozet.adisyon} adisyon</em>
+          </div>
+
+          {ozet.acik > 0 && (
+            <>
+              <span className="serit-islem">+</span>
+              <div className="serit-sayi serit-acik">
+                <span className="serit-etiket">
+                  <DoorOpen size={15} /> Açık masalar
+                </span>
+                <strong>{paraGoster(ozet.acikTutar)}</strong>
+                <em>{ozet.acik} hesap sürüyor</em>
+              </div>
+
+              <span className="serit-islem">=</span>
+              <div className="serit-sayi serit-toplam">
+                <span className="serit-etiket">Toplam</span>
+                <strong>{paraGoster(ozet.toplamIs)}</strong>
+                <em>günün işi</em>
+              </div>
+            </>
+          )}
         </div>
 
-        <dl className="ciro-yan">
+        {/* Ciroyu tarif eden yardımcı sayılar; ayrı kart açmaya değmeyecek kadar kısa. */}
+        <dl className="serit-kunye">
           <div>
             <dt>Ortalama adisyon</dt>
             <dd>{paraGoster(ozet.ortalama)}</dd>
@@ -246,32 +358,19 @@ function Ozet({ ozet }: { ozet: AnalizOzeti }) {
             <dd>{ozet.kisiBasi ? paraGoster(ozet.kisiBasi) : "—"}</dd>
           </div>
           <div>
-            <dt>İndirim</dt>
-            <dd className={ozet.indirim ? "azalan" : ""}>
-              {ozet.indirim ? `−${paraGoster(ozet.indirim)}` : "—"}
-            </dd>
-          </div>
-          <div>
             <dt>Gider</dt>
             <dd className={ozet.gider ? "azalan" : ""}>
               {ozet.gider ? `−${paraGoster(ozet.gider)}` : "—"}
             </dd>
           </div>
-          <div className="ciro-net">
+          <div className="kunye-net">
             <dt>Kasaya kalan</dt>
             <dd>{paraGoster(ozet.net)}</dd>
           </div>
         </dl>
       </section>
 
-      {ozet.acik > 0 && (
-        <Bilgi>
-          Bu dönemde {ozet.acik} adisyon hâlâ açık ({paraGoster(ozet.acikTutar)}). Hesap
-          kapanmadan ciroya yazılmıyor; kapandığında burada görünür.
-        </Bilgi>
-      )}
-
-      <div className="analiz-ikili">
+      <div className="analiz-uclu">
         <section className="ayar-bolum">
           <div className="ayar-bolum-ust">
             <h2>
@@ -298,9 +397,24 @@ function Ozet({ ozet }: { ozet: AnalizOzeti }) {
               <dd>{paraGoster(ozet.kdv)}</dd>
             </div>
             <div className="kasa-beklenen">
-              <dt>Toplam</dt>
+              <dt>Ciro</dt>
               <dd>{paraGoster(ozet.ciro)}</dd>
             </div>
+            <div>
+              <dt>Kasaya giren</dt>
+              <dd>{paraGoster(ozet.tahsilEdilen)}</dd>
+            </div>
+            {ozet.eksikTahsilat > 0 && (
+              <div className="dokum-eksik">
+                <dt>Eksik tahsilat</dt>
+                <dd>
+                  <button type="button" onClick={onEksigeGit}>
+                    {paraGoster(ozet.eksikTahsilat)}
+                    <ChevronRight size={15} />
+                  </button>
+                </dd>
+              </div>
+            )}
             {ozet.ikram > 0 && (
               <div>
                 <dt>İkram edilen</dt>
@@ -331,9 +445,7 @@ function Ozet({ ozet }: { ozet: AnalizOzeti }) {
             <Dagilim satirlar={ozet.odemeler} toplam={ozet.ciro} />
           )}
         </section>
-      </div>
 
-      <div className="analiz-ikili">
         <section className="ayar-bolum">
           <div className="ayar-bolum-ust">
             <h2>
@@ -349,27 +461,603 @@ function Ozet({ ozet }: { ozet: AnalizOzeti }) {
             <Dagilim satirlar={ozet.tipler} toplam={ozet.ciro} />
           )}
         </section>
+      </div>
+
+      {/* Saat grafiği yarım sütuna sıkışınca çubuklar okunmuyordu; tam genişlikte. */}
+      <section className="ayar-bolum">
+        <div className="ayar-bolum-ust">
+          <h2>
+            <BarChart3 size={17} /> Saatlere göre
+          </h2>
+        </div>
+        <Saatler saatler={ozet.saatler} />
+      </section>
+    </div>
+  );
+}
+
+/** "pay" ayrı bir sütun ama sıralaması ciroyla aynı — payı belirleyen ciro. */
+type UrunAlani = "ad" | "kategoriAd" | "miktar" | "ciro" | "pay" | "ikram" | "iptal";
+type Sira = { alan: UrunAlani; artan: boolean };
+
+/** Metin alanı A'dan Z'ye, sayı alanı büyükten küçüğe açılıyor — beklenen yön o. */
+const metinAlani = (alan: UrunAlani) => alan === "ad" || alan === "kategoriAd";
+
+function Urunler({ ozet }: { ozet: UrunOzeti }) {
+  const [sira, setSira] = useState<Sira>({ alan: "ciro", artan: false });
+  const [arama, setArama] = useState("");
+  const [kategoriArama, setKategoriArama] = useState("");
+
+  // İki kutu iki ayrı listeyi süzüyor: kategori kartı ile ürün tablosu birbirini
+  // etkilemiyor, aynı ekranda iki farklı soru sorulabiliyor.
+  const kategoriler = useMemo(() => {
+    const ara = kategoriArama.trim().toLocaleLowerCase("tr");
+    if (!ara) return ozet.kategoriler;
+    return ozet.kategoriler.filter((k) => k.ad.toLocaleLowerCase("tr").includes(ara));
+  }, [ozet.kategoriler, kategoriArama]);
+
+  const satirlar = useMemo(() => {
+    const ara = arama.trim().toLocaleLowerCase("tr");
+    const liste = ozet.satirlar.filter(
+      (s) => !ara || s.ad.toLocaleLowerCase("tr").includes(ara)
+    );
+
+    const yon = sira.artan ? 1 : -1;
+    const alan = sira.alan === "pay" ? "ciro" : sira.alan;
+    return liste.sort((a, b) => {
+      if (metinAlani(alan)) {
+        return String(a[alan]).localeCompare(String(b[alan]), "tr") * yon;
+      }
+      return (Number(a[alan]) - Number(b[alan])) * yon;
+    });
+  }, [ozet.satirlar, sira, arama]);
+
+  const sirala = (alan: UrunAlani) =>
+    setSira((s) =>
+      s.alan === alan ? { alan, artan: !s.artan } : { alan, artan: metinAlani(alan) }
+    );
+
+  const topla = (alan: (s: UrunSatiri) => number) =>
+    satirlar.reduce((t, s) => t + alan(s), 0);
+
+  if (ozet.satirlar.length === 0) {
+    return (
+      <section className="ayar-bolum">
+        <div className="ayar-bos">
+          <Package size={30} />
+          <p>Bu dönemde satılmış ürün yok.</p>
+        </div>
+      </section>
+    );
+  }
+
+  return (
+    <div className="analiz-ozet">
+      <section className="ozet-serit">
+        <div className="serit-satir">
+          <div className="serit-sayi">
+            <span className="serit-etiket">
+              <Package size={15} /> Satılan
+            </span>
+            <strong>{sayiGoster(ozet.miktar)}</strong>
+            <em>adet ürün</em>
+          </div>
+          <div className="serit-sayi">
+            <span className="serit-etiket">Çeşit</span>
+            <strong>{ozet.cesit}</strong>
+            <em>farklı ürün satıldı</em>
+          </div>
+          <div className="serit-sayi serit-toplam">
+            <span className="serit-etiket">Ürün cirosu</span>
+            <strong>{paraGoster(ozet.ciro)}</strong>
+            <em>{ozet.ikram > 0 ? `${paraGoster(ozet.ikram)} ikram hariç` : "indirim düşülmüş"}</em>
+          </div>
+        </div>
+      </section>
+
+      <section className="ayar-bolum">
+        <div className="ayar-bolum-ust">
+          <h2>
+            <Layers size={17} /> Kategoriler
+          </h2>
+          <AramaKutusu deger={kategoriArama} degistir={setKategoriArama} yer="Kategori ara" />
+        </div>
+        {kategoriler.length === 0 ? (
+          <div className="ayar-bos">
+            <Layers size={30} />
+            <p>Aramayla eşleşen kategori yok.</p>
+          </div>
+        ) : (
+          <KategoriDagilimi satirlar={kategoriler} toplam={ozet.ciro} />
+        )}
+      </section>
+
+      <section className="ayar-bolum">
+        <div className="analiz-liste-ust">
+          <h2>
+            <Package size={17} /> {satirlar.length} ürün
+          </h2>
+          <AramaKutusu deger={arama} degistir={setArama} yer="Ürün ara" />
+        </div>
+
+        <div className="tablo-kaydir">
+          <table className="analiz-tablo urun-tablo">
+            <thead>
+              <tr>
+                <SiraBaslik alan="ad" ad="Ürün" sira={sira} sirala={sirala} />
+                <SiraBaslik alan="kategoriAd" ad="Kategori" sira={sira} sirala={sirala} />
+                <SiraBaslik alan="miktar" ad="Miktar" sag sira={sira} sirala={sirala} />
+                <SiraBaslik alan="ciro" ad="Ciro" sag sira={sira} sirala={sirala} />
+                <SiraBaslik alan="pay" ad="Pay" orta sira={sira} sirala={sirala} />
+                <SiraBaslik alan="ikram" ad="İkram" sag sira={sira} sirala={sirala} />
+                <SiraBaslik alan="iptal" ad="İptal" sag sira={sira} sirala={sirala} />
+              </tr>
+            </thead>
+            <tbody>
+              {satirlar.length === 0 ? (
+                <tr className="tablo-bos-satir">
+                  <td colSpan={7}>Aramayla eşleşen ürün yok.</td>
+                </tr>
+              ) : (
+                satirlar.map((s) => (
+                  <UrunSatir key={s.anahtar} satir={s} toplam={ozet.ciro} />
+                ))
+              )}
+            </tbody>
+            {/* Toplam listede görünenin toplamı; arama daraltınca alt satır da daralıyor. */}
+            <tfoot>
+              <tr>
+                <td colSpan={2}>Toplam</td>
+                <td className="sag">{sayiGoster(topla((s) => s.miktar))}</td>
+                <td className="sag hucre-tutar">{paraGoster(topla((s) => s.ciro))}</td>
+                <td />
+                <td className="sag">
+                  {topla((s) => s.ikram) ? paraGoster(topla((s) => s.ikram)) : "—"}
+                </td>
+                <td className="sag">
+                  {topla((s) => s.iptal) ? paraGoster(topla((s) => s.iptal)) : "—"}
+                </td>
+              </tr>
+            </tfoot>
+          </table>
+        </div>
+      </section>
+    </div>
+  );
+}
+
+/**
+ * Payı satırın içinde çubukla göstermek, ayrı bir yüzde sütunundan hem daha hızlı
+ * okunuyor hem sıralamayı gözle doğrulatıyor.
+ */
+function PayCubugu({ pay }: { pay: number }) {
+  return (
+    <span className="pay-kutu">
+      <span className="pay-cubuk">
+        <i style={{ width: `${Math.max(2, Math.min(100, pay))}%` }} />
+      </span>
+      <em>%{pay < 10 && pay > 0 ? pay.toFixed(1) : Math.round(pay)}</em>
+    </span>
+  );
+}
+
+/**
+ * Sıralanabilir sütun başlığı. Sıralamayı ayrı bir düğme şeridine taşımak yerine
+ * başlığın kendisine bağlamak, hangi sütuna göre dizildiğini de gösteriyor.
+ */
+function SiraBaslik<T extends string>({
+  alan,
+  ad,
+  sag,
+  orta,
+  sira,
+  sirala,
+}: {
+  alan: T;
+  ad: string;
+  sag?: boolean;
+  orta?: boolean;
+  sira: { alan: T; artan: boolean };
+  sirala: (alan: T) => void;
+}) {
+  const aktif = sira.alan === alan;
+  return (
+    <th className={`${sag ? "sag " : ""}${orta ? "orta " : ""}${aktif ? "sirali" : ""}`}>
+      <button type="button" onClick={() => sirala(alan)}>
+        {ad}
+        {aktif ? (
+          sira.artan ? (
+            <ArrowUp size={14} />
+          ) : (
+            <ArrowDown size={14} />
+          )
+        ) : (
+          <ChevronsUpDown size={14} />
+        )}
+      </button>
+    </th>
+  );
+}
+
+function UrunSatir({ satir, toplam }: { satir: UrunSatiri; toplam: number }) {
+  const pay = toplam > 0 ? (satir.ciro / toplam) * 100 : 0;
+
+  return (
+    <tr>
+      <td className="hucre-urun">{satir.ad}</td>
+      <td>
+        <span className="urun-kategori">
+          <i style={{ background: satir.kategoriRenk || "#d9cbb8" }} />
+          {satir.kategoriAd}
+        </span>
+      </td>
+      <td className="sag">{satir.miktar ? sayiGoster(satir.miktar) : "—"}</td>
+      <td className="sag hucre-tutar">{paraGoster(satir.ciro)}</td>
+      {/* Payı satırın içinde çubukla göstermek, ayrı bir yüzde sütunundan hem
+          daha hızlı okunuyor hem sıralamayı gözle doğrulatıyor. */}
+      <td className="hucre-pay">
+        <PayCubugu pay={pay} />
+      </td>
+      <td className="sag">{satir.ikram ? paraGoster(satir.ikram) : "—"}</td>
+      <td className="sag">{satir.iptal ? paraGoster(satir.iptal) : "—"}</td>
+    </tr>
+  );
+}
+
+type PersonelAlani = "ad" | "acilan" | "adisyon" | "adet" | "ciro" | "pay" | "ikram" | "iptal";
+
+function Personel({ ozet }: { ozet: PersonelOzeti }) {
+  const [sira, setSira] = useState<{ alan: PersonelAlani; artan: boolean }>({
+    alan: "ciro",
+    artan: false,
+  });
+  const [arama, setArama] = useState("");
+
+  const satirlar = useMemo(() => {
+    const ara = arama.trim().toLocaleLowerCase("tr");
+    const liste = ozet.satirlar.filter(
+      (s) => !ara || s.ad.toLocaleLowerCase("tr").includes(ara)
+    );
+    const yon = sira.artan ? 1 : -1;
+    const alan = sira.alan === "pay" ? "ciro" : sira.alan;
+    return liste.sort((a, b) =>
+      alan === "ad"
+        ? a.ad.localeCompare(b.ad, "tr") * yon
+        : (Number(a[alan]) - Number(b[alan])) * yon
+    );
+  }, [ozet.satirlar, sira, arama]);
+
+  const sirala = (alan: PersonelAlani) =>
+    setSira((s) => (s.alan === alan ? { alan, artan: !s.artan } : { alan, artan: alan === "ad" }));
+
+  if (ozet.satirlar.length === 0) {
+    return (
+      <section className="ayar-bolum">
+        <div className="ayar-bos">
+          <Users size={30} />
+          <p>Bu dönemde kapanmış adisyon yok.</p>
+        </div>
+      </section>
+    );
+  }
+
+  const topla = (alan: (s: PersonelSatiri) => number) =>
+    satirlar.reduce((t, s) => t + alan(s), 0);
+
+  return (
+    <div className="analiz-ozet">
+      <section className="ozet-serit">
+        <div className="serit-satir">
+          <div className="serit-sayi">
+            <span className="serit-etiket">
+              <Users size={15} /> Satış yapan
+            </span>
+            <strong>{ozet.kisi}</strong>
+            <em>kişi</em>
+          </div>
+          <div className="serit-sayi">
+            <span className="serit-etiket">Satılan</span>
+            <strong>{sayiGoster(ozet.adet)}</strong>
+            <em>adet ürün</em>
+          </div>
+          <div className="serit-sayi serit-toplam">
+            <span className="serit-etiket">Kişi başı ciro</span>
+            <strong>{paraGoster(ozet.kisi ? ozet.ciro / ozet.kisi : 0)}</strong>
+            <em>ortalama</em>
+          </div>
+        </div>
+      </section>
+
+      <section className="ayar-bolum">
+        <div className="ayar-bolum-ust">
+          <h2>
+            <TrendingUp size={17} /> Ciro dağılımı
+          </h2>
+        </div>
+        <Dagilim
+          satirlar={ozet.satirlar
+            .filter((s) => s.ciro > 0)
+            .map((s) => ({ ad: s.ad, tutar: s.ciro, adet: s.adisyon }))}
+          toplam={ozet.ciro}
+          birim="adisyon"
+        />
+      </section>
+
+      <section className="ayar-bolum">
+        <div className="analiz-liste-ust">
+          <h2>
+            <Users size={17} /> {satirlar.length} kişi
+          </h2>
+          <AramaKutusu deger={arama} degistir={setArama} yer="Personel ara" />
+        </div>
+
+        <div className="tablo-kaydir">
+          <table className="analiz-tablo urun-tablo">
+            <thead>
+              <tr>
+                <SiraBaslik alan="ad" ad="Personel" sira={sira} sirala={sirala} />
+                <SiraBaslik alan="acilan" ad="Açtığı masa" sag sira={sira} sirala={sirala} />
+                <SiraBaslik alan="adisyon" ad="Satış yaptığı" sag sira={sira} sirala={sirala} />
+                <SiraBaslik alan="adet" ad="Ürün" sag sira={sira} sirala={sirala} />
+                <SiraBaslik alan="ciro" ad="Ciro" sag sira={sira} sirala={sirala} />
+                <SiraBaslik alan="pay" ad="Pay" orta sira={sira} sirala={sirala} />
+                <SiraBaslik alan="ikram" ad="İkram" sag sira={sira} sirala={sirala} />
+                <SiraBaslik alan="iptal" ad="İptal" sag sira={sira} sirala={sirala} />
+              </tr>
+            </thead>
+            <tbody>
+              {satirlar.length === 0 ? (
+                <tr className="tablo-bos-satir">
+                  <td colSpan={8}>Aramayla eşleşen kişi yok.</td>
+                </tr>
+              ) : (
+                satirlar.map((s) => {
+                  const pay = ozet.ciro > 0 ? (s.ciro / ozet.ciro) * 100 : 0;
+                  return (
+                    <tr key={s.anahtar}>
+                      <td className="hucre-urun">{s.ad}</td>
+                      <td className="sag">{s.acilan || "—"}</td>
+                      <td className="sag">{s.adisyon || "—"}</td>
+                      <td className="sag">{s.adet ? sayiGoster(s.adet) : "—"}</td>
+                      <td className="sag hucre-tutar">{paraGoster(s.ciro)}</td>
+                      <td className="hucre-pay">
+                        <PayCubugu pay={pay} />
+                      </td>
+                      <td className="sag">{s.ikram ? paraGoster(s.ikram) : "—"}</td>
+                      <td className="sag">{s.iptal ? paraGoster(s.iptal) : "—"}</td>
+                    </tr>
+                  );
+                })
+              )}
+            </tbody>
+            <tfoot>
+              <tr>
+                <td>Toplam</td>
+                <td className="sag">{topla((s) => s.acilan) || "—"}</td>
+                <td className="sag">{topla((s) => s.adisyon) || "—"}</td>
+                <td className="sag">{sayiGoster(topla((s) => s.adet))}</td>
+                <td className="sag hucre-tutar">{paraGoster(topla((s) => s.ciro))}</td>
+                <td />
+                <td className="sag">
+                  {topla((s) => s.ikram) ? paraGoster(topla((s) => s.ikram)) : "—"}
+                </td>
+                <td className="sag">
+                  {topla((s) => s.iptal) ? paraGoster(topla((s) => s.iptal)) : "—"}
+                </td>
+              </tr>
+            </tfoot>
+          </table>
+        </div>
+      </section>
+    </div>
+  );
+}
+
+type GiderAlani = "zaman" | "tipAd" | "aciklama" | "odemeTipi" | "kisi" | "tutar";
+
+function Giderler({
+  giderler,
+  ozet,
+  ciro,
+}: {
+  giderler: Masraf[];
+  ozet: GiderOzeti;
+  ciro: number;
+}) {
+  const [sira, setSira] = useState<{ alan: GiderAlani; artan: boolean }>({
+    alan: "zaman",
+    artan: false,
+  });
+  const [arama, setArama] = useState("");
+
+  const satirlar = useMemo(() => {
+    const ara = arama.trim().toLocaleLowerCase("tr");
+    const liste = giderler.filter(
+      (g) =>
+        !ara ||
+        `${g.tipAd} ${g.aciklama} ${g.kisi}`.toLocaleLowerCase("tr").includes(ara)
+    );
+    const yon = sira.artan ? 1 : -1;
+    return liste.sort((a, b) => {
+      if (sira.alan === "tutar") return (a.tutar - b.tutar) * yon;
+      if (sira.alan === "zaman") return (+new Date(a.zaman) - +new Date(b.zaman)) * yon;
+      const metin = (g: Masraf) =>
+        sira.alan === "odemeTipi" ? odemeAdi(g.odemeTipi) : String(g[sira.alan]);
+      return metin(a).localeCompare(metin(b), "tr") * yon;
+    });
+  }, [giderler, sira, arama]);
+
+  const sirala = (alan: GiderAlani) =>
+    setSira((s) =>
+      s.alan === alan
+        ? { alan, artan: !s.artan }
+        : { alan, artan: alan !== "tutar" && alan !== "zaman" }
+    );
+
+  if (giderler.length === 0) {
+    return (
+      <section className="ayar-bolum">
+        <div className="ayar-bos">
+          <Wallet size={30} />
+          <p>Bu dönemde gider kaydı yok.</p>
+        </div>
+      </section>
+    );
+  }
+
+  // Giderin ciroya oranı: tek başına tutar değil, "kazandığımızın ne kadarı
+  // gitti" sorusunun cevabı işletmecinin bakmak istediği sayı.
+  const oran = ciro > 0 ? (ozet.toplam / ciro) * 100 : 0;
+  const toplam = satirlar.reduce((t, g) => t + g.tutar, 0);
+
+  return (
+    <div className="analiz-ozet">
+      <section className="ozet-serit">
+        <div className="serit-satir">
+          <div className="serit-sayi">
+            <span className="serit-etiket">
+              <Wallet size={15} /> Toplam gider
+            </span>
+            <strong>{paraGoster(ozet.toplam)}</strong>
+            <em>{ozet.kayit} kayıt</em>
+          </div>
+          <div className="serit-sayi">
+            <span className="serit-etiket">Dönemin cirosu</span>
+            <strong>{paraGoster(ciro)}</strong>
+            <em>kapanan hesaplar</em>
+          </div>
+          <div className="serit-sayi serit-toplam">
+            <span className="serit-etiket">Cironun</span>
+            <strong>%{oran < 10 && oran > 0 ? oran.toFixed(1) : Math.round(oran)}</strong>
+            <em>gidere gitti</em>
+          </div>
+        </div>
+      </section>
+
+      <div className="analiz-ikili">
+        <section className="ayar-bolum">
+          <div className="ayar-bolum-ust">
+            <h2>
+              <Layers size={17} /> Gider türü
+            </h2>
+          </div>
+          <Dagilim satirlar={ozet.turler} toplam={ozet.toplam} birim="kayıt" />
+        </section>
 
         <section className="ayar-bolum">
           <div className="ayar-bolum-ust">
             <h2>
-              <BarChart3 size={17} /> Saatlere göre
+              <CreditCard size={17} /> Ödeme tipi
             </h2>
           </div>
-          <Saatler saatler={ozet.saatler} />
+          <Dagilim satirlar={ozet.odemeler} toplam={ozet.toplam} birim="kayıt" />
         </section>
       </div>
+
+      <section className="ayar-bolum">
+        <div className="analiz-liste-ust">
+          <h2>
+            <Wallet size={17} /> {satirlar.length} gider
+          </h2>
+          <AramaKutusu deger={arama} degistir={setArama} yer="Tür, açıklama, kişi" />
+        </div>
+
+        <div className="tablo-kaydir">
+          <table className="analiz-tablo urun-tablo">
+            <thead>
+              <tr>
+                <SiraBaslik alan="zaman" ad="Tarih" sira={sira} sirala={sirala} />
+                <SiraBaslik alan="tipAd" ad="Tür" sira={sira} sirala={sirala} />
+                <SiraBaslik alan="aciklama" ad="Açıklama" sira={sira} sirala={sirala} />
+                <SiraBaslik alan="odemeTipi" ad="Ödeme" sira={sira} sirala={sirala} />
+                <SiraBaslik alan="kisi" ad="Kaydeden" sira={sira} sirala={sirala} />
+                <SiraBaslik alan="tutar" ad="Tutar" sag sira={sira} sirala={sirala} />
+              </tr>
+            </thead>
+            <tbody>
+              {satirlar.length === 0 ? (
+                <tr className="tablo-bos-satir">
+                  <td colSpan={6}>Aramayla eşleşen gider yok.</td>
+                </tr>
+              ) : (
+                satirlar.map((g) => (
+                  <tr key={g.id}>
+                    <td>{zamanMetni(g.zaman)}</td>
+                    <td className="hucre-urun">{g.tipAd}</td>
+                    <td className="hucre-aciklama">{g.aciklama || "—"}</td>
+                    <td>{odemeAdi(g.odemeTipi)}</td>
+                    <td>{g.kisi || "—"}</td>
+                    <td className="sag hucre-tutar">{paraGoster(g.tutar)}</td>
+                  </tr>
+                ))
+              )}
+            </tbody>
+            <tfoot>
+              <tr>
+                <td colSpan={5}>Toplam</td>
+                <td className="sag hucre-tutar">{paraGoster(toplam)}</td>
+              </tr>
+            </tfoot>
+          </table>
+        </div>
+      </section>
     </div>
   );
 }
+
+/** Kategori kendi rengiyle çıkıyor — menüde zaten kullanıcının verdiği renk. */
+function KategoriDagilimi({
+  satirlar,
+  toplam,
+}: {
+  satirlar: { ad: string; tutar: number; adet: number; renk?: string }[];
+  toplam: number;
+}) {
+  return (
+    <ul className="analiz-dagilim kategori-dagilim">
+      {satirlar.map((s) => {
+        const pay = toplam > 0 ? Math.round((s.tutar / toplam) * 100) : 0;
+        return (
+          <li key={s.ad}>
+            <span className="dagilim-ad">
+              <span className="kategori-ad">
+                <i style={{ background: s.renk || "#d9cbb8" }} />
+                {s.ad}
+              </span>
+              <em>{sayiGoster(s.adet)} adet</em>
+            </span>
+            <span className="dagilim-cubuk">
+              <i
+                style={{
+                  width: `${Math.min(100, pay)}%`,
+                  background: s.renk || undefined,
+                }}
+              />
+            </span>
+            <span className="dagilim-tutar">
+              {paraGoster(s.tutar)}
+              <em>%{pay}</em>
+            </span>
+          </li>
+        );
+      })}
+    </ul>
+  );
+}
+
+/** Adet kesirli olabiliyor (yarım porsiyon, 1/n bölüşme); tam sayıda sıfır artığı yok. */
+const sayiGoster = (n: number) =>
+  Number.isInteger(n) ? String(n) : n.toLocaleString("tr-TR", { maximumFractionDigits: 2 });
 
 /** Ödeme ve sipariş tipi aynı desende: ad, tutar ve payı gösteren şerit. */
 function Dagilim({
   satirlar,
   toplam,
+  birim = "işlem",
 }: {
   satirlar: { ad: string; tutar: number; adet: number }[];
   toplam: number;
+  birim?: string;
 }) {
   return (
     <ul className="analiz-dagilim">
@@ -379,7 +1067,9 @@ function Dagilim({
           <li key={s.ad}>
             <span className="dagilim-ad">
               {s.ad}
-              <em>{s.adet} işlem</em>
+              <em>
+                {sayiGoster(s.adet)} {birim}
+              </em>
             </span>
             <span className="dagilim-cubuk">
               <i style={{ width: `${Math.min(100, pay)}%` }} />
@@ -427,19 +1117,6 @@ function Saatler({ saatler }: { saatler: { saat: number; tutar: number; adet: nu
 // Sekme iskeleti duruyor ama içeriği henüz yok; boş ekran bırakmak yerine ne
 // geleceği yazılıyor — kullanıcı yanlış yere geldiğini sanmasın.
 const ACIKLAMALAR: Record<string, { ad: string; metin: string }> = {
-  urunler: {
-    ad: "Ürünler",
-    metin:
-      "Hangi ürün kaç adet satıldı, ne kadar ciro yaptı; kategori kırılımı ve iptal edilen ürünler.",
-  },
-  personel: {
-    ad: "Personel",
-    metin: "Kim kaç adisyon açtı, ne kadar ciro yaptı, kaç indirim ve iptal uyguladı.",
-  },
-  giderler: {
-    ad: "Giderler",
-    metin: "Dönemin giderleri türüne ve ödeme tipine göre; ciroyla karşılaştırmalı.",
-  },
   denetim: {
     ad: "Denetim",
     metin:

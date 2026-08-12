@@ -51,6 +51,7 @@ export type SepetKalemi = {
   turSira?: number;
   turSaat?: string; // turun kaydedildiği an; sepette tur başlığında görünüyor
   turGarson?: string; // turu yazan kişi; tur başlığında saatin yanında
+  turGarsonId?: number; // personel raporunda ciro bu kişiye yazılıyor
 };
 export type Tahsilat = {
   tip: string;

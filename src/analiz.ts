@@ -1,7 +1,7 @@
 import type { AdisyonTipi } from "./adisyonlar";
 import { ayarlar } from "./isletmeAyarlari";
 import { kdvDokumu } from "./kdv";
-import { masraflariGetir, type Masraf } from "./masraflar";
+import { masraflariGetir, odemeAdi, type Masraf } from "./masraflar";
 import { kisaAd } from "./personel";
 import { supabase } from "./supabase";
 import type { SepetKalemi } from "./types";
@@ -53,7 +53,6 @@ export type AnalizFiltre = {
   indirimli: boolean;
   enAz: number | null;
   enCok: number | null;
-  arama: string;
 };
 
 export const BOS_FILTRE: AnalizFiltre = {
@@ -72,7 +71,6 @@ export const BOS_FILTRE: AnalizFiltre = {
   indirimli: false,
   enAz: null,
   enCok: null,
-  arama: "",
 };
 
 /** Tarih dışında bir şey seçilmiş mi — çip şeridi ve "temizle" bunu soruyor. */
@@ -88,7 +86,6 @@ export function filtreSayisi(f: AnalizFiltre) {
     f.indirimli ? true : null,
     f.enAz,
     f.enCok,
-    f.arama.trim() || null,
   ].filter((d) => d !== null && d !== undefined).length;
 }
 
@@ -207,7 +204,8 @@ const ALANLAR = `id, adisyon_no, tip, durum, acilis, kapanis, indirim, ad, kisi_
        musteri_ad, masa_id,
        masa:masalar (ad, bolge_id, bolgeler (ad)),
        acan:personel!adisyonlar_acan_id_fkey (id, ad),
-       turlar (adisyon_kalemleri (id, ad, adet, fiyat, kdv_oran, durum, indirim)),
+       turlar (garson:personel!turlar_garson_id_fkey (id, ad),
+               adisyon_kalemleri (id, urun_id, ad, adet, fiyat, kdv_oran, durum, indirim)),
        tahsilatlar (tip, tutar, bahsis)`;
 
 async function varsayilanKdvOrani() {
@@ -225,6 +223,11 @@ function satiraCevir(s: any, varsayilanKdv?: number): AnalizAdisyon {
     for (const k of tur.adisyon_kalemleri ?? []) {
       kalemler.push({
         id: k.id,
+        urunId: k.urun_id ?? undefined,
+        // Kalem, ürünü adisyona yazan garsonu taşıyor: ciro masayı açana değil
+        // satışı yapana yazılıyor.
+        turGarsonId: tur.garson?.id ?? undefined,
+        turGarson: tur.garson?.ad ? kisaAd(tur.garson.ad) : undefined,
         ad: k.ad,
         adet: Number(k.adet),
         fiyat: Number(k.fiyat),
@@ -327,12 +330,6 @@ function uyuyor(a: AnalizAdisyon, f: AnalizFiltre) {
   if (f.enAz != null && a.toplam < f.enAz) return false;
   if (f.enCok != null && a.toplam > f.enCok) return false;
 
-  const ara = f.arama.trim().toLocaleLowerCase("tr");
-  if (ara) {
-    const metin = `${a.no} ${a.masaAd} ${a.bolgeAd} ${a.garson} ${a.ad} ${a.musteri}`
-      .toLocaleLowerCase("tr");
-    if (!metin.includes(ara)) return false;
-  }
   return true;
 }
 
@@ -458,6 +455,12 @@ export type AnalizOzeti = {
   /** Kapanmamış adisyonlar ciroya girmiyor; ayrı gösteriliyor. */
   acik: number;
   acikTutar: number;
+  /** Kapanan ciro + açık masalar: günün şu ana kadarki toplam işi. */
+  toplamIs: number;
+  /** Kapanan hesaplardan kasaya gerçekten giren para. */
+  tahsilEdilen: number;
+  /** Hesap kapandı ama tahsil edilmedi — ciroya yazılı, kasada yok. */
+  eksikTahsilat: number;
   odemeler: OzetDilimi[];
   tipler: OzetDilimi[];
   saatler: { saat: number; tutar: number; adet: number }[];
@@ -510,6 +513,11 @@ export function analizOzeti(adisyonlar: AnalizAdisyon[], giderler: Masraf[]): An
 
   const gider = giderler.reduce((t, g) => t + g.tutar, 0);
 
+  // Kapanışta eksik bırakılan tutar. Hesap kapandığı için ciroya yazılı ama
+  // kasaya girmedi; ikisini ayırmazsak gün sonu kasa sayımı hep açık veriyor.
+  const eksikTahsilat = topla(kapanan, (a) => Math.max(0, a.kalan));
+  const acikTutar = topla(acikOlanlar, (a) => a.toplam);
+
   return {
     ciro,
     adisyon: kapanan.length,
@@ -523,12 +531,260 @@ export function analizOzeti(adisyonlar: AnalizAdisyon[], giderler: Masraf[]): An
     kdv: topla(kapanan, (a) => a.kdv),
     bahsis: topla(kapanan, (a) => a.bahsis),
     acik: acikOlanlar.length,
-    acikTutar: topla(acikOlanlar, (a) => a.toplam),
+    acikTutar,
+    toplamIs: ciro + acikTutar,
+    tahsilEdilen: ciro - eksikTahsilat,
+    eksikTahsilat,
     odemeler: [...odemeler.values()].sort((a, b) => b.tutar - a.tutar),
     tipler: [...tipler.values()].sort((a, b) => b.tutar - a.tutar),
     saatler,
     gider,
     net: ciro - gider,
+  };
+}
+
+export type UrunSatiri = {
+  /** Ürün silinmişse kimlik yok; o zaman satış anındaki ad kimlik oluyor. */
+  anahtar: string;
+  ad: string;
+  kategoriAd: string;
+  kategoriRenk?: string;
+  miktar: number;
+  ciro: number;
+  ikram: number;
+  iptal: number;
+};
+
+export type UrunOzeti = {
+  satirlar: UrunSatiri[];
+  kategoriler: (OzetDilimi & { renk?: string })[];
+  miktar: number;
+  cesit: number;
+  ciro: number;
+  ikram: number;
+};
+
+export type UrunKategorisi = { ad: string; renk?: string };
+
+/**
+ * Ürün → kategori eşlemesi. Bir ürün birden çok kategoride olabiliyor; rapor tek
+ * satır gösterdiği için ilki alınıyor (menüdeki kendi sırasına göre ilki).
+ */
+export async function urunKategorileri() {
+  const [urn, kat] = await Promise.all([
+    supabase.from("urun_kategorileri").select("urun_id, kategori_id, sira").order("sira"),
+    supabase.from("kategoriler").select("id, ad, renk"),
+  ]);
+
+  const kategoriler = new Map<number, UrunKategorisi>();
+  for (const k of kat.data ?? []) kategoriler.set(k.id, { ad: k.ad, renk: k.renk ?? undefined });
+
+  const harita = new Map<number, UrunKategorisi>();
+  for (const u of urn.data ?? []) {
+    if (harita.has(u.urun_id)) continue;
+    const k = kategoriler.get(u.kategori_id);
+    if (k) harita.set(u.urun_id, k);
+  }
+  return harita;
+}
+
+const KATEGORISIZ = "Kategorisiz";
+
+/**
+ * Ürün dökümü. İptal ve ikram satılan sayılmıyor ama gözden de kaybolmuyor —
+ * ciroyu bozmadan kendi sütunlarında duruyorlar; "neden az sattık" sorusunun
+ * cevabı çoğu zaman orada.
+ */
+export function analizUrunleri(
+  adisyonlar: AnalizAdisyon[],
+  kategoriler: Map<number, UrunKategorisi>
+): UrunOzeti {
+  const tutar = (k: SepetKalemi) =>
+    Math.max(0, Math.round((k.fiyat * k.adet - (k.indirim ?? 0)) * 100) / 100);
+
+  const satirlar = new Map<string, UrunSatiri>();
+  for (const a of adisyonlar) {
+    if (a.durum !== "kapali") continue;
+    for (const k of a.kalemler) {
+      const anahtar = k.urunId ? `u${k.urunId}` : `a${k.ad}`;
+      const kategori = k.urunId ? kategoriler.get(k.urunId) : undefined;
+      const satir =
+        satirlar.get(anahtar) ??
+        ({
+          anahtar,
+          ad: k.ad,
+          kategoriAd: kategori?.ad ?? KATEGORISIZ,
+          kategoriRenk: kategori?.renk,
+          miktar: 0,
+          ciro: 0,
+          ikram: 0,
+          iptal: 0,
+        } as UrunSatiri);
+
+      if (k.durum === "ikram") satir.ikram += tutar(k);
+      else if (k.durum === "iptal") satir.iptal += tutar(k);
+      else {
+        satir.miktar += k.adet;
+        satir.ciro += tutar(k);
+      }
+      satirlar.set(anahtar, satir);
+    }
+  }
+
+  const liste = [...satirlar.values()].sort((a, b) => b.ciro - a.ciro);
+
+  const gruplar = new Map<string, OzetDilimi & { renk?: string }>();
+  for (const s of liste) {
+    const g = gruplar.get(s.kategoriAd) ?? {
+      ad: s.kategoriAd,
+      tutar: 0,
+      adet: 0,
+      renk: s.kategoriRenk,
+    };
+    g.tutar += s.ciro;
+    g.adet += s.miktar;
+    gruplar.set(s.kategoriAd, g);
+  }
+
+  return {
+    satirlar: liste,
+    kategoriler: [...gruplar.values()].sort((a, b) => b.tutar - a.tutar),
+    miktar: liste.reduce((t, s) => t + s.miktar, 0),
+    // Hiç satılmamış, yalnız ikram veya iptal edilmiş ürün "çeşit" sayılmıyor.
+    cesit: liste.filter((s) => s.miktar > 0).length,
+    ciro: liste.reduce((t, s) => t + s.ciro, 0),
+    ikram: liste.reduce((t, s) => t + s.ikram, 0),
+  };
+}
+
+export type PersonelSatiri = {
+  anahtar: string;
+  ad: string;
+  /** Kendi açtığı adisyon sayısı — masayı açmak ayrı bir iş, ciro değil. */
+  acilan: number;
+  /** Ürün yazdığı adisyon sayısı; ciro buradan çıkıyor. */
+  adisyon: number;
+  adet: number;
+  ciro: number;
+  ikram: number;
+  iptal: number;
+};
+
+export type PersonelOzeti = {
+  satirlar: PersonelSatiri[];
+  kisi: number;
+  adet: number;
+  ciro: number;
+};
+
+const BILINMEYEN = "Bilinmiyor";
+
+/**
+ * Personel dökümü. Ciro masayı açana değil ürünü yazana yazılıyor; bir masaya üç
+ * garson sipariş girdiyse ciro üçe bölünüyor. Adisyonun tamamına verilen indirim
+ * (ürüne değil hesaba verilen) kalemlere tutarları oranında dağıtılıyor —
+ * yoksa personel ciroları toplamı özet ekranındaki ciroyu tutmuyor.
+ */
+export function analizPersoneli(adisyonlar: AnalizAdisyon[]): PersonelOzeti {
+  const kalemTutari = (k: SepetKalemi) =>
+    Math.max(0, Math.round((k.fiyat * k.adet - (k.indirim ?? 0)) * 100) / 100);
+
+  const satirlar = new Map<string, PersonelSatiri>();
+  const satir = (id: number | undefined, ad: string) => {
+    const anahtar = id ? `p${id}` : `a${ad}`;
+    const mevcut = satirlar.get(anahtar);
+    if (mevcut) return mevcut;
+    const yeni: PersonelSatiri = {
+      anahtar,
+      ad,
+      acilan: 0,
+      adisyon: 0,
+      adet: 0,
+      ciro: 0,
+      ikram: 0,
+      iptal: 0,
+    };
+    satirlar.set(anahtar, yeni);
+    return yeni;
+  };
+
+  for (const a of adisyonlar) {
+    if (a.durum !== "kapali") continue;
+
+    satir(a.garsonId ?? undefined, a.garson || BILINMEYEN).acilan += 1;
+
+    const satilanlar = a.kalemler.filter((k) => (k.durum ?? "normal") === "normal");
+    const kalemToplami = satilanlar.reduce((t, k) => t + kalemTutari(k), 0);
+
+    // İndirim paylaştırılırken kuruş artığı kaybolmasın diye kalan son kaleme
+    // yazılıyor; dağıtımın toplamı her zaman indirimin kendisine eşit.
+    let kalanIndirim = Math.min(a.indirim, kalemToplami);
+
+    const dokunan = new Set<string>();
+    satilanlar.forEach((k, i) => {
+      const s = satir(k.turGarsonId, k.turGarson || BILINMEYEN);
+      const ham = kalemTutari(k);
+      const pay =
+        i === satilanlar.length - 1 || kalemToplami === 0
+          ? kalanIndirim
+          : Math.round(((ham / kalemToplami) * Math.min(a.indirim, kalemToplami)) * 100) / 100;
+      kalanIndirim = Math.round((kalanIndirim - pay) * 100) / 100;
+
+      s.ciro = Math.round((s.ciro + ham - pay) * 100) / 100;
+      s.adet += k.adet;
+      dokunan.add(s.anahtar);
+    });
+
+    for (const k of a.kalemler) {
+      if (k.durum === "ikram" || k.durum === "iptal") {
+        const s = satir(k.turGarsonId, k.turGarson || BILINMEYEN);
+        if (k.durum === "ikram") s.ikram += kalemTutari(k);
+        else s.iptal += kalemTutari(k);
+        dokunan.add(s.anahtar);
+      }
+    }
+
+    for (const anahtar of dokunan) {
+      const s = satirlar.get(anahtar);
+      if (s) s.adisyon += 1;
+    }
+  }
+
+  const liste = [...satirlar.values()].sort((a, b) => b.ciro - a.ciro);
+  return {
+    satirlar: liste,
+    kisi: liste.filter((s) => s.ciro > 0).length,
+    adet: liste.reduce((t, s) => t + s.adet, 0),
+    ciro: liste.reduce((t, s) => t + s.ciro, 0),
+  };
+}
+
+export type GiderOzeti = {
+  toplam: number;
+  kayit: number;
+  turler: OzetDilimi[];
+  odemeler: OzetDilimi[];
+};
+
+/** Giderin türe ve ödeme tipine göre dökümü; liste ekranda ayrıca duruyor. */
+export function analizGiderOzeti(giderler: Masraf[]): GiderOzeti {
+  const grupla = (alan: (g: Masraf) => string) => {
+    const gruplar = new Map<string, OzetDilimi>();
+    for (const g of giderler) {
+      const ad = alan(g) || "Belirtilmemiş";
+      const dilim = gruplar.get(ad) ?? { ad, tutar: 0, adet: 0 };
+      dilim.tutar += g.tutar;
+      dilim.adet += 1;
+      gruplar.set(ad, dilim);
+    }
+    return [...gruplar.values()].sort((a, b) => b.tutar - a.tutar);
+  };
+
+  return {
+    toplam: giderler.reduce((t, g) => t + g.tutar, 0),
+    kayit: giderler.length,
+    turler: grupla((g) => g.tipAd),
+    odemeler: grupla((g) => odemeAdi(g.odemeTipi)),
   };
 }
 

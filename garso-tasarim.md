@@ -1,7 +1,7 @@
 ﻿# GARSO — Teknik Tasarım: Veri Modeli & Ekran Haritası
 *Restoran ve cafe'ler için bulut tabanlı satış ve işletme yönetim sistemi.*
 
-## 0. SIRADAKİ İŞ (12 Ağu 2026'da güncellendi)
+## 0. SIRADAKİ İŞ (17 Ağu 2026'da güncellendi)
 
 *Ramazan seansa "devam edelim" diye giriyor — sıradaki iş bu listenin en üstündeki
 maddedir. Seans sonunda bu liste güncellenir: biten madde silinir, kalanlar
@@ -49,34 +49,63 @@ bir tablo; **"Eksik tahsilat" durumu bizim eklememiz** (kapanmış ama parası
 eksik kalan hesap Adisyo'da ayrı işaretlenmiyor). Yeni yetki:
 `siparis.aktif_et` (kapanmış adisyonu yeniden açma).
 
+**17 Ağu 2026:** **Analiz'in Denetim dışındaki bütün sekmeleri bitti.** Özet
+yeniden kuruldu: üstte toplama işlemi gibi okunan üç sayı (`Kapanan ciro +
+Açık masalar = Toplam`, açık masa yoksa tek sayıya iniyor), altında künye bandı,
+tek hesap dökümü (ciro → kasaya giren → eksik tahsilat), üç kart tek sırada ve
+saat grafiği tam genişlikte. Açık adisyon bilgi kutusu kalktı, bilgi şeridin
+kendisine girdi. **Ürünler** (kategori dağılımı kendi renkleriyle + ürün tablosu),
+**Personel** ve **Giderler** sekmeleri yazıldı. Turda çıkan kararlar:
+- **Ciro satışı yapana yazılıyor**, masayı açana değil: her kalem kendi turunun
+  garsonuna (`turlar.garson_id`). Bir masaya üç kişi sipariş girdiyse ciro üçe
+  bölünüyor. "Açtığı masa" ayrı bir sütun olarak duruyor — masa açmak da bir iş
+  ama ciro değil. Adisyon geneline verilen indirim kalemlere tutarları oranında
+  dağıtılıyor ki personel ciroları toplamı özetteki ciroyu tutsun.
+- **Arama her sekmenin kendi işi.** Ortak filtre şeridinden kaldırıldı (bir
+  sekmede aranan şey diğerini boşaltıyordu); Ürünler'de kategori ve ürün için
+  iki ayrı kutu var.
+- **Sıralama sütun başlığında**, ayrı düğme şeridinde değil: aktif sütun mercan
+  ve ok yönünü gösteriyor, diğerlerinde soluk ⇅ duruyor.
+- **Gider tarihi kasa gününe bağlandı.** Giderler ekranı takvim gününü
+  kullanıyordu; kasa günü 08:45'te başlayan bir işletmede gece 03:00'te girilen
+  gider bir ekranda bugüne, diğerinde düne düşüyordu.
+- **Yetki ekranındaki "Rapor" grubu "Analiz" oldu** (`sql/2026-08-17-analiz-
+  adlandirma.sql`). Yetki kodları `rapor.tumu` / `rapor.gun_sonu` olarak kaldı:
+  kimseye görünmüyorlar ve kişilere atanmış yetkiler bunlara bağlı.
+
 **Göç notu:** satır güvenliği açıldığından beri `isletme_id` oturumdan geliyor;
 SQL editöründe oturum olmadığı için göç dosyalarında bu sütun **elle
 yazılmalı** (kaynağı ilgili satırın kendi işletmesi). `rol_yetkileri`'ne yetki
 eklerken bu yüzden hata alındı.
 
-1. **Özet sekmesinin tasarımı yeniden** — 16 Ağu 2026'da yazılan hâli Ramazan'a
-   beğendirmedi. Şu an: büyük ciro sayısı + 3×2 metrik ızgarası, altında hesap
-   dökümü / ödeme dağılımı / sipariş tipi / saat çubukları. Sorun düzenin
-   kendisinde; sayılar doğru çalışıyor. Yeniden kurgulanacak, kart yığınına
-   dönmeden ve ekranı gereksiz genişletmeden.
-   - **Açık adisyon uyarısı ayrıca ele alınacak.** Şu an bilgi kutusuyla
-     "Bu dönemde 1 adisyon hâlâ açık (₺150,00)" yazıyor; beğenilmedi. Bilgi
-     doğru ve gerekli (açık hesap ciroya yazılmıyor) ama anlatımı ekranın
-     içine daha doğal oturmalı — kutu değil, özetin kendi parçası olmalı.
-2. **Analiz'in kalan dört sekmesi** — Ürünler · Personel · Giderler · Denetim.
-   Şu an "hazırlanıyor" açıklamasıyla duruyorlar. İçerikleri yol haritası 11.2,
-   11.4 ve 11.6'da; Denetim sekmesi 3. maddedeki veri eksiklerine bağlı.
-3. **Turdan çıkan iki veri eksiği** — rapor yazılmadan kapatılmalı:
-   `adisyon_kalemleri`'nde **kimin iptal ettiği ve iptal sebebi yok** (Adisyo'nun
-   "Silinen Ürünler" raporu bunu tutuyor), silinen tahsilat için de aynısı gerekli.
-   Ayrıca **kapanmış adisyonun ödeme tipini düzeltme** (yetkiye bağlı, geçmişe
-   kayıt düşer) — yol haritası 11.8 madde 6 ve 8.
-4. **Masa yazdırma ve adisyon iptali** — masa üç nokta menüsünde yerleri boş
+1. **Denetim sekmesi ve dayandığı veri — tamamı.** Analiz'in tek eksik sekmesi;
+   17 Ağu 2026'da kapsamı Ramazan'la netleşti, tamamı tek işte yapılacak:
+   - **`denetim_kayitlari` tablosu** (kim · ne zaman · hangi işlem · hangi
+     adisyon · tutar · sebep). Her hassas işlem için ayrı sütun eklemek yerine
+     tek yer; ileride adisyon iptali, indirim ve ödeme düzeltmesi de buraya.
+   - **Kalem iptali ve ikramı** bu tabloya yazılacak, **iptalde sebep sorulacak**
+     (Adisyo'nun "Silinen Ürünler" raporunun karşılığı).
+   - **Silinen tahsilat denetimi** — yapısal engel var: tahsilatlar her
+     kaydetmede toptan silinip yeniden yazılıyor (`adisyonlar.ts`, ~526. satır),
+     kayıtların kimliği korunmuyor, dolayısıyla "şu tahsilat silindi" diye bir
+     olay yok. Tahsilat kaydetme akışının yeniden kurulması gerekiyor — satışın
+     en hassas yeri, dikkatli gidilecek.
+   - **Kapanmış adisyonun ödeme tipini düzeltme** (yetkiye bağlı, geçmişe kayıt
+     düşer) — yol haritası 11.8 madde 6 ve 8.
+   - Sekmenin kendisi bu kayıtları listeler: diğer sekmelerle aynı desen
+     (şerit + tablo, başlıktan sıralama, kendi arama kutusu).
+2. **Eksik tahsilatla hesap kapatma** — 17 Ağu 2026'da çıktı: "Adisyonu Kapat"
+   düğmesi yalnızca kalan sıfırlanınca görünüyor (`TahsilatPanel.tsx`), yani
+   parası eksik kalan hesap hiç kapatılamıyor. Analiz'deki "Eksik tahsilat"
+   rozeti ve özetteki eksik tahsilat satırı bu yüzden bugün boşta duruyor —
+   kod hazır, veriyi üretecek akış yok. Yetkiye bağlı olmalı, sebep sorulmalı,
+   kime yazıldığı kaydedilmeli (cari hesap modülünün ilk adımı).
+3. **Masa yazdırma ve adisyon iptali** — masa üç nokta menüsünde yerleri boş
    duruyor; yazdırma yazıcı altyapısına, iptal adisyon detay penceresine bağlı.
-5. **İşletme kaydı ekranı** — satır güvenliği açılınca çıktı: hiç hesabı olmayan
+4. **İşletme kaydı ekranı** — satır güvenliği açılınca çıktı: hiç hesabı olmayan
    yeni bir işletme kendi ilk yöneticisini oluşturamıyor. Ürün satışa çıkmadan
    önce şart, Ramazan'ın kurulumunu etkilemiyor. Ayrıntı yol haritası Faz 2'de.
-6. **Yurt dışına açılırsa değişmesi gerekenler** — para birimi (₺ arayüzde sabit
+5. **Yurt dışına açılırsa değişmesi gerekenler** — para birimi (₺ arayüzde sabit
    yazılı), tarih/saat biçimi (`tr-TR`) ve "KDV" teriminin kendisi. Bugünün işi
    değil, akılda dursun diye burada.
 

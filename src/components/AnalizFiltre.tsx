@@ -1,5 +1,5 @@
 import { useEffect, useState } from "react";
-import { CalendarDays, Filter, Search, SlidersHorizontal, X } from "lucide-react";
+import { CalendarDays, Filter, SlidersHorizontal, X } from "lucide-react";
 import { ayarlar } from "../isletmeAyarlari";
 import { vardiyaGecmisi, type VardiyaOzeti } from "../kasa";
 import { bolgeleriGetir } from "../masalar";
@@ -87,10 +87,6 @@ export default function AnalizFiltre({
       sil: () => yaz({ enAz: null, enCok: null }),
     });
   }
-  if (filtre.arama.trim()) {
-    cipler.push({ ad: `"${filtre.arama.trim()}"`, sil: () => yaz({ arama: "" }) });
-  }
-
   const sayi = filtreSayisi(filtre);
 
   return (
@@ -110,21 +106,9 @@ export default function AnalizFiltre({
           ))}
         </div>
 
+        {/* Arama buraya değil, her sekmenin kendi listesinin başına ait: aranan
+            şey sekmeden sekmeye değişiyor (adisyon no, ürün adı, personel). */}
         <div className="analiz-filtre-sag">
-          <div className="ayar-arama">
-            <Search size={16} />
-            <input
-              value={filtre.arama}
-              onChange={(e) => yaz({ arama: e.target.value })}
-              placeholder="Adisyon no, masa, müşteri"
-            />
-            {filtre.arama && (
-              <button onClick={() => yaz({ arama: "" })} title="Aramayı temizle">
-                <X size={15} />
-              </button>
-            )}
-          </div>
-
           <button
             className={sayi > 0 ? "analiz-filtre-dugme dolu" : "analiz-filtre-dugme"}
             onClick={() => setPanelAcik(true)}
