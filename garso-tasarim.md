@@ -1,7 +1,7 @@
 ﻿# GARSO — Teknik Tasarım: Veri Modeli & Ekran Haritası
 *Restoran ve cafe'ler için bulut tabanlı satış ve işletme yönetim sistemi.*
 
-## 0. SIRADAKİ İŞ (18 Ağu 2026'da güncellendi)
+## 0. SIRADAKİ İŞ (19 Ağu 2026'da güncellendi)
 
 *Ramazan seansa "devam edelim" diye giriyor — sıradaki iş bu listenin en üstündeki
 maddedir. Seans sonunda bu liste güncellenir: biten madde silinir, kalanlar
@@ -96,31 +96,64 @@ işlem · adisyon · yer · konu · adet · tutar · sebep). Bu seansta çıkanl
   aşağı inince görünüyordu. Artık ekrana yapışık (`sticky`, 100vh), uzarsa yalnız
   bağlantı listesi kayıyor.
 
+**19 Ağu 2026:** **Adisyon iptali/ikramı ve işletme kaydı ekranı bitti.**
+- **Adisyonun tamamına iptal ve ikram** (`sql/2026-08-19-adisyon-iptal-ikram.sql`).
+  İptal edilen adisyon silinmiyor, `durum` = `iptal` oluyor ve `iptal_sebep`
+  yazılıyor. **Tahsilatı olan adisyon iptal edilemiyor** — kasaya girmiş para
+  ortada kalırdı. İkram bütün kalemleri ikrama çevirip hesabı kapatıyor. İkisi
+  de Salon'un üç nokta menüsünde ve adisyon detay penceresinde, sebep zorunlu.
+  Yetki için yeni kod açılmadı: `siparis.iptal` zaten "Adisyon iptali" adıyla
+  duruyordu ve kodda kullanılmıyordu, o kullanıldı; yalnız
+  `siparis.adisyon_ikram` yeni.
+- **İkram ayrı bir durum değil, türetiliyor** (`tamamiIkram`): hesap kapanmış,
+  ikram tutarı var ve ödenecek sıfırsa o adisyon ikramdır. Kalem kalem ikram
+  edilen masa da böylece doğru görünüyor. Rozet metni ve sıralama tek kaynaktan
+  (`durumMetni`) geliyor. Analiz'in durum süzgecinde beş seçenek birbirini
+  kesmiyor: **"Kapanmış" ikramları içermiyor.**
+- **Adisyonlar tablosunun on iki başlığı da sıralanabilir** — Ürünler'deki
+  `SiraBaslik` deseni. Sıralama ekranda yazan değeri görüyor (masasız siparişte
+  müşteri adı, tahsilat sütununda ödeme tipi); durum alfabetik.
+- **İşletme kaydı ekranı** (`sql/2026-08-19-isletme-kur.sql`, `pages/Kayit.tsx`).
+  Kayıt ayrı bir adres değil: oturum yokken yönlendirici hiç kurulmuyor, giriş
+  ile kayıt aynı kapının iki yüzü. `isletme_kur` tek işlemde işletmeyi, altı
+  rolü, **dolu gelen yetkileri** (2026-08-12'deki şablonun aynısı), ayarları,
+  **on dört ödeme tipini** (Nakit ve kart açık, gerisi kapalı — işletme
+  kullandığını Ayarlar'dan açar), birimleri, KDV gruplarını, örnek salonu
+  (altı masa) ve örnek menüyü (dört kategori, on bir ürün, iki seçenek grubu)
+  açıyor. Örnek veri kararı: yeni işletme boş ekranla karşılaşmasın, sipariş
+  akışını ilk dakikada deneyebilsin.
+- **Satır güvenliğinde açık bulundu (Ramazan yakaladı).** `kategoriler`,
+  `urunler` ve `masalar` tablolarında satır güvenliği göçünden önceki
+  "herkes/`true`" politikaları duruyordu; politikalar "veya" ile birleştiği için
+  doğru politika eklenmiş olmasına rağmen **bütün işletmeler birbirinin verisini
+  görüyordu**. Eski açık politikalar silindi. Kural: `isletme_id` sütunu olan
+  bir tabloda `true` koşullu politika kalmamalı.
+- **Tekillik kuralları işletmeye göre oldu** (`sql/2026-08-19-tekillik-isletmeye-gore.sql`).
+  `birimler.ad` gibi alanlarda tekillik veritabanı genelindeydi; ikinci işletme
+  "Tam" birimini ekleyemiyordu. Artık `(isletme_id, alan)`.
+- **Auth jeton sütunları** NULL kalınca giriş servisi çöküyor ve kullanıcı
+  "bilgiler doğru değil" görüyor. `auth.users` üstüne tetikleyici kondu: hangi
+  yoldan açılırsa açılsın yeni hesabın jeton sütunları boş metinle başlıyor.
+- **Ayarlar girişten sonra yeniden okunuyor.** Program açılırken bir kez
+  okunuyordu, o an oturum olmadığı için satır güvenliği hiçbir şey döndürmüyor
+  ve elde varsayılanlar kalıyordu. Yalnız kaydı değil normal girişi de
+  etkileyen bir hataydı.
+
 **Göç notu:** satır güvenliği açıldığından beri `isletme_id` oturumdan geliyor;
 SQL editöründe oturum olmadığı için göç dosyalarında bu sütun **elle
 yazılmalı** (kaynağı ilgili satırın kendi işletmesi). `rol_yetkileri`'ne yetki
 eklerken bu yüzden hata alındı.
 
-1. **Adisyon iptali ve adisyon ikramı.** Bugün yalnız kalem bazında ikram/iptal
-   var; masanın üç nokta menüsünde adisyonun tamamına yapılacak işlemin yeri boş
-   duruyor. 18 Ağu 2026'da planı çıkarıldı, denetim defteri hazır olduğu için
-   önü açık:
-   - `adisyonlar.durum`'a **`iptal`** değeri ve `iptal_sebep`. İptal edilen
-     adisyon silinmiyor — Analiz'de sayısı ve tutarı görünmeli (Adisyo'nun
-     "İptal/İadeler" raporunun karşılığı), silinirse kayıp izi kalmaz.
-   - İki yeni yetki: `siparis.adisyon_iptal`, `siparis.adisyon_ikram`.
-   - `adisyonIptal` sebep sorar, deftere `adisyon_iptal` düşer. **Tahsilatı olan
-     adisyon iptal edilemez** — önce para geri verilmeli, yoksa kasada olmayan
-     para ciroda görünür.
-   - `adisyonIkram` bütün kalemleri ikrama çevirir, hesabı sıfırlayıp kapatır.
-   - İkisi de hem Salon'daki üç nokta menüsünde hem adisyon detay penceresinde.
-   - Analiz: durum süzgecine "İptal", iptallerin ciroya ve ortalamalara
-     girmediğinin doğrulanması.
-2. **Masa yazdırma** — üç nokta menüsünde yeri boş; yazıcı altyapısına bağlı,
+1. **Kayıt ekranına kötüye kullanım koruması.** `isletme_kur` internete açık
+   tek uç: giriş yapmamış herkes çağırabiliyor, çünkü kaydın anlamı bu. Bugün
+   hiçbir sınır yok — aynı yerden arka arkaya yüzlerce işletme açılabilir.
+   SQL'de gerçek bir hız sınırı kurulamıyor; çözüm Supabase'in kendi ayarları
+   ya da araya girecek bir Edge Function. Satışa çıkmadan önce şart.
+2. **İşletme adı hiçbir ekranda yazmıyor.** Ayarlar'da işletme adı alanı yok;
+   kayıt ekranında girilen ad sonradan ne görülebiliyor ne değiştirilebiliyor.
+   Çok işletmeli yapıda kullanıcının hangi işletmede olduğunu görmesi gerek.
+3. **Masa yazdırma** — üç nokta menüsünde yeri boş; yazıcı altyapısına bağlı,
    o gelmeden yapılamaz.
-3. **İşletme kaydı ekranı** — satır güvenliği açılınca çıktı: hiç hesabı olmayan
-   yeni bir işletme kendi ilk yöneticisini oluşturamıyor. Ürün satışa çıkmadan
-   önce şart, Ramazan'ın kurulumunu etkilemiyor. Ayrıntı yol haritası Faz 2'de.
 4. **Yurt dışına açılırsa değişmesi gerekenler** — para birimi (₺ arayüzde sabit
    yazılı), tarih/saat biçimi (`tr-TR`) ve "KDV" teriminin kendisi. Bugünün işi
    değil, akılda dursun diye burada.

@@ -292,6 +292,7 @@ export async function masasizAdisyonlar(): Promise<MasasizAdisyon[]> {
 }
 
 export type MasaOzeti = {
+  id: number;
   tutar: number;
   odenen: number;
   kalan: number;
@@ -317,7 +318,7 @@ export async function tumAdisyonlar(): Promise<Record<number, MasaOzeti>> {
   const { data } = await supabase
     .from("adisyonlar")
     .select(
-      `masa_id, acilis, indirim, ad, kisi_sayisi,
+      `id, masa_id, acilis, indirim, ad, kisi_sayisi,
        acan:personel!adisyonlar_acan_id_fkey (ad),
        turlar (adisyon_kalemleri (adet, fiyat, durum, indirim)),
        tahsilatlar (tutar)`
@@ -343,6 +344,7 @@ export async function tumAdisyonlar(): Promise<Record<number, MasaOzeti>> {
       0
     );
     sonuc[satir.masa_id] = {
+      id: satir.id,
       tutar: net,
       odenen,
       kalan: Math.max(0, net - odenen),
@@ -364,6 +366,105 @@ async function acikAdisyonBul(masaId: number) {
     .eq("durum", "acik")
     .maybeSingle();
   return data as { id: number; acilis: string; indirim: number } | null;
+}
+
+/**
+ * Adisyonun tahsil edilecek tutarı: normal kalemlerin toplamından hesap
+ * indirimi düşülmüş hâli. İptal ve ikram tarafında tek ihtiyaç bu olduğu için
+ * KDV'ye girilmiyor, deftere yazılan rakam da bu.
+ */
+async function adisyonTutari(adisyonId: number) {
+  const { data } = await supabase
+    .from("adisyonlar")
+    .select("indirim, turlar (adisyon_kalemleri (adet, fiyat, indirim, durum))")
+    .eq("id", adisyonId)
+    .maybeSingle();
+  if (!data) return 0;
+
+  const satir = data as any;
+  let toplam = 0;
+  for (const tur of satir.turlar ?? []) {
+    for (const k of tur.adisyon_kalemleri ?? []) {
+      if ((k.durum ?? "normal") !== "normal") continue;
+      toplam += Math.max(0, Number(k.fiyat) * Number(k.adet) - Number(k.indirim ?? 0));
+    }
+  }
+  return Math.max(0, Math.round((toplam - Number(satir.indirim ?? 0)) * 100) / 100);
+}
+
+/**
+ * Adisyonun tamamını iptal eder. Silinmiyor, durumu `iptal` oluyor: silinen
+ * adisyonun izi kalmaz, oysa Analiz'de iptalin sayısı ve tutarı görünmeli.
+ * Tahsilatı olan adisyon iptal edilemez — kasaya girmiş para ortada kalır.
+ */
+export async function adisyonIptal(adisyonId: number, sebep: string) {
+  const { data: tahsilat } = await supabase
+    .from("tahsilatlar")
+    .select("id")
+    .eq("adisyon_id", adisyonId)
+    .limit(1);
+
+  if ((tahsilat ?? []).length) {
+    throw new Error(
+      "Bu adisyondan tahsilat alınmış. Önce ödemeyi geri verip tahsilatı silin, sonra iptal edin."
+    );
+  }
+
+  const tutar = await adisyonTutari(adisyonId);
+  const yer = await adisyonYeri(adisyonId);
+
+  const { error } = await supabase
+    .from("adisyonlar")
+    .update({
+      durum: "iptal",
+      iptal_sebep: sebep,
+      kapanis: new Date().toISOString(),
+      guncelleme: new Date().toISOString(),
+    })
+    .eq("id", adisyonId);
+  if (error) throw new Error("Adisyon iptal edilemedi.");
+
+  await denetimYaz([{ islem: "adisyon_iptal", adisyonId, yer, tutar, sebep }]);
+}
+
+/**
+ * Adisyonun tamamını ikram eder: bütün kalemler ikrama çevrilir, hesap
+ * indirimi kalkar ve adisyon kapanır. Kalemler ikram durumunda kaldığı için
+ * ne satıldığı görünmeye devam ediyor, yalnız ciroya girmiyor.
+ */
+export async function adisyonIkram(adisyonId: number, sebep?: string) {
+  const tutar = await adisyonTutari(adisyonId);
+  const yer = await adisyonYeri(adisyonId);
+
+  const { data: turlar } = await supabase
+    .from("turlar")
+    .select("id")
+    .eq("adisyon_id", adisyonId);
+
+  const turIdler = ((turlar as any[]) ?? []).map((t) => t.id);
+  if (turIdler.length) {
+    // İptal edilmiş kalemler olduğu gibi kalıyor: iptal ikramdan başka bir şey.
+    await supabase
+      .from("adisyon_kalemleri")
+      .update({ durum: "ikram", indirim: 0, indirim_tanim_id: null, indirim_ad: null })
+      .in("tur_id", turIdler)
+      .eq("durum", "normal");
+  }
+
+  const { error } = await supabase
+    .from("adisyonlar")
+    .update({
+      durum: "kapali",
+      indirim: 0,
+      indirim_tanim_id: null,
+      indirim_ad: null,
+      kapanis: new Date().toISOString(),
+      guncelleme: new Date().toISOString(),
+    })
+    .eq("id", adisyonId);
+  if (error) throw new Error("Adisyon ikram edilemedi.");
+
+  await denetimYaz([{ islem: "adisyon_ikram", adisyonId, yer, tutar, sebep }]);
 }
 
 /**

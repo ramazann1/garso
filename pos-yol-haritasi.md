@@ -111,7 +111,11 @@ Amaç: Yoğun bir restoranın mutfak-servis akışını taşıyabilmeli.
 - [ ] Personel + PIN girişi; adisyonu açan garson masa kartında, turu yazan
       garson tur başlığında (`turlar.garson_id`) — karar 7
 - [ ] Offline dayanıklılık: bağlantı kopunca kuyruklama, senkronizasyon
-- [ ] **İşletme kaydı ekranı (yeni müşteri açılışı).** 14 Ağu 2026'da satır
+- [x] **İşletme kaydı ekranı (yeni müşteri açılışı).** 19 Ağu 2026'da yapıldı —
+      `isletme_kur` fonksiyonu ve `pages/Kayit.tsx`. Örnek salon ve menüyle
+      birlikte kuruluyor. Kötüye kullanım koruması hâlâ yok, tasarım dosyasının
+      sıradaki iş listesinde 1. madde. Aşağıdaki not neden gerektiğini anlatıyor.
+      14 Ağu 2026'da satır
       güvenliği açılınca ortaya çıktı: artık giriş yapmamış bağlantı hiçbir
       satır yazamıyor, dolayısıyla hiç hesabı olmayan yeni bir işletme kendi
       ilk yöneticisini oluşturamıyor (hesap açmak için giriş, giriş için hesap

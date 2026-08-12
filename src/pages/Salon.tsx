@@ -2,11 +2,13 @@ import { useEffect, useState } from "react";
 import { useNavigate } from "react-router-dom";
 import {
   ArrowRightLeft,
+  Ban,
   Bike,
   ChevronLeft,
   CircleCheckBig,
   Clock,
   Combine,
+  Gift,
   LayoutGrid,
   Pencil,
   Plus,
@@ -26,6 +28,8 @@ import { yetkiVar } from "../oturum";
 import { ayarlar } from "../isletmeAyarlari";
 import {
   adisyonGetir,
+  adisyonIkram,
+  adisyonIptal,
   adisyonKaydet,
   adisyonOzeti,
   masaBirlestir,
@@ -143,6 +147,10 @@ export default function Salon() {
   const [islem, setIslem] = useState<{ tip: "tasi" | "birlestir"; masa: Masa } | null>(null);
   const [onay, setOnay] = useState<{ mesaj: string; onOnay: () => void } | null>(null);
   const [uyari, setUyari] = useState<string | null>(null);
+  // Adisyonun tamamına iptal/ikram: ikisi de sebep sorduğu için ayrı pencere.
+  const [adisyonIslem, setAdisyonIslem] = useState<
+    { tip: "iptal" | "ikram"; masa: Masa; adisyonId: number } | null
+  >(null);
   // Hızlı Öde masadan açılıyor; adisyonun tamamı okunup panele veriliyor.
   const [hizli, setHizli] = useState<{ masa: Masa; veri: AdisyonVerisi } | null>(null);
 
@@ -292,6 +300,25 @@ export default function Salon() {
               ad: "Adisyonu birleştir",
               ikon: <Combine size={16} />,
               onSec: () => setIslem({ tip: "birlestir", masa }),
+            },
+          ]
+        : []),
+      // Adisyonun tamamına yapılan işlemler yalnız açık masada anlamlı.
+      ...(acik && yetkiVar("siparis.adisyon_ikram")
+        ? [
+            {
+              ad: "Adisyonu ikram et",
+              ikon: <Gift size={16} />,
+              onSec: () => setAdisyonIslem({ tip: "ikram", masa, adisyonId: acik.id }),
+            },
+          ]
+        : []),
+      ...(acik && yetkiVar("siparis.iptal")
+        ? [
+            {
+              ad: "Adisyonu iptal et",
+              ikon: <Ban size={16} />,
+              onSec: () => setAdisyonIslem({ tip: "iptal", masa, adisyonId: acik.id }),
             },
           ]
         : []),
@@ -568,6 +595,39 @@ export default function Salon() {
             onayMetni="Evet, uygula"
             onOnay={onay.onOnay}
             onKapat={() => setOnay(null)}
+          />
+        )}
+
+        {adisyonIslem && (
+          <OnayModal
+            baslik={
+              adisyonIslem.tip === "iptal" ? "Adisyon iptal edilsin mi?" : "Adisyon ikram edilsin mi?"
+            }
+            ikon={adisyonIslem.tip === "iptal" ? <Ban size={18} /> : <Gift size={18} />}
+            tehlikeli={adisyonIslem.tip === "iptal"}
+            mesaj={
+              adisyonIslem.tip === "iptal"
+                ? `${adisyonIslem.masa.ad} masasındaki adisyon iptal edilecek. Masa boşalır, hesap ciroya yazılmaz; kayıt silinmez, iptal olarak durur.`
+                : `${adisyonIslem.masa.ad} masasındaki ürünlerin tamamı ikrama çevrilecek ve hesap sıfırlanıp kapanacak.`
+            }
+            sebepler={
+              adisyonIslem.tip === "iptal"
+                ? ["Yanlış masa açıldı", "Müşteri vazgeçti", "Sipariş yanlış girildi"]
+                : ["İşletme ikramı", "Müşteri şikâyeti", "Tanıtım"]
+            }
+            onayMetni={adisyonIslem.tip === "iptal" ? "Evet, iptal et" : "Evet, ikram et"}
+            onOnay={async (sebep) => {
+              const { tip, adisyonId } = adisyonIslem;
+              setAdisyonIslem(null);
+              try {
+                if (tip === "iptal") await adisyonIptal(adisyonId, sebep ?? "");
+                else await adisyonIkram(adisyonId, sebep);
+                await yenile();
+              } catch (e) {
+                setUyari(e instanceof Error ? e.message : "İşlem tamamlanamadı.");
+              }
+            }}
+            onKapat={() => setAdisyonIslem(null)}
           />
         )}
 

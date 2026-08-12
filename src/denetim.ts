@@ -3,14 +3,16 @@ import { acikOturum } from "./oturum";
 
 /**
  * Denetim defteri: hassas işlemlerin "kim, ne zaman, ne yaptı" kaydı.
- * Kalem iptali ve ikramla başlıyor; adisyon iptali, indirim ve tahsilat
- * düzeltmesi de buraya yazılacak.
+ * Kalem ve adisyon bazında iptal/ikram, tahsilat silme ve düzeltme, eksik
+ * kapatma buradan geçiyor.
  */
 export type DenetimIslemi =
   | "kalem_iptal"
   | "kalem_iptal_geri"
   | "kalem_ikram"
   | "kalem_ikram_geri"
+  | "adisyon_iptal"
+  | "adisyon_ikram"
   | "tahsilat_sil"
   | "tahsilat_tip_duzelt"
   | "hesap_eksik_kapat";
@@ -32,6 +34,8 @@ const ISLEM_ADLARI: Record<DenetimIslemi, string> = {
   kalem_iptal_geri: "Ürün iptali geri alındı",
   kalem_ikram: "Ürün ikram edildi",
   kalem_ikram_geri: "İkram geri alındı",
+  adisyon_iptal: "Adisyon iptal edildi",
+  adisyon_ikram: "Adisyon ikram edildi",
   tahsilat_sil: "Tahsilat silindi",
   tahsilat_tip_duzelt: "Ödeme tipi düzeltildi",
   hesap_eksik_kapat: "Hesap eksik kapatıldı",

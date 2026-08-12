@@ -2,9 +2,11 @@ import { useEffect, useState } from "react";
 import { useNavigate } from "react-router-dom";
 import {
   ArrowRight,
+  Ban,
   Banknote,
   Clock,
   DoorOpen,
+  Gift,
   HandCoins,
   History,
   LockOpen,
@@ -16,10 +18,12 @@ import OnayModal from "./OnayModal";
 import OdemeTipDuzelt from "./OdemeTipDuzelt";
 import { paraGoster } from "../para";
 import { yetkiVar } from "../oturum";
+import { adisyonIkram, adisyonIptal } from "../adisyonlar";
 import {
   adisyonAktifEt,
   adisyonDetayi,
   tahsilatTipiDuzelt,
+  tamamiIkram,
   type AdisyonDetay as Detay,
 } from "../analiz";
 import type { SepetKalemi } from "../types";
@@ -31,6 +35,10 @@ const gunSaat = (t: string) =>
   `${new Date(t).toLocaleDateString("tr-TR", { day: "2-digit", month: "2-digit" })} ${saat(t)}`;
 
 const TIP_ADLARI = { masa: "Masa", gelal: "Gel Al", paket: "Paket" };
+
+const DURUM_ADLARI = { acik: "Açık", kapali: "Kapandı", iptal: "İptal edildi" };
+
+const durumAdi = (d: Detay) => (tamamiIkram(d) ? "İkram edildi" : DURUM_ADLARI[d.durum]);
 
 /**
  * Adisyonun her yerden açılan tek detay penceresi: solda sipariş bilgileri,
@@ -52,6 +60,7 @@ export default function AdisyonDetay({
   const [yukleniyor, setYukleniyor] = useState(true);
   const [gecmis, setGecmis] = useState(false);
   const [aktifSor, setAktifSor] = useState(false);
+  const [islem, setIslem] = useState<"iptal" | "ikram" | null>(null);
   const [duzeltilen, setDuzeltilen] = useState<Detay["tahsilatlar"][number] | null>(null);
   const [hata, setHata] = useState("");
   const navigate = useNavigate();
@@ -90,7 +99,7 @@ export default function AdisyonDetay({
             Adisyon #{detay?.no ?? "…"}
             {detay && (
               <span className={detay.durum === "acik" ? "detay-rozet acik" : "detay-rozet"}>
-                {detay.durum === "acik" ? "Açık" : "Kapandı"}
+                {durumAdi(detay)}
               </span>
             )}
           </h3>
@@ -107,10 +116,22 @@ export default function AdisyonDetay({
                 </button>
 
                 {detay.durum === "acik" ? (
-                  <button className="detay-dugme ana" onClick={() => navigate(siparisYolu)}>
-                    Siparişe git <ArrowRight size={16} />
-                  </button>
-                ) : (
+                  <>
+                    {yetkiVar("siparis.adisyon_ikram") && (
+                      <button className="detay-dugme" onClick={() => setIslem("ikram")}>
+                        <Gift size={16} /> İkram et
+                      </button>
+                    )}
+                    {yetkiVar("siparis.iptal") && (
+                      <button className="detay-dugme" onClick={() => setIslem("iptal")}>
+                        <Ban size={16} /> İptal et
+                      </button>
+                    )}
+                    <button className="detay-dugme ana" onClick={() => navigate(siparisYolu)}>
+                      Siparişe git <ArrowRight size={16} />
+                    </button>
+                  </>
+                ) : detay.durum === "iptal" ? null : (
                   yetkiVar("siparis.aktif_et") && (
                     <button className="detay-dugme ana" onClick={() => setAktifSor(true)}>
                       <LockOpen size={16} /> Siparişi aktif et
@@ -270,6 +291,38 @@ export default function AdisyonDetay({
         />
       )}
 
+      {islem && detay && (
+        <OnayModal
+          baslik={islem === "iptal" ? "Adisyon iptal edilsin mi?" : "Adisyon ikram edilsin mi?"}
+          ikon={islem === "iptal" ? <Ban size={18} /> : <Gift size={18} />}
+          tehlikeli={islem === "iptal"}
+          mesaj={
+            islem === "iptal"
+              ? `#${detay.no} numaralı adisyon iptal edilecek. Hesap ciroya yazılmaz; kayıt silinmez, iptal olarak durur.`
+              : `#${detay.no} numaralı adisyondaki ürünlerin tamamı ikrama çevrilecek ve hesap sıfırlanıp kapanacak.`
+          }
+          sebepler={
+            islem === "iptal"
+              ? ["Yanlış masa açıldı", "Müşteri vazgeçti", "Sipariş yanlış girildi"]
+              : ["İşletme ikramı", "Müşteri şikâyeti", "Tanıtım"]
+          }
+          onayMetni={islem === "iptal" ? "Evet, iptal et" : "Evet, ikram et"}
+          onOnay={async (sebep) => {
+            const tip = islem;
+            setIslem(null);
+            try {
+              if (tip === "iptal") await adisyonIptal(detay.id, sebep ?? "");
+              else await adisyonIkram(detay.id, sebep);
+              setDetay(await adisyonDetayi(adisyonId));
+              onDegisti?.();
+            } catch (e) {
+              setHata((e as Error).message);
+            }
+          }}
+          onKapat={() => setIslem(null)}
+        />
+      )}
+
       {hata && <OnayModal tekTus mesaj={hata} onKapat={() => setHata("")} />}
     </div>
   );
@@ -278,8 +331,11 @@ export default function AdisyonDetay({
 function Bilgiler({ detay }: { detay: Detay }) {
   const satirlar: [string, string][] = [
     ["Sipariş türü", TIP_ADLARI[detay.tip]],
-    ["Durum", detay.durum === "acik" ? "Açık" : "Kapandı"],
+    ["Durum", durumAdi(detay)],
   ];
+  if (detay.durum === "iptal" && detay.iptalSebep) {
+    satirlar.push(["İptal sebebi", detay.iptalSebep]);
+  }
 
   if (detay.tip === "masa") {
     satirlar.push(["Masa", [detay.bolgeAd, detay.masaAd].filter(Boolean).join(" · ") || "—"]);

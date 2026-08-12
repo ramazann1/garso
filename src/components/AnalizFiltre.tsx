@@ -14,6 +14,14 @@ import {
 } from "../analiz";
 import type { Bolge } from "../types";
 
+const DURUM_CIPLERI: Record<Filtre["durum"], string> = {
+  hepsi: "",
+  acik: "Açık hesaplar",
+  kapali: "Kapanmış hesaplar",
+  ikram: "İkram edilenler",
+  iptal: "İptal edilenler",
+};
+
 /**
  * Bütün rapor sekmelerinin tek filtre şeridi. Dönem düğmeleri hep görünür —
  * en çok değişen şey o; gerisi "Filtreler" panelinde duruyor ve seçilenler
@@ -72,7 +80,7 @@ export default function AnalizFiltre({
   }
   if (filtre.durum !== "hepsi") {
     cipler.push({
-      ad: filtre.durum === "acik" ? "Açık hesaplar" : "Kapanmış hesaplar",
+      ad: DURUM_CIPLERI[filtre.durum],
       sil: () => yaz({ durum: "hepsi" }),
     });
   }
@@ -298,6 +306,8 @@ export default function AnalizFiltre({
                   <option value="hepsi">Hepsi</option>
                   <option value="kapali">Kapanmış</option>
                   <option value="acik">Açık</option>
+                  <option value="ikram">İkram</option>
+                  <option value="iptal">İptal</option>
                 </select>
               </label>
 

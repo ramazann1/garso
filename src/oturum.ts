@@ -125,6 +125,29 @@ export async function girisYap(kimlik: string, sifre: string, kalici: boolean) {
   return kisi;
 }
 
+/**
+ * Yeni işletme açar ve hemen giriş yapar. Bütün kurulum veritabanındaki tek
+ * fonksiyonda dönüyor (`isletme_kur`): işletme, roller, yetkiler, temel
+ * tanımlar ve ilk yönetici hesabı ya hep birlikte oluşuyor ya hiç.
+ */
+export async function isletmeKur(
+  isletmeAd: string,
+  yoneticiAd: string,
+  telefon: string,
+  sifre: string
+) {
+  const { error } = await supabase.rpc("isletme_kur", {
+    p_isletme_ad: isletmeAd,
+    p_yonetici_ad: yoneticiAd,
+    p_telefon: telefon,
+    p_sifre: sifre,
+  });
+  // Veritabanından gelen mesaj kullanıcıya gösterilecek kadar açık yazıldı.
+  if (error) throw new Error(error.message);
+
+  return girisYap(telefon, sifre, true);
+}
+
 export async function oturumuKapat() {
   kilidiKaldir();
   localStorage.removeItem(GECICI_ANAHTARI);

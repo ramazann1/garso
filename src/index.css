@@ -8710,6 +8710,17 @@ body {
   color: #c1503a;
 }
 
+.rozet.ikram {
+  background: #fdf1dc;
+  color: #a06a12;
+}
+
+/* İptal, eksik tahsilattan daha nötr: hata değil, bilinçli bir karar. */
+.rozet.iptal {
+  background: #eceef2;
+  color: #5a6273;
+}
+
 /* ---- Adisyon detay penceresi ---- */
 
 .detay-fon {

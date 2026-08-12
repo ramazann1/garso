@@ -29,6 +29,15 @@ function App() {
     ]).finally(() => setHazir(true));
   }, []);
 
+  // Ayarlar program açılırken okunuyor ama o an henüz oturum yok — satır
+  // güvenliği hiçbir satır döndürmüyor, elde varsayılanlar kalıyor. Giriş
+  // yapılınca işletmenin kendi ayarları yeniden okunuyor.
+  const [ayarTik, setAyarTik] = useState(0);
+  useEffect(() => {
+    if (!oturum) return;
+    ayarlariGetir().then(() => setAyarTik((t) => t + 1));
+  }, [oturum?.isletmeId]);
+
   // Boşta kalan kasa kendiliğinden kilitleniyor: tezgâhtan ayrılan garsonun
   // oturumuyla başkası işlem yapmasın. Süre 0'sa özellik kapalı.
   useEffect(() => {
@@ -59,7 +68,9 @@ function App() {
   if (oturum && kilitli) return <KilitEkrani />;
 
   return (
-    <BrowserRouter>
+    // Ayarlar tazelenince ekranlar yeniden kuruluyor: fiyat ve kasa kuralları
+    // eski değerlerle çizilmiş olabilir.
+    <BrowserRouter key={ayarTik}>
       <YetkiKapisi>
         <Route path="/" element={<Salon />} />
         <Route path="/siparis/:masaId" element={<Siparis />} />

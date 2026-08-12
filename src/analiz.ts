@@ -51,7 +51,8 @@ export type AnalizFiltre = {
   garsonId: number | null;
   tip: AdisyonTipi | null;
   odemeTipi: string | null;
-  durum: "hepsi" | "acik" | "kapali";
+  /** "ikram" veritabanındaki bir durum değil, hesabı sıfırlanmış kapanış. */
+  durum: "hepsi" | "acik" | "kapali" | "iptal" | "ikram";
   indirimli: boolean;
   enAz: number | null;
   enCok: number | null;
@@ -176,7 +177,9 @@ export type AnalizAdisyon = {
   id: number;
   no: number;
   tip: AdisyonTipi;
-  durum: "acik" | "kapali";
+  durum: "acik" | "kapali" | "iptal";
+  /** İptal edilmişse sebebi — listede rozetin ipucu, detayda satır. */
+  iptalSebep: string;
   masaId: number | null;
   masaAd: string;
   bolgeId: number | null;
@@ -202,7 +205,7 @@ export type AnalizAdisyon = {
   odemeler: { tip: string; tutar: number }[];
 };
 
-const ALANLAR = `id, adisyon_no, tip, durum, acilis, kapanis, indirim, ad, kisi_sayisi,
+const ALANLAR = `id, adisyon_no, tip, durum, iptal_sebep, acilis, kapanis, indirim, ad, kisi_sayisi,
        musteri_ad, masa_id,
        masa:masalar (ad, bolge_id, bolgeler (ad)),
        acan:personel!adisyonlar_acan_id_fkey (id, ad),
@@ -265,6 +268,7 @@ function satiraCevir(s: any, varsayilanKdv?: number): AnalizAdisyon {
     no: s.adisyon_no,
     tip: (s.tip ?? "masa") as AdisyonTipi,
     durum: s.durum,
+    iptalSebep: s.iptal_sebep ?? "",
     masaId: s.masa_id ?? null,
     masaAd: s.masa?.ad ?? "",
     bolgeId: s.masa?.bolge_id ?? null,
@@ -318,6 +322,15 @@ export async function analizAdisyonlari(f: AnalizFiltre): Promise<AnalizAdisyon[
   return satirlar.filter((a) => uyuyor(a, f));
 }
 
+/**
+ * Hesabın tamamı ikrama gitmiş mi. Ayrı bir durum tutulmuyor — adisyon
+ * gerçekten kapandı, yalnız ödenecek bir şey kalmadı. Kalem kalem ikram edilen
+ * masa da buraya düşüyor; sonuç aynı, hesap ikram edilmiş.
+ */
+export function tamamiIkram(a: { toplam: number; ikram: number; durum: string }) {
+  return a.durum === "kapali" && a.ikram > 0 && a.toplam <= 0;
+}
+
 // Tarih dışındaki süzgeçler veritabanında değil burada çalışıyor: aynı liste
 // altı sekmeye birden besleniyor, her filtre değişiminde yeniden sorgu atmak
 // yerine gelen liste yerinde daraltılıyor.
@@ -326,7 +339,12 @@ function uyuyor(a: AnalizAdisyon, f: AnalizFiltre) {
   if (f.masaId && a.masaId !== f.masaId) return false;
   if (f.garsonId && a.garsonId !== f.garsonId) return false;
   if (f.tip && a.tip !== f.tip) return false;
-  if (f.durum !== "hepsi" && a.durum !== f.durum) return false;
+  // İkram ayrı bir seçenek: "Kapanmış" dendiğinde parası tahsil edilen hesaplar
+  // kastediliyor, hesabı sıfırlanmış olan değil.
+  if (f.durum === "ikram" && !tamamiIkram(a)) return false;
+  if (f.durum === "kapali" && (a.durum !== "kapali" || tamamiIkram(a))) return false;
+  if (f.durum === "acik" && a.durum !== "acik") return false;
+  if (f.durum === "iptal" && a.durum !== "iptal") return false;
   if (f.indirimli && a.indirim <= 0) return false;
   if (f.odemeTipi && !a.odemeler.some((o) => o.tip === f.odemeTipi)) return false;
   if (f.enAz != null && a.toplam < f.enAz) return false;
@@ -363,7 +381,7 @@ export type AdisyonDetay = AnalizAdisyon & {
   adres: string;
 };
 
-const DETAY_ALANLARI = `id, adisyon_no, tip, durum, acilis, kapanis, indirim, indirim_ad,
+const DETAY_ALANLARI = `id, adisyon_no, tip, durum, iptal_sebep, acilis, kapanis, indirim, indirim_ad,
        ad, kisi_sayisi, not_metni, musteri_ad, musteri_telefon, adres, masa_id,
        eksik_kisi, eksik_sebep,
        masa:masalar (ad, bolge_id, bolgeler (ad)),

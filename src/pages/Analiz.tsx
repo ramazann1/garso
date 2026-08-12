@@ -35,6 +35,7 @@ import {
   analizPersoneli,
   analizUrunleri,
   urunKategorileri,
+  tamamiIkram,
   type AnalizAdisyon,
   type AnalizFiltre as Filtre,
   type AnalizOzeti,
@@ -170,6 +171,62 @@ const saatMetni = (t: string) =>
 const gunMetni = (t: string) =>
   new Date(t).toLocaleDateString("tr-TR", { day: "2-digit", month: "2-digit" });
 
+type AdisyonAlani =
+  | "no"
+  | "acilis"
+  | "kapanis"
+  | "tip"
+  | "masa"
+  | "kisiSayisi"
+  | "garson"
+  | "durum"
+  | "tahsilat"
+  | "indirim"
+  | "bahsis"
+  | "toplam";
+
+/**
+ * Sütunun sıralanacak değeri. Ekranda yazan neyse ona göre diziliyor: masa
+ * sütununda masasız siparişte müşteri adı yazıyor, tahsilat sütununda ödeme
+ * tipi — sıralama da onları görüyor.
+ */
+function adisyonDegeri(a: AnalizAdisyon, alan: AdisyonAlani): string | number {
+  switch (alan) {
+    case "no":
+      return a.no;
+    case "acilis":
+      return a.acilis;
+    // Açık adisyonun kapanışı yok; boş kalanlar hep listenin sonuna düşsün.
+    case "kapanis":
+      return a.kapanis ?? "";
+    case "tip":
+      return TIP_ADLARI[a.tip];
+    case "masa":
+      return a.tip === "masa" ? a.masaAd : a.musteri;
+    case "kisiSayisi":
+      return a.kisiSayisi;
+    case "garson":
+      return a.garson;
+    case "durum":
+      return durumMetni(a);
+    case "tahsilat":
+      return tahsilatMetni(a);
+    case "indirim":
+      return a.indirim;
+    case "bahsis":
+      return a.bahsis;
+    case "toplam":
+      return a.toplam;
+  }
+}
+
+const adisyonMetni = (alan: AdisyonAlani) =>
+  ["tip", "masa", "garson", "durum", "tahsilat", "kapanis", "acilis"].includes(alan);
+
+/** Saat ve tutar sütunlarında en büyükle başlamak doğal; adlarda alfabetik. */
+const adisyonIlkYon = (alan: AdisyonAlani) =>
+  adisyonMetni(alan) && alan !== "acilis" && alan !== "kapanis";
+
 /**
  * Adisyo aynı listeyi üç ayrı ekranda tekrarlıyor (Gün Sonu, Masa Siparişleri,
  * Vardiya Raporu); bizde tek liste var, gerisini filtre yapıyor.
@@ -186,16 +243,35 @@ function Adisyonlar({
   onEksigiBirak: () => void;
 }) {
   const [arama, setArama] = useState("");
+  const [sira, setSira] = useState<{ alan: AdisyonAlani; artan: boolean }>({
+    alan: "acilis",
+    artan: false,
+  });
 
   const adisyonlar = useMemo(() => {
     const ara = arama.trim().toLocaleLowerCase("tr");
-    return hepsi.filter((a) => {
+    const liste = hepsi.filter((a) => {
       if (sadeceEksik && !(a.durum === "kapali" && a.kalan > 0)) return false;
       if (!ara) return true;
       const metin = `${a.no} ${a.masaAd} ${a.bolgeAd} ${a.garson} ${a.ad} ${a.musteri}`;
       return metin.toLocaleLowerCase("tr").includes(ara);
     });
-  }, [hepsi, sadeceEksik, arama]);
+
+    const yon = sira.artan ? 1 : -1;
+    return liste.sort((a, b) => {
+      const x = adisyonDegeri(a, sira.alan);
+      const y = adisyonDegeri(b, sira.alan);
+      if (adisyonMetni(sira.alan)) {
+        return String(x).localeCompare(String(y), "tr") * yon;
+      }
+      return (Number(x) - Number(y)) * yon;
+    });
+  }, [hepsi, sadeceEksik, arama, sira]);
+
+  const sirala = (alan: AdisyonAlani) =>
+    setSira((s) =>
+      s.alan === alan ? { alan, artan: !s.artan } : { alan, artan: adisyonIlkYon(alan) }
+    );
 
   if (adisyonlar.length === 0) {
     return (
@@ -232,18 +308,18 @@ function Adisyonlar({
         <table className="analiz-tablo">
           <thead>
             <tr>
-              <th>No</th>
-              <th>Açılış</th>
-              <th>Kapanış</th>
-              <th>Tip</th>
-              <th>Masa</th>
-              <th className="orta">Misafir</th>
-              <th>Açan</th>
-              <th>Durum</th>
-              <th>Tahsilat</th>
-              <th className="sag">İndirim</th>
-              <th className="sag">Bahşiş</th>
-              <th className="sag">Tutar</th>
+              <SiraBaslik alan="no" ad="No" sira={sira} sirala={sirala} />
+              <SiraBaslik alan="acilis" ad="Açılış" sira={sira} sirala={sirala} />
+              <SiraBaslik alan="kapanis" ad="Kapanış" sira={sira} sirala={sirala} />
+              <SiraBaslik alan="tip" ad="Tip" sira={sira} sirala={sirala} />
+              <SiraBaslik alan="masa" ad="Masa" sira={sira} sirala={sirala} />
+              <SiraBaslik alan="kisiSayisi" ad="Misafir" orta sira={sira} sirala={sirala} />
+              <SiraBaslik alan="garson" ad="Açan" sira={sira} sirala={sirala} />
+              <SiraBaslik alan="durum" ad="Durum" sira={sira} sirala={sirala} />
+              <SiraBaslik alan="tahsilat" ad="Tahsilat" sira={sira} sirala={sirala} />
+              <SiraBaslik alan="indirim" ad="İndirim" sag sira={sira} sirala={sirala} />
+              <SiraBaslik alan="bahsis" ad="Bahşiş" sag sira={sira} sirala={sirala} />
+              <SiraBaslik alan="toplam" ad="Tutar" sag sira={sira} sirala={sirala} />
             </tr>
           </thead>
           <tbody>
@@ -293,13 +369,38 @@ function EksikCipi({ onBirak }: { onBirak: () => void }) {
 }
 
 /**
+ * Rozette yazan durum. Sıralama da bu metne bakıyor — sütunda okunan sırayla
+ * dizilenin aynı olması için tek kaynak.
+ */
+function durumMetni(a: AnalizAdisyon) {
+  if (a.durum === "acik") return "Açık";
+  if (a.durum === "iptal") return "İptal";
+  if (tamamiIkram(a)) return "İkram";
+  return a.kalan > 0 ? "Eksik tahsilat" : "Kapandı";
+}
+
+const DURUM_RENKLERI: Record<string, string> = {
+  Açık: "acik",
+  İptal: "iptal",
+  İkram: "ikram",
+  "Eksik tahsilat": "eksik",
+};
+
+/**
  * Adisyo'da tek bir "Durum" sütunu var; bizde kapanmış ama parası eksik kalan
  * hesap ayrıca işaretleniyor — gün sonunda gözden kaçan en pahalı şey o.
  */
 function Durum({ adisyon }: { adisyon: AnalizAdisyon }) {
-  if (adisyon.durum === "acik") return <span className="rozet acik">Açık</span>;
-  if (adisyon.kalan > 0) return <span className="rozet eksik">Eksik tahsilat</span>;
-  return <span className="rozet">Kapandı</span>;
+  const metin = durumMetni(adisyon);
+  const renk = DURUM_RENKLERI[metin];
+  return (
+    <span
+      className={renk ? `rozet ${renk}` : "rozet"}
+      title={adisyon.durum === "iptal" ? adisyon.iptalSebep : undefined}
+    >
+      {metin}
+    </span>
+  );
 }
 
 /** Tek ödeme varsa tipi yazılıyor, birden fazlaysa sayısı — sütun taşmasın. */
