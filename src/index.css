@@ -1440,6 +1440,70 @@ body {
   font-weight: 600;
   cursor: pointer;
 }
+/* Eksik kapatma kapatmanın kendisi kadar sık değil ve geri dönüşü zor: yeşil
+   değil, uyaran ama bağırmayan bir ton. */
+.tahsilat-alt-butonlar .tahsilat-eksik-btn {
+  flex: 1.6;
+  padding: 10px;
+  border: 1px solid #e2b8ac;
+  border-radius: 10px;
+  background: #fdeeeb;
+  color: #c0533a;
+  font-size: 15px;
+  font-weight: 600;
+  cursor: pointer;
+}
+
+/* Eksik kapatma penceresindeki tutar: kararın dayandığı rakam, gözden kaçmasın. */
+.eksik-tutar {
+  display: flex;
+  align-items: baseline;
+  justify-content: space-between;
+  gap: 12px;
+  padding: 12px 14px;
+  margin-bottom: 14px;
+  border-radius: 12px;
+  background: #fdeeeb;
+}
+
+.eksik-tutar span {
+  font-size: 14px;
+  color: var(--metin);
+}
+
+.eksik-tutar strong {
+  font-size: 20px;
+  font-weight: 600;
+  color: #c0533a;
+}
+
+.eksik-alan {
+  display: flex;
+  flex-direction: column;
+  gap: 7px;
+  margin-bottom: 18px;
+}
+
+.eksik-alan label {
+  font-size: 14px;
+  font-weight: 500;
+  color: var(--metin);
+}
+
+.eksik-alan input {
+  font-family: inherit;
+  font-size: 15px;
+  color: var(--metin);
+  border: 1px solid #eadfd3;
+  border-radius: 10px;
+  padding: 11px 13px;
+}
+
+.eksik-alan input:focus {
+  outline: none;
+  border-color: var(--mercan);
+}
+
 .gecmis-sil {
   border: none;
   background: none;
@@ -1474,6 +1538,9 @@ body {
   min-height: 100vh;
 }
 
+/* Menü sayfayla birlikte kaymıyor: ekranın soluna yapışık duruyor, alttaki
+   kişi satırı her sayfada aynı yerde. Uzun sayfada aşağı inerken menünün
+   yerinden oynaması "başka bir ekrana geçtim" hissi veriyordu. */
 .yan-menu {
   width: 80px;
   flex-shrink: 0;
@@ -1485,6 +1552,20 @@ body {
   gap: 4px;
   transition: width 0.18s ease;
   overflow: hidden;
+  position: sticky;
+  top: 0;
+  height: 100vh;
+  align-self: flex-start;
+}
+
+/* Menü kendi içinde uzarsa yalnız bağlantı listesi kayıyor; başlık üstte,
+   kişi altta yerinde kalıyor. */
+.yan-menu nav {
+  flex: 1;
+  min-height: 0;
+  overflow-y: auto;
+  overflow-x: hidden;
+  scrollbar-width: thin;
 }
 
 .yan-menu.acik {
@@ -5256,6 +5337,7 @@ body {
 .odeme-tip-btn,
 .tahsilat-alt-butonlar .tahsilat-kaydet,
 .tahsilat-alt-butonlar .tahsilat-kapat-btn,
+.tahsilat-alt-butonlar .tahsilat-eksik-btn,
 .bolme-kisayol .indirim-kisayol,
 .modal-aksiyonlar .uygula,
 .numpad-tus,
@@ -7784,6 +7866,80 @@ body {
   margin-bottom: 22px;
 }
 
+/* Ödeme tipi düzeltme penceresi onay penceresinin geniş hâli: içinde ödeme
+   tipi düğmeleri var, dar kutuya sığmıyorlar. */
+.onay-modal.baslikli.genis {
+  width: 520px;
+  max-height: 88vh;
+  overflow-y: auto;
+}
+
+.onay-modal .onay-ust .panel-kapat {
+  margin-left: auto;
+}
+
+.duzelt-tipler {
+  margin-bottom: 16px;
+}
+
+.duzelt-secim {
+  font-size: 14px;
+  color: var(--metin);
+  margin-bottom: 14px;
+}
+
+/* Sebep soran onay penceresi: hazır sebepler tek tuşla seçiliyor, listede
+   olmayan durum "Diğer"in altındaki kutuya yazılıyor. */
+.onay-sebepler {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 8px;
+  margin: -10px 0 22px;
+}
+
+.onay-sebep {
+  font-family: inherit;
+  font-size: 14px;
+  font-weight: 500;
+  color: var(--metin);
+  background: var(--zemin);
+  border: 1px solid #eadfd3;
+  border-radius: 10px;
+  padding: 9px 13px;
+  cursor: pointer;
+}
+
+.onay-sebep:hover {
+  border-color: var(--mercan);
+}
+
+.onay-sebep.secili {
+  background: #fdeeeb;
+  border-color: var(--mercan);
+  color: var(--mercan);
+}
+
+.onay-sebep-metin {
+  font-family: inherit;
+  font-size: 14px;
+  color: var(--metin);
+  width: 100%;
+  border: 1px solid #eadfd3;
+  border-radius: 10px;
+  padding: 10px 12px;
+}
+
+.onay-sebep-metin:focus {
+  outline: none;
+  border-color: var(--mercan);
+}
+
+/* Sebep seçilmeden onay verilemiyor; düğme sönük ama yerinde duruyor. */
+.modal-aksiyonlar .uygula:disabled {
+  opacity: 0.45;
+  cursor: default;
+}
+
 /* Düğmeler modalın kendi yazı tipinde kalsın; tarayıcı varsayılanı kayıyordu. */
 .modal-aksiyonlar .iptal {
   font-family: inherit;
@@ -8302,6 +8458,54 @@ body {
   color: var(--mercan);
 }
 
+/* ---- Denetim sekmesi ---- */
+
+/* Arama kutusu sağda kalsın, işlem türü çipleri onun soluna dizilsin. */
+.denetim-suzgec {
+  display: flex;
+  align-items: center;
+  gap: 12px;
+  margin-left: auto;
+  flex-wrap: wrap;
+  justify-content: flex-end;
+}
+
+.denetim-turler {
+  display: flex;
+  gap: 6px;
+  flex-wrap: wrap;
+}
+
+.denetim-turler button {
+  font-family: inherit;
+  font-size: 13px;
+  font-weight: 500;
+  color: var(--metin);
+  background: var(--kart);
+  border: 1px solid #eadfd3;
+  border-radius: 999px;
+  padding: 7px 13px;
+  cursor: pointer;
+}
+
+.denetim-turler button:hover {
+  border-color: var(--mercan);
+}
+
+.denetim-turler button.aktif {
+  background: #fdeeeb;
+  border-color: var(--mercan);
+  color: var(--mercan);
+}
+
+/* Kaç adet ürüne uygulandığı konunun yanında, ayrı sütun açacak kadar
+   önemli değil. */
+.denetim-adet {
+  font-style: normal;
+  font-weight: 500;
+  color: var(--soluk);
+}
+
 /* ---- Ürünler sekmesi ---- */
 
 /* Sıralama düğmeleri başlığın sağına yaslanıyor, sekme şeridinin küçük hâli. */
@@ -8778,6 +8982,58 @@ body {
   font-size: 15px;
   font-weight: 600;
   white-space: nowrap;
+}
+
+/* Eksik kapatılan hesabın borç notu: tahsilat dökümünün altında, kimde
+   kaldığı bir bakışta okunuyor. */
+.detay-eksik {
+  display: flex;
+  flex-direction: column;
+  gap: 3px;
+  margin-top: 12px;
+  padding: 11px 13px;
+  border-radius: 10px;
+  background: #fdeeeb;
+}
+
+.detay-eksik-ust {
+  display: inline-flex;
+  align-items: center;
+  gap: 7px;
+  font-size: 14px;
+  font-weight: 600;
+  color: #c0533a;
+}
+
+.detay-eksik em {
+  font-size: 13px;
+  font-style: normal;
+  color: var(--metin);
+}
+
+/* Tutarın sağındaki düzeltme düğmesi: yalnız kapanmış hesapta ve yetkisi
+   olanda çıkıyor, satırın hizasını bozmasın diye sabit genişlikte. */
+.detay-tahsilatlar span {
+  flex: 1;
+}
+
+.tahsilat-duzelt {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  width: 28px;
+  height: 28px;
+  border: none;
+  border-radius: 8px;
+  background: transparent;
+  color: var(--soluk);
+  cursor: pointer;
+  flex: none;
+}
+
+.tahsilat-duzelt:hover {
+  background: #fdeeeb;
+  color: var(--mercan);
 }
 
 .detay-dokum {

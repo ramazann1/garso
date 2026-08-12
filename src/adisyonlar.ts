@@ -4,6 +4,8 @@ import { kdvDokumu } from "./kdv";
 import type { IndirimKaynagi } from "./indirimler";
 import { acikOturum } from "./oturum";
 import { kisaAd } from "./personel";
+import { denetimYaz } from "./denetim";
+import type { DenetimIslemi, DenetimKaydi } from "./denetim";
 import type { SepetKalemi, Tahsilat } from "./types";
 
 export type AdisyonVerisi = {
@@ -14,6 +16,16 @@ export type AdisyonVerisi = {
   /** Hesap geneli indirim ön tanımlıysa kaynağı; serbest indirimde boş. */
   indirimTanim?: IndirimKaynagi;
   tahsilatlar: Tahsilat[];
+  /**
+   * Bu kayıtta silinen tahsilatlar — ekrandan çıkarıldıkları için listede
+   * yoklar, sebepleri denetim defterine buradan geçiyor.
+   */
+  silinenTahsilatlar?: { id: number; sebep?: string }[];
+  /**
+   * Hesap parası eksik kalarak kapatılıyorsa borcun kime yazıldığı ve sebebi.
+   * Cari hesap modülü gelene kadar borç bilgisi adisyonun kendi üstünde duruyor.
+   */
+  eksik?: { kisi: string; sebep: string; tutar: number };
   acilis?: string;
   garson?: string;
   tip?: AdisyonTipi;
@@ -149,6 +161,7 @@ function adisyonaCevir(data: any): AdisyonVerisi {
   sepet.sort((a, b) => (a.turSira ?? 0) - (b.turSira ?? 0) || (a.id ?? 0) - (b.id ?? 0));
 
   const tahsilatlar: Tahsilat[] = ((data as any).tahsilatlar ?? []).map((t: any) => ({
+    id: t.id,
     tip: t.tip,
     tutar: Number(t.tutar),
     bahsis: Number(t.bahsis ?? 0) || undefined,
@@ -453,13 +466,21 @@ async function kalemleriYaz(
 ): Promise<AdisyonVerisi> {
   const { data: turSatirlari } = await supabase
     .from("turlar")
-    .select("id, sira, adisyon_kalemleri (id)")
+    .select("id, sira, adisyon_kalemleri (id, durum)")
     .eq("adisyon_id", adisyonId)
     .order("sira");
   const turlar = ((turSatirlari as any[]) ?? []);
 
   const mevcutIdler = new Set<number>();
-  for (const t of turlar) for (const k of t.adisyon_kalemleri ?? []) mevcutIdler.add(k.id);
+  // Kalemin kayıttaki hâli: durumu değişenler denetim defterine yazılacak.
+  const oncekiDurumlar = new Map<number, string>();
+  for (const t of turlar)
+    for (const k of t.adisyon_kalemleri ?? []) {
+      mevcutIdler.add(k.id);
+      oncekiDurumlar.set(k.id, k.durum ?? "normal");
+    }
+
+  const denetimler: DenetimKaydi[] = [];
 
   const kalanIdler = new Set(veri.sepet.map((k) => k.id).filter((id): id is number => !!id && id > 0));
   const silinecek = [...mevcutIdler].filter((id) => !kalanIdler.has(id));
@@ -467,6 +488,8 @@ async function kalemleriYaz(
 
   for (const k of veri.sepet) {
     if (!k.id || k.id < 0) continue;
+    const denetim = durumDegisimi(oncekiDurumlar.get(k.id) ?? "normal", k);
+    if (denetim) denetimler.push(denetim);
     await supabase
       .from("adisyon_kalemleri")
       .update({
@@ -483,6 +506,12 @@ async function kalemleriYaz(
 
   // Yeni kalemler bu kaydın turuna girer; geçici kimlikleri gerçeğiyle eşleşir.
   const yeniler = veri.sepet.filter((k) => !k.id || k.id < 0);
+  // "2 salebin biri ikram" satırı ikiye böldüğü için işlem yeni bir kalem
+  // olarak geliyor; defterde görünmesi gereken hâli bu satır.
+  for (const k of yeniler) {
+    const denetim = durumDegisimi("normal", k);
+    if (denetim) denetimler.push(denetim);
+  }
   const kimlikEsi = new Map<number, number>();
   if (yeniler.length) {
     const sira = turlar.reduce((e, t) => Math.max(e, t.sira), 0) + 1;
@@ -522,28 +551,138 @@ async function kalemleriYaz(
     });
   }
 
-  // Tahsilatlar kalem kimliklerini taşıdığı için baştan yazılır.
-  await supabase.from("tahsilatlar").delete().eq("adisyon_id", adisyonId);
-  if (veri.tahsilatlar.length) {
-    await supabase.from("tahsilatlar").insert(
-      veri.tahsilatlar.map((t) => ({
-        adisyon_id: adisyonId,
-        tip: t.tip,
-        tutar: t.tutar,
-        bahsis: t.bahsis ?? 0,
-        kalem_adetleri: t.kalemler ? gercekKimlikler(t.kalemler, kimlikEsi) : null,
-      }))
-    );
+  // Tahsilatlar eskiden her kayıtta silinip yeniden yazılıyordu; kimlik
+  // korunmadığı için "şu tahsilat silindi" diye bir olay da yoktu. Artık
+  // kalanlar güncelleniyor, gidenler tek tek siliniyor ve deftere düşüyor.
+  const { data: eskiTahsilatlar } = await supabase
+    .from("tahsilatlar")
+    .select("id, tip, tutar")
+    .eq("adisyon_id", adisyonId);
+
+  const kalanTahsilatIdler = new Set(
+    veri.tahsilatlar.map((t) => t.id).filter((id): id is number => !!id)
+  );
+  const gidenler = ((eskiTahsilatlar as any[]) ?? []).filter((t) => !kalanTahsilatIdler.has(t.id));
+
+  if (gidenler.length) {
+    await supabase
+      .from("tahsilatlar")
+      .delete()
+      .in("id", gidenler.map((t) => t.id));
+
+    for (const t of gidenler) {
+      denetimler.push({
+        islem: "tahsilat_sil",
+        konu: t.tip,
+        tutar: Number(t.tutar),
+        sebep: veri.silinenTahsilatlar?.find((s) => s.id === t.id)?.sebep,
+      });
+    }
+  }
+
+  const yazilanTahsilatlar: Tahsilat[] = [];
+  for (const t of veri.tahsilatlar) {
+    const satir = {
+      tip: t.tip,
+      tutar: t.tutar,
+      bahsis: t.bahsis ?? 0,
+      kalem_adetleri: t.kalemler ? gercekKimlikler(t.kalemler, kimlikEsi) : null,
+    };
+
+    if (t.id) {
+      const eski = ((eskiTahsilatlar as any[]) ?? []).find((e) => e.id === t.id);
+      if (eski && eski.tip !== t.tip) {
+        denetimler.push({
+          islem: "tahsilat_tip_duzelt",
+          konu: `${eski.tip} → ${t.tip}`,
+          tutar: Number(t.tutar),
+          sebep: t.sebep,
+        });
+      }
+      await supabase.from("tahsilatlar").update(satir).eq("id", t.id);
+      yazilanTahsilatlar.push(t);
+    } else {
+      const { data: eklenen } = await supabase
+        .from("tahsilatlar")
+        .insert({ adisyon_id: adisyonId, ...satir })
+        .select("id")
+        .single();
+      // Kimlik geri dönüyor ki aynı ekranda yapılan ikinci kayıt bu tahsilatı
+      // yeni sanıp bir daha eklemesin.
+      yazilanTahsilatlar.push({ ...t, id: eklenen ? (eklenen as any).id : undefined });
+    }
   }
 
   if (kapat) {
     await supabase
       .from("adisyonlar")
-      .update({ durum: "kapali", kapanis: new Date().toISOString() })
+      .update({
+        durum: "kapali",
+        kapanis: new Date().toISOString(),
+        // Eksik kapatma bilgisi yalnız o kapanışta yazılıyor; hesap tam
+        // ödenerek kapandıysa eski borç notu da temizleniyor.
+        eksik_kisi: veri.eksik?.kisi ?? null,
+        eksik_sebep: veri.eksik?.sebep ?? null,
+      })
       .eq("id", adisyonId);
+
+    if (veri.eksik) {
+      denetimler.push({
+        islem: "hesap_eksik_kapat",
+        konu: veri.eksik.kisi,
+        tutar: veri.eksik.tutar,
+        sebep: veri.eksik.sebep,
+      });
+    }
   }
 
-  return { ...veri, id: adisyonId };
+  if (denetimler.length) {
+    const yer = await adisyonYeri(adisyonId);
+    await denetimYaz(denetimler.map((d) => ({ ...d, adisyonId, yer })));
+  }
+
+  return { ...veri, id: adisyonId, tahsilatlar: yazilanTahsilatlar, silinenTahsilatlar: undefined };
+}
+
+/**
+ * Kalemin durumu kayıttakinden farklıysa deftere düşecek satırı üretir.
+ * İptalin sebebi kalemin üstünde geliyor (`sebep`) — sütuna yazılmıyor,
+ * yalnız denetim kaydına geçiyor.
+ */
+function durumDegisimi(onceki: string, k: SepetKalemi): DenetimKaydi | null {
+  const yeni = k.durum ?? "normal";
+  if (onceki === yeni) return null;
+
+  const islem: DenetimIslemi | null =
+    yeni === "iptal"
+      ? "kalem_iptal"
+      : yeni === "ikram"
+        ? "kalem_ikram"
+        : onceki === "iptal"
+          ? "kalem_iptal_geri"
+          : "kalem_ikram_geri";
+  if (!islem) return null;
+
+  return {
+    islem,
+    konu: k.porsiyon ? `${k.ad} (${k.porsiyon})` : k.ad,
+    adet: k.adet,
+    tutar: kalemTutari(k),
+    sebep: k.sebep,
+  };
+}
+
+/** Defterde adisyonun hangi masa olduğu yazılı dursun; masasızlarda tipi. */
+async function adisyonYeri(adisyonId: number) {
+  const { data } = await supabase
+    .from("adisyonlar")
+    .select("tip, masa:masalar (ad)")
+    .eq("id", adisyonId)
+    .maybeSingle();
+  if (!data) return undefined;
+  const satir = data as any;
+  if (satir.masa?.ad) return satir.masa.ad as string;
+  return satir.tip === "paket" ? "Paket" : satir.tip === "gelal" ? "Gel Al" : undefined;
 }
 
 function gercekKimlikler(kalemler: Record<number, number>, es: Map<number, number>) {

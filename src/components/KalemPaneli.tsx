@@ -24,6 +24,15 @@ type Props = {
   onTasi: (hedefMasaId: number, adet: number) => void;
 };
 
+// İptal sebebi denetim defterine yazılıyor; hazır seçenekler işin mutfaktaki
+// gerçek sebepleri, listede olmayan durum için "Diğer" var.
+const IPTAL_SEBEPLERI = [
+  "Müşteri vazgeçti",
+  "Yanlış girildi",
+  "Ürün bitti",
+  "Hatalı hazırlandı",
+];
+
 export default function KalemPaneli({
   kalem,
   urun,
@@ -60,13 +69,14 @@ export default function KalemPaneli({
     if (p) setFiyat(paraMetin(porsiyonFiyat(p, "masa")));
   };
 
-  const kaydet = (durum: SepetKalemi["durum"]) => {
+  const kaydet = (durum: SepetKalemi["durum"], sebep?: string) => {
     const temel = {
       ...kalem,
       adet,
       fiyat: paraSayi(fiyat) ?? 0,
       porsiyon,
       not: notMetni.trim() || undefined,
+      sebep,
     };
 
     // "2 salebin biri ikram": adet satırın tamamından azsa satır ikiye ayrılır —
@@ -292,10 +302,13 @@ export default function KalemPaneli({
 
       {iptalSorusu && (
         <OnayModal
-          mesaj={`“${kalem.ad}” iptal edilsin mi?`}
+          baslik="Ürün iptali"
+          ikon={<Ban size={20} />}
+          mesaj={`“${kalem.ad}” hesaptan çıkarılacak. Sebebi nedir?`}
           tehlikeli
+          sebepler={IPTAL_SEBEPLERI}
           onayMetni="Evet, iptal et"
-          onOnay={() => kaydet("iptal")}
+          onOnay={(sebep) => kaydet("iptal", sebep)}
           onKapat={() => setIptalSorusu(false)}
         />
       )}

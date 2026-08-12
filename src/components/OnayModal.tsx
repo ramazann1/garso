@@ -1,3 +1,5 @@
+import { useState } from "react";
+
 type Props = {
   mesaj: string;
   /** Mesajın üstünde duran kısa başlık; ikonla birlikte kullanılıyor. */
@@ -5,9 +7,14 @@ type Props = {
   ikon?: React.ReactNode;
   tekTus?: boolean;
   tehlikeli?: boolean;
+  /**
+   * Verilirse pencere sebep sorar: hazır sebepler düğme olarak çıkar, en sonda
+   * serbest yazma kutusu vardır. Sebep seçilmeden onay düğmesi çalışmaz.
+   */
+  sebepler?: string[];
   onayMetni?: string;
   iptalMetni?: string;
-  onOnay?: () => void;
+  onOnay?: (sebep?: string) => void;
   onKapat: () => void;
 };
 
@@ -17,11 +24,18 @@ export default function OnayModal({
   ikon,
   tekTus,
   tehlikeli,
+  sebepler,
   onayMetni,
   iptalMetni,
   onOnay,
   onKapat,
 }: Props) {
+  const [secili, setSecili] = useState("");
+  const [serbest, setSerbest] = useState("");
+
+  const sebep = secili === "diger" ? serbest.trim() : secili;
+  const onaylanabilir = !sebepler || !!sebep;
+
   return (
     <div className="onay-fon" onClick={(e) => { e.stopPropagation(); onKapat(); }}>
       <div
@@ -35,13 +49,47 @@ export default function OnayModal({
           </div>
         )}
         <p>{mesaj}</p>
+
+        {sebepler && (
+          <div className="onay-sebepler">
+            {sebepler.map((s) => (
+              <button
+                key={s}
+                className={secili === s ? "onay-sebep secili" : "onay-sebep"}
+                onClick={() => setSecili(s)}
+              >
+                {s}
+              </button>
+            ))}
+            <button
+              className={secili === "diger" ? "onay-sebep secili" : "onay-sebep"}
+              onClick={() => setSecili("diger")}
+            >
+              Diğer
+            </button>
+            {secili === "diger" && (
+              <input
+                className="onay-sebep-metin"
+                autoFocus
+                value={serbest}
+                onChange={(e) => setSerbest(e.target.value)}
+                placeholder="Sebebi yazın"
+              />
+            )}
+          </div>
+        )}
+
         <div className="modal-aksiyonlar">
           {tekTus ? (
             <button className="uygula" onClick={onKapat}>Tamam</button>
           ) : (
             <>
               <button className="iptal" onClick={onKapat}>{iptalMetni ?? "Vazgeç"}</button>
-              <button className={tehlikeli ? "uygula tehlikeli" : "uygula"} onClick={onOnay}>
+              <button
+                className={tehlikeli ? "uygula tehlikeli" : "uygula"}
+                disabled={!onaylanabilir}
+                onClick={() => onOnay?.(sebep || undefined)}
+              >
                 {onayMetni ?? (tehlikeli ? "Evet, sil" : "Evet")}
               </button>
             </>

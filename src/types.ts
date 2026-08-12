@@ -48,16 +48,22 @@ export type SepetKalemi = {
   indirimTanimId?: number; // ön tanımlı indirimden geldiyse hangisi
   indirimAd?: string; // tanım sonradan silinse de raporda adı kalsın
   not?: string;
+  /** İptal sebebi; sütuna değil, denetim defterine yazılıyor. */
+  sebep?: string;
   turSira?: number;
   turSaat?: string; // turun kaydedildiği an; sepette tur başlığında görünüyor
   turGarson?: string; // turu yazan kişi; tur başlığında saatin yanında
   turGarsonId?: number; // personel raporunda ciro bu kişiye yazılıyor
 };
 export type Tahsilat = {
+  /** Kayıtlı tahsilatın kimliği; yeni alınan ödemede boş. */
+  id?: number;
   tip: string;
   tutar: number;
   bahsis?: number; // hesabın üstünde kalan, müşterinin bıraktığı tutar
   kalemler?: Record<number, number>; // kalem kimliği → ödenen adet
+  /** Ödeme tipi düzeltildiyse sebebi; sütuna değil, denetim defterine yazılıyor. */
+  sebep?: string;
 };
 export type Adisyon = {
   sepet: SepetKalemi[];

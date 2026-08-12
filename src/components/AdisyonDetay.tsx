@@ -5,15 +5,23 @@ import {
   Banknote,
   Clock,
   DoorOpen,
+  HandCoins,
   History,
   LockOpen,
+  Pencil,
   Plus,
   X,
 } from "lucide-react";
 import OnayModal from "./OnayModal";
+import OdemeTipDuzelt from "./OdemeTipDuzelt";
 import { paraGoster } from "../para";
 import { yetkiVar } from "../oturum";
-import { adisyonAktifEt, adisyonDetayi, type AdisyonDetay as Detay } from "../analiz";
+import {
+  adisyonAktifEt,
+  adisyonDetayi,
+  tahsilatTipiDuzelt,
+  type AdisyonDetay as Detay,
+} from "../analiz";
 import type { SepetKalemi } from "../types";
 
 const saat = (t: string) =>
@@ -44,6 +52,7 @@ export default function AdisyonDetay({
   const [yukleniyor, setYukleniyor] = useState(true);
   const [gecmis, setGecmis] = useState(false);
   const [aktifSor, setAktifSor] = useState(false);
+  const [duzeltilen, setDuzeltilen] = useState<Detay["tahsilatlar"][number] | null>(null);
   const [hata, setHata] = useState("");
   const navigate = useNavigate();
 
@@ -187,6 +196,17 @@ export default function AdisyonDetay({
                         </em>
                       </span>
                       <b>{paraGoster(t.tutar)}</b>
+                      {/* Kapanmış hesabın ödeme tipi yanlış yazılmış olabiliyor;
+                          düzeltme yetkiye bağlı ve deftere kayıt düşüyor. */}
+                      {detay.durum !== "acik" && yetkiVar("odeme.tip_duzelt") && (
+                        <button
+                          className="tahsilat-duzelt"
+                          aria-label="Ödeme tipini düzelt"
+                          onClick={() => setDuzeltilen(t)}
+                        >
+                          <Pencil size={15} />
+                        </button>
+                      )}
                     </li>
                   ))}
                 </ul>
@@ -199,15 +219,45 @@ export default function AdisyonDetay({
                 </div>
                 {detay.kalan > 0 && (
                   <div>
-                    <dt>Kalan</dt>
+                    <dt>{detay.durum === "acik" ? "Kalan" : "Tahsil edilmedi"}</dt>
                     <dd className="azalan">{paraGoster(detay.kalan)}</dd>
                   </div>
                 )}
               </dl>
+
+              {/* Hesap eksik kapatıldıysa borcun kimde olduğu burada okunuyor;
+                  cari hesap gelene kadar tek kayıt yeri bu. */}
+              {detay.eksikKisi && (
+                <div className="detay-eksik">
+                  <span className="detay-eksik-ust">
+                    <HandCoins size={15} /> {detay.eksikKisi}
+                  </span>
+                  <em>{detay.eksikSebep}</em>
+                </div>
+              )}
             </section>
           </div>
         )}
       </div>
+
+      {duzeltilen && detay && (
+        <OdemeTipDuzelt
+          tip={duzeltilen.tip}
+          tutar={duzeltilen.tutar}
+          onKapat={() => setDuzeltilen(null)}
+          onKaydet={async (yeniTip, sebep) => {
+            try {
+              await tahsilatTipiDuzelt(detay, duzeltilen.id, yeniTip, sebep);
+              setDuzeltilen(null);
+              setDetay(await adisyonDetayi(adisyonId));
+              onDegisti?.();
+            } catch (e) {
+              setDuzeltilen(null);
+              setHata((e as Error).message);
+            }
+          }}
+        />
+      )}
 
       {aktifSor && detay && (
         <OnayModal

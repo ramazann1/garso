@@ -1,7 +1,7 @@
 ﻿# GARSO — Teknik Tasarım: Veri Modeli & Ekran Haritası
 *Restoran ve cafe'ler için bulut tabanlı satış ve işletme yönetim sistemi.*
 
-## 0. SIRADAKİ İŞ (17 Ağu 2026'da güncellendi)
+## 0. SIRADAKİ İŞ (18 Ağu 2026'da güncellendi)
 
 *Ramazan seansa "devam edelim" diye giriyor — sıradaki iş bu listenin en üstündeki
 maddedir. Seans sonunda bu liste güncellenir: biten madde silinir, kalanlar
@@ -73,39 +73,55 @@ kendisine girdi. **Ürünler** (kategori dağılımı kendi renkleriyle + ürün
   adlandirma.sql`). Yetki kodları `rapor.tumu` / `rapor.gun_sonu` olarak kaldı:
   kimseye görünmüyorlar ve kişilere atanmış yetkiler bunlara bağlı.
 
+**18 Ağu 2026:** **Denetim tarafı bitti, Analiz'in altı sekmesi de tamam.**
+Hassas işlemler artık tek deftere yazılıyor (`denetim_kayitlari`: kim · ne zaman ·
+işlem · adisyon · yer · konu · adet · tutar · sebep). Bu seansta çıkanlar:
+- **Kalem iptali sebep soruyor** (hazır sebepler + "Diğer"); ikram sorusuz ama
+  deftere düşüyor. Sebep sorma kalıbı ayrı bileşen olarak değil, `OnayModal`'ın
+  `sebepler` özelliği olarak kuruldu — aynı desen üç yerde kullanılıyor.
+- **Tahsilatlar kimlik kazandı.** Eskiden her kayıtta toptan silinip yeniden
+  yazılıyordu; artık duran güncelleniyor, giden siliniyor ve sebebiyle deftere
+  düşüyor. Silinen tahsilat denetiminin önündeki yapısal engel buydu.
+- **Kapanmış hesabın ödeme tipi düzeltilebiliyor** (`odeme.tip_duzelt`) — tutara
+  dokunmuyor ama nakit/kart dengesini değiştirdiği için yetkiye bağlı.
+- **Eksik tahsilatla hesap kapatma** (`odeme.eksik_kapat`): kalan varken "Eksik
+  Kapat" düğmesi çıkıyor, borcun kime yazıldığı ve sebebi zorunlu
+  (`adisyonlar.eksik_kisi`, `eksik_sebep`). Analiz'deki eksik tahsilat rozeti
+  artık gerçek veriyle çalışıyor.
+- **Açık hesap ile eksik kapatma ayrı kavramlar** (karar): tanınan müşteri →
+  Açık Hesap ödeme tipi, cari bakiyesine yazılır (Faz 2, cari modülüyle);
+  tanınmayan/kayıt dışı → eksik kapatma, denetim kaydı olarak kalır. Cari gelince
+  `EksikKapat`'taki serbest metin kutusu müşteri seçiciye dönüşecek.
+- **Yan menü sabitlendi** — sayfayla birlikte kayıyordu, alttaki kişi satırı ancak
+  aşağı inince görünüyordu. Artık ekrana yapışık (`sticky`, 100vh), uzarsa yalnız
+  bağlantı listesi kayıyor.
+
 **Göç notu:** satır güvenliği açıldığından beri `isletme_id` oturumdan geliyor;
 SQL editöründe oturum olmadığı için göç dosyalarında bu sütun **elle
 yazılmalı** (kaynağı ilgili satırın kendi işletmesi). `rol_yetkileri`'ne yetki
 eklerken bu yüzden hata alındı.
 
-1. **Denetim sekmesi ve dayandığı veri — tamamı.** Analiz'in tek eksik sekmesi;
-   17 Ağu 2026'da kapsamı Ramazan'la netleşti, tamamı tek işte yapılacak:
-   - **`denetim_kayitlari` tablosu** (kim · ne zaman · hangi işlem · hangi
-     adisyon · tutar · sebep). Her hassas işlem için ayrı sütun eklemek yerine
-     tek yer; ileride adisyon iptali, indirim ve ödeme düzeltmesi de buraya.
-   - **Kalem iptali ve ikramı** bu tabloya yazılacak, **iptalde sebep sorulacak**
-     (Adisyo'nun "Silinen Ürünler" raporunun karşılığı).
-   - **Silinen tahsilat denetimi** — yapısal engel var: tahsilatlar her
-     kaydetmede toptan silinip yeniden yazılıyor (`adisyonlar.ts`, ~526. satır),
-     kayıtların kimliği korunmuyor, dolayısıyla "şu tahsilat silindi" diye bir
-     olay yok. Tahsilat kaydetme akışının yeniden kurulması gerekiyor — satışın
-     en hassas yeri, dikkatli gidilecek.
-   - **Kapanmış adisyonun ödeme tipini düzeltme** (yetkiye bağlı, geçmişe kayıt
-     düşer) — yol haritası 11.8 madde 6 ve 8.
-   - Sekmenin kendisi bu kayıtları listeler: diğer sekmelerle aynı desen
-     (şerit + tablo, başlıktan sıralama, kendi arama kutusu).
-2. **Eksik tahsilatla hesap kapatma** — 17 Ağu 2026'da çıktı: "Adisyonu Kapat"
-   düğmesi yalnızca kalan sıfırlanınca görünüyor (`TahsilatPanel.tsx`), yani
-   parası eksik kalan hesap hiç kapatılamıyor. Analiz'deki "Eksik tahsilat"
-   rozeti ve özetteki eksik tahsilat satırı bu yüzden bugün boşta duruyor —
-   kod hazır, veriyi üretecek akış yok. Yetkiye bağlı olmalı, sebep sorulmalı,
-   kime yazıldığı kaydedilmeli (cari hesap modülünün ilk adımı).
-3. **Masa yazdırma ve adisyon iptali** — masa üç nokta menüsünde yerleri boş
-   duruyor; yazdırma yazıcı altyapısına, iptal adisyon detay penceresine bağlı.
-4. **İşletme kaydı ekranı** — satır güvenliği açılınca çıktı: hiç hesabı olmayan
+1. **Adisyon iptali ve adisyon ikramı.** Bugün yalnız kalem bazında ikram/iptal
+   var; masanın üç nokta menüsünde adisyonun tamamına yapılacak işlemin yeri boş
+   duruyor. 18 Ağu 2026'da planı çıkarıldı, denetim defteri hazır olduğu için
+   önü açık:
+   - `adisyonlar.durum`'a **`iptal`** değeri ve `iptal_sebep`. İptal edilen
+     adisyon silinmiyor — Analiz'de sayısı ve tutarı görünmeli (Adisyo'nun
+     "İptal/İadeler" raporunun karşılığı), silinirse kayıp izi kalmaz.
+   - İki yeni yetki: `siparis.adisyon_iptal`, `siparis.adisyon_ikram`.
+   - `adisyonIptal` sebep sorar, deftere `adisyon_iptal` düşer. **Tahsilatı olan
+     adisyon iptal edilemez** — önce para geri verilmeli, yoksa kasada olmayan
+     para ciroda görünür.
+   - `adisyonIkram` bütün kalemleri ikrama çevirir, hesabı sıfırlayıp kapatır.
+   - İkisi de hem Salon'daki üç nokta menüsünde hem adisyon detay penceresinde.
+   - Analiz: durum süzgecine "İptal", iptallerin ciroya ve ortalamalara
+     girmediğinin doğrulanması.
+2. **Masa yazdırma** — üç nokta menüsünde yeri boş; yazıcı altyapısına bağlı,
+   o gelmeden yapılamaz.
+3. **İşletme kaydı ekranı** — satır güvenliği açılınca çıktı: hiç hesabı olmayan
    yeni bir işletme kendi ilk yöneticisini oluşturamıyor. Ürün satışa çıkmadan
    önce şart, Ramazan'ın kurulumunu etkilemiyor. Ayrıntı yol haritası Faz 2'de.
-5. **Yurt dışına açılırsa değişmesi gerekenler** — para birimi (₺ arayüzde sabit
+4. **Yurt dışına açılırsa değişmesi gerekenler** — para birimi (₺ arayüzde sabit
    yazılı), tarih/saat biçimi (`tr-TR`) ve "KDV" teriminin kendisi. Bugünün işi
    değil, akılda dursun diye burada.
 

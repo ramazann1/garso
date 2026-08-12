@@ -1,4 +1,4 @@
-import { Fragment, useEffect, useState } from "react";
+import { Fragment, useEffect, useRef, useState } from "react";
 import { useNavigate, useParams } from "react-router-dom";
 import {
   ArrowLeft,
@@ -150,6 +150,9 @@ export default function Siparis() {
   // İndirim ön tanımlıysa kaynağı da taşınıyor; rapor hangi indirim olduğunu görecek.
   const [indirimTanim, setIndirimTanim] = useState<IndirimKaynagi | undefined>();
   const [kayitliTahsilatlar, setKayitliTahsilatlar] = useState<Tahsilat[]>([]);
+  // Ekrandan kaldırılan ama henüz kaydedilmemiş tahsilatların sebepleri;
+  // ilk kayıtta denetim defterine gidiyorlar.
+  const silinenTahsilatlar = useRef<{ id: number; sebep?: string }[]>([]);
   const [secimUrunu, setSecimUrunu] = useState<MenuUrun | null>(null);
   const [kampanyaUrunu, setKampanyaUrunu] = useState<MenuUrun | null>(null);
   // Şeridin üstündeki kategori dışı listeler; ikisi de kategoriyle aynı anda açık olmaz.
@@ -178,12 +181,21 @@ export default function Siparis() {
   const adisyonuYaz = (veri: AdisyonVerisi, kapat = false) => {
     const tam: AdisyonVerisi = {
       ...veri,
+      // Silinen tahsilatların sebebi kayıtla birlikte deftere geçiyor;
+      // yazıldıktan sonra liste boşalıyor ki ikinci kayıtta tekrarlanmasın.
+      silinenTahsilatlar: silinenTahsilatlar.current.splice(0),
       ad: bilgi.ad ?? "",
       kisiSayisi: bilgi.kisiSayisi ?? 0,
       not: bilgi.not ?? "",
       musteri: { ad: bilgi.musteriAd ?? "", telefon: bilgi.musteriTelefon ?? "" },
     };
-    return masasiz ? masasizKaydet(adisyonId, tam, kapat) : adisyonKaydet(masaId, tam, kapat);
+    const yazma = masasiz ? masasizKaydet(adisyonId, tam, kapat) : adisyonKaydet(masaId, tam, kapat);
+    // Yeni alınan ödemeler kayıtta kimlik kazanıyor; ekran bu kimlikleri geri
+    // almazsa aynı sayfada yapılan ikinci kayıt onları bir daha yazardı.
+    return yazma.then((kayitli) => {
+      setKayitliTahsilatlar(kayitli.tahsilatlar);
+      return kayitli;
+    });
   };
 
   useEffect(() => {
@@ -675,6 +687,7 @@ export default function Siparis() {
           kdvSatirlari={kdvSatirlari}
           kayitliTahsilatlar={kayitliTahsilatlar}
           onKaydet={(t) => setKayitliTahsilatlar(t)}
+          onSil={(id, sebep) => silinenTahsilatlar.current.push({ id, sebep })}
           onIndirimDegis={(tutar, kaynak) => { setIndirim(tutar); setIndirimTanim(kaynak); }}
           onKalemIndirim={(paylar, kaynak) =>
             setSepet((s) =>
@@ -686,9 +699,10 @@ export default function Siparis() {
             )
           }
           onKapat={() => setTahsilatAcik(false)}
-          onOdendi={async (tahsilatlar) => {
+          musteri={bilgi.musteriAd || bilgi.ad}
+          onOdendi={async (tahsilatlar, eksik) => {
             // Kapanan adisyon silinmiyor, kapalıya çekiliyor — gün sonu raporu ona bakacak.
-            await adisyonuYaz({ sepet, indirim, indirimTanim, tahsilatlar }, true);
+            await adisyonuYaz({ sepet, indirim, indirimTanim, tahsilatlar, eksik }, true);
             kilitKaldir();
             navigate("/");
           }}

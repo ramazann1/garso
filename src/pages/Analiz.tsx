@@ -12,6 +12,7 @@ import {
   Layers,
   Package,
   Receipt,
+  ShieldCheck,
   TrendingUp,
   Users,
   Wallet,
@@ -27,6 +28,7 @@ import { ayarlar } from "../isletmeAyarlari";
 import {
   BOS_FILTRE,
   analizAdisyonlari,
+  analizDenetimi,
   analizGiderleri,
   analizGiderOzeti,
   analizOzeti,
@@ -36,6 +38,7 @@ import {
   type AnalizAdisyon,
   type AnalizFiltre as Filtre,
   type AnalizOzeti,
+  type DenetimSatiri,
   type GiderOzeti,
   type PersonelOzeti,
   type PersonelSatiri,
@@ -52,6 +55,7 @@ export default function Analiz() {
   const [filtre, setFiltre] = useState<Filtre>(BOS_FILTRE);
   const [adisyonlar, setAdisyonlar] = useState<AnalizAdisyon[]>([]);
   const [giderler, setGiderler] = useState<Masraf[]>([]);
+  const [denetim, setDenetim] = useState<DenetimSatiri[]>([]);
   const [yukleniyor, setYukleniyor] = useState(true);
   const [secili, setSecili] = useState<number | null>(null);
   // Adisyon yeniden açılınca liste eskiyor; sayaç değişince sorgu tekrarlanıyor.
@@ -69,12 +73,15 @@ export default function Analiz() {
   useEffect(() => {
     let gecerli = true;
     setYukleniyor(true);
-    Promise.all([analizAdisyonlari(filtre), analizGiderleri(filtre)]).then(([a, g]) => {
-      if (!gecerli) return;
-      setAdisyonlar(a);
-      setGiderler(g);
-      setYukleniyor(false);
-    });
+    Promise.all([analizAdisyonlari(filtre), analizGiderleri(filtre), analizDenetimi(filtre)]).then(
+      ([a, g, d]) => {
+        if (!gecerli) return;
+        setAdisyonlar(a);
+        setGiderler(g);
+        setDenetim(d);
+        setYukleniyor(false);
+      }
+    );
     return () => {
       gecerli = false;
     };
@@ -137,6 +144,8 @@ export default function Analiz() {
           <Personel ozet={personel} />
         ) : bolum === "giderler" ? (
           <Giderler giderler={giderler} ozet={giderOzeti} ciro={ozet.ciro} />
+        ) : bolum === "denetim" ? (
+          <Denetim kayitlar={denetim} />
         ) : (
           <Yapiliyor bolum={bolum} />
         )}
@@ -1114,15 +1123,158 @@ function Saatler({ saatler }: { saatler: { saat: number; tutar: number; adet: nu
   );
 }
 
+type DenetimAlani = "zaman" | "kisi" | "islemAd" | "yer" | "konu" | "tutar";
+
+/**
+ * Denetim defteri: hassas işlemlerin listesi. Diğer sekmelerle aynı desen —
+ * üstte şerit, altında başlıktan sıralanan tablo ve sekmenin kendi araması.
+ */
+function Denetim({ kayitlar }: { kayitlar: DenetimSatiri[] }) {
+  const [sira, setSira] = useState<{ alan: DenetimAlani; artan: boolean }>({
+    alan: "zaman",
+    artan: false,
+  });
+  const [arama, setArama] = useState("");
+  const [islem, setIslem] = useState("");
+
+  const turler = useMemo(() => {
+    const sayac = new Map<string, { ad: string; adet: number }>();
+    for (const k of kayitlar) {
+      const dilim = sayac.get(k.islem) ?? { ad: k.islemAd, adet: 0 };
+      dilim.adet += 1;
+      sayac.set(k.islem, dilim);
+    }
+    return [...sayac].map(([kod, d]) => ({ kod, ...d })).sort((a, b) => b.adet - a.adet);
+  }, [kayitlar]);
+
+  const satirlar = useMemo(() => {
+    const ara = arama.trim().toLocaleLowerCase("tr");
+    const liste = kayitlar.filter(
+      (k) =>
+        (!islem || k.islem === islem) &&
+        (!ara ||
+          `${k.kisi} ${k.islemAd} ${k.yer} ${k.konu} ${k.sebep}`
+            .toLocaleLowerCase("tr")
+            .includes(ara))
+    );
+    const yon = sira.artan ? 1 : -1;
+    return [...liste].sort((a, b) => {
+      if (sira.alan === "tutar") return (a.tutar - b.tutar) * yon;
+      if (sira.alan === "zaman") return (+new Date(a.zaman) - +new Date(b.zaman)) * yon;
+      return String(a[sira.alan]).localeCompare(String(b[sira.alan]), "tr") * yon;
+    });
+  }, [kayitlar, sira, arama, islem]);
+
+  const sirala = (alan: DenetimAlani) =>
+    setSira((s) =>
+      s.alan === alan
+        ? { alan, artan: !s.artan }
+        : { alan, artan: alan !== "tutar" && alan !== "zaman" }
+    );
+
+  if (kayitlar.length === 0) {
+    return (
+      <section className="ayar-bolum">
+        <div className="ayar-bos">
+          <ShieldCheck size={30} />
+          <p>Bu dönemde denetim kaydı yok.</p>
+        </div>
+      </section>
+    );
+  }
+
+  return (
+    <div className="analiz-ozet">
+      <section className="ozet-serit">
+        <div className="serit-satir">
+          <div className="serit-sayi">
+            <span className="serit-etiket">
+              <ShieldCheck size={15} /> Toplam işlem
+            </span>
+            <strong>{kayitlar.length}</strong>
+            <em>kayıt</em>
+          </div>
+          {turler.slice(0, 3).map((t) => (
+            <div key={t.kod} className="serit-sayi">
+              <span className="serit-etiket">{t.ad}</span>
+              <strong>{t.adet}</strong>
+              <em>kayıt</em>
+            </div>
+          ))}
+        </div>
+      </section>
+
+      <section className="ayar-bolum">
+        <div className="analiz-liste-ust">
+          <h2>
+            <ShieldCheck size={17} /> {satirlar.length} işlem
+          </h2>
+          <div className="denetim-suzgec">
+            {/* İşlem türü çip olarak duruyor: "sadece iptaller" en çok sorulan
+                soru, her seferinde arama kutusuna yazmak gerekmesin. */}
+            <div className="denetim-turler">
+              <button className={islem ? "" : "aktif"} onClick={() => setIslem("")}>
+                Hepsi
+              </button>
+              {turler.map((t) => (
+                <button
+                  key={t.kod}
+                  className={islem === t.kod ? "aktif" : ""}
+                  onClick={() => setIslem(islem === t.kod ? "" : t.kod)}
+                >
+                  {t.ad}
+                </button>
+              ))}
+            </div>
+            <AramaKutusu deger={arama} degistir={setArama} yer="Kişi, ürün, sebep" />
+          </div>
+        </div>
+
+        <div className="tablo-kaydir">
+          <table className="analiz-tablo urun-tablo">
+            <thead>
+              <tr>
+                <SiraBaslik alan="zaman" ad="Tarih" sira={sira} sirala={sirala} />
+                <SiraBaslik alan="kisi" ad="Kim" sira={sira} sirala={sirala} />
+                <SiraBaslik alan="islemAd" ad="İşlem" sira={sira} sirala={sirala} />
+                <SiraBaslik alan="yer" ad="Yer" sira={sira} sirala={sirala} />
+                <SiraBaslik alan="konu" ad="Konu" sira={sira} sirala={sirala} />
+                <th>Sebep</th>
+                <SiraBaslik alan="tutar" ad="Tutar" sag sira={sira} sirala={sirala} />
+              </tr>
+            </thead>
+            <tbody>
+              {satirlar.length === 0 ? (
+                <tr className="tablo-bos-satir">
+                  <td colSpan={7}>Aramayla eşleşen kayıt yok.</td>
+                </tr>
+              ) : (
+                satirlar.map((k) => (
+                  <tr key={k.id}>
+                    <td>{zamanMetni(k.zaman)}</td>
+                    <td>{k.kisi}</td>
+                    <td className="hucre-urun">{k.islemAd}</td>
+                    <td>{k.yer || "—"}</td>
+                    <td className="hucre-urun">
+                      {k.konu || "—"}
+                      {k.adet ? <em className="denetim-adet"> × {k.adet}</em> : null}
+                    </td>
+                    <td className="hucre-aciklama">{k.sebep || "—"}</td>
+                    <td className="sag hucre-tutar">{paraGoster(k.tutar)}</td>
+                  </tr>
+                ))
+              )}
+            </tbody>
+          </table>
+        </div>
+      </section>
+    </div>
+  );
+}
+
 // Sekme iskeleti duruyor ama içeriği henüz yok; boş ekran bırakmak yerine ne
 // geleceği yazılıyor — kullanıcı yanlış yere geldiğini sanmasın.
-const ACIKLAMALAR: Record<string, { ad: string; metin: string }> = {
-  denetim: {
-    ad: "Denetim",
-    metin:
-      "Silinen ürünler, silinen tahsilatlar ve düzeltilen ödemeler — kim yaptı, ne zaman, neden.",
-  },
-};
+const ACIKLAMALAR: Record<string, { ad: string; metin: string }> = {};
 
 function Yapiliyor({ bolum }: { bolum: string }) {
   const bilgi = ACIKLAMALAR[bolum];

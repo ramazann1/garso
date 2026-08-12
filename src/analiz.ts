@@ -2,6 +2,8 @@ import type { AdisyonTipi } from "./adisyonlar";
 import { ayarlar } from "./isletmeAyarlari";
 import { kdvDokumu } from "./kdv";
 import { masraflariGetir, odemeAdi, type Masraf } from "./masraflar";
+import { denetimGetir, denetimYaz } from "./denetim";
+export type { DenetimSatiri } from "./denetim";
 import { kisaAd } from "./personel";
 import { supabase } from "./supabase";
 import type { SepetKalemi } from "./types";
@@ -353,6 +355,9 @@ export type AdisyonDetay = AnalizAdisyon & {
   turlar: DetayTur[];
   tahsilatlar: DetayTahsilat[];
   indirimAd: string;
+  /** Hesap eksik kapatıldıysa borcun kime yazıldığı ve sebebi. */
+  eksikKisi: string;
+  eksikSebep: string;
   not: string;
   telefon: string;
   adres: string;
@@ -360,6 +365,7 @@ export type AdisyonDetay = AnalizAdisyon & {
 
 const DETAY_ALANLARI = `id, adisyon_no, tip, durum, acilis, kapanis, indirim, indirim_ad,
        ad, kisi_sayisi, not_metni, musteri_ad, musteri_telefon, adres, masa_id,
+       eksik_kisi, eksik_sebep,
        masa:masalar (ad, bolge_id, bolgeler (ad)),
        acan:personel!adisyonlar_acan_id_fkey (id, ad),
        turlar (sira, olusturma, garson:personel!turlar_garson_id_fkey (ad),
@@ -399,6 +405,8 @@ export async function adisyonDetayi(adisyonId: number): Promise<AdisyonDetay | n
   return {
     ...satiraCevir(s, varsayilanKdv),
     indirimAd: s.indirim_ad ?? "",
+    eksikKisi: s.eksik_kisi ?? "",
+    eksikSebep: s.eksik_sebep ?? "",
     not: s.not_metni ?? "",
     telefon: s.musteri_telefon ?? "",
     adres: s.adres ?? "",
@@ -436,6 +444,37 @@ export async function adisyonAktifEt(adisyon: AnalizAdisyon) {
     .update({ durum: "acik", kapanis: null, guncelleme: new Date().toISOString() })
     .eq("id", adisyon.id);
   if (error) throw new Error("Adisyon yeniden açılamadı.");
+}
+
+/**
+ * Kapanmış hesabın ödeme tipini düzeltir: para kasada doğru, yalnız hangi
+ * kalemden geldiği yanlış yazılmış. Tutara dokunulmuyor, işlem deftere geçiyor.
+ */
+export async function tahsilatTipiDuzelt(
+  detay: AdisyonDetay,
+  tahsilatId: number,
+  yeniTip: string,
+  sebep: string
+) {
+  const tahsilat = detay.tahsilatlar.find((t) => t.id === tahsilatId);
+  if (!tahsilat) return;
+
+  const { error } = await supabase
+    .from("tahsilatlar")
+    .update({ tip: yeniTip })
+    .eq("id", tahsilatId);
+  if (error) throw new Error("Ödeme tipi düzeltilemedi.");
+
+  await denetimYaz([
+    {
+      islem: "tahsilat_tip_duzelt",
+      adisyonId: detay.id,
+      yer: detay.masaAd || TIP_ADLARI[detay.tip],
+      konu: `${tahsilat.tip} → ${yeniTip}`,
+      tutar: tahsilat.tutar,
+      sebep,
+    },
+  ]);
 }
 
 export type OzetDilimi = { ad: string; tutar: number; adet: number };
@@ -786,6 +825,12 @@ export function analizGiderOzeti(giderler: Masraf[]): GiderOzeti {
     turler: grupla((g) => g.tipAd),
     odemeler: grupla((g) => odemeAdi(g.odemeTipi)),
   };
+}
+
+/** Dönemin denetim kayıtları — Denetim sekmesi buradan besleniyor. */
+export function analizDenetimi(f: AnalizFiltre) {
+  const { bas, bit } = donemAraligi(f);
+  return denetimGetir(bas.toISOString(), bit.toISOString());
 }
 
 /** Dönemin giderleri — özet ekranındaki net kâr satırı buna dayanıyor. */

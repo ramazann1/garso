@@ -1,13 +1,14 @@
 import { useEffect, useState } from "react";
-import { Check, CircleCheckBig, Delete, Percent, Save, X } from "lucide-react";
+import { Check, CircleCheckBig, Delete, HandCoins, Percent, Save, X } from "lucide-react";
 import { OdemeIkon } from "../odemeIkon";
 import IndirimModal from "./IndirimModal";
 import type { IndirimKaynagi } from "../indirimler";
 import OnayModal from "./OnayModal";
+import EksikKapat from "./EksikKapat";
 import KdvDokum from "./KdvDokum";
 import OdemeTipDugmeleri from "./OdemeTipDugmeleri";
 import { kalemTutari } from "../adisyonlar";
-import { indirimYapabilir } from "../oturum";
+import { indirimYapabilir, yetkiVar } from "../oturum";
 import { odemeTipleriniGetir } from "../odemeTipleri";
 import type { OdemeTipi } from "../odemeTipleri";
 import type { KdvSatiri } from "../kdv";
@@ -32,6 +33,14 @@ function payYazi(pay: number) {
   return tam > 0 ? `${tam} + ${es[1]}` : es[1];
 }
 
+// Alınmış bir ödemeyi geri almanın gündelik sebepleri; denetim defterine yazılıyor.
+const SILME_SEBEPLERI = [
+  "Yanlış tutar girildi",
+  "Yanlış ödeme tipi",
+  "Müşteri başka türlü ödedi",
+  "Ödeme iptal edildi",
+];
+
 type Props = {
   kalemler: SepetKalemi[];
   toplam: number;
@@ -40,13 +49,18 @@ type Props = {
   kdvSatirlari: KdvSatiri[];
   kayitliTahsilatlar: Tahsilat[];
   onKaydet: (tahsilatlar: Tahsilat[]) => void;
+  /** Kayıtlı bir tahsilat silindiğinde sebebiyle birlikte haber verilir. */
+  onSil: (id: number, sebep?: string) => void;
   onIndirimDegis: (tutar: number, kaynak?: IndirimKaynagi) => void;
   onKalemIndirim: (paylar: Record<number, number>, kaynak?: IndirimKaynagi) => void;
   onKapat: () => void;
-  onOdendi: (tahsilatlar: Tahsilat[]) => void;
+  /** Adisyonu kapatır; parası eksik kalıyorsa borcun kime yazıldığıyla birlikte. */
+  onOdendi: (tahsilatlar: Tahsilat[], eksik?: { kisi: string; sebep: string; tutar: number }) => void;
+  /** Adisyondaki müşteri adı; eksik kapatmada borç alanı bununla açılıyor. */
+  musteri?: string;
 };
 
-export default function TahsilatPanel({ kalemler, toplam, araToplam, indirim, kdvSatirlari, kayitliTahsilatlar, onKaydet, onIndirimDegis, onKalemIndirim, onKapat, onOdendi }: Props) {
+export default function TahsilatPanel({ kalemler, toplam, araToplam, indirim, kdvSatirlari, kayitliTahsilatlar, musteri, onKaydet, onSil, onIndirimDegis, onKalemIndirim, onKapat, onOdendi }: Props) {
   const [tahsilatlar, setTahsilatlar] = useState<Tahsilat[]>(kayitliTahsilatlar ?? []);
   const [girilen, setGirilen] = useState("");
   const [secilen, setSecilen] = useState<Record<number, number>>({});
@@ -55,6 +69,17 @@ export default function TahsilatPanel({ kalemler, toplam, araToplam, indirim, kd
   const [uyari, setUyari] = useState<string | null>(null);
   // Kalandan fazla girilen tutar onaya düşer: üstü bahşiş mi, yanlış giriş mi?
   const [bahsisSorusu, setBahsisSorusu] = useState<{ tip: string; bahsis: number } | null>(null);
+  // Kaydedilmiş tahsilatın silinmesi sebep soruyor; sıradaki satırın yeri.
+  const [silmeSorusu, setSilmeSorusu] = useState<number | null>(null);
+  const [eksikAcik, setEksikAcik] = useState(false);
+
+  const tahsilatiCikar = (i: number, sebep?: string) => {
+    const silinen = tahsilatlar[i];
+    const yeni = tahsilatlar.filter((_, j) => j !== i);
+    setTahsilatlar(yeni);
+    if (silinen?.id) onSil(silinen.id, sebep);
+    onKaydet(yeni);
+  };
 
   useEffect(() => {
     odemeTipleriniGetir().then(setOdemeTipleri);
@@ -284,9 +309,11 @@ export default function TahsilatPanel({ kalemler, toplam, araToplam, indirim, kd
                       aria-label="Tahsilatı sil"
                       onClick={(e) => {
                         e.stopPropagation();
-                        const yeni = tahsilatlar.filter((_, j) => j !== i);
-                        setTahsilatlar(yeni);
-                        onKaydet(yeni);
+                        // Henüz kaydedilmemiş ödeme yanlış dokunuşun kendisi,
+                        // doğrudan kalkar. Kaydedilmiş para hareketini geri
+                        // almak ise sebep isteyen bir iş.
+                        if (o.id) setSilmeSorusu(i);
+                        else tahsilatiCikar(i);
                       }}
                     ><X size={15} /></button>
                   </div>
@@ -364,11 +391,20 @@ export default function TahsilatPanel({ kalemler, toplam, araToplam, indirim, kd
                 <Save size={18} />
                 Kaydet
               </button>
-              {odemeBitti && (
+              {odemeBitti ? (
                 <button className="tahsilat-kapat-btn" onClick={() => onOdendi(tahsilatlar)}>
                   <CircleCheckBig size={19} />
                   Adisyonu Kapat
                 </button>
+              ) : (
+                // Parası eksik kalan hesap da kapatılabiliyor ama bu ayrı bir
+                // karar: borç birine yazılıyor, kayıt düşüyor, yetki istiyor.
+                yetkiVar("odeme.eksik_kapat") && (
+                  <button className="tahsilat-eksik-btn" onClick={() => setEksikAcik(true)}>
+                    <HandCoins size={19} />
+                    Eksik Kapat
+                  </button>
+                )
               )}
             </div>
           </div>
@@ -398,6 +434,34 @@ export default function TahsilatPanel({ kalemler, toplam, araToplam, indirim, kd
             setBahsisSorusu(null);
           }}
           onKapat={() => setBahsisSorusu(null)}
+        />
+      )}
+
+      {eksikAcik && (
+        <EksikKapat
+          kalan={kalan}
+          musteri={musteri}
+          onKapat={() => setEksikAcik(false)}
+          onOnay={(kisi, sebep) => {
+            setEksikAcik(false);
+            onOdendi(tahsilatlar, { kisi, sebep, tutar: kalan });
+          }}
+        />
+      )}
+
+      {silmeSorusu !== null && tahsilatlar[silmeSorusu] && (
+        <OnayModal
+          baslik="Tahsilatı sil"
+          ikon={<X size={20} />}
+          mesaj={`${tahsilatlar[silmeSorusu].tip} ₺${tahsilatlar[silmeSorusu].tutar} tahsilatı hesaptan çıkarılacak. Sebebi nedir?`}
+          tehlikeli
+          sebepler={SILME_SEBEPLERI}
+          onayMetni="Evet, sil"
+          onOnay={(sebep) => {
+            tahsilatiCikar(silmeSorusu, sebep);
+            setSilmeSorusu(null);
+          }}
+          onKapat={() => setSilmeSorusu(null)}
         />
       )}
 
