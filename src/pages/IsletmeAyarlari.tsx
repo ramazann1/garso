@@ -848,7 +848,51 @@ export default function IsletmeAyarlari() {
               />
             </AyarSatiri>
 
-            {/* Kasa kapalıyken alt ayarını göstermek boşuna yer kaplıyor. */}
+            {/* Kasa kapalıyken alt ayarlarını göstermek boşuna yer kaplıyor. */}
+            {genel.kasaTakibi && (
+              <AyarSatiri
+                ad="Kasa kapanış saati"
+                ara={ara}
+                ipucu="Bu saat geçtiği hâlde kasa hâlâ açıksa kapatma hatırlatması çıkar. Boş bırakılırsa hatırlatma yapılmaz. Gecenin ilerleyen saatinde kapanan işletmede kapanış saatini kasa gününün bitişine yakın seçin."
+              >
+                <div className="ayar-saatler">
+                  <input
+                    type="time"
+                    value={genel.kasaKapanisUyari}
+                    onChange={(e) =>
+                      genelDegistir(
+                        { kasaKapanisUyari: e.target.value },
+                        e.target.value ? "Kapanış saati güncellendi" : "Kapanış hatırlatması kapatıldı"
+                      )
+                    }
+                  />
+                </div>
+              </AyarSatiri>
+            )}
+
+            {genel.kasaTakibi && (
+              <AyarSatiri
+                ad="Kapanış hatırlatması ısrarcı olsun"
+                ara={ara}
+                ipucu="Açıkken hatırlatma ertelense bile iki dakika sonra yeniden çıkar, kasa kapatılana kadar peşini bırakmaz. Kapalıyken erteleme on beş dakika sürer. Satışı hiçbir durumda durdurmaz."
+              >
+                <AyarAnahtari
+                  acik={genel.kasaKapanisZorunlu}
+                  degistir={(v) => {
+                    // Saat yoksa hatırlatma hiç çıkmıyor; ısrarı açmak boş düğme olurdu.
+                    if (v && !genel.kasaKapanisUyari) {
+                      setUyari("Önce kasa kapanış saatini seçin; hatırlatma o saate göre çıkıyor.");
+                      return;
+                    }
+                    genelDegistir(
+                      { kasaKapanisZorunlu: v },
+                      v ? "Hatırlatma ısrarcı olacak" : "Hatırlatma ertelenebilir"
+                    );
+                  }}
+                />
+              </AyarSatiri>
+            )}
+
             {genel.kasaTakibi && (
               <AyarSatiri
                 ad="Kasadan para alma"

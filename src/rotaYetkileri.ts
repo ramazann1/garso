@@ -1,3 +1,4 @@
+import { ayarlar } from "./isletmeAyarlari";
 import { yetkiVar } from "./oturum";
 
 /**
@@ -16,6 +17,8 @@ const ROTA_YETKILERI: [string, string][] = [
   ["/siparis", "siparis.al"],
   ["/adisyon", "siparis.al"],
   ["/menu", "tanim.menu"],
+  ["/kasa/gecmis", "kasa.ac_kapat"],
+  ["/kasa/giderler", "kasa.gider"],
   ["/ayarlar", "tanim.ayar"],
   ["/ayarlar/masalar", "tanim.masa"],
   ["/ayarlar/personel", "tanim.personel"],
@@ -37,6 +40,11 @@ export function yolYetkisi(yol: string) {
 }
 
 export function yolaGirebilir(yol: string) {
+  // Kasa takibi kapalı işletmede vardiya diye bir şey yok, geçmiş ekranı da
+  // yok. Giderler kasadan bağımsız tutuluyor: kasa açıp kapatmayan işletmenin
+  // de faturası, kirası var.
+  if (yol.startsWith("/kasa/gecmis") && !ayarlar().kasaTakibi) return false;
+
   const kod = yolYetkisi(yol);
   return !kod || yetkiVar(kod);
 }

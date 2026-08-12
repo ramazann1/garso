@@ -784,3 +784,179 @@ Nakit · Kredi Kartı · Havale · Çek-Senet · Diğer.
    durmasın — Adisyo'nun parametre deseni doğru. Bizde de işletme ayarı. → Faz 1
 8. **Kasa kapanış uyarı saati** parametre açıkken zorunlu alan. Bizde de aynı
    zorunluluk kurulacak, boş bırakılırsa kaydetme engellenecek. → Faz 1
+
+---
+
+## 11. RAPORLAR — CANLI DERİN TUR (12 Ağu 2026)
+*Adisyo'nun Raporlar menüsündeki altı raporun tamamı, bütün sekmeleriyle gezildi.
+Kapanmış adisyon detay penceresi de buradan açılıyor — 9.5'in doğrulaması ve
+eksiklerinin tamamlanması.*
+
+Menüde altı rapor var: **Ürün Satış Raporu · Gün Sonu Raporu · Vardiya Satış
+Raporu · Restaurant İstatistikleri · Stok Durum Raporu · Fire Raporu.**
+Hepsinde ortak desen: solda rapor içindeki **sekme listesi**, sağ üstte
+**Filtrele · İndir · Yazdır** (bazı raporlarda Yazdır yok), başlığın yanında
+parantez içinde **aralık** ("11.08.2026 08:45 - 12.08.2026 08:40" — kasa günü).
+
+### 11.1 Filtreler penceresi (her raporda aynı)
+Sağdan açılan panel: **Tarih** (hazır liste: Bugün · Dün · Bu Hafta) ·
+Başlangıç Tarihi · Bitiş Tarihi · **Başlangıç Saati · Bitiş Saati** + Filtrele
+düğmesi. Saatler kasa gününden geliyor (08:45 / 08:40), elle değiştirilebiliyor.
+Yani her rapor hem gün hem saat aralığıyla süzülüyor.
+
+### 11.2 Gün Sonu Raporu (`/app/report-settlement`)
+Sol sekmeler (14 adet): Özet · **Tüm Adisyonlar** · Yoğunluk Raporu ·
+Masa Siparişleri · Gel Al Siparişler · Paket Siparişler · Açık Hesap Hareketleri ·
+Ödenmezler · Garson Bazlı Satışlar · İptal / İadeler · Masraflar ·
+Zayi Olan Ürünler · Silinen Ürünler · Silinen Tahsilatlar.
+
+- **Özet:** kart ızgarası — Net Kâr · Alınan Ödemeler (altında "Açık Hesap
+  Tahsilatlar / Adisyonlu Tahsilatlar" kırılımı) · Tahsil Edilmemiş Tutar ·
+  Toplam Masraf (Ödeme Tipi Detayı bağlantısı) · İade Tutarı · Toplam Bahşiş
+  (ciroya oran %) · Kurye Başarı Yüzdesi. Altında iki grafik: **Sipariş Tipine
+  Göre Satışlar (Adet)** ve **Ödeme Tipi İstatistikleri (₺)**.
+- **Tüm Adisyonlar:** başlık "ADİSYONLU TAHSİLATLAR ((58) ADET ADİSYON
+  BULUNUYOR.)". Sütunlar: **#Adisyon No** (kırmızı, tıklanınca detay penceresi) ·
+  Sipariş No · Açılış ⇅ · Kapanış ⇅ · Sipariş Tipi · Misafir Sayısı · Masa Adı ·
+  Durum · Kullanıcı · İndirim(₺) · Bahşiş(₺) · Tutar(₺).
+- **Yoğunluk Raporu:** satır = gün, sütun = saat (01:00…24:00), hücre = o saatteki
+  sipariş adedi; dolu hücreler pembe zeminli ısı tablosu.
+- **Masa Siparişleri:** Tüm Adisyonlar'ın masaya süzülmüş hâli + ek **Tahsilat**
+  sütunu: "₺1.916,00 - Nakit" gibi; birden fazla ödeme varsa "**2 Adet Tahsilat**".
+- **Gel Al / Paket:** aynı düzen, tipe göre süzülmüş. Paket'te ayrıca "Kurye Bazlı
+  Ödeme Tipleri" ve platform bazlı (Getir, Trendyol, Yemek Sepeti…) satış grafiği.
+- **Açık Hesap Hareketleri:** üç ayrı tablo — Tahsilat Hareketleri (cari
+  müşterilerden yapılan tahsilatlar) · **Borç Hareketleri** (cari hesaba aktarılan
+  adisyonlar) · **Bakiye Güncelleme Hareketleri** (Borç Fişi / Alacak Fişi).
+- **Ödenmezler:** #Adisyon No · Açılış · Sipariş Tipi · Masa · **Ödenmez** ·
+  Tutar · Tahsilat.
+- **Garson Bazlı Satışlar:** garson başlık satırı (Toplam Satış adet · Toplam
+  Bahşiş · Toplam Tutar · Toplam Ürün Bazlı İndirim), altında o garsonun **ürün
+  kırılımı** (ürün · adet · bahşiş · tutar · indirim).
+- **İptal / İadeler:** #Adisyon No · **Sipariş Durumu** (İptal) · Satış Tarihi ·
+  İşlem Tarihi · Sipariş Tipi · Kullanıcı · Sipariş Ödeme Tipi · **İade Ödeme
+  Tipi** · İndirim · Tutar · **İade / İptal Sebebi** + Toplam satırı.
+- **Masraflar:** "Yapılan Masraf Detayları" — filtre seçilmeden boş, "LÜTFEN
+  FİLTRELEME YAPINIZ" diyor.
+- **Silinen Ürünler:** Sipariş numarası · **Sipariş Detay No** · Ürün Adı ·
+  Ürün Tutarı · Miktar · **İptal Eden Kullanıcı** · **İptal Nedeni**.
+- **Silinen Tahsilatlar:** Sipariş numarası · Ödeme Tipi · Tutar · İptal Eden
+  Kullanıcı · İptal Tarihi. → İkisi birlikte **kayıp/kaçak denetimi**.
+
+### 11.3 Adisyon detay penceresi (9.5'in tamamlanmış hâli)
+Adisyon numarasına tıklayınca açılan geniş pencere. Üst çubuk: **Geri ·
+Siparişe git · Siparişi İade Et · Siparişi Aktif Et · Sipariş geçmişi · Yazdır**
+(geçmiş açıkken "Sipariş geçmişi" düğmesi yerini kırmızı **Kapat**'a bırakıyor).
+
+Üç sütun:
+1. **Sipariş Bilgileri** — katlanır **Zaman Bilgileri** (Siparişin Eklendiği
+   Zaman · **Güncelleme Zamanı**, kalem ikonuyla) · Sipariş Türü · Entegrasyon
+   Tipi · Müşteri · **Durum (Kapandı)** · Sipariş Notu · Müşteri Adresi ·
+   **İndirim Adı**.
+2. **Ürünler** — her satır: adet · porsiyon ("Tam") · **tarih-saat (ürünü giren
+   kullanıcı)** · ürün adı · altında seçenek/not (ORTA, SADE, "ikiside mantarsız")
+   · tutar. Altında hesap dökümü: **Ara Toplam · İndirim Tutarı · Brüt Tutar ·
+   Kdv · Toplam Tutar**. (Brüt + KDV = Ara Toplam; Toplam = Ara Toplam − İndirim.)
+3. **Tahsilatlar** — ödeme tipi + tutar, **TOPLAM TAHSİL EDİLEN**. Ödeme tipinin
+   yanındaki ok **düzenleme** açıyor: "Tahsilat Tipi" listesi + onay/vazgeç —
+   yani **kapanmış adisyonun ödeme tipi sonradan düzeltilebiliyor**.
+
+**Sipariş geçmişi:** dikey, sağ-sol dönüşümlü zaman çizelgesi. Her düğümde
+tarih-saat, **kullanıcı adı büyük punto**, altında olay: "Sipariş Açıldı" →
+"Yeni ürün veya ürünler eklendi" (+ **Ürünler** bağlantısı; tıklayınca balonda
+"( 3 ) ÇAY" — o turda eklenenler) → "**Sipariş çıktısı alındı**" → "Ödeme işlemi
+yapıldı (Kredi Kartı - 2762,90)" → "Sipariş kapatıldı".
+
+### 11.4 Ürün Satış Raporu (`/app/report-sales-products`)
+Sekmeler: **Bölge Bazında · Kategori Bazında · Ürün Bazında · Reçeteli Ürün
+Bazında · Menü Bazında · Özellik Bazında.**
+- Bölge: Bölge · **Müşteri Sayısı** · İndirim · Tutar · **Oran(%)** + TOPLAM.
+- Kategori: Kategori · Miktar · İndirim · Tutar · Oran · **Detay**.
+- Ürün: Ürün Kodu · Ürün Adı · Miktar ⇅ · Birim · Kategori · **Birim Fiyatı** ⇅ ·
+  **İkram(₺)** · **Maliyet(₺)** · Toplam Tutar ⇅ · Oran(%) · Detay.
+- **Detay → "Ürün Detay Raporu":** o ürünün Tarih · **Saat Aralığı** (0-1, 1-2…) ·
+  Satış Adedi kırılımı + "Geri Dön". Yani ürünün saatlik satış dağılımı.
+- Özellik Bazında: seçenek gruplarının (AROMALAR, ICE TEA, Kahve Özellikleri…)
+  miktar ve oranı; grup adının yanındaki okla alt seçimlere açılıyor.
+
+### 11.5 Vardiya Satış Raporu (`/app/shift-sales`)
+Üç sekme, **hepsi kullanıcı (vardiya) bazlı** ve burada **Yazdır yok**, sadece
+Filtrele + İndir.
+- **Ödeme Raporu:** kullanıcı kırılımlı iki grafik — Sipariş Tipine Göre Satışlar
+  (Adet) ve Ödeme Tipi İstatistikleri (₺). Her çubuk kullanıcıya bölünmüş.
+- **Adisyon Raporu:** Gün Sonu'ndaki listenin **zenginleştirilmiş** hâli.
+  Sütunlar: #Adisyon No · Açılış ⇅ · Kapanış ⇅ · Sipariş Tipi · Masa Adı · Durum ·
+  Kullanıcı · **Entegrasyon Adı · Entegrasyon Sipariş No · Kuver Ücreti ·
+  Garsoniye Ücreti** · İndirim · Tutar · Tahsilat (Toplam satırında "Sipariş
+  Ödemeleri" ve "Açık Hesap Borç" ayrı ayrı).
+- **Kasa Raporu:** parametre kapalıyken boş açılıyor ve kendi metniyle
+  yönlendiriyor: *"Bu rapordaki değerler, Gün başı - Gün Sonu işlemlerini manuel
+  yapan işletmeler için görüntülenebilir… Parametreler ekranındaki 'Gün başı -
+  gün sonu manuel yapılsın' seçeneğini aktif ederek…"* Sütunlar: Kullanıcı Adı ·
+  Açılış Tarihi · Kapanış Tarihi · Durum · Ödeme Tipi · Sipariş Sayısı ·
+  Toplam Satış · Açıklama (10.4'te dolu hâli görülmüştü).
+
+### 11.6 Restaurant İstatistikleri (`/app/restaurant-statistics`)
+Sekmeler: Özet · Günlük Ciro Verileri · Grafik Verileri · Paket Siparişler ·
+Satış Kanalı Bazında Satışlar · Garson Bazlı Satışlar · Ödenmez Bazlı Satışlar.
+- **Özet:** 12 KPI kartı — satış toplamı (altında KDV tutarı) · günlük ortalama
+  satış · toplam adisyon sayısı · **bir güne düşen ortalama adisyon tutarı** ·
+  **kişi başı ortalama adisyon tutarı** · günlük ortalama adisyon sayısı ·
+  toplam indirim (altında "Ürün Bazlı / Adisyon Bazlı" kırılımı) · toplam bahşiş ·
+  **ağırlanan misafir sayısı** · masraflar çıkarılmış net kâr · toplam masraf ·
+  tahsil edilmemiş / edilmiş tutar · Toplam Alacak Fişi · Toplam Borç Fişi.
+- **Günlük Ciro Verileri:** ödeme tipi çubuk grafiği + gün gün tablo
+  (Günlük Ciro · Nakit · Kredi Kartı · Multinet · Toplam Satış · Açık Hesap Borç).
+  Ödeme tipleri **sütun olarak** çıkıyor — tanımlı her tip bir sütun.
+- **Grafik Verileri:** garson bazlı satış (tutar + adet) · Sipariş Tipine Göre
+  Satışlar · **Masa Bazlı Satışlar**.
+- **Satış Kanalı Bazında:** #No · Sipariş Tipi · Sipariş Sayısı · Toplam İndirim ·
+  Toplam Sipariş Tutarı · Oran(%).
+
+### 11.7 Stok Durum ve Fire
+- **Stok Durum Raporu:** #No · Ürün Kodu · Kategori ⇅ · Ürün Adı ⇅ · **Mutfak
+  Grubu** · Stok Miktarı ⇅ (eksiye düşebiliyor) · **Kritik Stok Miktarı** ·
+  Stok Birimi · Birim Tutarı · Toplam Tutar · Detay.
+- **Fire Raporu:** **satın alınmamış modül** — ekran raporu değil tanıtımı
+  gösteriyor ("Fire Tanımı Nedir? / Nasıl Aktif Edilir?" + satış iletişimi).
+  Kapalı modüle boş ekran yerine açıklama gösterme deseni.
+
+### 11.8 Bu turda çıkan kararlar ve Garso'ya alınacaklar
+1. **Rapor = sol sekmeli tek sayfa.** Her rapor kendi içinde sekmelere ayrılıyor,
+   üstte tek bir aralık ve Filtrele/İndir/Yazdır şeridi duruyor. Garso'da da
+   Raporlar tek başlık, altında rapor listesi; rapor içi sekmeler solda. → Faz 1
+2. **Filtre her yerde aynı bileşen:** hazır aralık (Bugün/Dün/Bu Hafta) + tarih +
+   **saat**. Kasa günü saatleri varsayılan geliyor. Garso'da tek `RaporFiltre`
+   bileşeni yazılacak. → Faz 1
+3. **Adisyon detay penceresi raporun içinden açılıyor** ve her yerden aynı
+   bileşen. Bizde de `AdisyonDetay` tek bileşen; Gün Sonu → Tüm Adisyonlar
+   listesi onun ilk giriş noktası olacak. → Faz 1
+4. **Ürünler sütununda kalem bazında "saat (kullanıcı)"** duruyor; bizde tur
+   bazında var (`turlar.garson_id` + `olusturma`), gösterimde kalem satırına
+   yazılacak. → Faz 1
+5. **Hesap dökümü beş satır:** Ara Toplam · İndirim · Brüt (KDV hariç matrah) ·
+   KDV · Toplam. Bizim `adisyonOzeti` bunu zaten üretiyor, ekranda aynı sırayla
+   gösterilecek. → Faz 1
+6. **Kapanmış adisyonun ödeme tipi düzeltilebiliyor.** Yanlış tipe basılan
+   tahsilatı düzeltmek gerçek bir ihtiyaç; yetkiye bağlanacak ve **sipariş
+   geçmişine "ödeme tipi değiştirildi" olarak düşecek**. → Faz 1
+7. **Sipariş geçmişi olay listesi netleşti:** açıldı · ürün eklendi (o turun
+   ürünleri balonda) · **çıktı alındı** · ödeme yapıldı (tip + tutar) · kapatıldı.
+   Bizde `turlar` + `tahsilatlar` + `adisyonlar.acan_id` bunların çoğunu zaten
+   veriyor; "çıktı alındı" yazıcı işiyle, "ödeme tipi değişti" madde 6 ile
+   gelecek. Tam denetim kaydı (audit_log) yerine **türetilmiş zaman çizelgesi**
+   ile başlıyoruz. → Faz 1
+8. **Silinen Ürünler + Silinen Tahsilatlar ayrı iki rapor.** İptal edilen kalemi
+   kimin sildiği ve nedeni tutuluyor. Bizde kalem `durum='iptal'` olarak duruyor
+   ama **kimin iptal ettiği ve sebebi yok** — eklenecek. → Faz 1
+9. **İptal/İade raporunda "İade Ödeme Tipi" ayrı sütun.** İade, satışın ödeme
+   tipinden farklı bir yolla yapılabiliyor (nakit satılıp karta iade). → Faz 2
+10. **Yoğunluk (gün × saat ısı tablosu)** ve **ürünün saatlik satış dağılımı**
+    küçük ama işletmeciye vardiya planlatan iki rapor. → Faz 2
+11. **Kuver ve Garsoniye adisyonun kendi sütunları.** Faz 2'ye yazılmıştı, rapor
+    tarafında da yer tutuyorlar — veri modeline eklenirken rapor sütunları da
+    düşünülecek. → Faz 2
+12. **Satın alınmamış/kapalı modül ekranı boş bırakılmıyor**, ne işe yaradığı
+    anlatılıp açma yolu gösteriliyor (Fire, Kasa Raporu). Garso'da kapalı
+    modüller için aynı desen kullanılacak. → Faz 1
+

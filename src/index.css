@@ -7465,3 +7465,337 @@ body {
 .yetki-ust .ayar-arama {
   margin: 0 auto;
 }
+
+/* ---- Kasa geçmişi ----
+   Vardiya listesi: her satır tıklanabilir, sağ ucunda farkın rengi duruyor.
+   Sürmekte olan vardiya soldaki mercan şeridiyle ayrılıyor. */
+
+.kasa-gecmis-liste {
+  display: flex;
+  flex-direction: column;
+  gap: 8px;
+}
+
+.kasa-gecmis-satir {
+  display: grid;
+  grid-template-columns: minmax(150px, 1fr) minmax(140px, 1fr) 150px 160px;
+  align-items: center;
+  gap: 12px;
+  width: 100%;
+  padding: 12px;
+  border: 1px solid #eee6dc;
+  border-radius: 10px;
+  background: var(--kart);
+  font-family: inherit;
+  text-align: left;
+  cursor: pointer;
+}
+
+.kasa-gecmis-satir:hover {
+  border-color: #d8cbbc;
+}
+
+.kasa-gecmis-satir.suruyor {
+  border-left: 3px solid var(--mercan);
+}
+
+.kasa-gecmis-satir > span {
+  display: flex;
+  flex-direction: column;
+  gap: 2px;
+  font-size: 14.5px;
+  font-weight: 500;
+}
+
+.kasa-gecmis-satir small {
+  font-size: 13px;
+  color: var(--soluk);
+}
+
+.kasa-gecmis-tutar {
+  font-variant-numeric: tabular-nums;
+}
+
+.kasa-gecmis-satir .kasa-fark {
+  justify-content: center;
+  padding: 7px 10px;
+  font-size: 14px;
+}
+
+.kasa-gecmis-acik {
+  justify-content: center;
+  border-radius: 11px;
+  padding: 7px 10px;
+  background: var(--zemin);
+  font-size: 14px;
+  font-weight: 600;
+  color: var(--metin);
+  text-align: center;
+}
+
+.kasa-detay-fark {
+  margin-top: 16px;
+}
+
+.kasa-notlar {
+  margin-top: 14px;
+  display: flex;
+  flex-direction: column;
+  gap: 6px;
+  font-size: 14px;
+}
+
+.kasa-notlar strong {
+  color: var(--soluk);
+  font-weight: 600;
+}
+
+/* ---- Giderler ----
+   Liste satırı kasa geçmişiyle aynı ritimde; sağ uçta tutar ve düzenleme. */
+
+.gider-liste {
+  display: flex;
+  flex-direction: column;
+  gap: 8px;
+}
+
+.gider-satir {
+  display: grid;
+  grid-template-columns: 110px minmax(180px, 1fr) 130px 130px auto;
+  align-items: center;
+  gap: 12px;
+  padding: 10px 12px;
+  border: 1px solid #eee6dc;
+  border-radius: 10px;
+  background: var(--kart);
+  font-size: 14.5px;
+}
+
+.gider-satir > span {
+  display: flex;
+  flex-direction: column;
+  gap: 2px;
+}
+
+.gider-satir small {
+  font-size: 13px;
+  color: var(--soluk);
+}
+
+.gider-zaman {
+  font-weight: 500;
+}
+
+.gider-tur {
+  font-weight: 600;
+}
+
+.gider-odeme {
+  color: var(--soluk);
+}
+
+.gider-tutar {
+  font-weight: 600;
+  font-variant-numeric: tabular-nums;
+  text-align: right;
+}
+
+.gider-satir button {
+  border: 1px solid #eee6dc;
+  border-radius: 9px;
+  padding: 7px 9px;
+  background: var(--kart);
+  color: var(--soluk);
+  cursor: pointer;
+}
+
+.gider-satir button:hover {
+  border-color: #d8cbbc;
+  color: var(--metin);
+}
+
+.gider-toplam {
+  max-width: 340px;
+  margin-left: auto;
+  margin-top: 18px;
+}
+
+/* Dönem seçimi başlık şeridinde; arama kutusuyla ekle düğmesinin arasında. */
+.gider-donem {
+  margin-left: auto;
+}
+
+.gider-tur-dugme {
+  display: inline-flex;
+  align-items: center;
+  gap: 7px;
+  border: 1px solid #eee6dc;
+  border-radius: 10px;
+  padding: 9px 13px;
+  background: var(--kart);
+  font-family: inherit;
+  font-size: 14px;
+  font-weight: 500;
+  color: var(--metin);
+  cursor: pointer;
+}
+
+.gider-tur-dugme:hover {
+  border-color: #d8cbbc;
+}
+
+.gider-bos-aksiyon {
+  display: flex;
+  gap: 10px;
+  margin-top: 6px;
+}
+
+.gider-hazir-liste {
+  margin-top: 12px;
+  font-size: 14px;
+  color: var(--soluk);
+}
+
+.gider-ikili {
+  display: grid;
+  grid-template-columns: 1fr 1fr;
+  gap: 12px;
+}
+
+.cip-secim .gider-tur-ekle {
+  display: inline-flex;
+  align-items: center;
+  gap: 6px;
+  border-style: dashed;
+  color: var(--soluk);
+}
+
+.gider-tur-ekleme {
+  display: flex;
+  gap: 10px;
+  margin-bottom: 14px;
+}
+
+.gider-tur-ekleme input {
+  flex: 1;
+  padding: 11px 12px;
+  border: 1px solid #eee6dc;
+  border-radius: 11px;
+  font-family: inherit;
+  font-size: 14px;
+}
+
+.gider-tur-liste {
+  display: flex;
+  flex-direction: column;
+  gap: 8px;
+  margin-bottom: 16px;
+}
+
+.gider-tur-satir {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  padding: 9px 12px;
+  border: 1px solid #eee6dc;
+  border-radius: 10px;
+  font-size: 14.5px;
+}
+
+.gider-tur-satir span,
+.gider-tur-satir input {
+  flex: 1;
+}
+
+.gider-tur-satir input {
+  padding: 7px 10px;
+  border: 1px solid #eee6dc;
+  border-radius: 9px;
+  font-family: inherit;
+  font-size: 14.5px;
+}
+
+.gider-tur-satir button {
+  border: none;
+  background: none;
+  padding: 5px;
+  color: var(--soluk);
+  cursor: pointer;
+}
+
+.gider-tur-satir button:hover {
+  color: var(--metin);
+}
+
+/* Kapanış saati geçtiği hâlde açık duran kasa: düğme mercana dönüp kendini
+   gösteriyor, "açık" hâlinin sakin yeşilinde kaybolmasın. */
+.kasa-dugme.gecikti {
+  border-color: var(--mercan);
+  background: #fdeeeb;
+  color: #b34a33;
+}
+
+.kasa-dugme.gecikti strong {
+  color: #b34a33;
+}
+
+/* Başlıklı onay penceresi: çıplak metin bloğu yerine ikon + başlık + açıklama.
+   Kasa kapanış hatırlatması gibi kendiliğinden çıkan uyarılar bunu kullanıyor;
+   kullanıcı ne olduğunu okumadan önce anlıyor. */
+.onay-modal.baslikli {
+  width: 380px;
+  padding: 26px 26px 22px;
+}
+
+.onay-ust {
+  display: flex;
+  align-items: center;
+  gap: 12px;
+  margin-bottom: 12px;
+}
+
+.onay-im {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  width: 40px;
+  height: 40px;
+  border-radius: 12px;
+  background: #fdeeeb;
+  color: var(--mercan);
+  flex: none;
+}
+
+.onay-im.tehlikeli {
+  background: #fdeaea;
+  color: #e74c3c;
+}
+
+.onay-ust h3 {
+  font-size: 17px;
+  font-weight: 600;
+  color: var(--metin);
+}
+
+/* Pencerenin asıl cümlesi; ikincil metin değil, koyu tonda duruyor. */
+.onay-modal.baslikli p {
+  font-size: 15px;
+  color: var(--metin);
+  margin-bottom: 22px;
+}
+
+/* Düğmeler modalın kendi yazı tipinde kalsın; tarayıcı varsayılanı kayıyordu. */
+.modal-aksiyonlar .iptal {
+  font-family: inherit;
+  font-size: 14px;
+  font-weight: 500;
+  color: var(--metin);
+}
+
+.modal-aksiyonlar .iptal:hover {
+  border-color: #d8cbbc;
+}
+
+.modal-aksiyonlar .uygula {
+  font-family: inherit;
+}

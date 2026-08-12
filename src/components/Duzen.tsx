@@ -1,6 +1,6 @@
 import { useState } from "react";
 import { useLocation, useNavigate } from "react-router-dom";
-import { ChevronDown, Lock, LogOut, Settings } from "lucide-react";
+import { Banknote, ChevronDown, Lock, LogOut, Settings } from "lucide-react";
 import OnayModal from "./OnayModal";
 import { kilitKaldir, kilitliMi } from "../cikisKilidi";
 import { kilitle, oturumuKapat, useOturum } from "../oturum";
@@ -37,9 +37,15 @@ export const menuBolumleri: Bolum[] = [
   { yol: "/menu/aktarim", ad: "İçe/Dışa Aktar" },
 ];
 
+export const kasaBolumleri: Bolum[] = [
+  { yol: "/kasa/gecmis", ad: "Kasa Geçmişi" },
+  { yol: "/kasa/giderler", ad: "Giderler" },
+];
+
 const baglantilar = [
   { yol: "/", ad: "Salon", ikon: "salon" },
   { yol: "/menu", ad: "Menü Stüdyosu", ikon: "menu", alt: menuBolumleri },
+  { yol: "/kasa", ad: "Kasa", ikon: "kasa", alt: kasaBolumleri },
   { yol: "/ayarlar", ad: "İşletme Ayarları", ikon: "ayar", alt: ayarBolumleri },
 ];
 
@@ -68,6 +74,7 @@ function Ikon({ tip }: { tip: string }) {
     );
   }
   if (tip === "ayar") return <Settings />;
+  if (tip === "kasa") return <Banknote />;
   return (
     <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2">
       <path d="M4 5h16M4 12h16M4 19h10" strokeLinecap="round" />

@@ -1,3 +1,4 @@
+import { nakitGiderToplami } from "./masraflar";
 import { acikOturum } from "./oturum";
 import { supabase } from "./supabase";
 
@@ -30,7 +31,9 @@ export type KasaDurumu = {
   nakitSatis: number;
   giris: number;
   cikis: number;
-  /** Kasada olması gereken: açılış + nakit satış + giriş − çıkış. */
+  /** Vardiya boyunca nakit ödenen giderler; kasadan çıkmış sayılıyor. */
+  nakitGider: number;
+  /** Kasada olması gereken: açılış + nakit satış + giriş − çıkış − nakit gider. */
   beklenen: number;
 };
 
@@ -74,11 +77,19 @@ async function kasayaGirenTipler(): Promise<string[]> {
 export async function kasaDurumu(): Promise<KasaDurumu> {
   const vardiya = await acikVardiya();
   if (!vardiya) {
-    return { vardiya: null, hareketler: [], nakitSatis: 0, giris: 0, cikis: 0, beklenen: 0 };
+    return {
+      vardiya: null,
+      hareketler: [],
+      nakitSatis: 0,
+      giris: 0,
+      cikis: 0,
+      nakitGider: 0,
+      beklenen: 0,
+    };
   }
 
   const tipler = await kasayaGirenTipler();
-  const [{ data: hareketVeri }, { data: tahsilatVeri }] = await Promise.all([
+  const [{ data: hareketVeri }, { data: tahsilatVeri }, nakitGider] = await Promise.all([
     supabase
       .from("kasa_hareketleri")
       .select("id, tip, tutar, aciklama, olusturma, kisi:kisi_id (ad)")
@@ -91,9 +102,10 @@ export async function kasaDurumu(): Promise<KasaDurumu> {
           .in("tip", tipler)
           .gte("olusturma", vardiya.acilis)
       : Promise.resolve({ data: [] as any[] }),
+    nakitGiderToplami(vardiya.acilis),
   ]);
 
-  const hareketler: Hareket[] = ((hareketVeri as any[]) ?? []).map((h) => ({
+  const hareketler: Hareket[] =((hareketVeri as any[]) ?? []).map((h) => ({
     id: h.id,
     tip: h.tip,
     tutar: Number(h.tutar),
@@ -115,8 +127,129 @@ export async function kasaDurumu(): Promise<KasaDurumu> {
     nakitSatis,
     giris,
     cikis,
-    beklenen: vardiya.acilisTutar + nakitSatis + giris - cikis,
+    nakitGider,
+    beklenen: vardiya.acilisTutar + nakitSatis + giris - cikis - nakitGider,
   };
+}
+
+/** Kapanmış vardiyanın hesabı; açık vardiyada sayılan/fark henüz yok. */
+export type VardiyaOzeti = Vardiya & {
+  nakitSatis: number;
+  giris: number;
+  cikis: number;
+  nakitGider: number;
+  beklenen: number;
+  /** Sayılan − beklenen. Vardiya açıkken null. */
+  fark: number | null;
+};
+
+/**
+ * Vardiya geçmişi. Beklenen tutar kapanışta ayrıca saklanmıyor, aynı formülle
+ * yeniden hesaplanıyor: açılış + nakit satış + giriş − çıkış. Vardiyanın nakit
+ * satışı açılış ile kapanış arasındaki tahsilatlar; açık vardiyada üst sınır yok.
+ */
+export async function vardiyaGecmisi(limit = 60): Promise<VardiyaOzeti[]> {
+  const [{ data: vardiyaVeri }, tipler] = await Promise.all([
+    supabase
+      .from("kasa_vardiyalari")
+      .select(ALANLAR)
+      .order("acilis", { ascending: false })
+      .limit(limit),
+    kasayaGirenTipler(),
+  ]);
+
+  const vardiyalar = ((vardiyaVeri as any[]) ?? []).map(vardiyayaCevir);
+  if (vardiyalar.length === 0) return [];
+
+  // Hareketler ve tahsilatlar tek seferde çekilip vardiyalara dağıtılıyor;
+  // liste uzadıkça sorgu sayısı artmasın.
+  const enEski = vardiyalar[vardiyalar.length - 1].acilis;
+  const [{ data: hareketVeri }, { data: tahsilatVeri }, { data: giderVeri }] = await Promise.all([
+    supabase
+      .from("kasa_hareketleri")
+      .select("vardiya_id, tip, tutar")
+      .gte("olusturma", enEski),
+    tipler.length
+      ? supabase
+          .from("tahsilatlar")
+          .select("tutar, olusturma")
+          .in("tip", tipler)
+          .gte("olusturma", enEski)
+      : Promise.resolve({ data: [] as any[] }),
+    supabase
+      .from("masraflar")
+      .select("tutar, zaman")
+      .eq("odeme_tipi", "nakit")
+      .gte("zaman", enEski),
+  ]);
+
+  const hareketler = (hareketVeri as any[]) ?? [];
+  const tahsilatlar = (tahsilatVeri as any[]) ?? [];
+  const giderler = (giderVeri as any[]) ?? [];
+
+  return vardiyalar.map((v) => {
+    const kendi = hareketler.filter((h) => h.vardiya_id === v.id);
+    const topla = (tip: string) =>
+      kendi.filter((h) => h.tip === tip).reduce((t, h) => t + Number(h.tutar), 0);
+
+    const nakitSatis = tahsilatlar
+      .filter((o) => o.olusturma >= v.acilis && (!v.kapanis || o.olusturma <= v.kapanis))
+      .reduce((t, o) => t + Number(o.tutar), 0);
+
+    const nakitGider = giderler
+      .filter((m) => m.zaman >= v.acilis && (!v.kapanis || m.zaman <= v.kapanis))
+      .reduce((t, m) => t + Number(m.tutar), 0);
+
+    const giris = topla("giris");
+    const cikis = topla("cikis");
+    const beklenen = v.acilisTutar + nakitSatis + giris - cikis - nakitGider;
+
+    return {
+      ...v,
+      nakitSatis,
+      giris,
+      cikis,
+      nakitGider,
+      beklenen,
+      fark: v.sayilanTutar == null ? null : v.sayilanTutar - beklenen,
+    };
+  });
+}
+
+/** Bir vardiyanın para giriş/çıkış dökümü — detay penceresi için. */
+export async function vardiyaHareketleri(vardiyaId: number): Promise<Hareket[]> {
+  const { data } = await supabase
+    .from("kasa_hareketleri")
+    .select("id, tip, tutar, aciklama, olusturma, kisi:kisi_id (ad)")
+    .eq("vardiya_id", vardiyaId)
+    .order("olusturma");
+
+  return ((data as any[]) ?? []).map((h) => ({
+    id: h.id,
+    tip: h.tip,
+    tutar: Number(h.tutar),
+    aciklama: h.aciklama ?? "",
+    kisi: h.kisi?.ad ?? "",
+    olusturma: h.olusturma,
+  }));
+}
+
+/**
+ * Kapanış saati geçtiği hâlde kasa hâlâ açık mı?
+ *
+ * Eşik vardiyanın açılışından sonraki ilk kapanış saati: gece 01:00'e kadar
+ * çalışan işletme kasayı 09:00'da açıp 01:00'de kapatıyor, bugünün 01:00'i
+ * çoktan geçmiş olsa bile hatırlatma gece çıkmalı.
+ */
+export function kapanisGecikti(acilis: string, uyariSaati: string) {
+  if (!uyariSaati) return false;
+
+  const [saat, dakika] = uyariSaati.split(":").map(Number);
+  const esik = new Date(acilis);
+  esik.setHours(saat, dakika, 0, 0);
+  if (esik <= new Date(acilis)) esik.setDate(esik.getDate() + 1);
+
+  return Date.now() >= esik.getTime();
 }
 
 export async function kasaAc(acilisTutar: number, not: string) {

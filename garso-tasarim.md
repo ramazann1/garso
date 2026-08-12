@@ -1,7 +1,7 @@
-# GARSO — Teknik Tasarım: Veri Modeli & Ekran Haritası
+﻿# GARSO — Teknik Tasarım: Veri Modeli & Ekran Haritası
 *Restoran ve cafe'ler için bulut tabanlı satış ve işletme yönetim sistemi.*
 
-## 0. SIRADAKİ İŞ (11 Ağu 2026'da güncellendi)
+## 0. SIRADAKİ İŞ (12 Ağu 2026'da güncellendi)
 
 *Ramazan seansa "devam edelim" diye giriyor — sıradaki iş bu listenin en üstündeki
 maddedir. Seans sonunda bu liste güncellenir: biten madde silinir, kalanlar
@@ -29,30 +29,44 @@ bulgu çıktı: kasa günü ile vardiya ayrı kavramlar, kasa ekranı sayfa değ
 para giriş/çıkış giderden ayrı bir işlem, gider ödeme tipi satışınkinden ayrı sabit
 liste. Ayrıca **ayar ekranlarının düzeni yeniden kuruldu** (aşağıda).
 
-1. **Kasa Geçmişi + Giderler** — kasanın kalan yarısı. Kasa Geçmişi: vardiya
-   listesi ve detayı (açan/kapatan, açılış tutarı, beklenen, sayılan, fark);
-   veri `kasa_vardiyalari` ve `kasa_hareketleri`'nde hazır duruyor. Giderler:
-   `masraf_tipleri` (hazır şablonla: Faturalar, Vergi, Personel, Temizlik, Gıda ve
-   İçecek, Teknik Servis, Kira, Diğer) + `masraflar` (tip, ödeme tipi, tarih, saat,
-   tutar, açıklama). **Gider ödeme tipi ayrı ve sabit liste**: Nakit · Kredi Kartı ·
-   Havale · Çek-Senet · Diğer — `odeme_tipleri`ne bağlanmıyor (bölüm 10.5).
-   Nakit gider kasadan düşecek. Sol menüye "Kasa" başlığı, altında Kasa Geçmişi
-   (`kasa.ac_kapat`) ve Giderler (`kasa.gider`).
-2. **Kasa kapanış hatırlatması ve zorunlu kapanış** — `isletme_ayarlari` içinde
-   `kasa_kapanis_zorunlu` ve `kasa_kapanis_uyari` sütunları hazır ama arayüzleri
-   yok; mantığı yazılmadan ayar koymak boş düğme olurdu. Uyarı saatinden sonra
-   kasa hâlâ açıksa hatırlatma, zorunluysa gün sonu alınamaması.
-3. **Adisyon detay penceresi + kapanmış adisyonlar** — Adisyo'da ayrı liste ekranı
-   yok; her yerden açılan **tek bir detay penceresi** var (sipariş bilgileri /
-   ürünler / tahsilatlar + "siparişi aktif et", "sipariş geçmişi" zaman çizelgesi).
-   Bizde de tek bileşen olacak. Bölüm 9.5.
-4. **Raporlar → Gün Sonu** — yukarıdakiler bittikten sonra tek seferde.
-5. **Masa yazdırma ve adisyon iptali** — masa üç nokta menüsünde yerleri boş
+**12 Ağu 2026:** Kasa modülü bitti (Kasa Geçmişi, Giderler, kapanış hatırlatması)
+ve **Adisyo'nun Raporlar bölümü baştan sona turlandı** — altı raporun her sekmesi,
+adisyon detay penceresi ve sipariş geçmişi dahil (yol haritası bölüm 11). Rapor
+kapsamı kararı: **Adisyo'daki her rapor Garso'da da olacak, üstüne bizim
+eklediklerimizle daha zengin.** Eksik görünenler vazgeçilmiş değil, dayandığı
+modüle bağlı (stok, cari hesap, entegrasyon). Sıralama kısıtı var, kapsam kısıtı yok.
+
+1. **Raporlar ekranı — iskelet.** Adisyo'daki gibi ayrı ayrı rapor sayfaları
+   değil, **tek ekran + üst sekmeler**: Özet · Adisyonlar · Ürünler · Personel ·
+   Giderler · Denetim. Aynı adisyon listesi Adisyo'da üç yerde tekrarlanıyor
+   (Gün Sonu → Tüm Adisyonlar, Masa Siparişleri, Vardiya → Adisyon Raporu);
+   bizde tek liste, gerisi filtre. Kararlar yol haritası 11.8'de.
+   - **Özet başrolde günün cirosu** (Ramazan'ın ilk baktığı şey). Şık ve
+     Adisyo'dan daha kullanışlı olması istendi — kart yığını değil, okunur bir
+     düzen.
+   - **Ortak filtre bileşeni** (`RaporFiltre`): dönem (Bugün · Dün · Bu hafta ·
+     Geçen hafta · Bu ay · Son 30 gün · Özel aralık, hepsi kasa gününe oturur) ·
+     **vardiya seçimi** · bölge/masa · garson · sipariş tipi · ödeme tipi ·
+     durum · indirimli · tutar aralığı · arama (adisyon no, masa, müşteri).
+     Seçilenler başlık altında çip olarak durur, sekmeler arası korunur.
+     İleride "kayıtlı görünüm" eklenebilecek şekilde kurulacak.
+2. **Adisyon detay penceresi** — her yerden açılan tek bileşen (yol haritası 11.3).
+   Sipariş bilgileri / ürünler (tur tur, kalemde saat + kullanıcı) / tahsilatlar +
+   döküm (Ara Toplam · İndirim · Brüt · KDV · Toplam) + **sipariş geçmişi zaman
+   çizelgesi** (açıldı · ürün eklendi · ödeme alındı · kapatıldı; turun ürünleri
+   balonda). Aksiyonlar: Siparişe git · Siparişi aktif et. Raporlar → Adisyonlar
+   listesi bunun giriş noktası; ikisi birlikte yazılacak.
+3. **Turdan çıkan iki veri eksiği** — rapor yazılmadan kapatılmalı:
+   `adisyon_kalemleri`'nde **kimin iptal ettiği ve iptal sebebi yok** (Adisyo'nun
+   "Silinen Ürünler" raporu bunu tutuyor), silinen tahsilat için de aynısı gerekli.
+   Ayrıca **kapanmış adisyonun ödeme tipini düzeltme** (yetkiye bağlı, geçmişe
+   kayıt düşer) — yol haritası 11.8 madde 6 ve 8.
+4. **Masa yazdırma ve adisyon iptali** — masa üç nokta menüsünde yerleri boş
    duruyor; yazdırma yazıcı altyapısına, iptal adisyon detay penceresine bağlı.
-6. **İşletme kaydı ekranı** — satır güvenliği açılınca çıktı: hiç hesabı olmayan
+5. **İşletme kaydı ekranı** — satır güvenliği açılınca çıktı: hiç hesabı olmayan
    yeni bir işletme kendi ilk yöneticisini oluşturamıyor. Ürün satışa çıkmadan
    önce şart, Ramazan'ın kurulumunu etkilemiyor. Ayrıntı yol haritası Faz 2'de.
-7. **Yurt dışına açılırsa değişmesi gerekenler** — para birimi (₺ arayüzde sabit
+6. **Yurt dışına açılırsa değişmesi gerekenler** — para birimi (₺ arayüzde sabit
    yazılı), tarih/saat biçimi (`tr-TR`) ve "KDV" teriminin kendisi. Bugünün işi
    değil, akılda dursun diye burada.
 
@@ -797,6 +811,42 @@ görüntüle" ve aktif/pasif ürün — 1 Ağu 2026 ikinci seansında tamamland�
    "Personel ekle" düğmesinin solunda, Genel Yetkiler'de başlıkla aynı hizada
    ortalarda. Arama ad ve açıklamada birlikte arıyor ("kdv" yazan "Menü
    fiyatları"nı bulur), Türkçe harf ve şapka farkını yok sayıyor. *(11 Ağu 2026)*
+97. **Nakit gider kasadan düşer, kartla ödenen düşmez.** Vardiyanın beklenen
+   tutarı: açılış + nakit satış + para girişi − para çıkışı − **nakit gider**.
+   Gider ekranı kasadan bağımsız çalışıyor (kasa takibi kapalı işletmenin de
+   faturası var), ama nakit ödenen gider açık vardiyanın kasasına işliyor.
+   *(12 Ağu 2026)*
+98. **Gider türleri hazır şablonla başlar.** Ekran boşken "Hazır türleri ekle"
+   ile sekiz tür (Faturalar, Vergi, Personel, Temizlik, Gıda ve İçecek, Teknik
+   Servis, Kira, Diğer) tek tuşla geliyor, sonra kullanıcı kendine göre
+   düzenliyor. Aynı desen roller ve ödeme tiplerinde de var. Gider kaydı türün
+   adını da taşıyor — tanım silinse bile eski gider ne için yapıldığını
+   unutmuyor. *(12 Ağu 2026)*
+99. **Kasa kapanış hatırlatması ertelenebilir, ısrarcı olabilir.** Kapanış saati
+   geçtiği hâlde kasa açıksa düğme mercana döner ve pencere çıkar; "Sonra"
+   ısrar kapalıyken 15, açıkken 2 dakika erteler. **Satışı hiçbir durumda
+   durdurmuyoruz** — akşam yoğunluğunda yanlış ayarlanmış bir saat yüzünden
+   işletme kilitlenmesin. Eşik, vardiyanın açılışından sonraki ilk kapanış
+   saatidir; gece 01:00'de kapanan işletmede hatırlatma gece çıkar. *(12 Ağu 2026)*
+100. **Kendiliğinden çıkan uyarı penceresi başlık ve ikon taşır.** Kullanıcının
+   istemediği yerde beliren pencerede çıplak metin bloğu amatör duruyordu;
+   `OnayModal` artık isteğe bağlı `baslik` + `ikon` alıyor (mercan zeminli
+   yuvarlak ikon, 17px başlık, gövde yazısı **koyu tonda** — soluk değil).
+   Kullanıcının kendi bastığı düğmeden çıkan onaylar sade hâlinde kalıyor.
+   *(12 Ağu 2026)*
+101. **Rapor kapsamı: Adisyo'nun tamamı + fazlası.** Adisyo'da olan hiçbir rapor
+   eksiltilmeyecek; sıralama modüllere bağlı, kapsam kısıtı değil. Stok Durum ve
+   Fire stok modülüyle, Açık Hesap Hareketleri ve Ödenmezler cari hesapla, kanal
+   raporları entegrasyonla gelir. Rapor iskeleti (tek ekran + ortak filtre +
+   ortak liste) baştan bunlar takılabilecek şekilde kurulur. *(12 Ağu 2026)*
+102. **Raporlar tek ekran, üstte sekmeler.** Adisyo'da aynı adisyon listesi üç
+   ayrı raporda tekrarlanıyor; bizde tek liste var, "masa siparişleri" ya da
+   "vardiya raporu" ayrı ekran değil **filtre**. Sekmeler: Özet · Adisyonlar ·
+   Ürünler · Personel · Giderler · Denetim. Filtre sekmeler arasında korunur.
+   *(12 Ağu 2026)*
+103. **Özetin başrolü günün cirosu.** Rapor açıldığında ilk görülen şey o;
+   Adisyo'nun eşit ağırlıklı kart yığını yerine önce ciro, sonra kırılımlar.
+   *(12 Ağu 2026)*
 
 ## 7. KOD PAYLAŞIM DÜZENİ
 - Kod GitHub'da: `github.com/ramazann1/garso` (şimdilik Public — final'de Private yapılacak)
@@ -1286,3 +1336,42 @@ Bölüm 6'ya **90-96** numaralarıyla işlendi.
 
 ### Sonraki seansın ilk işi
 **Kasa Geçmişi + Giderler** — bölüm 0, madde 1'de planı duruyor.
+
+## 17. SEANS GÜNLÜĞÜ — 12 AĞU 2026
+
+### Yapılanlar
+- **Kasa Geçmişi** (`src/pages/KasaGecmisi.tsx`, `src/components/KasaBasligi.tsx`,
+  `src/kasa.ts`): vardiya listesi ve detay penceresi. `vardiyaGecmisi()` her
+  vardiyanın beklenen tutarını ve farkını yeniden hesaplıyor (kapanışta ayrıca
+  saklanmıyor); hareketler ve tahsilatlar tek sorguda çekilip vardiyalara
+  dağıtılıyor. `vardiyaHareketleri()` detay penceresinin döküm listesi.
+- **Giderler** (`sql/2026-08-15-giderler.sql`, `src/masraflar.ts`,
+  `src/pages/Giderler.tsx`): `masraf_tipleri` + `masraflar` tabloları, satır
+  güvenliğiyle. Dönem seçimli liste (dönem toplamı + nakit toplamı), gider
+  ekleme/düzenleme paneli, gider türü penceresi (ekle/adını değiştir/sil +
+  hazır türlerden eksikleri ekle). Gider ödeme tipi sabit beş seçenek, kayıtta
+  `zaman` tek `timestamptz` — nakit gideri kasadan düşerken saat de gerekiyor.
+- **Nakit gider kasaya bağlandı**: `KasaDurumu` ve `VardiyaOzeti` içine
+  `nakitGider` girdi, beklenen tutar formülü güncellendi, kasa penceresi ve
+  vardiya detayında "Nakit giderler" satırı çıkıyor (karar 97).
+- **Kasa kapanış hatırlatması** (karar 99): Genel ayarlara "Kasa kapanış saati"
+  ve "Kapanış hatırlatması ısrarcı olsun" satırları; saat seçilmeden ısrar
+  anahtarı açılmıyor. `kapanisGecikti()` eşiği vardiyanın açılışından sonraki
+  ilk kapanış saatine kuruyor. Hatırlatmadan "Kasayı kapat" denince pencere
+  doğrudan sayım formunda açılıyor.
+- **OnayModal başlık + ikon aldı** (karar 100), stil `index.css`'te.
+- **Menü ve rotalar:** sol menüye "Kasa" başlığı (Kasa Geçmişi · Giderler).
+  `rotaYetkileri.ts` kasa takibi kapalıyken yalnızca **Kasa Geçmişi**'ni
+  gizliyor; Giderler kasadan bağımsız kalıyor.
+- **Adisyo Raporlar modülü baştan sona turlandı** — yol haritası bölüm 11
+  (altı rapor, bütün sekmeler, adisyon detay penceresi, sipariş geçmişi,
+  filtre paneli). Turdan 12 karar maddesi çıktı (11.8).
+
+### Kararlar
+Bölüm 6'ya **97-103** numaralarıyla işlendi.
+
+### Sonraki seansın ilk işi
+**Raporlar ekranı — iskelet** (bölüm 0, madde 1). Tek ekran + sekmeler, ortak
+filtre, özette günün cirosu. Turun ayrıntısı `pos-yol-haritasi.md` bölüm 11'de;
+oradan okunmadan başlanmamalı.
+

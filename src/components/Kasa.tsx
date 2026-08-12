@@ -1,5 +1,6 @@
 import { useEffect, useState } from "react";
 import {
+  AlarmClock,
   ArrowDownLeft,
   ArrowUpRight,
   Banknote,
@@ -18,6 +19,7 @@ import { kisaAd } from "../personel";
 import {
   acikAdisyonSayisi,
   hareketEkle,
+  kapanisGecikti,
   kasaAc,
   kasaDurumu,
   kasaKapat,
@@ -30,6 +32,7 @@ const BOS: KasaDurumu = {
   nakitSatis: 0,
   giris: 0,
   cikis: 0,
+  nakitGider: 0,
   beklenen: 0,
 };
 
@@ -48,8 +51,12 @@ const saatMetni = (t: string) =>
  */
 export default function Kasa() {
   const [acik, setAcik] = useState(false);
+  // Hatırlatmadan gelindiğinde pencere doğrudan sayım formunda açılıyor.
+  const [kapanisla, setKapanisla] = useState(false);
   const [durum, setDurum] = useState<KasaDurumu>(BOS);
   const [, saatiIlerlet] = useState(0);
+  // Hatırlatma ertelendiğinde bu ana kadar susuyor.
+  const [ertelemeSonu, setErtelemeSonu] = useState(0);
 
   const yenile = () => kasaDurumu().then(setDurum);
 
@@ -57,34 +64,70 @@ export default function Kasa() {
     yenile();
   }, []);
 
-  // Düğmedeki süre yazısı dursun diye değil, ilerlesin diye: dakikada bir kendini
-  // yeniliyor. Kasa kapalıyken sayaca gerek yok.
+  // Düğmedeki süre yazısı dursun diye değil, ilerlesin diye: yarım dakikada bir
+  // kendini yeniliyor. Kapanış hatırlatması da bu sayaçla uyanıyor.
   useEffect(() => {
     if (!durum.vardiya) return;
-    const zaman = setInterval(() => saatiIlerlet((n) => n + 1), 60000);
+    const zaman = setInterval(() => saatiIlerlet((n) => n + 1), 30000);
     return () => clearInterval(zaman);
   }, [durum.vardiya]);
 
   const vardiya = durum.vardiya;
+  const { kasaKapanisUyari, kasaKapanisZorunlu } = ayarlar();
+  const gecikti = !!vardiya && kapanisGecikti(vardiya.acilis, kasaKapanisUyari);
+
+  // Kasa penceresi zaten açıkken hatırlatmayı üstüne bindirmek anlamsız.
+  const hatirlat = gecikti && !acik && Date.now() >= ertelemeSonu;
+
+  // Israrcı ayarında erteleme kısa: kasa kapatılana kadar peşini bırakmıyor.
+  const ertele = () =>
+    setErtelemeSonu(Date.now() + (kasaKapanisZorunlu ? 2 : 15) * 60000);
 
   return (
     <>
       <button
-        className={vardiya ? "kasa-dugme acik" : "kasa-dugme"}
+        className={
+          gecikti ? "kasa-dugme gecikti" : vardiya ? "kasa-dugme acik" : "kasa-dugme"
+        }
         onClick={() => {
           yenile();
+          setKapanisla(false);
           setAcik(true);
         }}
       >
-        {vardiya ? <LockOpen size={16} /> : <Lock size={16} />}
+        {gecikti ? <AlarmClock size={16} /> : vardiya ? <LockOpen size={16} /> : <Lock size={16} />}
         <span>
-          <strong>{vardiya ? "Kasa açık" : "Kasa kapalı"}</strong>
+          <strong>
+            {gecikti ? "Kasa kapatılmalı" : vardiya ? "Kasa açık" : "Kasa kapalı"}
+          </strong>
           {vardiya && <em>{gecenSure(vardiya.acilis)}</em>}
         </span>
       </button>
 
       {acik && (
-        <KasaPenceresi durum={durum} onYenile={yenile} onKapat={() => setAcik(false)} />
+        <KasaPenceresi
+          durum={durum}
+          kapanisla={kapanisla}
+          onYenile={yenile}
+          onKapat={() => setAcik(false)}
+        />
+      )}
+
+      {hatirlat && (
+        <OnayModal
+          baslik="Kasa hâlâ açık"
+          ikon={<AlarmClock size={20} />}
+          mesaj={`Kapanış saati ${kasaKapanisUyari} geçti; kasa ${saatMetni(vardiya!.acilis)}'ten beri açık. Kapatınca sayılan para ile olması gereken tutar karşılaştırılır.`}
+          onayMetni="Kasayı kapat"
+          iptalMetni="Sonra"
+          onOnay={() => {
+            ertele();
+            yenile();
+            setKapanisla(true);
+            setAcik(true);
+          }}
+          onKapat={ertele}
+        />
       )}
     </>
   );
@@ -92,14 +135,16 @@ export default function Kasa() {
 
 function KasaPenceresi({
   durum,
+  kapanisla,
   onYenile,
   onKapat,
 }: {
   durum: KasaDurumu;
+  kapanisla?: boolean;
   onYenile: () => void;
   onKapat: () => void;
 }) {
-  const [kapaniyor, setKapaniyor] = useState(false);
+  const [kapaniyor, setKapaniyor] = useState(!!kapanisla);
   const [hareketTipi, setHareketTipi] = useState<"giris" | "cikis" | null>(null);
   const [uyari, setUyari] = useState("");
   const [hata, setHata] = useState("");
@@ -174,6 +219,12 @@ function KasaPenceresi({
                 <div>
                   <dt>Kasadan çıkan</dt>
                   <dd className="azalan">−{paraGoster(durum.cikis)}</dd>
+                </div>
+              )}
+              {durum.nakitGider > 0 && (
+                <div>
+                  <dt>Nakit giderler</dt>
+                  <dd className="azalan">−{paraGoster(durum.nakitGider)}</dd>
                 </div>
               )}
               <div className="kasa-beklenen">
