@@ -20,12 +20,21 @@ export const personelBolumleri: Bolum[] = [
   { yol: "/ayarlar/kisi-yetkileri", ad: "Kişiye Özel Yetkiler" },
 ];
 
+// Yazıcı tarafı da kendi içinde ikiye ayrılıyor: cihazın kendisi ve siparişin
+// hazırlandığı istasyonlar.
+export const yaziciBolumleri: Bolum[] = [
+  { yol: "/ayarlar/yazicilar", ad: "Yazıcılar" },
+  { yol: "/ayarlar/istasyonlar", ad: "İstasyonlar" },
+  { yol: "/ayarlar/fis-tasarimi", ad: "Fiş Tasarımı" },
+];
+
 export const ayarBolumleri: Bolum[] = [
   { yol: "/ayarlar/genel", ad: "Genel" },
   { yol: "/ayarlar/masalar", ad: "Bölgeler ve Masalar" },
   { yol: "/ayarlar/personel", ad: "Personel ve Yetkiler", alt: personelBolumleri },
   { yol: "/ayarlar/odeme-tipleri", ad: "Ödeme Tipleri" },
   { yol: "/ayarlar/satis", ad: "Satış" },
+  { yol: "/ayarlar/yazicilar", ad: "Yazıcılar", alt: yaziciBolumleri },
 ];
 
 export const menuBolumleri: Bolum[] = [
@@ -119,8 +128,10 @@ export default function Duzen({ children }: { children: React.ReactNode }) {
   );
 
   // Alt başlığın kendi alt başlıkları (Personel ve Yetkiler) açık mı.
-  const [acikAltBaslik, setAcikAltBaslik] = useState<string | null>(() =>
-    personelBolumleri.some((b) => b.yol === location.pathname) ? "/ayarlar/personel" : null
+  const [acikAltBaslik, setAcikAltBaslik] = useState<string | null>(
+    () =>
+      ayarBolumleri.find((b) => b.alt?.some((a) => a.yol === location.pathname))?.yol ??
+      null
   );
 
   const menuDegis = (yeni: boolean) => {

@@ -6054,6 +6054,392 @@ body {
   font-weight: 600;
 }
 
+/* Yazıcı ve mutfak grubu satırlarının adı: ödeme tipindeki gibi renkli düğme
+   değil, ikonlu düz ad — bu tanımların rengi yok. */
+.yazici-ad {
+  display: inline-flex;
+  align-items: center;
+  gap: 8px;
+  font-size: 15px;
+  font-weight: 600;
+}
+.yazici-ad svg { color: var(--mercan); }
+
+/* IP ile port yan yana: ikisi tek bir adresin parçası, alt alta yazılınca
+   ilişkileri kopuyor. */
+.alan.ikili {
+  display: grid;
+  grid-template-columns: 1fr 110px;
+  gap: 12px;
+  align-items: end;
+}
+
+/* Yazıcı penceresi: alanlar üst üste sıralanınca uzun bir form oluyordu.
+   Sorular başlıklı bölümlere ayrıldı, seçimler kart ve çip olarak veriliyor. */
+.yazici-panel { width: 460px; }
+
+.yz-bolum {
+  border-top: 1px solid #f2ebe2;
+  padding-top: 16px;
+  margin-top: 4px;
+}
+
+.yz-bolum h4 {
+  font-size: 14px;
+  font-weight: 600;
+  color: var(--metin);
+  margin-bottom: 11px;
+}
+
+.yz-kartlar {
+  display: grid;
+  grid-template-columns: repeat(3, 1fr);
+  gap: 9px;
+}
+
+.yz-kart {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 8px;
+  padding: 13px 8px;
+  border: 1px solid #eee6dc;
+  border-radius: 13px;
+  background: var(--kart);
+  color: var(--soluk);
+  cursor: pointer;
+  transition: border-color 0.15s ease, color 0.15s ease, background 0.15s ease;
+}
+
+.yz-kart strong {
+  font-size: 13px;
+  font-weight: 600;
+  line-height: 1.3;
+  text-align: center;
+}
+
+.yz-kart:hover { border-color: #e2d5c6; }
+
+.yz-kart.secili {
+  border-color: var(--mercan);
+  background: rgba(255, 122, 89, 0.07);
+  color: var(--mercan);
+  box-shadow: 0 0 0 3px rgba(255, 122, 89, 0.12);
+}
+
+.yz-aciklama {
+  margin: 11px 0 0;
+  font-size: 13px;
+  color: var(--soluk);
+  line-height: 1.5;
+}
+
+.yz-bolum .alan { margin-top: 13px; }
+
+.yz-secimler {
+  display: flex;
+  flex-direction: column;
+  gap: 8px;
+}
+
+/* Seçim satırı ile ona bağlı ayarlar tek çerçevenin içinde: istasyon listesi
+   ayrı bir bölüm olarak aşağıda açılınca hangi seçime ait olduğu anlaşılmıyordu. */
+.yz-secim-kutu {
+  border: 1px solid #eee6dc;
+  border-radius: 13px;
+  background: var(--kart);
+  overflow: hidden;
+  transition: border-color 0.15s ease, background 0.15s ease;
+}
+
+.yz-secim-kutu:hover { border-color: #e2d5c6; }
+
+.yz-secim {
+  display: grid;
+  grid-template-columns: auto 1fr auto;
+  align-items: center;
+  gap: 11px;
+  width: 100%;
+  padding: 10px 12px;
+  border: 0;
+  background: none;
+  cursor: pointer;
+  text-align: left;
+}
+
+/* Fişin hangi istasyonlara ait olduğu, seçim satırının altında ona yapışık
+   duruyor; araya çizgi giriyor ki iki soru birbirine karışmasın. */
+.yz-alt-secim {
+  padding: 12px;
+  border-top: 1px dashed #ecdfd0;
+}
+
+.yz-alt-secim > label {
+  display: block;
+  font-size: 13px;
+  color: var(--soluk);
+  margin-bottom: 9px;
+}
+
+.yz-secim-ikon {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  width: 34px;
+  height: 34px;
+  border-radius: 10px;
+  background: var(--zemin);
+  color: var(--soluk);
+}
+
+.yz-secim-yazi { display: flex; flex-direction: column; gap: 2px; }
+.yz-secim-yazi strong { font-size: 14px; font-weight: 600; color: var(--metin); }
+.yz-secim-yazi em { font-size: 13px; font-style: normal; color: var(--soluk); }
+
+.yz-tik {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  width: 21px;
+  height: 21px;
+  border: 1px solid #e2d5c6;
+  border-radius: 7px;
+  color: #fff;
+}
+
+.yz-secim-kutu.secili {
+  border-color: var(--mercan);
+  background: rgba(255, 122, 89, 0.06);
+}
+.yz-secim-kutu.secili .yz-secim-ikon {
+  background: rgba(255, 122, 89, 0.14);
+  color: var(--mercan);
+}
+.yz-secim-kutu.secili .yz-tik {
+  background: var(--mercan);
+  border-color: var(--mercan);
+}
+
+.yz-cipler { display: flex; flex-wrap: wrap; gap: 8px; }
+
+.yz-cip {
+  display: inline-flex;
+  align-items: center;
+  gap: 6px;
+  padding: 8px 14px;
+  border: 1px solid #eee6dc;
+  border-radius: 999px;
+  background: var(--kart);
+  color: var(--metin);
+  font-size: 14px;
+  cursor: pointer;
+  transition: border-color 0.15s ease, background 0.15s ease, color 0.15s ease;
+}
+
+.yz-cip:hover { border-color: #e2d5c6; }
+
+.yz-cip.secili {
+  border-color: var(--mercan);
+  background: var(--mercan);
+  color: #fff;
+}
+
+/* Fiş tasarımı: solda ayarlar, sağda kâğıdın kendisi. Önizleme ekranla birlikte
+   kayıyor — ayar değiştirirken fişin gözden kaybolmaması gerekiyor. */
+.fis-mod {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 14px;
+  margin-bottom: 16px;
+}
+
+.fis-mod .mod-sec button {
+  display: inline-flex;
+  align-items: center;
+  gap: 7px;
+}
+
+.fis-duzen {
+  display: grid;
+  grid-template-columns: minmax(0, 1fr) 340px;
+  gap: 18px;
+  align-items: start;
+}
+
+.fis-anahtarlar {
+  display: flex;
+  flex-direction: column;
+  gap: 4px;
+}
+
+.fis-ara-baslik { margin-top: 22px; }
+
+.punto-liste {
+  display: flex;
+  flex-direction: column;
+  gap: 6px;
+  margin-top: 10px;
+}
+
+.punto-satir {
+  display: grid;
+  grid-template-columns: minmax(120px, 190px) 1fr 42px;
+  align-items: center;
+  gap: 12px;
+  padding: 7px 0;
+}
+
+.punto-satir label {
+  font-size: 14px;
+  color: var(--metin);
+}
+
+.punto-satir input[type="range"] {
+  accent-color: var(--mercan);
+  width: 100%;
+}
+
+.punto-deger {
+  font-size: 14px;
+  font-weight: 600;
+  text-align: right;
+  color: var(--soluk);
+}
+
+.fis-onizleme-alan {
+  position: sticky;
+  top: 18px;
+  background: var(--kart);
+  border: 1px solid #eee6dc;
+  border-radius: 16px;
+  padding: 16px;
+}
+
+.fis-onizleme-ust {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 10px;
+  margin-bottom: 14px;
+}
+
+.fis-onizleme-ust h2 { font-size: 17px; }
+
+.fis-onizleme-ust select {
+  max-width: 170px;
+  padding: 7px 9px;
+  border: 1px solid #eee6dc;
+  border-radius: 9px;
+  background: var(--zemin);
+  color: var(--metin);
+  font-size: 13px;
+}
+
+.fis-ornek-not { font-size: 13px; color: var(--soluk); }
+
+/* Termal kâğıdın kendisi: dar, beyaz, tek renk. Fiş yazı tipi Poppins değil —
+   gerçek çıktı sabit genişlikli basıyor, önizleme de öyle görünmeli. */
+.fis-kagit {
+  width: 100%;
+  max-width: 302px;
+  margin: 0 auto;
+  padding: 16px 14px 20px;
+  background: #fff;
+  color: #111;
+  font-family: "Consolas", "Courier New", monospace;
+  font-size: 12px;
+  line-height: 1.45;
+  border-radius: 4px;
+  box-shadow: 0 2px 14px rgba(45, 52, 54, 0.14);
+}
+
+.fis-logo {
+  margin: 0 auto 8px;
+  width: 74px;
+  height: 34px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  border: 1px dashed #bbb;
+  font-size: 11px;
+  color: #777;
+}
+
+.fis-isletme,
+.fis-no {
+  text-align: center;
+  font-weight: 700;
+  line-height: 1.2;
+  margin-bottom: 8px;
+}
+
+.fis-serbest {
+  text-align: center;
+  margin: 8px 0;
+}
+
+.fis-kunye {
+  display: flex;
+  justify-content: space-between;
+  gap: 10px;
+}
+
+.fis-cizgi {
+  border-top: 1px dashed #999;
+  margin: 8px 0;
+}
+
+.fis-satir {
+  display: flex;
+  justify-content: space-between;
+  gap: 8px;
+}
+
+.fis-satir span:first-child { flex: 1; }
+.fis-satir span + span { flex: 0 0 auto; }
+
+.fis-baslik { font-weight: 700; }
+.fis-satir.soluk { color: #555; }
+
+.fis-urun { margin-bottom: 3px; }
+
+.fis-secim {
+  padding-left: 10px;
+  color: #444;
+  font-size: 11px;
+}
+
+.fis-toplam {
+  font-weight: 700;
+  margin-top: 5px;
+}
+
+.fis-bahsis {
+  display: flex;
+  flex-direction: column;
+  gap: 5px;
+  margin-top: 10px;
+}
+
+.fis-not {
+  margin-top: 9px;
+  padding-top: 7px;
+  border-top: 1px dashed #999;
+}
+
+.fis-karekod {
+  text-align: center;
+  font-size: 46px;
+  line-height: 1;
+  margin-top: 10px;
+}
+
+@media (max-width: 1100px) {
+  .fis-duzen { grid-template-columns: 1fr; }
+  .fis-onizleme-alan { position: static; }
+}
+
 /* İndirim penceresindeki hazır tanımlar; serbest girişin üstünde duruyor. */
 .tanimli-indirimler {
   display: grid;

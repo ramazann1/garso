@@ -170,19 +170,50 @@ Bu iki maddeyle birlikte sıradaki iş listesinin yapılabilir kısmı bitti; Fa
   panoya kopyalanan kod rozeti. Ad ve kod ayarlarla birlikte tek seferde
   okunuyor (`isletmeKimliginiGetir`), önbellekte duruyor.
 
-1. **Yazıcı modülü — veri modeli ve ekran planı.** Adisyo turu **yapıldı**
-   (yol haritası bölüm 12): web ekranları + kasadaki "Adisyo Bulut" programının
-   dört ekranı. Çıkan mimari karar: **ayarlar bulutta, sürücü kasada — "Garso
-   Kasa Köprüsü"** (indirilen tek parça; ilk sürümde yazıcı + para çekmecesi,
-   sonra ÖKC ve CallerID). Ethernet yazıcıya doğrudan IP:9100, USB'de işletim
-   sisteminin listesi, tek USB yazıcı için kurulumsuz WebUSB yolu. Adisyo'da
-   olmayan iki eklememiz: **yazdırma kuyruğu + yeniden bas** ve her cihaz için
-   **"Dene"** düğmesi. Sıradaki adım: yazıcı tabloları (`yazicilar`,
-   yazıcı ↔ mutfak grubu eşlemesi, fiş şablonu), Yazıcılar ekranı ve fiş
-   şablonu ekranının canlı önizlemesi. "Masa yazdırma" maddesi bu modüle bağlı,
-   onunla birlikte kapanacak.
-2. **Mutfak ekranı (KDS)** — Faz 2'nin ikinci büyük modülü, o da turlanmamış.
-3. **Yurt dışına açılırsa değişmesi gerekenler** — para birimi (₺ arayüzde sabit
+**21 Ağu 2026:** **Yazıcı modülünün ayar tarafı bitti** — veri modeli, Yazıcılar
+ekranı, İstasyonlar ve canlı önizlemeli Fiş Tasarımı. Bu seansta çıkanlar:
+- **"Mutfak grubu" değil "İstasyon"** (`sql/2026-08-21-istasyon-adlandirma.sql`).
+  Adisyo'nun kelimesi "mutfak grubu" ama bar ve nargile de aynı yapıyı
+  kullanıyor; bardaki kişiye "mutfak" dememiş oluyoruz. Tablolar `istasyonlar`
+  ve `yazici_istasyonlari`, ürün/kategori sütunu `istasyon_id`.
+- **Yönlendirme zinciri: ürün → istasyon → yazıcı.** İstasyonu **kategori**
+  belirliyor, ürün gerekirse kendi istasyonunu yazıp eziyor (Adisyo'da yalnız
+  ürünün alanı; 200 ürünlük menüde tek tek seçtirmek işkence).
+- **Fiş şablonu iki `jsonb` sütunda** (`parametreler`, `puntolar`). Görünürlük
+  anahtarları ve alan alan puntolar onlarca küçük ayar; her biri ayrı sütun
+  olsaydı şablona her eklemede göç gerekirdi. Alanların listesi veritabanında
+  değil `yazicilar.ts`'te — bunlar işletmenin tanımladığı satırlar değil,
+  programın bildiği alanlar.
+- **Yazdırma kuyruğu tablosu kuruldu** (`yazdirma_kuyrugu`): fiş önce kuyruğa
+  yazılır, köprü basar, basılamayan "başarısız" kalır. İçerik metni satırda
+  donuyor ki şablon sonradan değişse bile eski fiş o günkü haliyle yeniden
+  basılabilsin.
+- **Yeni işletme varsayılanları tetikleyiciyle**: `isletme_kur_uygula`'nın
+  gövdesine dokunmak yerine `isletmeler` üstünde `after insert` tetikleyici —
+  hangi yoldan açılırsa açılsın iki istasyon ve iki şablon hazır geliyor.
+- **Ayar ekranlarının alt sekme kuralı genelleşti.** `AyarBasligi` yalnız
+  Personel'in alt şeridini biliyordu; artık `ayarBolumleri` içinde `alt` taşıyan
+  her bölüm ikinci şeridi çiziyor.
+- Yeni yetki: `yazici.yonet`. Yeni ekranlar `/ayarlar/yazicilar`,
+  `/ayarlar/istasyonlar`, `/ayarlar/fis-tasarimi`.
+
+1. **Ürün ve kategoriye istasyon seçimi.** Sütunlar (`kategoriler.istasyon_id`,
+   `urunler.istasyon_id`) açıldı ama Menü Stüdyosu'nda seçecek yer yok; zincir
+   bu olmadan tamamlanmıyor.
+2. **Fişin gerçekten üretilmesi.** Şablonu metne çeviren katman, sipariş
+   kaydedilince fişin kuyruğa düşmesi ve Salon'un üç nokta menüsünde **Yazdır**.
+   "Masa yazdırma" maddesi bununla kapanacak.
+3. **Yazdırma kuyruğu ekranı** — bekleyen/başarısız fişler ve "yeniden bas".
+   Tablo hazır, ekran yok.
+4. **Garso Kasa Köprüsü** — kasada çalışan indirilen program (Node; ilk sürümde
+   yazıcı + para çekmecesi, sonra ÖKC ve CallerID). Ethernet'te doğrudan
+   IP:9100'e ESC/POS, USB'de işletim sisteminin listesi, tek USB yazıcı için
+   kurulumsuz WebUSB. Ayrıca kopyalanacak **Bağlantı Durumu** ekranı ve her
+   cihaz için **"Dene"** düğmesi. Ayrı bir program, tek seansta bitmez.
+5. **Fiş Tasarımı ekranı geliştirilecek** — iskelet duruyor, Ramazan "güzel ama
+   geliştirilebilir" dedi.
+6. **Mutfak ekranı (KDS)** — Faz 2'nin ikinci büyük modülü, o da turlanmamış.
+7. **Yurt dışına açılırsa değişmesi gerekenler** — para birimi (₺ arayüzde sabit
    yazılı), tarih/saat biçimi (`tr-TR`) ve "KDV" teriminin kendisi. Bugünün işi
    değil, akılda dursun diye burada.
 

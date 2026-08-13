@@ -142,6 +142,23 @@ export async function masasizGetir(adisyonId: number): Promise<AdisyonVerisi> {
   return adisyonaCevir(data);
 }
 
+/**
+ * Son adisyonlar — fiş tasarımının önizlemesi uydurma veriyle değil işletmenin
+ * kendi siparişiyle çiziliyor, kâğıda ne sığdığı ancak öyle görülüyor.
+ */
+export async function sonAdisyonlar(adet = 5): Promise<AdisyonVerisi[]> {
+  const { data } = await supabase
+    .from("adisyonlar")
+    .select(ADISYON_ALANLARI + ", masa:masalar (ad)")
+    .order("id", { ascending: false })
+    .limit(adet);
+
+  return ((data as any[]) ?? []).map((a) => ({
+    ...adisyonaCevir(a),
+    ad: a.ad ?? a.masa?.ad ?? undefined,
+  }));
+}
+
 function adisyonaCevir(data: any): AdisyonVerisi {
   if (!data) return { sepet: [], indirim: 0, tahsilatlar: [] };
 

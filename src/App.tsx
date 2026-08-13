@@ -11,6 +11,8 @@ import Analiz from "./pages/Analiz";
 import IsletmeAyarlari from "./pages/IsletmeAyarlari";
 import Personel from "./pages/Personel";
 import Yetkiler from "./pages/Yetkiler";
+import Yazicilar from "./pages/Yazicilar";
+import FisTasarimi from "./pages/FisTasarimi";
 import Giris from "./pages/Giris";
 import KilitEkrani from "./components/KilitEkrani";
 import { girisKuruldu, kilitle, oturumuYukle, useOturum } from "./oturum";
@@ -94,6 +96,9 @@ function App() {
         <Route path="/ayarlar/personel" element={<Personel />} />
         <Route path="/ayarlar/yetkiler" element={<Yetkiler />} />
         <Route path="/ayarlar/kisi-yetkileri" element={<Yetkiler />} />
+        <Route path="/ayarlar/yazicilar" element={<Yazicilar />} />
+        <Route path="/ayarlar/istasyonlar" element={<Yazicilar />} />
+        <Route path="/ayarlar/fis-tasarimi" element={<FisTasarimi />} />
         <Route path="/ayarlar/:bolum" element={<IsletmeAyarlari />} />
       </YetkiKapisi>
     </BrowserRouter>

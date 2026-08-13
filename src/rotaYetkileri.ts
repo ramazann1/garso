@@ -29,6 +29,9 @@ const ROTA_YETKILERI: [string, string][] = [
   ["/ayarlar/personel", "tanim.personel"],
   ["/ayarlar/yetkiler", "tanim.personel"],
   ["/ayarlar/kisi-yetkileri", "tanim.personel"],
+  ["/ayarlar/yazicilar", "yazici.yonet"],
+  ["/ayarlar/istasyonlar", "yazici.yonet"],
+  ["/ayarlar/fis-tasarimi", "yazici.yonet"],
 ];
 
 /** Adresin istediği yetki kodu; kural yoksa ekran herkese açık demektir. */
