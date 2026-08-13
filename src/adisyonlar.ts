@@ -116,6 +116,7 @@ function kalemeCevir(s: KalemSatiri): SepetKalemi {
 
 const ADISYON_ALANLARI = `id, adisyon_no, indirim, indirim_tanim_id, indirim_ad, acilis, garson, tip,
        ad, kisi_sayisi, not_metni, musteri_ad, musteri_telefon, adres,
+       acan:personel!adisyonlar_acan_id_fkey (ad),
        turlar (sira, olusturma, garson:personel!turlar_garson_id_fkey (ad),
                adisyon_kalemleri (${KALEM_ALANLARI})),
        tahsilatlar (id, tip, tutar, bahsis, kalem_adetleri)`;
@@ -197,7 +198,11 @@ function adisyonaCevir(data: any): AdisyonVerisi {
     },
     tahsilatlar,
     acilis: (data as any).acilis,
-    garson: (data as any).garson ?? undefined,
+    // Kişi bilgisi acan_id'de duruyor; "garson" sütunu personel sisteminden
+    // önceki serbest metin, artık yalnız eski kayıtlarda dolu.
+    garson: (data as any).acan?.ad
+      ? kisaAd((data as any).acan.ad)
+      : ((data as any).garson ?? undefined),
     tip: ((data as any).tip ?? "masa") as AdisyonTipi,
     ad: (data as any).ad ?? undefined,
     kisiSayisi: (data as any).kisi_sayisi ?? undefined,
@@ -578,25 +583,68 @@ function indirimAlanlari(veri: AdisyonVerisi) {
   };
 }
 
+/**
+ * Fişin künyesi: masa adı ve adisyon numarası. Ekrandaki sepet bunları
+ * taşımıyor — masa adı Salon'un elinde, numarayı veritabanı sipariş
+ * kaydedilirken veriyor. Fiş basılmadan önce ikisi buradan okunuyor, yoksa
+ * kâğıtta masa yerine "Masa", numara yerine "—" çıkıyor.
+ */
+async function fisKunyesi(adisyonId: number) {
+  const { data } = await supabase
+    .from("adisyonlar")
+    .select("adisyon_no, ad, masalar (ad)")
+    .eq("id", adisyonId)
+    .single();
+
+  const satir = data as any;
+  return {
+    no: satir?.adisyon_no ?? undefined,
+    ad: satir?.ad || satir?.masalar?.ad || undefined,
+  };
+}
+
+/**
+ * Kalemin kayıttaki hâli ile yazılacak hâli aynı mı. Para ve adet alanları
+ * veritabanından metin olarak da gelebildiği için sayıya çevrilerek
+ * karşılaştırılıyor.
+ */
+function ayniKalem(onceki: any, yeni: Record<string, unknown>) {
+  if (!onceki) return false;
+  return Object.entries(yeni).every(([alan, deger]) => {
+    const eski = onceki[alan];
+    if (typeof deger === "number") return Number(eski ?? 0) === deger;
+    return (eski ?? null) === (deger ?? null);
+  });
+}
+
 async function kalemleriYaz(
   adisyonId: number,
   veri: AdisyonVerisi,
   kapat: boolean
 ): Promise<AdisyonVerisi> {
-  const { data: turSatirlari } = await supabase
-    .from("turlar")
-    .select("id, sira, adisyon_kalemleri (id, durum)")
-    .eq("adisyon_id", adisyonId)
-    .order("sira");
+  // İki okuma birbirini beklemiyor: turlar ve tahsilatlar aynı anda isteniyor.
+  const [{ data: turSatirlari }, { data: eskiTahsilatlar }] = await Promise.all([
+    supabase
+      .from("turlar")
+      .select(
+        "id, sira, adisyon_kalemleri (id, durum, adet, fiyat, not_metni, indirim, indirim_tanim_id, indirim_ad)"
+      )
+      .eq("adisyon_id", adisyonId)
+      .order("sira"),
+    supabase.from("tahsilatlar").select("id, tip, tutar").eq("adisyon_id", adisyonId),
+  ]);
   const turlar = ((turSatirlari as any[]) ?? []);
 
   const mevcutIdler = new Set<number>();
-  // Kalemin kayıttaki hâli: durumu değişenler denetim defterine yazılacak.
+  // Kalemin kayıttaki hâli: durumu değişenler denetim defterine yazılacak,
+  // hiç değişmeyenler için sunucuya gitmeye gerek kalmıyor.
   const oncekiDurumlar = new Map<number, string>();
+  const oncekiKalemler = new Map<number, any>();
   for (const t of turlar)
     for (const k of t.adisyon_kalemleri ?? []) {
       mevcutIdler.add(k.id);
       oncekiDurumlar.set(k.id, k.durum ?? "normal");
+      oncekiKalemler.set(k.id, k);
     }
 
   const denetimler: DenetimKaydi[] = [];
@@ -605,23 +653,31 @@ async function kalemleriYaz(
   const silinecek = [...mevcutIdler].filter((id) => !kalanIdler.has(id));
   if (silinecek.length) await supabase.from("adisyon_kalemleri").delete().in("id", silinecek);
 
+  // Duran kalemler her kaydetmede tek tek güncelleniyordu: on kalemlik masada
+  // on ayrı istek, her biri sunucuya gidiş dönüş. Artık yalnız gerçekten
+  // değişenler yazılıyor ve onlar da aynı anda gidiyor.
+  const guncellemeler: Promise<unknown>[] = [];
   for (const k of veri.sepet) {
     if (!k.id || k.id < 0) continue;
     const denetim = durumDegisimi(oncekiDurumlar.get(k.id) ?? "normal", k);
     if (denetim) denetimler.push(denetim);
-    await supabase
-      .from("adisyon_kalemleri")
-      .update({
-        adet: k.adet,
-        fiyat: k.fiyat,
-        durum: k.durum ?? "normal",
-        not_metni: k.not ?? null,
-        indirim: k.indirim ?? 0,
-        indirim_tanim_id: k.indirimTanimId ?? null,
-        indirim_ad: k.indirimAd ?? null,
-      })
-      .eq("id", k.id);
+
+    const satir = {
+      adet: k.adet,
+      fiyat: k.fiyat,
+      durum: k.durum ?? "normal",
+      not_metni: k.not ?? null,
+      indirim: k.indirim ?? 0,
+      indirim_tanim_id: k.indirimTanimId ?? null,
+      indirim_ad: k.indirimAd ?? null,
+    };
+    if (ayniKalem(oncekiKalemler.get(k.id), satir)) continue;
+
+    guncellemeler.push(
+      Promise.resolve(supabase.from("adisyon_kalemleri").update(satir).eq("id", k.id))
+    );
   }
+  if (guncellemeler.length) await Promise.all(guncellemeler);
 
   // Yeni kalemler bu kaydın turuna girer; geçici kimlikleri gerçeğiyle eşleşir.
   const yeniler = veri.sepet.filter((k) => !k.id || k.id < 0);
@@ -637,7 +693,7 @@ async function kalemleriYaz(
     const { data: tur } = await supabase
       .from("turlar")
       .insert({ adisyon_id: adisyonId, sira, garson_id: acikOturum()?.id ?? null })
-      .select("id")
+      .select("id, siparis_no")
       .single();
     const turId = (tur as any).id;
 
@@ -670,24 +726,33 @@ async function kalemleriYaz(
     });
 
     // Mutfak fişi yalnız bu turun kalemlerini basıyor; eski kalemler ikinci
-    // kez gitseydi aynı yemek iki defa hazırlanırdı. Yazıcı tarafındaki bir
-    // hata siparişin kaydını düşürmesin diye ayrı sarmalda.
-    try {
-      await mutfakFisiYaz({ ...veri, id: adisyonId }, yeniler);
-    } catch (e) {
-      // Sipariş kaydı geçerli; fişin neden düşmediği yalnız günlüğe yazılıyor.
-      console.error("Mutfak fişi kuyruğa yazılamadı:", e);
-    }
+    // kez gitseydi aynı yemek iki defa hazırlanırdı.
+    //
+    // Fiş yazımı BEKLENMİYOR: sipariş veritabanına düştüğü anda iş bitmiştir,
+    // garsonun ekranı fişin kuyruğa yazılmasını beklerse yoğun saatte her
+    // siparişte bir saniye kaybediliyor. Yazıcı tarafındaki hata da siparişin
+    // kaydını düşürmüyor, yalnız günlüğe yazılıyor.
+    //
+    // Mutfak fişinde masayı açan değil, bu turu giren kişi yazıyor: kalabalık
+    // masada siparişi kimin aldığı ayrı bilgi ve tur zaten onun adına
+    // açılıyor (turlar.garson_id). Adisyon fişinde masayı açan yazmaya devam.
+    const kisi = kisaAd(acikOturum()?.ad ?? "") || veri.garson;
+    fisKunyesi(adisyonId)
+      // Mutfak fişindeki büyük numara adisyonun değil, bu turun numarası:
+      // aynı masadan üç sipariş gelirse üçü de ayrı numarayla düşüyor.
+      .then((kunye) =>
+        mutfakFisiYaz(
+          { ...veri, ...kunye, id: adisyonId, garson: kisi || undefined },
+          yeniler,
+          (tur as any).siparis_no ?? undefined
+        )
+      )
+      .catch((e) => console.error("Mutfak fişi kuyruğa yazılamadı:", e));
   }
 
   // Tahsilatlar eskiden her kayıtta silinip yeniden yazılıyordu; kimlik
   // korunmadığı için "şu tahsilat silindi" diye bir olay da yoktu. Artık
   // kalanlar güncelleniyor, gidenler tek tek siliniyor ve deftere düşüyor.
-  const { data: eskiTahsilatlar } = await supabase
-    .from("tahsilatlar")
-    .select("id, tip, tutar")
-    .eq("adisyon_id", adisyonId);
-
   const kalanTahsilatIdler = new Set(
     veri.tahsilatlar.map((t) => t.id).filter((id): id is number => !!id)
   );

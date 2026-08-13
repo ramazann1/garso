@@ -6338,101 +6338,87 @@ body {
 
 .fis-ornek-not { font-size: 13px; color: var(--soluk); }
 
-/* Termal kâğıdın kendisi: dar, beyaz, tek renk. Fiş yazı tipi Poppins değil —
-   gerçek çıktı sabit genişlikli basıyor, önizleme de öyle görünmeli. */
+/* Termal kâğıdın kendisi: dar, beyaz, tek renk. Yazı tipi Poppins — kasa
+   köprüsü fişi bu yazı tipiyle çiziyor, önizleme kâğıttakinin aynısı olsun. */
 .fis-kagit {
   width: 100%;
-  max-width: 302px;
+  max-width: 330px;
   margin: 0 auto;
   padding: 16px 14px 20px;
   background: #fff;
   color: #111;
-  font-family: "Consolas", "Courier New", monospace;
-  font-size: 12px;
-  line-height: 1.45;
+  line-height: 1.4;
   border-radius: 4px;
   box-shadow: 0 2px 14px rgba(45, 52, 54, 0.14);
 }
 
-.fis-logo {
-  margin: 0 auto 8px;
-  width: 74px;
-  height: 34px;
-  display: flex;
-  align-items: center;
-  justify-content: center;
-  border: 1px dashed #bbb;
-  font-size: 11px;
-  color: #777;
+.fis-orta { text-align: center; }
+.fis-sol { text-align: left; }
+
+.fis-ic {
+  padding-left: 12px;
+  color: #333;
 }
 
-.fis-isletme,
-.fis-no {
-  text-align: center;
-  font-weight: 700;
-  line-height: 1.2;
-  margin-bottom: 8px;
-}
-
-.fis-serbest {
-  text-align: center;
-  margin: 8px 0;
-}
-
-.fis-kunye {
-  display: flex;
-  justify-content: space-between;
-  gap: 10px;
-}
+.fis-bosluk { height: 10px; }
 
 .fis-cizgi {
-  border-top: 1px dashed #999;
-  margin: 8px 0;
+  border-top: 1px solid #999;
+  margin: 7px 0;
 }
 
 .fis-satir {
   display: flex;
   justify-content: space-between;
-  gap: 8px;
+  gap: 10px;
 }
 
-.fis-satir span:first-child { flex: 1; }
+.fis-satir span:first-child {
+  flex: 1;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
 .fis-satir span + span { flex: 0 0 auto; }
 
-.fis-baslik { font-weight: 700; }
-.fis-satir.soluk { color: #555; }
-
-.fis-urun { margin-bottom: 3px; }
-
-.fis-secim {
-  padding-left: 10px;
-  color: #444;
-  font-size: 11px;
-}
-
-.fis-toplam {
-  font-weight: 700;
-  margin-top: 5px;
-}
-
-.fis-bahsis {
+/* Ayarlar üç bölüme ayrıldı: anahtarlar, kaydırıcılar ve yazı kutuları aynı
+   anda ekranda durunca sayfa okunmaz oluyordu. */
+.fis-bolum-sec {
   display: flex;
-  flex-direction: column;
-  gap: 5px;
-  margin-top: 10px;
+  gap: 6px;
+  margin-bottom: 16px;
+  border-bottom: 1px solid #eee6dc;
+  padding-bottom: 12px;
 }
 
-.fis-not {
-  margin-top: 9px;
-  padding-top: 7px;
-  border-top: 1px dashed #999;
+.fis-bolum-sec button {
+  display: inline-flex;
+  align-items: center;
+  gap: 7px;
+  padding: 8px 13px;
+  border: 1px solid #e4ded6;
+  border-radius: 9px;
+  background: var(--kart);
+  color: var(--metin);
+  font-size: 14px;
+  cursor: pointer;
 }
 
-.fis-karekod {
-  text-align: center;
-  font-size: 46px;
-  line-height: 1;
-  margin-top: 10px;
+.fis-bolum-sec button.aktif {
+  border-color: var(--mercan);
+  background: #fff1ec;
+  color: var(--mercan);
+  font-weight: 500;
+}
+
+.fis-ayarlar { min-height: 320px; }
+
+.punto-satir label em {
+  display: block;
+  font-style: normal;
+  font-size: 12.5px;
+  color: var(--soluk);
 }
 
 @media (max-width: 1100px) {

@@ -79,6 +79,8 @@ function YaziciPaneli({
   const [ip, setIp] = useState(yazici?.ip ?? "");
   const [port, setPort] = useState(String(yazici?.port ?? 9100));
   const [sistemAd, setSistemAd] = useState(yazici?.sistemAd ?? "");
+  const [kagit, setKagit] = useState(yazici?.kagitGenislik ?? 80);
+  const [zil, setZil] = useState(yazici?.zil ?? false);
   const [turler, setTurler] = useState<YaziciTuru[]>(yazici?.turler ?? ["adisyon"]);
   const [secilenler, setSecilenler] = useState<number[]>(yazici?.istasyonlar ?? []);
   const [aktif, setAktif] = useState(yazici?.aktif ?? true);
@@ -165,6 +167,22 @@ function YaziciPaneli({
                 />
               </div>
             )}
+
+            <div className="alan">
+              <label>Kâğıt genişliği</label>
+              <div className="yz-cipler">
+                {[80, 58].map((mm) => (
+                  <button
+                    key={mm}
+                    className={kagit === mm ? "yz-cip secili" : "yz-cip"}
+                    onClick={() => setKagit(mm)}
+                  >
+                    {kagit === mm && <Check size={13} />}
+                    {mm} mm
+                  </button>
+                ))}
+              </div>
+            </div>
           </div>
 
           <div className="yz-bolum">
@@ -224,6 +242,13 @@ function YaziciPaneli({
           </div>
 
           <Anahtar
+            etiket="Fiş çıkarken zil çalsın"
+            ipucu="Mutfakta fişin düştüğünü haber verir"
+            acik={zil}
+            degistir={setZil}
+          />
+
+          <Anahtar
             etiket="Kullanımda"
             ipucu="Kapatırsanız yazıcı silinmez, fiş gönderilmez"
             acik={aktif}
@@ -248,6 +273,8 @@ function YaziciPaneli({
                 ip,
                 port: Number(port) || 9100,
                 sistemAd,
+                kagitGenislik: kagit,
+                zil,
                 turler,
                 aktif,
                 istasyonlar: secilenler,

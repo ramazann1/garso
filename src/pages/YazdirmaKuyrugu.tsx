@@ -5,6 +5,7 @@ import Bilgi from "../components/Bilgi";
 import AyarBasligi from "../components/AyarBasligi";
 import OnayModal from "../components/OnayModal";
 import Bildirim from "../components/Bildirim";
+import { icerikOzeti } from "../fis";
 import { kuyrugaBak, kuyrugaGeriKoy, kuyruktanIptal, turAdi } from "../yazicilar";
 import type { KuyrukDurumu, KuyrukSatiri } from "../yazicilar";
 
@@ -182,7 +183,7 @@ export default function YazdirmaKuyrugu() {
                   <X size={19} />
                 </button>
               </header>
-              <pre>{secili.icerik || "Fiş içeriği boş."}</pre>
+              <pre>{icerikOzeti(secili.icerik) || "Fiş içeriği boş."}</pre>
             </div>
           </div>
         )}

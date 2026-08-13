@@ -1,0 +1,7 @@
+{
+  "sunucu": "https://XXXX.supabase.co",
+  "anahtar": "buraya-anon-anahtar",
+  "telefon": "05001234567",
+  "sifre": "teknik-kullanicinin-sifresi",
+  "yoklamaSaniye": 3
+}

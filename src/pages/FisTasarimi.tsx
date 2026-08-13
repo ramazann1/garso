@@ -1,16 +1,16 @@
 import { useEffect, useMemo, useState } from "react";
-import { Receipt, ChefHat, Save } from "lucide-react";
+import { Receipt, ChefHat, Save, ToggleLeft, Type, PenLine } from "lucide-react";
 import Duzen from "../components/Duzen";
 import AyarBasligi from "../components/AyarBasligi";
 import Anahtar from "../components/Anahtar";
 import Bilgi from "../components/Bilgi";
 import Bildirim from "../components/Bildirim";
 import OnayModal from "../components/OnayModal";
-import { adisyonOzeti, kalemTutari, sonAdisyonlar } from "../adisyonlar";
+import { sonAdisyonlar } from "../adisyonlar";
 import type { AdisyonVerisi } from "../adisyonlar";
 import { kilitKaldir, kilitKur } from "../cikisKilidi";
-import { isletmeAdi } from "../isletmeAyarlari";
-import { paraGoster } from "../para";
+import { fisIcerigi } from "../fis";
+import type { FisSatiri } from "../fis";
 import {
   ADISYON_PARAMETRELERI,
   ADISYON_PUNTOLARI,
@@ -18,6 +18,7 @@ import {
   EN_KUCUK_PUNTO,
   MUTFAK_PARAMETRELERI,
   MUTFAK_PUNTOLARI,
+  VARSAYILAN_PUNTOLAR,
   fisSablonuGetir,
   fisSablonuKaydet,
   type FisAyari,
@@ -57,154 +58,59 @@ const ORNEK: AdisyonVerisi = {
   ],
 };
 
-const saatMetni = (zaman?: string) =>
-  new Date(zaman ?? Date.now()).toLocaleString("tr-TR", {
-    day: "2-digit",
-    month: "2-digit",
-    year: "numeric",
-    hour: "2-digit",
-    minute: "2-digit",
-  });
-
 /**
- * Kâğıda basılacak fişin ekrandaki karşılığı. Gerçek çıktı ESC/POS olacak ama
- * ikisi de aynı şablonu okuyor: burada görünen sıra, kâğıttaki sıra.
+ * Önizleme fişi üreten kodun kendisini kullanıyor: ekranda görünen satırlar
+ * kâğıda giden satırların aynısı. Eskiden ikisi ayrı yazılıyordu ve şablona
+ * her dokunuşta birbirinden kayıyorlardı.
+ *
+ * Kâğıtta punto 203 dpi noktaya çevriliyor; ekranda da aynı oranla büyütülüp
+ * kâğıdın genişliğine oturtuluyor, böylece "sığıyor mu" sorusu burada görünüyor.
  */
-function FisOnizleme({
-  sablon,
-  adisyon,
-}: {
-  sablon: FisSablonu;
-  adisyon: AdisyonVerisi;
-}) {
-  const mutfak = sablon.tip === "mutfak";
-  const p = sablon.parametreler;
-  const punto = (kod: string, varsayilan: number) => sablon.puntolar[kod] ?? varsayilan;
-  const ozet = adisyonOzeti(adisyon);
-  const satilanlar = adisyon.sepet.filter((k) => (k.durum ?? "normal") === "normal");
+const EKRAN_OLCEK = 0.72;
+
+function FisOnizleme({ sablon, adisyon }: { sablon: FisSablonu; adisyon: AdisyonVerisi }) {
+  // Önizlemede örnek bir sipariş numarası veriliyor: gerçek numarayı sipariş
+  // kaydedilirken veritabanı üretiyor, burada kâğıtta nasıl duracağı görünsün.
+  const icerik = useMemo(
+    () => fisIcerigi(sablon, adisyon, undefined, 50124),
+    [sablon, adisyon]
+  );
+
+  const boy = (s: FisSatiri) => {
+    const alan = "alan" in s ? s.alan : undefined;
+    const punto = (alan && icerik.puntolar[alan]) || VARSAYILAN_PUNTOLAR.genel;
+    return punto * EKRAN_OLCEK * (s.t === "ic" ? 0.8 : 1);
+  };
 
   return (
     <div className="fis-kagit">
-      {!mutfak && (
-        <>
-          {p.logo && <div className="fis-logo">LOGO</div>}
+      {icerik.satirlar.map((s, i) => {
+        if (s.t === "cizgi") return <div key={i} className="fis-cizgi" />;
+        if (s.t === "bosluk") return <div key={i} className="fis-bosluk" />;
+
+        const stil = {
+          fontSize: boy(s),
+          fontWeight: "kalin" in s && s.kalin ? 600 : 500,
+        };
+
+        if (s.t === "ikiUc")
+          return (
+            <div key={i} className="fis-satir" style={stil}>
+              <span>{s.sol}</span>
+              <span>{s.sag}</span>
+            </div>
+          );
+
+        return (
           <div
-            className="fis-isletme"
-            style={{ fontSize: punto("isletme_adi", 25) / 1.6 }}
+            key={i}
+            className={s.t === "orta" ? "fis-orta" : s.t === "ic" ? "fis-ic" : "fis-sol"}
+            style={stil}
           >
-            {isletmeAdi() || "İşletmeniz"}
+            {s.m}
           </div>
-        </>
-      )}
-
-      {mutfak && p.siparis_no && (
-        <div className="fis-no" style={{ fontSize: punto("siparis_no", 30) / 1.6 }}>
-          #{adisyon.no ?? "—"}
-        </div>
-      )}
-
-      {sablon.ustMetin && <div className="fis-serbest">{sablon.ustMetin}</div>}
-
-      <div className="fis-kunye">
-        <span>{adisyon.ad ?? "Masa"}</span>
-        <span>{saatMetni(adisyon.acilis)}</span>
-      </div>
-      <div className="fis-kunye">
-        {adisyon.garson && <span>Garson: {adisyon.garson}</span>}
-        {!mutfak && p.siparis_no && <span>Fiş No: {adisyon.no ?? "—"}</span>}
-        {mutfak && p.musteri_sayisi && adisyon.kisiSayisi && (
-          <span>Kişi: {adisyon.kisiSayisi}</span>
-        )}
-      </div>
-
-      {mutfak && p.musteri_bilgileri && adisyon.musteri?.ad && (
-        <div className="fis-kunye">
-          <span>{adisyon.musteri.ad}</span>
-          <span>{adisyon.musteri.telefon}</span>
-        </div>
-      )}
-
-      <div className="fis-cizgi" />
-
-      {!mutfak && p.baslik && (
-        <div className="fis-satir fis-baslik">
-          <span>Ürün</span>
-          <span>Adet</span>
-          <span>Tutar</span>
-        </div>
-      )}
-
-      <div style={{ fontSize: punto("urun_listesi", mutfak ? 24 : 20) / 1.7 }}>
-        {satilanlar.map((k) => (
-          <div key={k.id} className="fis-urun">
-            <div className="fis-satir">
-              <span>
-                {k.ad}
-                {!mutfak && p.urun_birimleri && k.porsiyon ? ` (${k.porsiyon})` : ""}
-              </span>
-              <span>{k.adet}</span>
-              {(!mutfak || p.urun_fiyatlari) && <span>{paraGoster(kalemTutari(k))}</span>}
-            </div>
-            {k.secimler?.length ? (
-              <div className="fis-secim">{k.secimler.join(" • ")}</div>
-            ) : null}
-            {k.not && <div className="fis-secim">Not: {k.not}</div>}
-          </div>
-        ))}
-      </div>
-
-      <div className="fis-cizgi" />
-
-      {(!mutfak || p.siparis_toplami) && (
-        <div style={{ fontSize: punto("toplam", 25) / 1.7 }}>
-          {!mutfak && adisyon.indirim > 0 && (
-            <div className="fis-satir">
-              <span>İndirim</span>
-              <span>−{paraGoster(adisyon.indirim)}</span>
-            </div>
-          )}
-          {!mutfak && p.kdv_bilgisi && (
-            <div className="fis-satir">
-              <span>KDV</span>
-              <span>{paraGoster(ozet.kdv)}</span>
-            </div>
-          )}
-          {!mutfak && p.kdv_grubu && (
-            <div className="fis-satir soluk">
-              <span>KDV %10</span>
-              <span>{paraGoster(ozet.kdv)}</span>
-            </div>
-          )}
-          <div className="fis-satir fis-toplam">
-            <span>TOPLAM</span>
-            <span>{paraGoster(ozet.toplam)}</span>
-          </div>
-        </div>
-      )}
-
-      {!mutfak && p.hesabi_paylas && adisyon.kisiSayisi ? (
-        <div className="fis-satir">
-          <span>Kişi başı ({adisyon.kisiSayisi})</span>
-          <span>{paraGoster(ozet.toplam / adisyon.kisiSayisi)}</span>
-        </div>
-      ) : null}
-
-      {!mutfak && p.bahsis && (
-        <div className="fis-bahsis">
-          <span>Bahşiş: ____________</span>
-          <span>Toplam: ____________</span>
-        </div>
-      )}
-
-      {adisyon.not && (
-        <div className="fis-not" style={{ fontSize: punto("not", 15) / 1.5 }}>
-          {adisyon.not}
-        </div>
-      )}
-
-      {!mutfak && p.karekod && <div className="fis-karekod">▣</div>}
-
-      {sablon.altMetin && <div className="fis-serbest">{sablon.altMetin}</div>}
+        );
+      })}
     </div>
   );
 }
@@ -220,7 +126,10 @@ function PuntoSatiri({
 }) {
   return (
     <div className="punto-satir">
-      <label>{ayar.ad}</label>
+      <label>
+        {ayar.ad}
+        {ayar.ipucu && <em>{ayar.ipucu}</em>}
+      </label>
       <input
         type="range"
         min={EN_KUCUK_PUNTO}
@@ -233,8 +142,15 @@ function PuntoSatiri({
   );
 }
 
+const BOLUMLER = [
+  { kod: "icerik", ad: "Fişte ne yazsın", ikon: ToggleLeft },
+  { kod: "boyut", ad: "Yazı boyutları", ikon: Type },
+  { kod: "yazi", ad: "Kendi yazınız", ikon: PenLine },
+] as const;
+
 export default function FisTasarimi() {
   const [tip, setTip] = useState<FisSablonu["tip"]>("adisyon");
+  const [bolum, setBolum] = useState<(typeof BOLUMLER)[number]["kod"]>("icerik");
   const [sablon, setSablon] = useState<FisSablonu | null>(null);
   const [kayitli, setKayitli] = useState("");
   const [adisyonlar, setAdisyonlar] = useState<AdisyonVerisi[]>([]);
@@ -272,9 +188,7 @@ export default function FisTasarimi() {
   );
 
   const parametreDegis = (kod: string, acik: boolean) =>
-    setSablon((s) =>
-      s ? { ...s, parametreler: { ...s.parametreler, [kod]: acik } } : s
-    );
+    setSablon((s) => (s ? { ...s, parametreler: { ...s.parametreler, [kod]: acik } } : s));
 
   const puntoDegis = (kod: string, deger: number) =>
     setSablon((s) => (s ? { ...s, puntolar: { ...s.puntolar, [kod]: deger } } : s));
@@ -295,13 +209,6 @@ export default function FisTasarimi() {
     <Duzen>
       <div className="sayfa ayar-sayfa">
         <AyarBasligi />
-
-        <div className="bilgi-serit">
-          <Bilgi>
-            Fişin neye benzeyeceğini buradan belirlersiniz. Sağdaki önizleme
-            işletmenizin gerçek siparişiyle çizilir, kâğıda ne sığdığı orada görünür.
-          </Bilgi>
-        </div>
 
         <div className="fis-mod">
           <div className="mod-sec">
@@ -328,49 +235,73 @@ export default function FisTasarimi() {
           <div className="yukleniyor"><div className="cember" /></div>
         ) : (
           <div className="fis-duzen">
-            <section className="ayar-bolum">
-              <h2>Fişte neler yazsın</h2>
-              <div className="fis-anahtarlar">
-                {parametreler.map((a) => (
-                  <Anahtar
-                    key={a.kod}
-                    etiket={a.ad}
-                    ipucu={a.ipucu}
-                    acik={!!sablon.parametreler[a.kod]}
-                    degistir={(acik) => parametreDegis(a.kod, acik)}
-                  />
-                ))}
+            <section className="ayar-bolum fis-ayarlar">
+              <div className="fis-bolum-sec">
+                {BOLUMLER.map((b) => {
+                  const Ikon = b.ikon;
+                  return (
+                    <button
+                      key={b.kod}
+                      className={bolum === b.kod ? "aktif" : ""}
+                      onClick={() => setBolum(b.kod)}
+                    >
+                      <Ikon size={15} /> {b.ad}
+                    </button>
+                  );
+                })}
               </div>
 
-              <h2 className="fis-ara-baslik">Yazı boyutları</h2>
-              <div className="punto-liste">
-                {puntolar.map((a) => (
-                  <PuntoSatiri
-                    key={a.kod}
-                    ayar={a}
-                    deger={sablon.puntolar[a.kod] ?? 20}
-                    degistir={(d) => puntoDegis(a.kod, d)}
-                  />
-                ))}
-              </div>
+              {bolum === "icerik" && (
+                <div className="fis-anahtarlar">
+                  {parametreler.map((a) => (
+                    <Anahtar
+                      key={a.kod}
+                      etiket={a.ad}
+                      ipucu={a.ipucu}
+                      acik={!!sablon.parametreler[a.kod]}
+                      degistir={(acik) => parametreDegis(a.kod, acik)}
+                    />
+                  ))}
+                </div>
+              )}
 
-              <h2 className="fis-ara-baslik">Kendi yazınız</h2>
-              <div className="alan">
-                <label>Fişin başında</label>
-                <input
-                  value={sablon.ustMetin}
-                  onChange={(e) => setSablon({ ...sablon, ustMetin: e.target.value })}
-                  placeholder="Hoş geldiniz"
-                />
-              </div>
-              <div className="alan">
-                <label>Fişin sonunda</label>
-                <input
-                  value={sablon.altMetin}
-                  onChange={(e) => setSablon({ ...sablon, altMetin: e.target.value })}
-                  placeholder="Afiyet olsun."
-                />
-              </div>
+              {bolum === "boyut" && (
+                <div className="punto-liste">
+                  {puntolar.map((a) => (
+                    <PuntoSatiri
+                      key={a.kod}
+                      ayar={a}
+                      deger={sablon.puntolar[a.kod] ?? VARSAYILAN_PUNTOLAR[a.kod] ?? 20}
+                      degistir={(d) => puntoDegis(a.kod, d)}
+                    />
+                  ))}
+                </div>
+              )}
+
+              {bolum === "yazi" && (
+                <>
+                  <div className="alan">
+                    <label>Fişin başında</label>
+                    <input
+                      value={sablon.ustMetin}
+                      onChange={(e) => setSablon({ ...sablon, ustMetin: e.target.value })}
+                      placeholder="Hoş geldiniz"
+                    />
+                  </div>
+                  <div className="alan">
+                    <label>Fişin sonunda</label>
+                    <input
+                      value={sablon.altMetin}
+                      onChange={(e) => setSablon({ ...sablon, altMetin: e.target.value })}
+                      placeholder="Afiyet olsun."
+                    />
+                  </div>
+                  <Bilgi>
+                    Bu iki satır her fişte aynı çıkar; kampanya ya da teşekkür yazısı
+                    için kullanılır.
+                  </Bilgi>
+                </>
+              )}
             </section>
 
             <section className="fis-onizleme-alan">

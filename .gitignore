@@ -9,6 +9,9 @@ lerna-debug.log*
 
 node_modules
 dist
+
+# Köprünün kasadaki ayar dosyası — içinde şifre var, depoya girmez
+kopru/ayarlar.json
 dist-ssr
 *.local
 

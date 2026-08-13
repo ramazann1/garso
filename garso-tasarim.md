@@ -221,13 +221,65 @@ seçiyor, fiş üretiliyor ve kuyruk ekranından izleniyor. Bu seansta çıkanla
   sessizce yutulduğu için ekran "kayıt yok" diyordu. Artık hem kuyruğa yazma hem
   okuma hatası kullanıcıya çıkıyor.
 
-1. **Garso Kasa Köprüsü** — kasada çalışan indirilen program (Node; ilk sürümde
-   yazıcı + para çekmecesi, sonra ÖKC ve CallerID). Ethernet'te doğrudan
-   IP:9100'e ESC/POS, USB'de işletim sisteminin listesi, tek USB yazıcı için
-   kurulumsuz WebUSB. Ayrıca kopyalanacak **Bağlantı Durumu** ekranı ve her
-   cihaz için **"Dene"** düğmesi. Ayrı bir program, tek seansta bitmez.
-2. **Fiş Tasarımı ekranı geliştirilecek** — iskelet duruyor, Ramazan "güzel ama
-   geliştirilebilir" dedi.
+**23 Ağu 2026:** **Kasa köprüsü çalıştı — fiş ilk kez kâğıda bastı.** Ayrı klasör
+(`kopru/`, kendi paketi, sade Node). Giriş → kuyruğu dinle → çiz → yazıcıya
+gönder → sonucu yaz. Ethernet yazıcıya doğrudan `IP:9100`, sürücü kurulmadan.
+Bu seansta çıkanlar:
+- **Fiş metin değil çizim.** Termal yazıcının kendi yazısı denendi ve battı:
+  her marka karakter tablosunu başka numarada tutuyor, Türkçe harfler bozuk
+  çıkıyor (yazıcıya tablo tarama fişi bastırılarak görüldü — hiçbiri tutmadı).
+  Adisyo bu sorunu Windows sürücüsüne devrederek çözmüş: **Adisyo'nun fişi de
+  çizim**, farkı çizeni Windows'un yapması (turda görüldü — yazıcı tanımında IP
+  ve kâğıt sorulmuyor, Çıktı Tasarımı önizlemesi kalın/altı çizili/oransal
+  yazıyla dolu). Biz kendimiz çiziyoruz: **Poppins gömülü** (₺ ve Türkçe harfler
+  onda var), alan alan punto, kalın başlıklar, sağa hizalı tutarlar.
+  Kazancı: sürücü kurulumu yok, işletim sistemi bağımsız, punto gerçekten
+  çalışıyor; logo ve karekod da ileride aynı yoldan basılacak.
+- **İnce yazı termal kâğıtta silik çıkıyor.** Gövde yazısı 500, vurgular 600
+  ağırlıkta; siyah eşiği yüksek tutuluyor ki harfin yumuşatılmış kenarı da
+  yansın. Punto ölçeği 1,3 (20 punto ≈ 3 mm).
+- **Fiş içeriği alanlı pakete dönüştü** (`fis.ts`). 42 karakterlik düz metin
+  yerine "bu satır işletme adı", "bu satır ürün — solda ad, sağda tutar".
+  Puntolar pakete gömülüyor: şablon sonradan değişse de eski fiş aynı çıkıyor.
+  Kuyruk ekranı okunur özetini gösteriyor (`icerikOzeti`), eski düz metin
+  kayıtlar da basılabiliyor.
+- **Fiş Tasarımı ekranı yeniden kuruldu.** Önizleme artık fişi üreten kodun
+  kendisini çağırıyor — ekran ve kâğıt tek kaynaktan. Ayarlar üç bölüme ayrıldı
+  (Fişte ne yazsın · Yazı boyutları · Kendi yazınız). **Punto alanları
+  genişletildi**: künye, ürün altı satırlar, ödeme satırları ve alt metin de
+  ayarlanabiliyor — sabit boyda satır kalmadı.
+- **Kâğıt genişliği yazıcı ayarı oldu** (58/80 mm). Adisyo sormuyor çünkü çizimi
+  Windows yapıyor; doğrudan basan bizim bilmemiz gerekiyor.
+- **Zil**: fiş çıkarken yazıcının kendi zili çalıyor, yazıcı bazında ayar
+  (mutfakta açık, kasada kapalı). Fiş kesildikten sonra ötüyor.
+- **Numaralar ayrıldı ve işletmeye özel oldu** (`sql/2026-08-23-numaralar.sql`).
+  Adisyon no 3000'den, **sipariş no 50000'den** başlıyor; mutfak fişinin üstünde
+  turun kendi numarası yazıyor — aynı masadan üç sipariş gelince üçü ayrı
+  numarayla düşüyor. Eskiden adisyon numarası bütün işletmeler için tek
+  sayaçtandı; **ortak sayaç tartışıldı ve reddedildi** (numara zıplaması, rakip
+  hacminin sızması, muhasebe ardışıklığı). Numarayı tetikleyici veriyor.
+- **Hız.** Sipariş kaydı yavaştı: fiş yazımı ekranı bekletiyordu, duran kalemler
+  her kayıtta tek tek güncelleniyordu, yazıcı ve şablon her fişte yeniden
+  okunuyordu. Artık fiş yazımı beklenmiyor, yalnız değişen kalem yazılıyor
+  (o da toplu), yazıcı/şablon bellekte, turlar ile tahsilatlar aynı anda
+  okunuyor. Köprü de **canlı bağlantıya** geçti (`sql/2026-08-23-kuyruk-canli.sql`),
+  3 saniyelik yoklama yedek olarak duruyor.
+- **Kuyruk çakışmaya karşı korundu** (`sql/2026-08-23-kuyruk-cihaz.sql`): köprü
+  fişi önce üstüne alıyor (`cihaz`, `alinma`), iki kasa aynı fişi basmıyor.
+- **Fişteki kişi bilgisi düzeldi.** Personel sisteminden önceki serbest metin
+  sütunundan okunuyordu, boş çıkıyordu. **Mutfak fişinde turu giren**, adisyon
+  fişinde masayı açan yazıyor. Masa adı ve numara da fiş yazılmadan önce
+  veritabanından okunuyor.
+- **Göç notu:** `alter table` tabloyu tek başına kilitliyor; köprü ve açık Garso
+  sekmesi aynı tabloya bakarken göç çalıştırılırsa **deadlock** oluyor. Göçten
+  önce köprü kapatılıp sekmeler kapatılmalı.
+
+1. **Kasa köprüsünün kalanları** — USB yazıcı (işletim sisteminin listesi ve
+   sürücüsü üzerinden), para çekmecesi, kopyalanacak **Bağlantı Durumu** ekranı,
+   her cihaz için **"Dene"** düğmesi, tek dosyaya paketleme ve Windows
+   başlangıcına kaydolma. Sonraki adımda ÖKC ve CallerID.
+2. **Logo ve karekod** — Fiş Tasarımı'nda anahtarları duruyor ama çizim
+   tarafında karşılığı yok; resim yolu bunu artık mümkün kılıyor.
 3. **Mutfak ekranı (KDS)** — Faz 2'nin ikinci büyük modülü, o da turlanmamış.
 4. **Yurt dışına açılırsa değişmesi gerekenler** — para birimi (₺ arayüzde sabit
    yazılı), tarih/saat biçimi (`tr-TR`) ve "KDV" teriminin kendisi. Bugünün işi

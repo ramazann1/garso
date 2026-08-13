@@ -1,5 +1,5 @@
 import { supabase } from "./supabase";
-import { fisMetni } from "./fis";
+import { fisIcerigi, fisPaketi } from "./fis";
 import type { AdisyonVerisi } from "./adisyonlar";
 import type { SepetKalemi } from "./types";
 
@@ -53,6 +53,10 @@ export type Yazici = {
   ip: string;
   port: number;
   sistemAd: string;
+  /** Kâğıdın milimetre cinsinden genişliği: 58 veya 80. Fiş buna göre çiziliyor. */
+  kagitGenislik: number;
+  /** Fiş çıkarken yazıcının zili çalsın mı — mutfakta fişin düştüğünü haber veriyor. */
+  zil: boolean;
   turler: YaziciTuru[];
   aktif: boolean;
   sira: number;
@@ -89,18 +93,40 @@ export const MUTFAK_PARAMETRELERI: FisAyari[] = [
   { kod: "siparis_toplami", ad: "Sipariş toplamı" },
 ];
 
+/** Fişteki her satırın bir alanı var; boyu buradan ayarlanıyor. */
 export const ADISYON_PUNTOLARI: FisAyari[] = [
   { kod: "isletme_adi", ad: "İşletme adı" },
+  { kod: "genel", ad: "Künye satırları", ipucu: "Masa, saat, garson, fiş numarası" },
   { kod: "urun_listesi", ad: "Ürün listesi" },
+  { kod: "secenek", ad: "Ürün altı satırlar", ipucu: "Seçenekler ve ürün notu" },
+  { kod: "odeme", ad: "Ödeme satırları", ipucu: "KDV, indirim, kişi başı" },
   { kod: "toplam", ad: "Toplam tutar" },
   { kod: "not", ad: "Sipariş notu" },
+  { kod: "alt_metin", ad: "Baştaki ve sondaki yazı" },
 ];
 
 export const MUTFAK_PUNTOLARI: FisAyari[] = [
   { kod: "siparis_no", ad: "Sipariş numarası" },
+  { kod: "genel", ad: "Künye satırları", ipucu: "Masa, saat, garson, kişi sayısı" },
   { kod: "urun_listesi", ad: "Ürün listesi" },
+  { kod: "secenek", ad: "Ürün altı satırlar", ipucu: "Seçenekler ve ürün notu" },
+  { kod: "toplam", ad: "Sipariş toplamı" },
   { kod: "not", ad: "Sipariş notu" },
+  { kod: "alt_metin", ad: "Baştaki ve sondaki yazı" },
 ];
+
+/** Ayarlanmamış alanın boyu. Fiş Tasarımı açılınca kaydırıcılar burada duruyor. */
+export const VARSAYILAN_PUNTOLAR: Record<string, number> = {
+  isletme_adi: 28,
+  siparis_no: 30,
+  genel: 20,
+  urun_listesi: 20,
+  secenek: 16,
+  odeme: 20,
+  toplam: 26,
+  not: 18,
+  alt_metin: 20,
+};
 
 /** Punto sınırları: 8'in altı termal kâğıtta okunmuyor, 40 üstü satırı taşırıyor. */
 export const EN_KUCUK_PUNTO = 8;
@@ -158,7 +184,7 @@ export async function yazicilariGetir(): Promise<Yazici[]> {
   const { data } = await supabase
     .from("yazicilar")
     .select(
-      "id, ad, baglanti, ip, port, sistem_ad, turler, aktif, sira, istasyonlar:yazici_istasyonlari (istasyon_id)"
+      "id, ad, baglanti, ip, port, sistem_ad, kagit_genislik, zil, turler, aktif, sira, istasyonlar:yazici_istasyonlari (istasyon_id)"
     )
     .order("sira")
     .order("id");
@@ -170,6 +196,8 @@ export async function yazicilariGetir(): Promise<Yazici[]> {
     ip: y.ip ?? "",
     port: y.port,
     sistemAd: y.sistem_ad ?? "",
+    kagitGenislik: y.kagit_genislik ?? 80,
+    zil: y.zil ?? false,
     turler: y.turler ?? [],
     aktif: y.aktif,
     sira: y.sira,
@@ -187,6 +215,8 @@ function yaziciSatiri(alanlar: YaziciAlanlari) {
     ip: ag ? alanlar.ip.trim() || null : null,
     port: ag ? alanlar.port : 9100,
     sistem_ad: alanlar.baglanti === "usb" ? alanlar.sistemAd.trim() || null : null,
+    kagit_genislik: alanlar.kagitGenislik,
+    zil: alanlar.zil,
     turler: alanlar.turler,
     aktif: alanlar.aktif,
   };
@@ -217,6 +247,7 @@ export async function yaziciKaydet(id: number | null, alanlar: YaziciAlanlari) {
     yaziciId!,
     alanlar.turler.includes("mutfak") ? alanlar.istasyonlar : []
   );
+  yaziciOnbelleginiUnut();
   return yaziciId!;
 }
 
@@ -257,6 +288,7 @@ async function istasyonlariYaz(yaziciId: number, istasyonlar: number[]) {
 export async function yaziciSil(id: number) {
   const { error } = await supabase.from("yazicilar").delete().eq("id", id);
   if (error) throw new Error("Yazıcı silinemedi.");
+  yaziciOnbelleginiUnut();
 }
 
 export async function yaziciSirasiniKaydet(sirali: number[]) {
@@ -293,6 +325,7 @@ export async function fisSablonuKaydet(sablon: FisSablonu) {
     { onConflict: "isletme_id,tip" }
   );
   if (error) throw new Error("Fiş şablonu kaydedilemedi.");
+  yaziciOnbelleginiUnut();
 }
 
 /** Ürünün gideceği istasyon: kendi istasyonu varsa o, yoksa kategorisininki. */
@@ -355,6 +388,41 @@ async function kuyrugaEkle(
   if (error) throw new Error(`Fiş kuyruğa yazılamadı: ${error.message}`);
 }
 
+/**
+ * Yazıcı listesi ve fiş şablonu her fişte yeniden okunuyordu; ikisi de nadiren
+ * değişiyor ve sipariş kaydı sırasında her okuma sunucuya bir gidiş dönüş
+ * demek. Bellekte tutuluyorlar, ayar ekranları kaydettiğinde tazeleniyor.
+ */
+let yaziciOnbellek: Promise<Yazici[]> | null = null;
+const sablonOnbellek = new Map<FisSablonu["tip"], Promise<FisSablonu>>();
+
+export function yaziciOnbelleginiUnut() {
+  yaziciOnbellek = null;
+  sablonOnbellek.clear();
+}
+
+function yazicilariOku() {
+  if (!yaziciOnbellek) {
+    yaziciOnbellek = yazicilariGetir().catch((e) => {
+      yaziciOnbellek = null;
+      throw e;
+    });
+  }
+  return yaziciOnbellek;
+}
+
+function sablonOku(tip: FisSablonu["tip"]) {
+  let istek = sablonOnbellek.get(tip);
+  if (!istek) {
+    istek = fisSablonuGetir(tip).catch((e) => {
+      sablonOnbellek.delete(tip);
+      throw e;
+    });
+    sablonOnbellek.set(tip, istek);
+  }
+  return istek;
+}
+
 /** O türde fişi basan, açık yazıcılar. */
 function turunYazicilari(yazicilar: Yazici[], tur: YaziciTuru) {
   return yazicilar.filter((y) => y.aktif && y.turler.includes(tur));
@@ -362,14 +430,11 @@ function turunYazicilari(yazicilar: Yazici[], tur: YaziciTuru) {
 
 /** Hesap fişi: adisyon türündeki bütün açık yazıcılara gider. */
 export async function adisyonFisiYaz(adisyon: AdisyonVerisi) {
-  const [yazicilar, sablon] = await Promise.all([
-    yazicilariGetir(),
-    fisSablonuGetir("adisyon"),
-  ]);
+  const [yazicilar, sablon] = await Promise.all([yazicilariOku(), sablonOku("adisyon")]);
   const hedefler = turunYazicilari(yazicilar, "adisyon");
   if (!hedefler.length) return 0;
 
-  const icerik = fisMetni(sablon, adisyon);
+  const icerik = fisPaketi(fisIcerigi(sablon, adisyon));
   for (const y of hedefler) await kuyrugaEkle("adisyon", adisyon.id, y.id, icerik);
   return hedefler.length;
 }
@@ -378,13 +443,17 @@ export async function adisyonFisiYaz(adisyon: AdisyonVerisi) {
  * Mutfak fişi: kalemler istasyona göre ayrılır, her istasyonun fişi yalnız o
  * istasyonun yazıcılarına gider. Barın fişinde mutfağın ürünü olmaz.
  */
-export async function mutfakFisiYaz(adisyon: AdisyonVerisi, kalemler: SepetKalemi[]) {
+export async function mutfakFisiYaz(
+  adisyon: AdisyonVerisi,
+  kalemler: SepetKalemi[],
+  siparisNo?: number
+) {
   const basilacaklar = kalemler.filter((k) => (k.durum ?? "normal") === "normal");
   if (!basilacaklar.length) return 0;
 
   const [yazicilar, sablon, harita] = await Promise.all([
-    yazicilariGetir(),
-    fisSablonuGetir("mutfak"),
+    yazicilariOku(),
+    sablonOku("mutfak"),
     urunIstasyonlari(),
   ]);
   const hedefler = turunYazicilari(yazicilar, "mutfak");
@@ -401,7 +470,7 @@ export async function mutfakFisiYaz(adisyon: AdisyonVerisi, kalemler: SepetKalem
 
   let sayi = 0;
   for (const [istasyonId, liste] of gruplar) {
-    const icerik = fisMetni(sablon, adisyon, liste);
+    const icerik = fisPaketi(fisIcerigi(sablon, adisyon, liste, siparisNo));
     for (const y of hedefler.filter((h) => h.istasyonlar.includes(istasyonId))) {
       await kuyrugaEkle("mutfak", adisyon.id, y.id, icerik);
       sayi++;
