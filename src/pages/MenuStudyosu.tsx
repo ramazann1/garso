@@ -35,6 +35,8 @@ import {
 } from "../menu";
 import type { KategoriAlanlari, KdvSatiri, TopluPorsiyon, TopluUrun } from "../menu";
 import type { AktarimPlani } from "../aktarim";
+import { istasyonlariGetir, istasyonHaritasiniUnut } from "../yazicilar";
+import type { Istasyon } from "../yazicilar";
 import { kilitKaldir, kilitKur } from "../cikisKilidi";
 import type { MenuBirim, MenuKategori, MenuKdv, MenuSecenekGrubu, MenuUrun } from "../types";
 
@@ -48,14 +50,17 @@ function anaFiyat(u: MenuUrun) {
 function KategoriPenceresi({
   kategori,
   kategoriler,
+  istasyonlar,
   onKapat,
   onKaydet,
 }: {
   kategori?: MenuKategori;
   kategoriler: MenuKategori[];
+  istasyonlar: Istasyon[];
   onKapat: () => void;
   onKaydet: (k: KategoriAlanlari) => void;
 }) {
+  const [istasyonId, setIstasyonId] = useState<number | undefined>(kategori?.istasyonId);
   const [ad, setAd] = useState(kategori?.ad ?? "");
   const [renk, setRenk] = useState(kategori?.renk ?? renkler[0]);
   const [ustId, setUstId] = useState<number | undefined>(kategori?.ustId);
@@ -108,6 +113,21 @@ function KategoriPenceresi({
           )}
         </div>
 
+        {istasyonlar.length > 0 && (
+          <div className="alan">
+            <span>Hazırlandığı istasyon</span>
+            <select
+              value={istasyonId ?? ""}
+              onChange={(e) => setIstasyonId(e.target.value ? Number(e.target.value) : undefined)}
+            >
+              <option value="">— Seçilmedi —</option>
+              {istasyonlar.map((i) => (
+                <option key={i.id} value={i.id}>{i.ad}</option>
+              ))}
+            </select>
+          </div>
+        )}
+
         <div className="alan">
           <span>Renk</span>
           <RenkSecici renk={renk} degistir={(r) => setRenk(r ?? renkler[0])} />
@@ -130,7 +150,9 @@ function KategoriPenceresi({
           <button
             className="uygula"
             disabled={!ad.trim()}
-            onClick={() => onKaydet({ ad: ad.trim(), renk, ustId, satistaGorunur, mutfaktaGorunur })}
+            onClick={() =>
+              onKaydet({ ad: ad.trim(), renk, ustId, istasyonId, satistaGorunur, mutfaktaGorunur })
+            }
           >
             Kaydet
           </button>
@@ -517,6 +539,7 @@ export default function MenuStudyosu() {
   const [gruplar, setGruplar] = useState<MenuSecenekGrubu[]>([]);
   const [birimler, setBirimler] = useState<MenuBirim[]>([]);
   const [kdvler, setKdvler] = useState<MenuKdv[]>([]);
+  const [istasyonlar, setIstasyonlar] = useState<Istasyon[]>([]);
   const [seciliId, setSeciliId] = useState<number | null>(null);
   // Alt kategoriler kendiliğinden açılmaz; satırdaki okla açılır, tek dal açık kalır.
   const [acikGrupId, setAcikGrupId] = useState<number | null>(null);
@@ -539,6 +562,8 @@ export default function MenuStudyosu() {
   const [onaySor, setOnaySor] = useState<{ mesaj: string; devam: () => void } | null>(null);
 
   const yukle = async (ilk = false) => {
+    // Ürün/kategori istasyonu değişmiş olabilir; fiş tarafındaki eşleme tazelensin.
+    istasyonHaritasiniUnut();
     const veri = await menuGetir();
     setKategoriler(veri.kategoriler);
     setUrunler(veri.urunler);
@@ -550,6 +575,8 @@ export default function MenuStudyosu() {
 
   useEffect(() => {
     yukle(true).then(() => setYukleniyor(false));
+    // İstasyonlar menüyle birlikte değişmiyor, bir kez okunuyor.
+    istasyonlariGetir().then(setIstasyonlar);
   }, []);
 
   // Toplu düzenlemede kaydedilmemiş taslak varsa sol menüden çıkış da sorsun.
@@ -1137,7 +1164,7 @@ export default function MenuStudyosu() {
           gruplar={gruplar}
           birimler={birimler}
           kdvler={kdvler}
-
+          istasyonlar={istasyonlar}
           onKapat={() => setPanel(null)}
           onKaydet={kaydet}
           onSil={() => urunuSil(panel)}
@@ -1148,6 +1175,7 @@ export default function MenuStudyosu() {
         <KategoriPenceresi
           kategori={pencere.kategori}
           kategoriler={kategoriler}
+          istasyonlar={istasyonlar}
           onKapat={() => setPencere(null)}
           onKaydet={kategoriKaydet}
         />

@@ -76,6 +76,7 @@ export type MenuKategori = {
   renk: string;
   sira: number;
   ustId?: number; // doluysa alt kategori; sıra kardeşler arasında geçerli
+  istasyonId?: number; // altındaki ürünler bu istasyonda hazırlanır
   satistaGorunur: boolean;
   mutfaktaGorunur: boolean;
 };
@@ -149,6 +150,7 @@ export type MenuUrun = {
   ad: string;
   kod?: string;
   kdvId?: number; // boşsa varsayılan KDV grubu geçerli
+  istasyonId?: number; // boşsa kategorisinin istasyonu geçerli
   renk?: string;
   favori: boolean;
   satistaGorunur: boolean;

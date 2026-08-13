@@ -1,4 +1,7 @@
 import { supabase } from "./supabase";
+import { fisMetni } from "./fis";
+import type { AdisyonVerisi } from "./adisyonlar";
+import type { SepetKalemi } from "./types";
 
 /** Yazıcının nasıl bağlandığı — ekranlarda bu sırayla listeleniyor. */
 export const BAGLANTILAR = [
@@ -298,4 +301,180 @@ export function urununIstasyonu(
   kategoriIstasyon: number | null
 ): number | null {
   return urunIstasyon ?? kategoriIstasyon ?? null;
+}
+
+/**
+ * Ürün kimliğinden istasyon kimliğine eşleme. Sipariş her kaydedildiğinde
+ * menüyü baştan okumamak için bir kez çekilip bellekte duruyor; menü
+ * değişirse `istasyonHaritasiniUnut` ile tazeleniyor.
+ */
+let istasyonHaritasi: Map<number, number> | null = null;
+
+export function istasyonHaritasiniUnut() {
+  istasyonHaritasi = null;
+}
+
+async function urunIstasyonlari() {
+  if (istasyonHaritasi) return istasyonHaritasi;
+
+  const [urn, kat] = await Promise.all([
+    supabase
+      .from("urunler")
+      .select("id, istasyon_id, urun_kategorileri (kategori_id)"),
+    supabase.from("kategoriler").select("id, istasyon_id"),
+  ]);
+
+  const kategoriIstasyonu = new Map<number, number>();
+  for (const k of ((kat.data as any[]) ?? []))
+    if (k.istasyon_id) kategoriIstasyonu.set(k.id, k.istasyon_id);
+
+  const harita = new Map<number, number>();
+  for (const u of ((urn.data as any[]) ?? [])) {
+    // Ürün birden çok kategoride durabiliyor; istasyonu tanımlı ilk kategori
+    // devralınıyor — Menü Stüdyosu'ndaki "Kategorisine göre" ile aynı kural.
+    const kategoriden = (u.urun_kategorileri ?? [])
+      .map((x: any) => kategoriIstasyonu.get(x.kategori_id))
+      .find((i: number | undefined) => i);
+    const istasyon = urununIstasyonu(u.istasyon_id ?? null, kategoriden ?? null);
+    if (istasyon) harita.set(u.id, istasyon);
+  }
+
+  istasyonHaritasi = harita;
+  return harita;
+}
+
+async function kuyrugaEkle(
+  tip: FisSablonu["tip"],
+  adisyonId: number | undefined,
+  yaziciId: number,
+  icerik: string
+) {
+  const { error } = await supabase
+    .from("yazdirma_kuyrugu")
+    .insert({ tip, adisyon_id: adisyonId ?? null, yazici_id: yaziciId, icerik });
+  if (error) throw new Error(`Fiş kuyruğa yazılamadı: ${error.message}`);
+}
+
+/** O türde fişi basan, açık yazıcılar. */
+function turunYazicilari(yazicilar: Yazici[], tur: YaziciTuru) {
+  return yazicilar.filter((y) => y.aktif && y.turler.includes(tur));
+}
+
+/** Hesap fişi: adisyon türündeki bütün açık yazıcılara gider. */
+export async function adisyonFisiYaz(adisyon: AdisyonVerisi) {
+  const [yazicilar, sablon] = await Promise.all([
+    yazicilariGetir(),
+    fisSablonuGetir("adisyon"),
+  ]);
+  const hedefler = turunYazicilari(yazicilar, "adisyon");
+  if (!hedefler.length) return 0;
+
+  const icerik = fisMetni(sablon, adisyon);
+  for (const y of hedefler) await kuyrugaEkle("adisyon", adisyon.id, y.id, icerik);
+  return hedefler.length;
+}
+
+/**
+ * Mutfak fişi: kalemler istasyona göre ayrılır, her istasyonun fişi yalnız o
+ * istasyonun yazıcılarına gider. Barın fişinde mutfağın ürünü olmaz.
+ */
+export async function mutfakFisiYaz(adisyon: AdisyonVerisi, kalemler: SepetKalemi[]) {
+  const basilacaklar = kalemler.filter((k) => (k.durum ?? "normal") === "normal");
+  if (!basilacaklar.length) return 0;
+
+  const [yazicilar, sablon, harita] = await Promise.all([
+    yazicilariGetir(),
+    fisSablonuGetir("mutfak"),
+    urunIstasyonlari(),
+  ]);
+  const hedefler = turunYazicilari(yazicilar, "mutfak");
+  if (!hedefler.length) return 0;
+
+  const gruplar = new Map<number, SepetKalemi[]>();
+  for (const k of basilacaklar) {
+    const istasyon = k.urunId ? harita.get(k.urunId) : undefined;
+    if (!istasyon) continue; // istasyonu olmayan ürün mutfağa düşmüyor
+    const liste = gruplar.get(istasyon) ?? [];
+    liste.push(k);
+    gruplar.set(istasyon, liste);
+  }
+
+  let sayi = 0;
+  for (const [istasyonId, liste] of gruplar) {
+    const icerik = fisMetni(sablon, adisyon, liste);
+    for (const y of hedefler.filter((h) => h.istasyonlar.includes(istasyonId))) {
+      await kuyrugaEkle("mutfak", adisyon.id, y.id, icerik);
+      sayi++;
+    }
+  }
+  return sayi;
+}
+
+export type KuyrukDurumu = "bekliyor" | "basildi" | "basarisiz" | "iptal";
+
+export type KuyrukSatiri = {
+  id: number;
+  tip: string;
+  durum: KuyrukDurumu;
+  icerik: string;
+  deneme: number;
+  hata: string | null;
+  olusturma: string;
+  basilma: string | null;
+  yaziciAd: string | null;
+  adisyonNo: number | null;
+};
+
+/**
+ * Kuyruğun son kayıtları. Ekran süzgeci "hepsi"ne de bakabildiği için sınır
+ * var: basılmış fişler birikiyor, tamamını çekmenin kimseye faydası yok.
+ */
+export async function kuyrugaBak(
+  durum?: KuyrukDurumu,
+  sinir = 200
+): Promise<KuyrukSatiri[]> {
+  let sorgu = supabase
+    .from("yazdirma_kuyrugu")
+    .select(
+      "id, tip, durum, icerik, deneme, hata, olusturma, basilma, yazicilar (ad), adisyonlar (adisyon_no)"
+    )
+    .order("olusturma", { ascending: false })
+    .limit(sinir);
+  if (durum) sorgu = sorgu.eq("durum", durum);
+
+  const { data, error } = await sorgu;
+  if (error) throw new Error(`Kuyruk okunamadı: ${error.message}`);
+  return ((data as any[]) ?? []).map((s) => ({
+    id: s.id,
+    tip: s.tip,
+    durum: s.durum,
+    icerik: s.icerik ?? "",
+    deneme: s.deneme ?? 0,
+    hata: s.hata ?? null,
+    olusturma: s.olusturma,
+    basilma: s.basilma ?? null,
+    yaziciAd: s.yazicilar?.ad ?? null,
+    adisyonNo: s.adisyonlar?.adisyon_no ?? null,
+  }));
+}
+
+/**
+ * Yeniden basma: satır silinip yenisi açılmıyor, aynı satır tekrar sıraya
+ * giriyor. İçerik o günkü haliyle donmuş durumda, şablon değişse bile fiş
+ * ilk basıldığı gibi çıkıyor.
+ */
+export async function kuyrugaGeriKoy(id: number) {
+  const { error } = await supabase
+    .from("yazdirma_kuyrugu")
+    .update({ durum: "bekliyor", deneme: 0, hata: null, basilma: null })
+    .eq("id", id);
+  if (error) throw new Error("Fiş yeniden sıraya alınamadı.");
+}
+
+export async function kuyruktanIptal(id: number) {
+  const { error } = await supabase
+    .from("yazdirma_kuyrugu")
+    .update({ durum: "iptal" })
+    .eq("id", id);
+  if (error) throw new Error("Fiş iptal edilemedi.");
 }

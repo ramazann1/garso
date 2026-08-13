@@ -197,23 +197,39 @@ ekranı, İstasyonlar ve canlı önizlemeli Fiş Tasarımı. Bu seansta çıkanl
 - Yeni yetki: `yazici.yonet`. Yeni ekranlar `/ayarlar/yazicilar`,
   `/ayarlar/istasyonlar`, `/ayarlar/fis-tasarimi`.
 
-1. **Ürün ve kategoriye istasyon seçimi.** Sütunlar (`kategoriler.istasyon_id`,
-   `urunler.istasyon_id`) açıldı ama Menü Stüdyosu'nda seçecek yer yok; zincir
-   bu olmadan tamamlanmıyor.
-2. **Fişin gerçekten üretilmesi.** Şablonu metne çeviren katman, sipariş
-   kaydedilince fişin kuyruğa düşmesi ve Salon'un üç nokta menüsünde **Yazdır**.
-   "Masa yazdırma" maddesi bununla kapanacak.
-3. **Yazdırma kuyruğu ekranı** — bekleyen/başarısız fişler ve "yeniden bas".
-   Tablo hazır, ekran yok.
-4. **Garso Kasa Köprüsü** — kasada çalışan indirilen program (Node; ilk sürümde
+**22 Ağu 2026:** **Yazıcı zinciri baştan sona bağlandı** — ürün artık istasyon
+seçiyor, fiş üretiliyor ve kuyruk ekranından izleniyor. Bu seansta çıkanlar:
+- **İstasyon seçimi Menü Stüdyosu'na girdi.** Kategori penceresinde ve ürün
+  panelinde "Hazırlandığı istasyon"; üründeki boş seçenek **"Kategorisine göre
+  (Bar)"** diye devralınanı yazıyor, kural ekranda okunuyor. Hiç istasyon
+  tanımlı değilse alan iki ekranda da görünmüyor — boş kutu gösterilmiyor.
+- **Fiş metni ayrı katmanda** (`src/fis.ts`). Şablonu 42 karakterlik düz metne
+  çeviriyor; önizlemeyle aynı `parametreler` anahtarlarını okuyor. **Puntolar bu
+  katmanın işi değil** — onlar ESC/POS komutu, köprü yazıcıya kendisi söylüyor.
+- **Mutfak fişi yalnız o turun kalemlerini basıyor.** Yeni tur açılınca kuyruğa
+  düşüyor; eski kalemler ikinci kez gitseydi aynı yemek iki defa hazırlanırdı.
+  Kalemler istasyona göre ayrılıyor, barın fişinde mutfağın ürünü olmuyor.
+  Fiş yazımı ayrı sarmalda: yazıcı tarafındaki hata siparişin kaydını düşürmüyor.
+- **Ürün → istasyon eşlemesi bellekte** (`istasyonHaritasi`); her sipariş
+  kaydında menüyü baştan okumamak için. Menü Stüdyosu kayıtta tazeliyor.
+- **Yazdırma Kuyruğu ekranı** (`/ayarlar/yazdirma-kuyrugu`, Yazıcılar'ın
+  dördüncü alt sekmesi): durum sekmeleri, yeniden bas / iptal, satıra tıklayınca
+  fişin donmuş metni. Liste 15 saniyede bir kendini tazeliyor — basma işini
+  köprü yapıyor, durum bu ekranın haberi olmadan değişiyor.
+- **Supabase hatalarını yutmamak kuralı.** Kuyruk ekranı boş görünüyordu:
+  sorguda adisyon numarası `no` yazılmıştı, sütunun adı `adisyon_no`. Hata
+  sessizce yutulduğu için ekran "kayıt yok" diyordu. Artık hem kuyruğa yazma hem
+  okuma hatası kullanıcıya çıkıyor.
+
+1. **Garso Kasa Köprüsü** — kasada çalışan indirilen program (Node; ilk sürümde
    yazıcı + para çekmecesi, sonra ÖKC ve CallerID). Ethernet'te doğrudan
    IP:9100'e ESC/POS, USB'de işletim sisteminin listesi, tek USB yazıcı için
    kurulumsuz WebUSB. Ayrıca kopyalanacak **Bağlantı Durumu** ekranı ve her
    cihaz için **"Dene"** düğmesi. Ayrı bir program, tek seansta bitmez.
-5. **Fiş Tasarımı ekranı geliştirilecek** — iskelet duruyor, Ramazan "güzel ama
+2. **Fiş Tasarımı ekranı geliştirilecek** — iskelet duruyor, Ramazan "güzel ama
    geliştirilebilir" dedi.
-6. **Mutfak ekranı (KDS)** — Faz 2'nin ikinci büyük modülü, o da turlanmamış.
-7. **Yurt dışına açılırsa değişmesi gerekenler** — para birimi (₺ arayüzde sabit
+3. **Mutfak ekranı (KDS)** — Faz 2'nin ikinci büyük modülü, o da turlanmamış.
+4. **Yurt dışına açılırsa değişmesi gerekenler** — para birimi (₺ arayüzde sabit
    yazılı), tarih/saat biçimi (`tr-TR`) ve "KDV" teriminin kendisi. Bugünün işi
    değil, akılda dursun diye burada.
 

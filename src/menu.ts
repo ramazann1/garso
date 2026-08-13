@@ -119,12 +119,12 @@ export async function menuGetir() {
   const [kat, urn, grp, brm, kdv] = await Promise.all([
     supabase
       .from("kategoriler")
-      .select("id, ad, renk, sira, satista_gorunur, mutfakta_gorunur, ust_id")
+      .select("id, ad, renk, sira, satista_gorunur, mutfakta_gorunur, ust_id, istasyon_id")
       .order("sira"),
     supabase
       .from("urunler")
       .select(
-        "id, ad, kod, kdv_id, renk, favori, satista_gorunur, mutfakta_gorunur, porsiyonlar(id, birim_id, fiyat, maliyet, barkod, masa_fiyat, gelal_fiyat, paket_fiyat, varsayilan, sira, porsiyon_secenek_gruplari(grup_id)), urun_kategorileri(kategori_id, sira), menu_gruplari(id, baslik, secilebilir_adet, sira, menu_satirlari(id, urun_id, porsiyon_id, miktar, ek_fiyat, varsayilan, sira))"
+        "id, ad, kod, kdv_id, istasyon_id, renk, favori, satista_gorunur, mutfakta_gorunur, porsiyonlar(id, birim_id, fiyat, maliyet, barkod, masa_fiyat, gelal_fiyat, paket_fiyat, varsayilan, sira, porsiyon_secenek_gruplari(grup_id)), urun_kategorileri(kategori_id, sira), menu_gruplari(id, baslik, secilebilir_adet, sira, menu_satirlari(id, urun_id, porsiyon_id, miktar, ek_fiyat, varsayilan, sira))"
       ),
     supabase
       .from("secenek_gruplari")
@@ -141,6 +141,7 @@ export async function menuGetir() {
       renk: k.renk,
       sira: k.sira,
       ustId: k.ust_id ?? undefined,
+      istasyonId: k.istasyon_id ?? undefined,
       satistaGorunur: k.satista_gorunur,
       mutfaktaGorunur: k.mutfakta_gorunur,
     }))
@@ -153,6 +154,7 @@ export async function menuGetir() {
     ad: u.ad,
     kod: u.kod ?? undefined,
     kdvId: u.kdv_id ?? undefined,
+    istasyonId: u.istasyon_id ?? undefined,
     renk: u.renk ?? undefined,
     favori: u.favori,
     satistaGorunur: u.satista_gorunur,
@@ -222,6 +224,7 @@ export type KategoriAlanlari = {
   ad: string;
   renk: string;
   ustId?: number;
+  istasyonId?: number;
   satistaGorunur: boolean;
   mutfaktaGorunur: boolean;
 };
@@ -230,6 +233,7 @@ const kategoriSatiri = (k: KategoriAlanlari) => ({
   ad: k.ad,
   renk: k.renk,
   ust_id: k.ustId ?? null,
+  istasyon_id: k.istasyonId ?? null,
   satista_gorunur: k.satistaGorunur,
   mutfakta_gorunur: k.mutfaktaGorunur,
 });
@@ -305,6 +309,7 @@ export async function urunKaydet(u: MenuUrun) {
     ad: u.ad,
     kod: u.kod?.trim() || null,
     kdv_id: u.kdvId ?? null,
+    istasyon_id: u.istasyonId ?? null,
     renk: u.renk ?? null,
     favori: u.favori,
     satista_gorunur: u.satistaGorunur,
@@ -415,6 +420,7 @@ export async function urunKopyala(kaynak: MenuUrun, hepsi: MenuUrun[]) {
       ad: `${kaynak.ad} (kopya)`,
       kod: null,
       kdv_id: kaynak.kdvId ?? null,
+      istasyon_id: kaynak.istasyonId ?? null,
       renk: kaynak.renk ?? null,
       favori: kaynak.favori,
       satista_gorunur: kaynak.satistaGorunur,

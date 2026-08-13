@@ -5,6 +5,7 @@ import type { IndirimKaynagi } from "./indirimler";
 import { acikOturum } from "./oturum";
 import { kisaAd } from "./personel";
 import { denetimYaz } from "./denetim";
+import { mutfakFisiYaz } from "./yazicilar";
 import type { DenetimIslemi, DenetimKaydi } from "./denetim";
 import type { SepetKalemi, Tahsilat } from "./types";
 
@@ -667,6 +668,16 @@ async function kalemleriYaz(
       if (gecici) kimlikEsi.set(gecici, satir.id);
       yeniler[i].id = satir.id;
     });
+
+    // Mutfak fişi yalnız bu turun kalemlerini basıyor; eski kalemler ikinci
+    // kez gitseydi aynı yemek iki defa hazırlanırdı. Yazıcı tarafındaki bir
+    // hata siparişin kaydını düşürmesin diye ayrı sarmalda.
+    try {
+      await mutfakFisiYaz({ ...veri, id: adisyonId }, yeniler);
+    } catch (e) {
+      // Sipariş kaydı geçerli; fişin neden düşmediği yalnız günlüğe yazılıyor.
+      console.error("Mutfak fişi kuyruğa yazılamadı:", e);
+    }
   }
 
   // Tahsilatlar eskiden her kayıtta silinip yeniden yazılıyordu; kimlik

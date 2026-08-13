@@ -9682,3 +9682,68 @@ body {
   font-style: normal;
   color: var(--soluk);
 }
+
+/* ---- Yazdırma kuyruğu ---- */
+
+.kuyruk-islem {
+  display: flex;
+  justify-content: flex-end;
+  gap: 8px;
+  white-space: nowrap;
+}
+
+.satir-tus {
+  display: inline-flex;
+  align-items: center;
+  gap: 6px;
+  padding: 6px 12px;
+  border: 1px solid #e6dbcd;
+  border-radius: 9px;
+  background: #fff;
+  color: var(--metin);
+  font-family: inherit;
+  font-size: 13.5px;
+  font-weight: 600;
+  cursor: pointer;
+  transition: border-color 0.14s ease, color 0.14s ease;
+}
+
+.satir-tus:hover {
+  border-color: var(--mercan);
+  color: var(--mercan);
+}
+
+/* Fişin donmuş metni kâğıttaki gibi görünsün diye eş aralıklı yazı. */
+.kuyruk-onizleme {
+  width: min(440px, 92vw);
+  max-height: 82vh;
+  overflow: auto;
+  padding: 20px 22px 24px;
+  border-radius: 16px;
+  background: var(--kart);
+}
+
+.kuyruk-onizleme header {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  margin-bottom: 14px;
+}
+
+.kuyruk-onizleme h3 {
+  margin: 0;
+  font-size: 17px;
+}
+
+.kuyruk-onizleme pre {
+  margin: 0;
+  padding: 16px;
+  border-radius: 12px;
+  background: #fdf8f2;
+  color: var(--metin);
+  font-family: "Courier New", monospace;
+  font-size: 13px;
+  line-height: 1.55;
+  white-space: pre;
+  overflow-x: auto;
+}

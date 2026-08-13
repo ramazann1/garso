@@ -12,6 +12,7 @@ import {
   LayoutGrid,
   Pencil,
   Plus,
+  Printer,
   ShoppingBag,
   Trash2,
   Zap,
@@ -41,6 +42,7 @@ import {
   tumAdisyonlar,
 } from "../adisyonlar";
 import type { AdisyonVerisi, MasaOzeti, MasasizAdisyon } from "../adisyonlar";
+import { adisyonFisiYaz } from "../yazicilar";
 import { bolgeleriGetir } from "../masalar";
 import type { Bolge, Masa } from "../types";
 
@@ -272,6 +274,22 @@ export default function Salon() {
     });
   }
 
+  // Fiş doğrudan yazıcıya gitmiyor, kuyruğa düşüyor: kasa köprüsü sırayla
+  // basıyor. Yazıcı kapalıysa fiş kaybolmasın diye böyle.
+  async function fisYazdir(masa: Masa) {
+    try {
+      const veri = await adisyonGetir(masa.id);
+      const adet = await adisyonFisiYaz({ ...veri, ad: veri.ad || masa.ad });
+      setUyari(
+        adet > 0
+          ? "Fiş yazdırmaya gönderildi."
+          : "Adisyon fişi basacak açık bir yazıcı tanımlı değil."
+      );
+    } catch {
+      setUyari("Fiş yazdırmaya gönderilemedi.");
+    }
+  }
+
   const aksiyonlar = (masa: Masa) => {
     const acik = adisyonlar[masa.id];
     const odendi = !!acik && acik.tutar > 0 && acik.odenen > 0 && acik.kalan <= 0;
@@ -300,6 +318,15 @@ export default function Salon() {
               ad: "Adisyonu birleştir",
               ikon: <Combine size={16} />,
               onSec: () => setIslem({ tip: "birlestir", masa }),
+            },
+          ]
+        : []),
+      ...(acik
+        ? [
+            {
+              ad: "Yazdır",
+              ikon: <Printer size={16} />,
+              onSec: () => fisYazdir(masa),
             },
           ]
         : []),

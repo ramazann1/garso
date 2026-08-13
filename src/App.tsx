@@ -13,6 +13,7 @@ import Personel from "./pages/Personel";
 import Yetkiler from "./pages/Yetkiler";
 import Yazicilar from "./pages/Yazicilar";
 import FisTasarimi from "./pages/FisTasarimi";
+import YazdirmaKuyrugu from "./pages/YazdirmaKuyrugu";
 import Giris from "./pages/Giris";
 import KilitEkrani from "./components/KilitEkrani";
 import { girisKuruldu, kilitle, oturumuYukle, useOturum } from "./oturum";
@@ -99,6 +100,7 @@ function App() {
         <Route path="/ayarlar/yazicilar" element={<Yazicilar />} />
         <Route path="/ayarlar/istasyonlar" element={<Yazicilar />} />
         <Route path="/ayarlar/fis-tasarimi" element={<FisTasarimi />} />
+        <Route path="/ayarlar/yazdirma-kuyrugu" element={<YazdirmaKuyrugu />} />
         <Route path="/ayarlar/:bolum" element={<IsletmeAyarlari />} />
       </YetkiKapisi>
     </BrowserRouter>

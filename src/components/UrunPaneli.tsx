@@ -13,6 +13,7 @@ import type {
   MenuSecenekGrubu,
   MenuUrun,
 } from "../types";
+import type { Istasyon } from "../yazicilar";
 
 // Para alanları taslakta metin, kaydederken sayı. Boş bırakılan alan 0 değil
 // "tanımsız" demektir — tür fiyatında bu ayrım önemli.
@@ -65,6 +66,7 @@ export default function UrunPaneli({
   gruplar,
   birimler,
   kdvler,
+  istasyonlar,
   onKapat,
   onKaydet,
   onSil,
@@ -74,6 +76,7 @@ export default function UrunPaneli({
   gruplar: MenuSecenekGrubu[];
   birimler: MenuBirim[];
   kdvler: MenuKdv[];
+  istasyonlar: Istasyon[];
   onKapat: () => void;
   onKaydet: (u: MenuUrun) => void;
   onSil?: () => void;
@@ -94,6 +97,7 @@ export default function UrunPaneli({
   const [ad, setAd] = useState(urun.ad);
   const [kod, setKod] = useState(urun.kod ?? "");
   const [kdvId, setKdvId] = useState(urun.kdvId);
+  const [istasyonId, setIstasyonId] = useState(urun.istasyonId);
   const [renk, setRenk] = useState(urun.renk);
   const [favori, setFavori] = useState(urun.favori);
   const [satistaGorunur, setSatistaGorunur] = useState(urun.satistaGorunur);
@@ -106,6 +110,11 @@ export default function UrunPaneli({
   const [detayli, setDetayli] = useState<number[]>([]);
 
   const varsayilanKdv = kdvler.find((k) => k.varsayilan);
+  // Ürün kendi istasyonunu seçmezse kategorisininki geçerli; birden çok
+  // kategoride duruyorsa istasyonu tanımlı ilk kategori devralınır.
+  const devralinan = istasyonlar.find((i) =>
+    kategoriler.some((k) => kategoriIdler.includes(k.id) && k.istasyonId === i.id)
+  );
   // Alt kategoriler panel açılırken kapalı gelir; üstündeki rozet kaç alt
   // kategorinin seçili olduğunu gösterir, seçim gizli kalmasın diye.
   const anaKategoriler = kategoriler.filter(
@@ -173,6 +182,7 @@ export default function UrunPaneli({
       ad: ad.trim(),
       kod: kod.trim() || undefined,
       kdvId,
+      istasyonId,
       renk,
       favori,
       satistaGorunur,
@@ -442,6 +452,27 @@ export default function UrunPaneli({
               ))}
             </select>
           </div>
+
+          {istasyonlar.length > 0 && (
+            <div className="alan">
+              <span>Hazırlandığı istasyon</span>
+              <select
+                value={istasyonId ?? ""}
+                onChange={(e) =>
+                  setIstasyonId(e.target.value ? Number(e.target.value) : undefined)
+                }
+              >
+                <option value="">
+                  {devralinan
+                    ? `Kategorisine göre (${devralinan.ad})`
+                    : "Kategorisine göre"}
+                </option>
+                {istasyonlar.map((i) => (
+                  <option key={i.id} value={i.id}>{i.ad}</option>
+                ))}
+              </select>
+            </div>
+          )}
 
           <div className="alan">
             <span>Kart rengi</span>
