@@ -170,13 +170,17 @@ Bu iki maddeyle birlikte sıradaki iş listesinin yapılabilir kısmı bitti; Fa
   panoya kopyalanan kod rozeti. Ad ve kod ayarlarla birlikte tek seferde
   okunuyor (`isletmeKimliginiGetir`), önbellekte duruyor.
 
-1. **Yazıcı modülü — önce Adisyo turu.** Faz 2'nin ilk işi. Turlanmamış modül,
-   kural gereği plan değil önce canlı tur. Bakılacaklar: yazıcı tanımında
-   sorulan bilgiler (ad, IP, bağlantı tipi, kağıt boyutu), ürün/kategori →
-   yazıcı yönlendirmesi, mutfak fişi ile müşteri adisyonunun farkı, ESC/POS
-   tarafı. **Tur biçimi değişti:** Ramazan Adisyo'ya giriş yapıyor, Claude
-   kendi tarayıcı araçlarıyla bağlanıp ekranları kendisi geziyor.
-   "Masa yazdırma" maddesi de bu modüle bağlı, onunla birlikte kapanacak.
+1. **Yazıcı modülü — veri modeli ve ekran planı.** Adisyo turu **yapıldı**
+   (yol haritası bölüm 12): web ekranları + kasadaki "Adisyo Bulut" programının
+   dört ekranı. Çıkan mimari karar: **ayarlar bulutta, sürücü kasada — "Garso
+   Kasa Köprüsü"** (indirilen tek parça; ilk sürümde yazıcı + para çekmecesi,
+   sonra ÖKC ve CallerID). Ethernet yazıcıya doğrudan IP:9100, USB'de işletim
+   sisteminin listesi, tek USB yazıcı için kurulumsuz WebUSB yolu. Adisyo'da
+   olmayan iki eklememiz: **yazdırma kuyruğu + yeniden bas** ve her cihaz için
+   **"Dene"** düğmesi. Sıradaki adım: yazıcı tabloları (`yazicilar`,
+   yazıcı ↔ mutfak grubu eşlemesi, fiş şablonu), Yazıcılar ekranı ve fiş
+   şablonu ekranının canlı önizlemesi. "Masa yazdırma" maddesi bu modüle bağlı,
+   onunla birlikte kapanacak.
 2. **Mutfak ekranı (KDS)** — Faz 2'nin ikinci büyük modülü, o da turlanmamış.
 3. **Yurt dışına açılırsa değişmesi gerekenler** — para birimi (₺ arayüzde sabit
    yazılı), tarih/saat biçimi (`tr-TR`) ve "KDV" teriminin kendisi. Bugünün işi

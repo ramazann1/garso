@@ -968,3 +968,135 @@ Satış Kanalı Bazında Satışlar · Garson Bazlı Satışlar · Ödenmez Bazl
     anlatılıp açma yolu gösteriliyor (Fire, Kasa Raporu). Garso'da kapalı
     modüller için aynı desen kullanılacak. → Faz 1
 
+## 12. YAZICI MODÜLÜ — CANLI DERİN TUR (20 Ağu 2026)
+*Adisyo'nun yazıcı tarafı baştan sona gezildi: Uygulama Mağazası'ndaki modül
+kartı, web panelindeki Yazıcılar ekranı, yazıcı tanım penceresi, Çıktı Tasarımı
+ve kasada çalışan **Adisyo Bulut** programının dört ekranı (Ramazan'ın ekran
+görüntülerinden). Faz 2'nin ilk modülü.*
+
+**Yazıcı ayarları ana menüde durmuyor** — `Uygulama Mağazası → Termal Yazıcı`
+modülü eklenince sol menüde "Yazıcılar" maddesi oluşuyor. Modül kartının kendi
+açıklaması: *"Özelliği eklediğinizde ana menüde 'Yazıcılar' adında yeni bir menü
+alanı oluşacaktır."*
+
+### 12.1 Bağlantı modeli — ürünün en kritik çatalı
+Modül kartı iki yolu karşılaştırmalı sunuyor:
+- **Birden Fazla Yazıcı (USB veya Ethernet):** ürün bazlı yazdırma (mutfak, bar),
+  tek PC'den birden fazla yazıcı, **yalnız Windows**. Kasada *Adisyo Bulut*
+  programı şart. Ingenico yazar kasa, para çekmecesi ve CallerID kullanacaksan da
+  bu yol gerekiyor.
+- **USB Bağlantılı Tek Yazıcı:** driver ve ek uygulama gerektirmez, macOS /
+  Windows / Android, **tarayıcı üzerinden doğrudan erişim** → WebUSB. Yazıcılar
+  ekranındaki *"Bu ekranda WebUSB ile bağlanan yazıcılar görüntülenmez"* uyarısı
+  bundan.
+
+### 12.2 Yazıcılar ekranı
+Tablo: **Yazıcı Adı · Yazıcı Türü · Online (yeşil nokta) · İşlemler
+(düzenle/sil)**. İşletmede dört tanım: MUTFAK · BAR · NARGİLE (#Mutfak) ve
+KASA (#Adisyon). Sağ sütun: **Yazıcı Modeli** seçimi (yukarıdaki iki yol),
+**Keşfet** (Ethernet / USB tanımlama videoları) ve **Kuruluma Başla**:
+1) Bulut Yazıcı Programını İndir, 2) Yeni Yazıcı Ekle.
+
+Başlangıç rehberindeki kurulum sırası: **teknik kullanıcı oluştur** (rolü
+"Teknik"; *kullanıcı limitine dahil değil*) → bulut programını indir, o
+kullanıcıyla giriş yap → yazıcıları ekle.
+
+### 12.3 Yazıcı tanım penceresi
+- **Yazıcı Adı**
+- **Bulunan Yazıcılar** — açılır liste; içinde XP-80, XP-80C (copy 1),
+  Xprinter XP-80, KASA… yani **Windows'a kurulu yazıcı adları**. IP, port ve
+  kağıt boyutu **hiç sorulmuyor**; o işi Windows sürücüsü yapıyor.
+- **Yazıcı Türü** (anahtar): Adisyon · Mutfak · Abiyer (*diğer türle aynı anda
+  seçilemez*) · Kurye. "En az bir yazıcı türü seçilmelidir."
+- **Gelir Merkezi:** Ana Kanal
+- **Mutfak Grubu:** Mutfak · Bar · Nargile anahtarları — **yalnız "Mutfak" türü
+  açıkken beliriyor.** Bir yazıcı birden fazla gruba açılabiliyor.
+
+Yönlendirme zinciri: **ürün → mutfak grubu → yazıcı.** Mutfak grubu ürünün kendi
+alanı (`Tanımlamalar → Mutfak Grupları`: yalnız ad + "Pişirme aşaması" /
+"Paketleme aşaması" anahtarları). Ürün kartında ayrıca "Mutfak Ekranında Göster".
+
+### 12.4 Çıktı Tasarımı
+İki ayrı şablon sekmesi: **Adisyon Çıktısı** ve **Mutfak Çıktısı**. Her biri üç
+sütun — Parametreler · Yazı Boyutları · canlı **Önizleme** (son 5 gerçek sipariş
+arasından seçilerek).
+- **Adisyon parametreleri:** ürün listesi başlıkları · KDV bilgisi · KDV grubu ·
+  hesabı paylaş alanı · bahşiş alanı · döviz kuru · sipariş numarası · ürün
+  birimleri · **karekod** (işletme adı, tarih, tutar) · logo.
+- **Mutfak parametreleri** ayrı bir set: ürün fiyatları · sipariş toplamları ·
+  müşteri bilgileri · müşteri sayısı — mutfak fişinde fiyat varsayılan kapalı.
+- **Yazı boyutları alan alan punto:** restoran adı 25, ürün listesi 20 (mutfakta
+  24), toplam 25, sipariş notu 15, üst boşluk, masa kart no…
+- Altta serbest **alt metin** ("Afiyet Olsun.").
+- Mutfak fişinde fiyat/toplam yok; **sipariş numarası büyük punto**, ürün +
+  seçenek satırı (SU • SOĞUK) var.
+
+### 12.5 Yazdırmayı yöneten parametreler (Ayarlar → Parametreler)
+- **Mutfak yazıcısı için manuel yazdırma yapılsın** — kapalıyken sipariş
+  kaydedilince fiş otomatik çıkar; açıkken yalnız mutfak ekranında "Hazır"
+  denince basılır.
+- **Adisyon fişleri cihaz özelinde çıksın**
+- **Yazıcı ve sipariş ekranında ürünlerin fiyatı KDV hariç gösterilsin**
+- **Siparişi marşlı şekilde gönderme** — ürünlerin hangi sırayla hazırlanacağı
+  mutfağa gider (bizim `check_items.servis_grubu` alanının karşılığı).
+
+Müşteri adisyonu elle basılıyor: masa üç nokta menüsünde **Yazdır** (Öde · Hızlı
+Öde · İptal · Yazdır · Masayı Değiştir · Masaları Birleştir · Adisyon Aktar).
+
+### 12.6 Adisyo Bulut programı (kasada çalışan köprü) — v2.6.2.0
+Dört ekranı görüldü:
+1. **Giriş:** e-posta/telefon + parola. Altta **Kimlik No:
+   `DESKTOP-JGCK52N:AC45EF32F636`** — bilgisayar adı + MAC. Cihaz kimliği böyle
+   üretiliyor. Sol altta "Prod" yazıyor (geliştirici artığı, müşteride durmamalı).
+2. **Tepsi menüsü:** Giriş Yapıldı (telefon) · Restoran: 37104 (kopyala) ·
+   Bağlantı Durumu (kırmızı nokta) · Cihaz Ayarları · Çıkış. Program pencere
+   değil, saat yanında yaşayan bir hizmet.
+3. **Bağlantı Durumu:** beş kutu — İnternet (IP) · **Adisyo Hub
+   (`hub.adisyo.com`)** · Ingenico Cihazı (Port: COM4, dişli ile ayar) · Yazıcı ·
+   CallerID. Üç durum: **Bağlı / Bağlantı yok (yeniden deneniyor) /
+   Kullanılmıyor.** Altta **"Bilgileri Kopyala"** (destek hattına yapıştırmak
+   için) ve "Bağlantı kesildiğinde bildirim göster".
+4. **Cihaz Ayarları:** *Para Çekmecesi* sekmesi — Bağlantı Türü: Yazıcı
+   Bağlantısı / USB Bağlantısı / GPIO Port Bağlantısı; ayrıca *CallerID* sekmesi.
+
+**Yani bu program yalnız yazıcı köprüsü değil, yerel donanım köprüsü:** yazıcı,
+para çekmecesi, ÖKC (seri port) ve CallerID aynı programdan geçiyor.
+
+### 12.7 Garso'ya çıkan kararlar
+1. **Tarayıcı yerel ağa ham TCP açamaz.** Ethernet yazıcıya (IP:9100) Garso'nun
+   sayfası doğrudan basamaz, bulut sunucusu da işletmenin iç ağına ulaşamaz.
+   Köprüsüz çözüm yok — Adisyo'nun da köprü yazmasının sebebi bu. → Faz 2
+2. **Karar: Garso Kasa Köprüsü.** Garso'nun tamamı masaüstü uygulamasına
+   taşınmıyor (iki sürüm bakım maliyeti + her güncellemede dağıtım). İndirilen
+   tek parça köprü olacak. Baştan **"yazıcı programı" değil "kasa köprüsü"**
+   olarak tasarlanıyor: ilk sürümde yazıcı + para çekmecesi, sonra ÖKC ve
+   CallerID kendi modülleri gelince eklenir. Node ile yazılırsa Windows'a
+   mahkûm olmaz (Adisyo'nun çoklu yazıcı yolu yalnız Windows). → Faz 2
+3. **Ethernet yazıcıda Adisyo'dan ileri gidiyoruz.** Adisyo yazıcının Windows'a
+   kurulu olmasını şart koşuyor; bizim köprü **doğrudan IP:9100'e ESC/POS**
+   gönderebilecek, sürücü gerekmeyecek. USB tarafında işletim sisteminin yazıcı
+   listesi kullanılır. → Faz 2
+4. **WebUSB kurulumsuz giriş yolu olarak kalıyor:** tek USB yazıcılı küçük
+   işletme hiçbir şey kurmadan çalışsın; ikinci yazıcı gerekince köprüye geçiş
+   yolu açık olsun. → Faz 2
+5. **Ayarlar bulutta, sürücü köprüde.** Yazıcı tanımı, eşleme ve fiş şablonu
+   bulutta durur; köprü yalnız basar. İşletme kaç kasa kullanırsa kullansın ayar
+   tek yerdedir. Cihaz kimliği = **işletme kodu + cihaz kimliği**. → Faz 2
+6. **Yazdırma kuyruğu — Adisyo'da yok, bizde olacak.** Bulut programının hiçbir
+   ekranında kuyruk/başarısız iş görünmüyor; yazıcı kapalıyken gönderilen fişe ne
+   olduğu belli değil. Bizde fiş kuyruğa alınır, yazıcı gelince basılır,
+   basılamayan "başarısız" olarak görünür ve **yeniden bas** denebilir. Mutfağa
+   düşmeyen sipariş bir restoranda en pahalı hatadır. → Faz 2
+7. **Bağlantı Durumu ekranı kopyalanıyor** (destek çağrılarının yarısını kendi
+   kendine çözer), üstüne **her cihaz için "Dene" düğmesi** konuyor: test fişi
+   bas, çekmeceyi aç. Adisyo üç çekmece bağlantı türü sunuyor ama hangisinin
+   çalıştığını denemenin yolu yok. → Faz 2
+8. **Mutfak grubu kategoriye de bağlanabilecek.** Adisyo'da yalnız ürünün alanı;
+   200 ürünlük menüde tek tek seçtirmek işkence. Bizde kategori grubu belirler,
+   ürün gerekirse ezer. → Faz 2
+9. **Fiş şablonu ekranı canlı önizlemeli olacak** (Adisyo'nun en iyi yaptığı iş):
+   gerçek bir siparişle, alan alan punto ve görünürlük anahtarlarıyla. Adisyon ve
+   mutfak fişi ayrı şablon. → Faz 2
+10. **"Çıktı alındı" olayı sipariş geçmişine düşecek** — 11. bölümdeki madde 7'de
+    yazıcı işine bırakılmıştı, bu modülle kapanıyor. → Faz 2
+
