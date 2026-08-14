@@ -38,6 +38,35 @@ export async function odemeTipleriniGetir(hepsi = false): Promise<OdemeTipi[]> {
   return ((data as any[]) ?? []).map(tipeCevir);
 }
 
+/**
+ * Bu ödeme kasadaki nakdi büyütüyor mu. Tahsilat satırı tipin kimliğini değil
+ * satış anındaki adını taşıdığı için soru adla soruluyor. Liste satış sırasında
+ * değişmiyor, bir kez okunup bellekte duruyor.
+ */
+let kasayaGirenAdlar: Promise<string[]> | null = null;
+
+export function odemeTipiOnbelleginiUnut() {
+  kasayaGirenAdlar = null;
+}
+
+async function kasayaGirenleriOku(): Promise<string[]> {
+  try {
+    const { data } = await supabase
+      .from("odeme_tipleri")
+      .select("ad")
+      .eq("kasaya_girer", true);
+    return ((data as any[]) ?? []).map((t) => t.ad as string);
+  } catch (e) {
+    kasayaGirenAdlar = null;
+    throw e;
+  }
+}
+
+export async function kasayaGirerMi(ad: string) {
+  const istek = (kasayaGirenAdlar ??= kasayaGirenleriOku());
+  return (await istek).includes(ad);
+}
+
 export type OdemeTipiAlanlari = {
   ad: string;
   renk: string;
@@ -66,6 +95,7 @@ export async function odemeTipiEkle(alanlar: OdemeTipiAlanlari, sira: number) {
     .select("id")
     .single();
   if (error) throw new Error(error.message);
+  odemeTipiOnbelleginiUnut();
   return (data as any).id as number;
 }
 
@@ -78,9 +108,11 @@ export async function odemeTipiGuncelle(
     .update(satirAlanlari(alanlar))
     .eq("id", id);
   if (error) throw new Error(error.message);
+  odemeTipiOnbelleginiUnut();
 }
 
 export async function odemeTipiSil(id: number) {
   const { error } = await supabase.from("odeme_tipleri").delete().eq("id", id);
   if (error) throw new Error(error.message);
+  odemeTipiOnbelleginiUnut();
 }

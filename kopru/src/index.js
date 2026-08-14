@@ -1,6 +1,16 @@
 import { ayarlariOku, cihazKimligi } from "./ayar.js";
-import { girisYap, isAl, kuyruguDinle, sonucBildir, yazicilariGetir } from "./bulut.js";
-import { yaziciyaBas } from "./yazdir.js";
+import {
+  cihazBildir,
+  girisYap,
+  isAl,
+  kuyruguDinle,
+  sonucBildir,
+  yaziciDurumBildir,
+  yazicilariGetir,
+} from "./bulut.js";
+import { createRequire } from "node:module";
+import { cekmeceyiAc, yaziciDurumu, yaziciyaBas } from "./yazdir.js";
+import { kuruluYazicilar } from "./usb.js";
 
 /**
  * Garso Kasa Köprüsü.
@@ -18,6 +28,10 @@ if (process.platform === "win32") {
   spawnSync("chcp", ["65001"], { shell: true, stdio: "ignore" });
 }
 
+// Sürüm Bağlantı Durumu ekranında görünüyor: bir kasada eski köprü kalmışsa
+// oradan anlaşılsın.
+const SURUM = createRequire(import.meta.url)("../package.json").version;
+
 const bugun = () => new Date().toLocaleTimeString("tr-TR");
 const yaz = (metin) => console.log(`${bugun()}  ${metin}`);
 
@@ -31,13 +45,14 @@ async function turAt(cihaz) {
 
   for (const is of isler) {
     const yazici = yazicilar.get(is.yazici_id);
+    const cekmece = is.tip === "cekmece";
     try {
-      await yaziciyaBas(yazici, is.icerik);
+      cekmece ? await cekmeceyiAc(yazici) : await yaziciyaBas(yazici, is.icerik);
       await sonucBildir(is.id, true);
-      yaz(`Basıldı: #${is.id} → ${yazici.ad}`);
+      yaz(`${cekmece ? "Çekmece açıldı" : "Basıldı"}: #${is.id} → ${yazici.ad}`);
     } catch (e) {
       await sonucBildir(is.id, false, e.message);
-      yaz(`Basılamadı: #${is.id} → ${e.message}`);
+      yaz(`${cekmece ? "Çekmece açılamadı" : "Basılamadı"}: #${is.id} → ${e.message}`);
       // Yazıcı silinmiş ya da adresi değişmiş olabilir; liste tazelensin ki
       // sonraki fiş eski bilgiyle tekrar patlamasın.
       await yazicilariGetir(true).catch(() => {});
@@ -75,6 +90,34 @@ async function calis() {
 
   kuyruguDinle(bas);
 
+  // "Buradayım" haberi: Bağlantı Durumu ekranı köprünün açık olduğunu bundan
+  // anlıyor. Yirmi saniyede bir yeniliyor; ekran son haberin üstünden bir
+  // dakikadan fazla geçtiyse köprüyü kapalı sayıyor.
+  const haberVer = () =>
+    cihazBildir(cihaz, SURUM, oturum.kisi).catch(() => {
+      /* haber verilemedi diye fiş basmak durmasın */
+    });
+
+  await haberVer();
+  setInterval(haberVer, 20_000);
+
+  // Yazıcı yoklaması: kâğıt göndermeden yalnız ulaşılabiliyor mu diye bakılıyor.
+  // Fiş basmaktan ayrı bir tur, çünkü sipariş gelmediği sürece hiçbir yazıcıya
+  // dokunulmuyor ve kapalı yazıcı ancak ilk fiş kaybolunca fark ediliyordu.
+  const yazicilariYokla = async () => {
+    const yazicilar = await yazicilariGetir().catch(() => null);
+    if (!yazicilar) return;
+
+    for (const y of yazicilar.values()) {
+      if (y.baglanti === "webusb") continue;
+      const durum = await yaziciDurumu(y);
+      await yaziciDurumBildir(y.id, cihaz, durum.cevrimici, durum.hata).catch(() => {});
+    }
+  };
+
+  yazicilariYokla();
+  setInterval(yazicilariYokla, 30_000);
+
   // Yedek yoklama: canlı bağlantının kaçırdığı ya da yeniden sıraya alınan
   // fişler burada yakalanıyor.
   for (;;) {
@@ -85,7 +128,25 @@ async function calis() {
 
 const bekle = (ms) => new Promise((t) => setTimeout(t, ms));
 
-calis().catch((e) => {
+/**
+ * Kurulu yazıcıları listeleme. Garso tarayıcıda çalıştığı için kasadaki yazıcı
+ * listesini göremiyor; USB yazıcı tanıtılırken sistemdeki ad birebir yazılmak
+ * zorunda ve o ad buradan okunuyor.
+ */
+async function yazicilariListele() {
+  const adlar = await kuruluYazicilar();
+  if (!adlar.length) {
+    yaz("Bu bilgisayarda kurulu yazıcı bulunamadı.");
+    return;
+  }
+  console.log("\nBu bilgisayarda kurulu yazıcılar:\n");
+  for (const ad of adlar) console.log(`  ${ad}`);
+  console.log("\nUSB yazıcıyı tanıtırken adı buradan birebir kopyalayın.\n");
+}
+
+const gorev = process.argv[2] === "yazicilar" ? yazicilariListele : calis;
+
+gorev().catch((e) => {
   console.error(`\n${e.message}\n`);
   process.exit(1);
 });

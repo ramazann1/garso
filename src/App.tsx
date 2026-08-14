@@ -12,6 +12,7 @@ import IsletmeAyarlari from "./pages/IsletmeAyarlari";
 import Personel from "./pages/Personel";
 import Yetkiler from "./pages/Yetkiler";
 import Yazicilar from "./pages/Yazicilar";
+import BaglantiDurumu from "./pages/BaglantiDurumu";
 import FisTasarimi from "./pages/FisTasarimi";
 import YazdirmaKuyrugu from "./pages/YazdirmaKuyrugu";
 import Giris from "./pages/Giris";
@@ -49,7 +50,7 @@ function App() {
     const sure = ayarlar().kilitSuresi;
     if (!oturum || kilitli || sure <= 0) return;
 
-    let zaman: number;
+    let zaman: ReturnType<typeof setTimeout>;
     const kur = () => {
       clearTimeout(zaman);
       zaman = setTimeout(kilitle, sure * 1000);
@@ -101,6 +102,7 @@ function App() {
         <Route path="/ayarlar/istasyonlar" element={<Yazicilar />} />
         <Route path="/ayarlar/fis-tasarimi" element={<FisTasarimi />} />
         <Route path="/ayarlar/yazdirma-kuyrugu" element={<YazdirmaKuyrugu />} />
+        <Route path="/ayarlar/baglanti-durumu" element={<BaglantiDurumu />} />
         <Route path="/ayarlar/:bolum" element={<IsletmeAyarlari />} />
       </YetkiKapisi>
     </BrowserRouter>

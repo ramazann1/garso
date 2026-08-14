@@ -23,6 +23,8 @@ export type IsletmeAyarlari = {
   kasaKapanisUyari: string;
   /** Kasadan para alma/koyma işlemi kullanılıyor mu. */
   paraHareketiAcik: boolean;
+  /** Kasaya para giren bir tahsilat alınınca para çekmecesi kendiliğinden açılsın mı. */
+  cekmeceNakitteAcilsin: boolean;
 };
 
 const VARSAYILAN: IsletmeAyarlari = {
@@ -38,6 +40,7 @@ const VARSAYILAN: IsletmeAyarlari = {
   kasaKapanisZorunlu: false,
   kasaKapanisUyari: "",
   paraHareketiAcik: true,
+  cekmeceNakitteAcilsin: true,
 };
 
 // Ayar her hesapta lazım ama satış sırasında değişmiyor; bir kez okunup burada
@@ -71,6 +74,7 @@ export async function ayarlariGetir(): Promise<IsletmeAyarlari> {
     kasaKapanisZorunlu: s?.kasa_kapanis_zorunlu ?? VARSAYILAN.kasaKapanisZorunlu,
     kasaKapanisUyari: saat(s?.kasa_kapanis_uyari, VARSAYILAN.kasaKapanisUyari),
     paraHareketiAcik: s?.para_hareketi_acik ?? VARSAYILAN.paraHareketiAcik,
+    cekmeceNakitteAcilsin: s?.cekmece_nakitte_acilsin ?? VARSAYILAN.cekmeceNakitteAcilsin,
   };
   return onbellek;
 }
@@ -98,6 +102,7 @@ export async function ayarlariKaydet(degisen: Partial<IsletmeAyarlari>) {
       // Saat alanı boşsa uyarı kapalı demektir; boş metin time'a yazılamıyor.
       kasa_kapanis_uyari: yeni.kasaKapanisUyari || null,
       para_hareketi_acik: yeni.paraHareketiAcik,
+      cekmece_nakitte_acilsin: yeni.cekmeceNakitteAcilsin,
     },
     { onConflict: "isletme_id" }
   );

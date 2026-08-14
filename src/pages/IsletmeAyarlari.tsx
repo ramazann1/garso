@@ -957,6 +957,22 @@ export default function IsletmeAyarlari() {
             )}
 
             <AyarSatiri
+              ad="Nakit alınca çekmece açılsın"
+              ara={ara}
+              ipucu="Kasaya para giren bir ödeme alındığında para çekmecesi kendiliğinden açılır; kasiyerin ayrıca düğmeye basması gerekmez. Kartlı ödemede açılmaz. Çekmecenin hangi yazıcıya bağlı olduğu Ayarlar › Yazıcılar'da işaretlenir; çekmece kasa penceresinden her zaman elle de açılabilir."
+            >
+              <AyarAnahtari
+                acik={genel.cekmeceNakitteAcilsin}
+                degistir={(v) =>
+                  genelDegistir(
+                    { cekmeceNakitteAcilsin: v },
+                    v ? "Çekmece nakitte açılacak" : "Çekmece yalnızca elle açılacak"
+                  )
+                }
+              />
+            </AyarSatiri>
+
+            <AyarSatiri
               ad="Ekran kilidi"
               ara={ara}
               ipucu="Kasaya seçilen süre boyunca dokunulmazsa kilit ekranı kendiliğinden gelir; tezgâhtan ayrılan kişinin oturumuyla başkası işlem yapamaz. Kapalı seçilirse ekran yalnızca elle kilitlenir. Oturum kapanmaz, açık adisyonlar yerinde durur."

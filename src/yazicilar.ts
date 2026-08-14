@@ -35,7 +35,11 @@ export type YaziciTuru = (typeof TURLER)[number]["kod"];
 export const baglantiAdi = (kod: string) =>
   BAGLANTILAR.find((b) => b.kod === kod)?.ad ?? kod;
 
-export const turAdi = (kod: string) => TURLER.find((t) => t.kod === kod)?.ad ?? kod;
+// Kuyrukta fiş türü olmayan işler de var: çekmece darbesi ve deneme fişi.
+const EK_TURLER: Record<string, string> = { cekmece: "Çekmece", deneme: "Deneme" };
+
+export const turAdi = (kod: string) =>
+  TURLER.find((t) => t.kod === kod)?.ad ?? EK_TURLER[kod] ?? kod;
 
 /** İstasyon = siparişin hazırlandığı tezgâh: mutfak, bar, nargile, pasta… */
 export type Istasyon = {
@@ -57,6 +61,8 @@ export type Yazici = {
   kagitGenislik: number;
   /** Fiş çıkarken yazıcının zili çalsın mı — mutfakta fişin düştüğünü haber veriyor. */
   zil: boolean;
+  /** Para çekmecesi bu yazıcının arkasına takılı mı — çekmece yazıcı üzerinden açılıyor. */
+  cekmece: boolean;
   turler: YaziciTuru[];
   aktif: boolean;
   sira: number;
@@ -77,6 +83,16 @@ export const ADISYON_PARAMETRELERI: FisAyari[] = [
   { kod: "baslik", ad: "Ürün listesi başlıkları", ipucu: "Ürün · Adet · Tutar satırı" },
   { kod: "siparis_no", ad: "Sipariş numarası" },
   { kod: "urun_birimleri", ad: "Ürün birimleri", ipucu: "Tam, Yarım, Kg" },
+  {
+    kod: "urun_secenekleri",
+    ad: "Ürün seçenekleri ve notları",
+    ipucu: "Şekersiz, az buzlu, garson notu",
+  },
+  {
+    kod: "urun_birlestir",
+    ad: "Aynı ürünleri tek satırda topla",
+    ipucu: "Üç turda gelen çay tek satır olur",
+  },
   { kod: "kdv_bilgisi", ad: "KDV tutarı" },
   { kod: "kdv_grubu", ad: "KDV grubu dökümü", ipucu: "Orana göre ayrı satırlar" },
   { kod: "hesabi_paylas", ad: "Hesabı paylaş alanı", ipucu: "Kişi başı tutar" },
@@ -115,6 +131,16 @@ export const MUTFAK_PUNTOLARI: FisAyari[] = [
   { kod: "alt_metin", ad: "Baştaki ve sondaki yazı" },
 ];
 
+/**
+ * Ayarlanmamış anahtarın kapalı sayıldığı yerde varsayılanı açık olması gereken
+ * alanlar. Şablona sonradan eklenen bir anahtar, eski işletmelerin fişinde
+ * kendiliğinden kapanmasın diye burada duruyor.
+ */
+export const VARSAYILAN_PARAMETRELER: Record<string, boolean> = {
+  urun_secenekleri: true,
+  urun_birlestir: true,
+};
+
 /** Ayarlanmamış alanın boyu. Fiş Tasarımı açılınca kaydırıcılar burada duruyor. */
 export const VARSAYILAN_PUNTOLAR: Record<string, number> = {
   isletme_adi: 28,
@@ -132,12 +158,19 @@ export const VARSAYILAN_PUNTOLAR: Record<string, number> = {
 export const EN_KUCUK_PUNTO = 8;
 export const EN_BUYUK_PUNTO = 40;
 
+/** Karekodun ne taşıdığı: fişin künyesi mi, işletmenin verdiği adres mi. */
+export type KarekodTipi = "fis" | "baglanti";
+
 export type FisSablonu = {
   tip: "adisyon" | "mutfak";
   parametreler: Record<string, boolean>;
   puntolar: Record<string, number>;
   ustMetin: string;
   altMetin: string;
+  /** Fişin başına basılan görsel; siyah-beyaza indirgenmiş, gömülü resim olarak. */
+  logo: string;
+  karekodTip: KarekodTipi;
+  karekodAdres: string;
 };
 
 export async function istasyonlariGetir(): Promise<Istasyon[]> {
@@ -184,7 +217,7 @@ export async function yazicilariGetir(): Promise<Yazici[]> {
   const { data } = await supabase
     .from("yazicilar")
     .select(
-      "id, ad, baglanti, ip, port, sistem_ad, kagit_genislik, zil, turler, aktif, sira, istasyonlar:yazici_istasyonlari (istasyon_id)"
+      "id, ad, baglanti, ip, port, sistem_ad, kagit_genislik, zil, cekmece, turler, aktif, sira, istasyonlar:yazici_istasyonlari (istasyon_id)"
     )
     .order("sira")
     .order("id");
@@ -198,6 +231,7 @@ export async function yazicilariGetir(): Promise<Yazici[]> {
     sistemAd: y.sistem_ad ?? "",
     kagitGenislik: y.kagit_genislik ?? 80,
     zil: y.zil ?? false,
+    cekmece: y.cekmece ?? false,
     turler: y.turler ?? [],
     aktif: y.aktif,
     sira: y.sira,
@@ -217,6 +251,8 @@ function yaziciSatiri(alanlar: YaziciAlanlari) {
     sistem_ad: alanlar.baglanti === "usb" ? alanlar.sistemAd.trim() || null : null,
     kagit_genislik: alanlar.kagitGenislik,
     zil: alanlar.zil,
+    // WebUSB yazıcıya köprü dokunmuyor, çekmeceyi de açamaz.
+    cekmece: alanlar.baglanti === "webusb" ? false : alanlar.cekmece,
     turler: alanlar.turler,
     aktif: alanlar.aktif,
   };
@@ -300,16 +336,19 @@ export async function yaziciSirasiniKaydet(sirali: number[]) {
 export async function fisSablonuGetir(tip: FisSablonu["tip"]): Promise<FisSablonu> {
   const { data } = await supabase
     .from("fis_sablonlari")
-    .select("tip, parametreler, puntolar, ust_metin, alt_metin")
+    .select("tip, parametreler, puntolar, ust_metin, alt_metin, logo, karekod_tip, karekod_adres")
     .eq("tip", tip)
     .maybeSingle();
 
   return {
     tip,
-    parametreler: (data as any)?.parametreler ?? {},
+    parametreler: { ...VARSAYILAN_PARAMETRELER, ...((data as any)?.parametreler ?? {}) },
     puntolar: (data as any)?.puntolar ?? {},
     ustMetin: (data as any)?.ust_metin ?? "",
     altMetin: (data as any)?.alt_metin ?? "",
+    logo: (data as any)?.logo ?? "",
+    karekodTip: ((data as any)?.karekod_tip as KarekodTipi) ?? "fis",
+    karekodAdres: (data as any)?.karekod_adres ?? "",
   };
 }
 
@@ -321,6 +360,9 @@ export async function fisSablonuKaydet(sablon: FisSablonu) {
       puntolar: sablon.puntolar,
       ust_metin: sablon.ustMetin.trim() || null,
       alt_metin: sablon.altMetin.trim() || null,
+      logo: sablon.logo || null,
+      karekod_tip: sablon.karekodTip,
+      karekod_adres: sablon.karekodAdres.trim() || null,
     },
     { onConflict: "isletme_id,tip" }
   );
@@ -377,7 +419,7 @@ async function urunIstasyonlari() {
 }
 
 async function kuyrugaEkle(
-  tip: FisSablonu["tip"],
+  tip: FisSablonu["tip"] | "cekmece",
   adisyonId: number | undefined,
   yaziciId: number,
   icerik: string
@@ -386,6 +428,21 @@ async function kuyrugaEkle(
     .from("yazdirma_kuyrugu")
     .insert({ tip, adisyon_id: adisyonId ?? null, yazici_id: yaziciId, icerik });
   if (error) throw new Error(`Fiş kuyruğa yazılamadı: ${error.message}`);
+}
+
+/**
+ * Para çekmecesini açma. Çekmece yazıcının arkasına takılı olduğu için istek
+ * yazıcıya gidiyor: kuyruğa içeriği boş bir "çekmece" işi düşüyor, köprü onu
+ * görünce fiş basmadan yalnız açma darbesini gönderiyor.
+ */
+export async function cekmeceyiAc() {
+  const cekmeceli = (await yazicilariOku()).filter((y) => y.aktif && y.cekmece);
+  if (!cekmeceli.length) {
+    throw new Error(
+      "Çekmecenin bağlı olduğu yazıcı tanımlı değil. Ayarlar › Yazıcılar'dan işaretleyin."
+    );
+  }
+  for (const y of cekmeceli) await kuyrugaEkle("cekmece", undefined, y.id, "");
 }
 
 /**

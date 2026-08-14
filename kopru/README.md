@@ -37,11 +37,22 @@ npm.cmd start
 
 - Ağ (Ethernet) yazıcılara doğrudan `IP:9100` üzerinden ESC/POS gönderiyor,
   sürücü kurulumu istemiyor.
+- USB yazıcılara Windows'un yazdırma servisi üzerinden ham veri gönderiyor.
+  Yazıcının Windows'a kurulu olması ve Garso'daki tanımında sistemdeki adının
+  birebir yazılması yeterli. Adları listelemek için:
+
+```bash
+npm.cmd run yazicilar
+```
+
+- Para çekmecesini açıyor: çekmece yazıcının arkasına takılı olduğu için istek
+  kuyruğa "çekmece" işi olarak düşüyor, köprü fiş basmadan açma darbesini
+  gönderiyor. Hangi yazıcıda olduğu Ayarlar › Yazıcılar'da işaretleniyor.
 - Aynı fişi iki kasa birden basmıyor: satır önce cihazın üstüne alınıyor.
 - Basılamayan fiş "başarısız" olarak kalıyor, Yazdırma Kuyruğu ekranından
   yeniden sıraya alınabiliyor.
 
 ## Henüz yok
 
-USB yazıcı, para çekmecesi, Bağlantı Durumu ekranı, "Dene" düğmesi, Windows
-başlangıcına kaydolma ve tek dosyaya paketleme. Sonraki adımlar.
+Bağlantı Durumu ekranı, "Dene" düğmesi, Windows başlangıcına kaydolma ve tek
+dosyaya paketleme. Sonraki adımlar.

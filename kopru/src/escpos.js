@@ -18,8 +18,8 @@ const GS = 0x1d;
  */
 const SERIT = 240;
 
-export function fisBaytlari(ham, kagitMm, zil = false) {
-  const resim = fisiCiz(icerikCoz(ham), kagitMm);
+export async function fisBaytlari(ham, kagitMm, zil = false) {
+  const resim = await fisiCiz(icerikCoz(ham), kagitMm);
   const parcalar = [Buffer.from([ESC, 0x40])];
 
   for (let ust = 0; ust < resim.yukseklik; ust += SERIT) {

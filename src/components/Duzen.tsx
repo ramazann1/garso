@@ -27,6 +27,7 @@ export const yaziciBolumleri: Bolum[] = [
   { yol: "/ayarlar/istasyonlar", ad: "İstasyonlar" },
   { yol: "/ayarlar/fis-tasarimi", ad: "Fiş Tasarımı" },
   { yol: "/ayarlar/yazdirma-kuyrugu", ad: "Yazdırma Kuyruğu" },
+  { yol: "/ayarlar/baglanti-durumu", ad: "Bağlantı Durumu" },
 ];
 
 export const ayarBolumleri: Bolum[] = [

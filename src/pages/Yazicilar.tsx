@@ -81,6 +81,7 @@ function YaziciPaneli({
   const [sistemAd, setSistemAd] = useState(yazici?.sistemAd ?? "");
   const [kagit, setKagit] = useState(yazici?.kagitGenislik ?? 80);
   const [zil, setZil] = useState(yazici?.zil ?? false);
+  const [cekmece, setCekmece] = useState(yazici?.cekmece ?? false);
   const [turler, setTurler] = useState<YaziciTuru[]>(yazici?.turler ?? ["adisyon"]);
   const [secilenler, setSecilenler] = useState<number[]>(yazici?.istasyonlar ?? []);
   const [aktif, setAktif] = useState(yazici?.aktif ?? true);
@@ -248,6 +249,15 @@ function YaziciPaneli({
             degistir={setZil}
           />
 
+          {baglanti !== "webusb" && (
+            <Anahtar
+              etiket="Para çekmecesi bu yazıcıya bağlı"
+              ipucu="Çekmece yazıcının arkasındaki uçtan açılır"
+              acik={cekmece}
+              degistir={setCekmece}
+            />
+          )}
+
           <Anahtar
             etiket="Kullanımda"
             ipucu="Kapatırsanız yazıcı silinmez, fiş gönderilmez"
@@ -275,6 +285,7 @@ function YaziciPaneli({
                 sistemAd,
                 kagitGenislik: kagit,
                 zil,
+                cekmece,
                 turler,
                 aktif,
                 istasyonlar: secilenler,
@@ -503,6 +514,7 @@ export default function Yazicilar() {
                       {baglantiAdi(y.baglanti)}
                       {y.baglanti === "ethernet" && y.ip && ` · ${y.ip}`}
                       {y.baglanti === "usb" && y.sistemAd && ` · ${y.sistemAd}`}
+                      {y.cekmece && " · Çekmece"}
                       {!y.aktif && " · Kapalı"}
                     </span>
                     <span className="odeme-tip-islem">

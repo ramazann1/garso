@@ -40,7 +40,7 @@ export async function yazicilariGetir(zorla = false) {
 
   const { data, error } = await istemci
     .from("yazicilar")
-    .select("id, ad, baglanti, ip, port, sistem_ad, kagit_genislik, zil, aktif");
+    .select("id, ad, baglanti, ip, port, sistem_ad, kagit_genislik, zil, cekmece, aktif");
   if (error) throw new Error(`Yazıcılar okunamadı: ${error.message}`);
 
   yazicilar = new Map(
@@ -52,8 +52,10 @@ export async function yazicilariGetir(zorla = false) {
         baglanti: y.baglanti,
         ip: y.ip,
         port: y.port ?? 9100,
+        sistemAd: y.sistem_ad ?? "",
         kagitGenislik: y.kagit_genislik ?? 80,
         zil: y.zil ?? false,
+        cekmece: y.cekmece ?? false,
         aktif: y.aktif,
       },
     ])
@@ -83,6 +85,29 @@ export function kuyruguDinle(haberVer) {
       () => haberVer()
     )
     .subscribe();
+}
+
+/**
+ * "Buradayım" haberi. Bağlantı Durumu ekranı köprünün açık olup olmadığını
+ * bundan biliyor; hatası yutuluyor, haber verilemedi diye fiş basmak durmasın.
+ */
+export async function cihazBildir(cihaz, surum, kisi) {
+  const { error } = await istemci.rpc("kopru_bildir", {
+    p_cihaz: cihaz,
+    p_surum: surum,
+    p_kisi: kisi,
+  });
+  if (error) throw new Error(error.message);
+}
+
+/** Yazıcı yoklamasının sonucu; Bağlantı Durumu ekranı bunu okuyor. */
+export async function yaziciDurumBildir(yaziciId, cihaz, cevrimici, hata) {
+  await istemci.rpc("yazici_durum_bildir", {
+    p_yazici: yaziciId,
+    p_cihaz: cihaz,
+    p_cevrimici: cevrimici,
+    p_hata: hata,
+  });
 }
 
 export async function sonucBildir(id, basarili, hata = null) {

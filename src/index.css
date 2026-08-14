@@ -6260,6 +6260,112 @@ body {
   gap: 7px;
 }
 
+/* Bağlantı Durumu: köprü ve yazıcı satırları. Solda durum ışığı, ortada ad ve
+   künye, sağda son sonuç ile deneme düğmesi. */
+.durum-liste {
+  display: flex;
+  flex-direction: column;
+  gap: 8px;
+  margin-top: 12px;
+}
+
+/* Durum etiketi ve bilgi yazısı kendi sütunlarında: yazı uzayıp kısaldıkça
+   etiketler satırdan satıra kaymasın, göz aynı hizada tarasın. */
+.durum-satir {
+  display: grid;
+  grid-template-columns: 24px minmax(140px, 1fr) 132px 118px 128px;
+  align-items: center;
+  gap: 12px;
+  padding: 12px 14px;
+  background: var(--kart);
+  border: 1px solid #eee6dc;
+  border-radius: 12px;
+}
+
+/* Köprü satırında etiket sondaki sütunda duruyor; yazıcıdaki kadar alan yok. */
+.durum-liste .durum-satir > .durum-etiket { grid-column: 3 / -1; justify-self: end; }
+
+.durum-etiket-yeri {
+  display: flex;
+  justify-content: flex-start;
+}
+
+/* Çevrimiçi ile Çevrimdışı aynı genişlikte: iki satır alt alta gelince
+   etiketlerin kenarları birbirini tutsun. */
+.durum-etiket-yeri .durum-etiket {
+  min-width: 118px;
+  justify-content: center;
+}
+
+/* Deneme sürerken yazı "Dene"den "Deneniyor"a uzuyor; düğme sabit genişlikte
+   olmazsa bütün satır kayıyor. */
+.durum-satir .ayar-ekle {
+  width: 100%;
+  justify-content: center;
+}
+
+.durum-satir.kapali { opacity: 0.72; }
+
+.durum-isik {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+}
+
+.durum-isik.acik { color: #2f9e63; }
+.durum-isik.kapali { color: #c9483c; }
+
+.durum-ad {
+  display: flex;
+  flex-direction: column;
+  gap: 2px;
+  min-width: 0;
+}
+
+.durum-ad strong {
+  font-size: 15px;
+  color: var(--metin);
+}
+
+.durum-ad em {
+  font-style: normal;
+  font-size: 13px;
+  color: var(--soluk);
+}
+
+.durum-bilgi {
+  display: flex;
+  align-items: center;
+  justify-content: flex-end;
+  gap: 8px;
+  font-size: 13px;
+}
+
+/* Etiketin içindeki "i": sebebi etikete yapıştırıyor, satıra yazı eklemiyor. */
+.durum-etiket .ipucu { margin-left: 1px; }
+
+.durum-etiket {
+  display: inline-flex;
+  align-items: center;
+  gap: 5px;
+  padding: 5px 10px;
+  border-radius: 999px;
+  font-size: 13px;
+  font-weight: 500;
+}
+
+.durum-etiket.acik { background: #e7f5ec; color: #22794b; }
+.durum-etiket.kapali { background: #fdecea; color: #a8382e; }
+.durum-etiket.bekleyen { background: #fdf1e3; color: #9a5a17; }
+.durum-etiket.bilinmiyor { background: #f0ece6; color: #6b6259; }
+
+/* Deneme sürerken dönen ikon. */
+.doner { animation: doner 1s linear infinite; }
+
+@keyframes doner {
+  to { transform: rotate(360deg); }
+}
+
 .fis-duzen {
   display: grid;
   grid-template-columns: minmax(0, 1fr) 340px;
@@ -6274,6 +6380,39 @@ body {
 }
 
 .fis-ara-baslik { margin-top: 22px; }
+
+/* Anahtarın kendi ayarı: hemen altında, içeriden başlayan bir blok — hangi
+   anahtara ait olduğu bakar bakmaz anlaşılsın. */
+.fis-ek-ayar {
+  display: flex;
+  flex-direction: column;
+  gap: 10px;
+  margin: 2px 0 12px 16px;
+  padding: 12px 14px;
+  border-left: 2px solid var(--mercan);
+  background: var(--zemin);
+  border-radius: 0 12px 12px 0;
+}
+
+.fis-ek-ayar .alan { margin: 0; }
+
+.fis-logo-dugmeler {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+}
+
+.fis-logo-dugmeler label { cursor: pointer; }
+
+.fis-logo-onizleme {
+  align-self: flex-start;
+  max-width: 190px;
+  max-height: 90px;
+  padding: 8px;
+  background: #fff;
+  border: 1px solid #eee6dc;
+  border-radius: 10px;
+}
 
 .punto-liste {
   display: flex;
@@ -6361,6 +6500,20 @@ body {
 }
 
 .fis-bosluk { height: 10px; }
+
+/* Kâğıttaki görseller: ikisi de ortalanıyor ve fişin genişliğini aşmıyor. */
+.fis-logo,
+.fis-karekod {
+  display: block;
+  margin: 6px auto;
+}
+
+/* Logo ile işletme adı arasında boşluk bırakılmıyor: ikisi tek künye gibi. */
+.fis-logo {
+  max-width: 70%;
+  margin-bottom: 0;
+}
+.fis-karekod { width: 30%; }
 
 .fis-cizgi {
   border-top: 1px solid #999;

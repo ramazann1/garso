@@ -1,5 +1,15 @@
 import { useEffect, useMemo, useState } from "react";
-import { Receipt, ChefHat, Save, ToggleLeft, Type, PenLine } from "lucide-react";
+import {
+  Receipt,
+  ChefHat,
+  ImagePlus,
+  Save,
+  ToggleLeft,
+  Trash2,
+  Type,
+  PenLine,
+} from "lucide-react";
+import QRCode from "qrcode";
 import Duzen from "../components/Duzen";
 import AyarBasligi from "../components/AyarBasligi";
 import Anahtar from "../components/Anahtar";
@@ -68,6 +78,44 @@ const ORNEK: AdisyonVerisi = {
  */
 const EKRAN_OLCEK = 0.72;
 
+/**
+ * Karekodun ekrandaki hâli. Köprü kâğıda kare kare çiziyor; burada aynı kareler
+ * tek bir çizim olarak basılıyor, telefondan okunabiliyor — adresin doğru
+ * yazıldığı kâğıda basmadan denenebilsin.
+ */
+function Karekod({ icerik }: { icerik: string }) {
+  const cizim = useMemo(() => {
+    try {
+      const kod = QRCode.create(icerik, { errorCorrectionLevel: "M" });
+      const boyut = kod.modules.size;
+      const veri = kod.modules.data;
+      const kareler: string[] = [];
+
+      for (let satir = 0; satir < boyut; satir++)
+        for (let sutun = 0; sutun < boyut; sutun++)
+          if (veri[satir * boyut + sutun])
+            kareler.push(`<rect x="${sutun}" y="${satir}" width="1" height="1"/>`);
+
+      return `<svg xmlns="http://www.w3.org/2000/svg" viewBox="-2 -2 ${boyut + 4} ${
+        boyut + 4
+      }" shape-rendering="crispEdges"><rect x="-2" y="-2" width="${boyut + 4}" height="${
+        boyut + 4
+      }" fill="#fff"/><g fill="#000">${kareler.join("")}</g></svg>`;
+    } catch {
+      return null;
+    }
+  }, [icerik]);
+
+  if (!cizim) return null;
+  return (
+    <img
+      className="fis-karekod"
+      src={`data:image/svg+xml;utf8,${encodeURIComponent(cizim)}`}
+      alt=""
+    />
+  );
+}
+
 function FisOnizleme({ sablon, adisyon }: { sablon: FisSablonu; adisyon: AdisyonVerisi }) {
   // Önizlemede örnek bir sipariş numarası veriliyor: gerçek numarayı sipariş
   // kaydedilirken veritabanı üretiyor, burada kâğıtta nasıl duracağı görünsün.
@@ -87,10 +135,14 @@ function FisOnizleme({ sablon, adisyon }: { sablon: FisSablonu; adisyon: Adisyon
       {icerik.satirlar.map((s, i) => {
         if (s.t === "cizgi") return <div key={i} className="fis-cizgi" />;
         if (s.t === "bosluk") return <div key={i} className="fis-bosluk" />;
+        if (s.t === "logo") return <img key={i} className="fis-logo" src={s.m} alt="" />;
+        if (s.t === "karekod") return <Karekod key={i} icerik={s.m} />;
 
         const stil = {
           fontSize: boy(s),
           fontWeight: "kalin" in s && s.kalin ? 600 : 500,
+          // İşletme adı fişin başlığı: altındaki künye satırlarına yapışmasın.
+          paddingBottom: "alan" in s && s.alan === "isletme_adi" ? boy(s) * 0.4 : undefined,
         };
 
         if (s.t === "ikiUc")
@@ -111,6 +163,86 @@ function FisOnizleme({ sablon, adisyon }: { sablon: FisSablonu; adisyon: Adisyon
           </div>
         );
       })}
+    </div>
+  );
+}
+
+/** Kâğıdın nokta genişliği; logo bundan büyük olamaz, olsa da yazıcı kırpar. */
+const LOGO_EN = 384;
+const LOGO_BOY = 260;
+
+/**
+ * Logo yükleme. Görsel tarayıcıda kâğıt ölçüsüne küçültülüp beyaz zemine
+ * oturtuluyor: saydam arka plan termal kâğıtta siyah çıkıyor, büyük dosya da
+ * her fiş kaydını şişiriyor.
+ */
+function LogoAlani({
+  logo,
+  degistir,
+  onHata,
+}: {
+  logo: string;
+  degistir: (yeni: string) => void;
+  onHata: (mesaj: string) => void;
+}) {
+  const sec = (dosya?: File) => {
+    if (!dosya) return;
+    if (!dosya.type.startsWith("image/")) {
+      onHata("Yalnız resim dosyası yüklenebilir.");
+      return;
+    }
+
+    const okuyucu = new FileReader();
+    okuyucu.onload = () => {
+      const resim = new Image();
+      resim.onload = () => {
+        const olcek = Math.min(1, LOGO_EN / resim.width, LOGO_BOY / resim.height);
+        const tuval = document.createElement("canvas");
+        tuval.width = Math.max(1, Math.round(resim.width * olcek));
+        tuval.height = Math.max(1, Math.round(resim.height * olcek));
+
+        const kalem = tuval.getContext("2d");
+        if (!kalem) return;
+        kalem.fillStyle = "#fff";
+        kalem.fillRect(0, 0, tuval.width, tuval.height);
+        kalem.drawImage(resim, 0, 0, tuval.width, tuval.height);
+
+        degistir(tuval.toDataURL("image/png"));
+      };
+      resim.onerror = () => onHata("Resim açılamadı.");
+      resim.src = String(okuyucu.result);
+    };
+    okuyucu.readAsDataURL(dosya);
+  };
+
+  return (
+    <div className="fis-ek-ayar">
+      {logo && <img className="fis-logo-onizleme" src={logo} alt="" />}
+
+      <div className="fis-logo-dugmeler">
+        <label className="ayar-ekle">
+          <ImagePlus size={15} /> {logo ? "Logoyu değiştir" : "Logo yükle"}
+          <input
+            type="file"
+            accept="image/*"
+            hidden
+            onChange={(e) => {
+              sec(e.target.files?.[0]);
+              e.target.value = "";
+            }}
+          />
+        </label>
+        {logo && (
+          <button className="sil-buton" onClick={() => degistir("")}>
+            <Trash2 size={15} /> Kaldır
+          </button>
+        )}
+      </div>
+
+      <Bilgi>
+        Termal yazıcı gri ton basmaz: düz siyah-beyaz, arka planı boş bir görsel
+        en iyi sonucu verir. Renkli logolar lekeli çıkar.
+      </Bilgi>
     </div>
   );
 }
@@ -253,15 +385,64 @@ export default function FisTasarimi() {
 
               {bolum === "icerik" && (
                 <div className="fis-anahtarlar">
-                  {parametreler.map((a) => (
-                    <Anahtar
-                      key={a.kod}
-                      etiket={a.ad}
-                      ipucu={a.ipucu}
-                      acik={!!sablon.parametreler[a.kod]}
-                      degistir={(acik) => parametreDegis(a.kod, acik)}
-                    />
-                  ))}
+                  {parametreler.map((a) => {
+                    const acik = !!sablon.parametreler[a.kod];
+                    return (
+                      <div key={a.kod}>
+                        <Anahtar
+                          etiket={a.ad}
+                          ipucu={a.ipucu}
+                          acik={acik}
+                          degistir={(yeni) => parametreDegis(a.kod, yeni)}
+                        />
+
+                        {/* Anahtarın kendi ayarı hemen altında açılıyor. */}
+                        {acik && a.kod === "logo" && (
+                          <LogoAlani
+                            logo={sablon.logo}
+                            degistir={(logo) => setSablon({ ...sablon, logo })}
+                            onHata={setHata}
+                          />
+                        )}
+
+                        {acik && a.kod === "karekod" && (
+                          <div className="fis-ek-ayar">
+                            <div className="mod-sec kompakt">
+                              <button
+                                className={sablon.karekodTip === "fis" ? "aktif" : ""}
+                                onClick={() => setSablon({ ...sablon, karekodTip: "fis" })}
+                              >
+                                Fiş bilgisi
+                              </button>
+                              <button
+                                className={sablon.karekodTip === "baglanti" ? "aktif" : ""}
+                                onClick={() => setSablon({ ...sablon, karekodTip: "baglanti" })}
+                              >
+                                Bağlantı
+                              </button>
+                            </div>
+
+                            {sablon.karekodTip === "baglanti" ? (
+                              <div className="alan">
+                                <label>Karekodun açacağı adres</label>
+                                <input
+                                  value={sablon.karekodAdres}
+                                  onChange={(e) =>
+                                    setSablon({ ...sablon, karekodAdres: e.target.value })
+                                  }
+                                  placeholder="https://instagram.com/isletmeniz"
+                                />
+                              </div>
+                            ) : (
+                              <Bilgi>
+                                Karekod okutulduğunda işletme adı, tarih ve tutar görünür.
+                              </Bilgi>
+                            )}
+                          </div>
+                        )}
+                      </div>
+                    );
+                  })}
                 </div>
               )}
 

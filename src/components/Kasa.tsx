@@ -5,6 +5,7 @@ import {
   ArrowUpRight,
   Banknote,
   Check,
+  Inbox,
   Lock,
   LockOpen,
   Minus,
@@ -16,6 +17,7 @@ import { ayarlar } from "../isletmeAyarlari";
 import { yetkiVar } from "../oturum";
 import { paraGoster, paraSayi, paraYaz } from "../para";
 import { kisaAd } from "../personel";
+import { cekmeceyiAc } from "../yazicilar";
 import {
   acikAdisyonSayisi,
   hareketEkle,
@@ -152,6 +154,16 @@ function KasaPenceresi({
   const vardiya = durum.vardiya;
   const paraYetkisi = ayarlar().paraHareketiAcik && yetkiVar("kasa.para");
 
+  // Çekmece açmak kasanın parasını değiştirmiyor, ekranın tazelenmesine gerek yok.
+  const cekmeceAc = async () => {
+    try {
+      await cekmeceyiAc();
+      setHata("");
+    } catch (e) {
+      setHata((e as Error).message);
+    }
+  };
+
   const isle = async (f: () => Promise<void>) => {
     try {
       await f();
@@ -282,6 +294,10 @@ function KasaPenceresi({
                     </button>
                   </>
                 )}
+                <button className="kasa-ikincil" onClick={cekmeceAc}>
+                  <Inbox size={16} />
+                  Çekmeceyi aç
+                </button>
                 <button className="kasa-birincil" onClick={() => setKapaniyor(true)}>
                   <Lock size={16} />
                   Kasayı kapat

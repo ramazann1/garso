@@ -6,10 +6,12 @@
   "description": "Garso Kasa Köprüsü — kasada çalışır, yazdırma kuyruğundaki fişleri yazıcıya basar.",
   "main": "src/index.js",
   "scripts": {
-    "start": "node src/index.js"
+    "start": "node src/index.js",
+    "yazicilar": "node src/index.js yazicilar"
   },
   "dependencies": {
     "@napi-rs/canvas": "^1.0.6",
-    "@supabase/supabase-js": "^2.111.0"
+    "@supabase/supabase-js": "^2.111.0",
+    "qrcode": "^1.5.4"
   }
 }

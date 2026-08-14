@@ -1,4 +1,5 @@
-import { GlobalFonts, createCanvas } from "@napi-rs/canvas";
+import { GlobalFonts, createCanvas, loadImage } from "@napi-rs/canvas";
+import QRCode from "qrcode";
 import { dirname, join } from "node:path";
 import { fileURLToPath } from "node:url";
 
@@ -43,18 +44,43 @@ const OLCEK = 1.3;
 const VARSAYILAN = 20;
 const KENAR = 10;
 
-export function fisiCiz(icerik, kagitMm = 80) {
+export async function fisiCiz(icerik, kagitMm = 80) {
   const genislik = NOKTA[kagitMm] ?? NOKTA[80];
   const satirlar = icerik.satirlar ?? [];
   const puntolar = icerik.puntolar ?? {};
+  const ic = genislik - KENAR * 2;
 
   const boy = (s) =>
     Math.round(((s.alan && puntolar[s.alan]) || VARSAYILAN) * OLCEK * (s.t === "ic" ? 0.8 : 1));
 
+  // Logo ve karekod satırın yüksekliğini kendileri belirliyor; ölçmeden önce
+  // resmin açılması ve karekodun üretilmesi gerekiyor.
+  const gorseller = new Map();
+  for (const [i, s] of satirlar.entries()) {
+    if (s.t === "logo") {
+      const resim = await logoyuAc(s.m);
+      if (resim) gorseller.set(i, { tip: "logo", resim, ...logoOlculeri(resim, ic) });
+    } else if (s.t === "karekod") {
+      const kod = karekodOlculeri(s.m, ic);
+      if (kod) gorseller.set(i, { tip: "karekod", ...kod });
+    }
+  }
+
   // Yükseklik önceden bilinmiyor: her satırın kendi puntosu var. Önce ölçüp
   // sonra o boyda tuval açıyoruz, boş yer kalmasın.
-  const yukseklikler = satirlar.map((s) =>
-    s.t === "cizgi" ? 10 : s.t === "bosluk" ? 12 : Math.round(boy(s) * 1.45)
+  // Logonun altındaki boşluk dar: işletme adı logonun devamı gibi dursun.
+  const yukseklikler = satirlar.map((s, i) =>
+    gorseller.has(i)
+      ? gorseller.get(i).yukseklik + (gorseller.get(i).tip === "logo" ? 2 : 8)
+      : s.t === "logo" || s.t === "karekod"
+        ? 0
+        : s.t === "cizgi"
+          ? 10
+          : s.t === "bosluk"
+            ? 12
+            // İşletme adı fişin başlığı: altında bir tık nefes payı bırakılıyor,
+            // künye satırlarına yapışık durmasın.
+            : Math.round(boy(s) * (s.alan === "isletme_adi" ? 1.85 : 1.45))
   );
   const toplam = KENAR * 2 + yukseklikler.reduce((t, y) => t + y, 0);
 
@@ -65,11 +91,23 @@ export function fisiCiz(icerik, kagitMm = 80) {
   kalem.fillStyle = "#000";
   kalem.textBaseline = "top";
 
-  const ic = genislik - KENAR * 2;
   let y = KENAR;
 
   satirlar.forEach((s, i) => {
     const h = yukseklikler[i];
+
+    const gorsel = gorseller.get(i);
+    if (gorsel) {
+      const sol = KENAR + Math.max(0, (ic - gorsel.genislik) / 2);
+      if (gorsel.tip === "logo") {
+        kalem.drawImage(gorsel.resim, sol, y, gorsel.genislik, gorsel.yukseklik);
+      } else {
+        karekoduCiz(kalem, gorsel, sol, y + 4);
+      }
+      y += h;
+      return;
+    }
+    if (s.t === "logo" || s.t === "karekod") return;
 
     if (s.t === "cizgi") {
       kalem.fillRect(KENAR, y + h / 2, ic, 2);
@@ -102,6 +140,72 @@ export function fisiCiz(icerik, kagitMm = 80) {
   });
 
   return ikiRenge(kalem.getImageData(0, 0, genislik, toplam).data, genislik, toplam);
+}
+
+/**
+ * Logo şablonun içinde gömülü resim olarak geliyor. Bozuk ya da desteklenmeyen
+ * bir görsel yüzünden fişin tamamı basılamaz olmasın diye hata yutuluyor:
+ * logosuz fiş, hiç fişten iyidir.
+ */
+async function logoyuAc(gomulu) {
+  try {
+    const veri = String(gomulu).split(",").pop();
+    return await loadImage(Buffer.from(veri, "base64"));
+  } catch {
+    return null;
+  }
+}
+
+/** Logo kâğıda sığdırılıyor; küçük logo büyütülmüyor, bulanıklaşıyor. */
+function logoOlculeri(resim, ic) {
+  const olcek = Math.min(1, ic / resim.width, 260 / resim.height);
+  return {
+    genislik: Math.round(resim.width * olcek),
+    yukseklik: Math.round(resim.height * olcek),
+  };
+}
+
+/**
+ * Karekodun kaç kareden oluştuğu içeriğine göre değişiyor. Kare boyu tam sayı
+ * seçiliyor: küsuratlı olursa kareler bir noktalık kayıyor ve telefon okumakta
+ * zorlanıyor. Kenardaki boşluk da kodun parçası, onsuz okunmuyor.
+ */
+const KAREKOD_BOSLUK = 2;
+
+function karekodOlculeri(metin, ic) {
+  try {
+    const kod = QRCode.create(metin, { errorCorrectionLevel: "M" });
+    const adet = kod.modules.size + KAREKOD_BOSLUK * 2;
+    // Kod kâğıdın yarısını geçmiyor: telefonlar bu boyu rahat okuyor, daha
+    // büyüğü fişi uzatmaktan başka işe yaramıyor.
+    const kare = Math.max(2, Math.floor((ic * 0.42) / adet));
+    const boy = adet * kare;
+    return { kod, kare, genislik: boy, yukseklik: boy };
+  } catch {
+    return null;
+  }
+}
+
+function karekoduCiz(kalem, gorsel, sol, ust) {
+  const { kod, kare } = gorsel;
+  const veri = kod.modules.data;
+  const boyut = kod.modules.size;
+
+  kalem.fillStyle = "#fff";
+  kalem.fillRect(sol, ust, gorsel.genislik, gorsel.yukseklik);
+  kalem.fillStyle = "#000";
+
+  for (let satir = 0; satir < boyut; satir++) {
+    for (let sutun = 0; sutun < boyut; sutun++) {
+      if (!veri[satir * boyut + sutun]) continue;
+      kalem.fillRect(
+        sol + (sutun + KAREKOD_BOSLUK) * kare,
+        ust + (satir + KAREKOD_BOSLUK) * kare,
+        kare,
+        kare
+      );
+    }
+  }
 }
 
 function kisalt(kalem, metin, yer) {

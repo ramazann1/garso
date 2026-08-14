@@ -5,7 +5,8 @@ import type { IndirimKaynagi } from "./indirimler";
 import { acikOturum } from "./oturum";
 import { kisaAd } from "./personel";
 import { denetimYaz } from "./denetim";
-import { mutfakFisiYaz } from "./yazicilar";
+import { cekmeceyiAc, mutfakFisiYaz } from "./yazicilar";
+import { kasayaGirerMi } from "./odemeTipleri";
 import type { DenetimIslemi, DenetimKaydi } from "./denetim";
 import type { SepetKalemi, Tahsilat } from "./types";
 
@@ -775,6 +776,7 @@ async function kalemleriYaz(
   }
 
   const yazilanTahsilatlar: Tahsilat[] = [];
+  const yeniTahsilatTipleri: string[] = [];
   for (const t of veri.tahsilatlar) {
     const satir = {
       tip: t.tip,
@@ -804,8 +806,11 @@ async function kalemleriYaz(
       // Kimlik geri dönüyor ki aynı ekranda yapılan ikinci kayıt bu tahsilatı
       // yeni sanıp bir daha eklemesin.
       yazilanTahsilatlar.push({ ...t, id: eklenen ? (eklenen as any).id : undefined });
+      yeniTahsilatTipleri.push(t.tip);
     }
   }
+
+  cekmeceyiGerekirseAc(yeniTahsilatTipleri);
 
   if (kapat) {
     await supabase
@@ -836,6 +841,23 @@ async function kalemleriYaz(
   }
 
   return { ...veri, id: adisyonId, tahsilatlar: yazilanTahsilatlar, silinenTahsilatlar: undefined };
+}
+
+/**
+ * Nakit alındıysa para çekmecesini açıyor. Kasiyer parayı koyacağı çekmeceyi
+ * ayrıca açmak zorunda kalmasın diye; kartlı ödemede çekmece açılmıyor.
+ *
+ * Kayıt bunu beklemiyor ve hatası satışı düşürmüyor: çekmece tanımlı değilse ya
+ * da köprü kapalıysa hesap yine de kapanmalı.
+ */
+function cekmeceyiGerekirseAc(tipler: string[]) {
+  if (!tipler.length || !ayarlar().cekmeceNakitteAcilsin) return;
+
+  (async () => {
+    for (const tip of tipler) {
+      if (await kasayaGirerMi(tip)) return cekmeceyiAc();
+    }
+  })().catch(() => {});
 }
 
 /**

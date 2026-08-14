@@ -1,7 +1,7 @@
 ﻿# GARSO — Teknik Tasarım: Veri Modeli & Ekran Haritası
 *Restoran ve cafe'ler için bulut tabanlı satış ve işletme yönetim sistemi.*
 
-## 0. SIRADAKİ İŞ (20 Ağu 2026'da güncellendi)
+## 0. SIRADAKİ İŞ (24 Ağu 2026'da güncellendi)
 
 *Ramazan seansa "devam edelim" diye giriyor — sıradaki iş bu listenin en üstündeki
 maddedir. Seans sonunda bu liste güncellenir: biten madde silinir, kalanlar
@@ -274,14 +274,53 @@ Bu seansta çıkanlar:
   sekmesi aynı tabloya bakarken göç çalıştırılırsa **deadlock** oluyor. Göçten
   önce köprü kapatılıp sekmeler kapatılmalı.
 
-1. **Kasa köprüsünün kalanları** — USB yazıcı (işletim sisteminin listesi ve
-   sürücüsü üzerinden), para çekmecesi, kopyalanacak **Bağlantı Durumu** ekranı,
-   her cihaz için **"Dene"** düğmesi, tek dosyaya paketleme ve Windows
-   başlangıcına kaydolma. Sonraki adımda ÖKC ve CallerID.
-2. **Logo ve karekod** — Fiş Tasarımı'nda anahtarları duruyor ama çizim
-   tarafında karşılığı yok; resim yolu bunu artık mümkün kılıyor.
-3. **Mutfak ekranı (KDS)** — Faz 2'nin ikinci büyük modülü, o da turlanmamış.
-4. **Yurt dışına açılırsa değişmesi gerekenler** — para birimi (₺ arayüzde sabit
+**24 Ağu 2026:** **USB yazıcı, para çekmecesi, logo/karekod ve Bağlantı Durumu
+ekranı bitti.** Köprüden geriye yalnız paketleme kaldı. Bu seansta çıkanlar:
+- **USB yazıcı Windows'un yazdırma servisi üzerinden** basıyor (`kopru/src/usb.js`
+  + `ham-yazdir.ps1`): marka sürücüsü gerekmiyor, Windows'un kendi
+  **Generic / Text Only** sürücüsü yetiyor çünkü çizimi biz yapıp ham
+  gönderiyoruz. `npm.cmd run yazicilar` kurulu yazıcıların adını listeliyor —
+  tarayıcı kasadaki yazıcı listesini göremiyor, ad birebir yazılmak zorunda.
+- **Windows, yazıcı fişten çekilmiş olsa bile işi kuyruğuna alıp "aldım" diyor.**
+  Bu yüzden basmadan önce yazıcının durumuna bakılıyor (WMI: çevrimdışı mı,
+  kâğıdı var mı); ağ yazıcısında kısa bir bağlantı denemesi yapılıyor. Yalan
+  söyleyen bir "Dene" düğmesi hiç olmamasından kötü.
+- **Çekmece ayrı bir cihaz değil, yazıcının özelliği** (`yazicilar.cekmece`):
+  fişten sonra yazıcıya giden bir darbeyle açılıyor. Kuyruğa `tip = 'cekmece'`
+  işi düşüyor, köprü onu görünce fiş basmadan yalnız darbeyi gönderiyor; bekleyen
+  çekmece işi beş dakikada bir iptal oluyor (geç açılan çekmece kasayı durup
+  dururken açıyor). Kasaya para giren tahsilatta kendiliğinden açılıyor
+  (`cekmece_nakitte_acilsin`), Kasa penceresinde elle düğmesi de var.
+  **Ramazan'ın kendi çekmecesi bu düzene uygun değil** — kendi düğmesiyle çalışan
+  bağımsız bir düzenek, yazıcıya kablosu yok; yazıcının çekmece çıkışı (24V 1A) var.
+- **Logo ve karekod bitti.** Logo şablonun içinde gömülü resim olarak duruyor
+  (ayrı dosya deposu kurulmadı), tarayıcıda 384 noktaya küçültülüp beyaz zemine
+  oturtuluyor; **kırpma denendi ve geri alındı** — başka işletmelerin logosunu
+  bozma riski kazancından büyük. **Karekodun içeriğini işletme seçiyor**: fiş
+  bilgisi (Adisyo'nun yaptığı) ya da bağlantı; adresin başına `https://` kendimiz
+  ekliyoruz, yoksa telefon onu arama metni sayıyor.
+- **Fişteki KDV sıfır görünüyordu.** Fiş, toplama *eklenen* vergiyi yazıyordu;
+  fiyatlar KDV dahil olduğu için o hep sıfır. Artık fiyatın *içindeki* vergi
+  yazıyor, "KDV grubu dökümü" anahtarı da (duruyordu ama basılmıyordu) çalışıyor.
+- **Fiş Tasarımı'na iki anahtar:** ürün seçenekleri/notları hesap fişinde
+  görünsün mü, aynı ürünler tek satırda toplansın mı (üç turda gelen çay
+  "3 x Çay"). Yalnız fişte aynı görünen kalemler birleşiyor. Şablona sonradan
+  eklenen anahtarlar `VARSAYILAN_PARAMETRELER` ile açık geliyor — eksik anahtar
+  kapalı sayıldığı için eski işletmelerin fişi kendiliğinden değişmesin diye.
+- **Bağlantı Durumu ekranı** (`/ayarlar/baglanti-durumu`): köprü yirmi saniyede
+  bir "buradayım" diyor (`kopru_cihazlari`), yazıcıları otuz saniyede bir
+  yokluyor (`yazici_durumlari`). **Dene** düğmesi gerçek kuyruktan geçen bir
+  deneme fişi atıyor — ayrı bir yol açılsaydı "denemede çalıştı ama fiş
+  çıkmıyor" durumu doğardı.
+- **Satır düzeni kuralı:** liste satırlarında etiket ve düğmeler sabit
+  sütunlarda duruyor, yanlarındaki yazı uzayınca kaymıyorlar; açıklamalar
+  satıra yazı olarak değil `Ipucu` ("i") içine giriyor.
+
+1. **Köprünün paketlenmesi** — tek dosyaya (.exe) paketleme ve Windows
+   başlangıcına kaydolma. Bittiğinde kurulum "çalıştır ve işletme hesabıyla gir"
+   seviyesine iniyor; terminal tamamen kalkıyor. Sonraki adımda ÖKC ve CallerID.
+2. **Mutfak ekranı (KDS)** — Faz 2'nin ikinci büyük modülü, o da turlanmamış.
+3. **Yurt dışına açılırsa değişmesi gerekenler** — para birimi (₺ arayüzde sabit
    yazılı), tarih/saat biçimi (`tr-TR`) ve "KDV" teriminin kendisi. Bugünün işi
    değil, akılda dursun diye burada.
 
