@@ -338,10 +338,19 @@ ekranı bitti.** Köprüden geriye yalnız paketleme kaldı. Bu seansta çıkanl
 - **Sürüm artık kodda** (`src/surum.js`, 1.0.0): exe'nin yanında `package.json`
   yok. `package.json` ile birlikte elle güncelleniyor.
 
-1. **Mutfak ekranı (KDS)** — Faz 2'nin ikinci büyük modülü, o da turlanmamış
+1. **Köprüyü satılabilir hâle getirme** — paketleme bitti ama kurulum hâlâ
+   bizim bildiğimiz şeyleri biliyor. Maddeler tek tek konuşulacak:
+   a. **Sunucu adresi ve anahtarı exe'ye gömülsün**, kurulumda yalnız telefon
+      ve şifre sorulsun — o ikisi her işletmede aynı (Garso'nun kendi sunucusu),
+      işletmecinin bilmesi imkânsız. Sıranın en değerli maddesi bu.
+   b. **Simge ve düzgün pencere başlığı** — şu an simgesiz siyah terminal.
+   c. **Tek kurulum dosyası (setup)** — klasör kopyalama ve `kur` komutu kalksın.
+   d. **Kod imzalama sertifikası** — Windows'un "bilinmeyen yayıncı" uyarısı
+      kalkar; yıllık ücretli, satışa yaklaşınca.
+   e. **Kendi kendini güncelleme** — yeni sürüm şu an kasalara elle gidiyor.
+2. **Mutfak ekranı (KDS)** — Faz 2'nin ikinci büyük modülü, o da turlanmamış
    (önce Adisyo turu, sonra plan).
-2. **ÖKC ve arayan numara (CallerID)** — ikisi de köprünün üstüne biniyor.
-3. **Köprünün kendi kendini güncellemesi** — şu an yeni sürüm elle kopyalanıyor.
+3. **ÖKC ve arayan numara (CallerID)** — ikisi de köprünün üstüne biniyor.
 4. **Yurt dışına açılırsa değişmesi gerekenler** — para birimi (₺ arayüzde sabit
    yazılı), tarih/saat biçimi (`tr-TR`) ve "KDV" teriminin kendisi. Bugünün işi
    değil, akılda dursun diye burada.
