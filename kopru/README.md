@@ -5,16 +5,48 @@ bulutta `yazdirma_kuyrugu` tablosuna düşüyor; köprü o satırı alıp yazıc
 basıyor. Tarayıcı yerel ağdaki yazıcıya doğrudan bağlanamadığı için bu program
 zincirin zorunlu halkası.
 
-## Kurulum
+## Kasaya kurulum
 
-1. Bilgisayarda Node 20 veya üstü kurulu olmalı.
-2. Bu klasörde:
+Kasada Node kurulu olması gerekmiyor; program tek dosyaya paketleniyor.
+
+1. `dagitim` klasörünü kasadaki bilgisayara kopyalayın.
+2. `garso-kopru.exe` çalıştırın. İlk açılışta bağlantı bilgilerini soruyor
+   (sunucu adresi, sunucu anahtarı, köprünün gireceği personelin telefonu ve
+   şifresi) ve yanına `ayarlar.json` olarak yazıyor. Sonraki açılışlarda
+   sormuyor; değiştirmek gerekirse o dosya düzenleniyor.
+3. Bilgisayar açılınca kendiliğinden çalışsın diye, bir kez:
+
+```bash
+garso-kopru.exe kur
+```
+
+Bu komut programı `%LOCALAPPDATA%\Garso\Kopru` altına kopyalıyor ve Windows'un
+Başlangıç klasörüne kısayol koyuyor. Kopyalama şart: klasör masaüstünde kalırsa
+silindiği gün köprü de gider. Geri almak için `garso-kopru.exe kaldir`.
+
+Köprü için ayrı bir personel açmak iyi olur (Adisyo bunu "Teknik" kullanıcı
+diye yapıyor): kim bastı bilgisi karışmaz, şifresi kasada durur.
+
+## Paketleme (geliştirici tarafı)
 
 ```bash
 npm.cmd install
+npm.cmd run paketle
 ```
 
-3. `ayarlar.ornek.json` dosyasını `ayarlar.json` adıyla kopyalayın ve doldurun:
+`dagitim` klasörü çıkıyor: `garso-kopru.exe`, `varliklar` (yazı tipleri ve
+PowerShell betiği) ve `node_modules` (çizim kütüphanesi). Çizim kütüphanesi bir
+Windows eklentisi olduğu için exe'nin içine giremiyor — dağıtım tek dosya değil,
+tek klasör. Sürüm iki yerde yazılı: `package.json` ve `src/surum.js`.
+
+## Geliştirirken çalıştırma
+
+```bash
+npm.cmd install
+npm.cmd start
+```
+
+Ayarlar `ayarlar.json` dosyasından okunuyor (`ayarlar.ornek.json` kopyalanabilir):
 
 | Alan | Ne yazılacak |
 |---|---|
@@ -23,15 +55,6 @@ npm.cmd install
 | `telefon` | Köprünün gireceği personelin telefonu |
 | `sifre` | O personelin şifresi |
 | `yoklamaSaniye` | Kuyruğun kaç saniyede bir yoklanacağı (varsayılan 3) |
-
-Köprü için ayrı bir personel açmak iyi olur (Adisyo bunu "Teknik" kullanıcı
-diye yapıyor): kim bastı bilgisi karışmaz, şifresi kasada durur.
-
-4. Çalıştırın:
-
-```bash
-npm.cmd start
-```
 
 ## Şu an ne yapıyor
 
@@ -54,5 +77,4 @@ npm.cmd run yazicilar
 
 ## Henüz yok
 
-Bağlantı Durumu ekranı, "Dene" düğmesi, Windows başlangıcına kaydolma ve tek
-dosyaya paketleme. Sonraki adımlar.
+Kendi kendini güncelleme, ÖKC ve arayan numara (CallerID). Sonraki adımlar.

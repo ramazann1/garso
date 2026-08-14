@@ -1,7 +1,7 @@
-import { GlobalFonts, createCanvas, loadImage } from "@napi-rs/canvas";
 import QRCode from "qrcode";
-import { dirname, join } from "node:path";
-import { fileURLToPath } from "node:url";
+import { varlik, yerelPaket } from "./yerler.js";
+
+const { GlobalFonts, createCanvas, loadImage } = yerelPaket("@napi-rs/canvas");
 
 /**
  * Fişi çiziyor.
@@ -13,8 +13,6 @@ import { fileURLToPath } from "node:url";
  * yapıyor, farkı çizimi Windows sürücüsüne bırakması.
  */
 
-const kokDizin = join(dirname(fileURLToPath(import.meta.url)), "..");
-
 // Garso'nun kendi yazı tipi. Paket harfleri parçalara ayırmış: normal alfabe
 // bir dosyada, Türkçe harfler ve lira işareti diğerinde. İkisi ayrı adla
 // yükleniyor; aynı ada yüklenirse ikincisi birincinin yerine geçiyor.
@@ -24,10 +22,7 @@ const kokDizin = join(dirname(fileURLToPath(import.meta.url)), "..");
 const PARCALAR = { latin: "Fis", "latin-ext": "FisEk" };
 for (const [parca, ad] of Object.entries(PARCALAR)) {
   for (const [kalinlik, ek] of [[500, ""], [600, "K"]]) {
-    GlobalFonts.registerFromPath(
-      join(kokDizin, `../node_modules/@fontsource/poppins/files/poppins-${parca}-${kalinlik}-normal.woff2`),
-      `${ad}${ek}`
-    );
+    GlobalFonts.registerFromPath(varlik(`poppins-${parca}-${kalinlik}-normal.woff2`), `${ad}${ek}`);
   }
 }
 const NORMAL = "Fis, FisEk";

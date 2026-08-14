@@ -1,9 +1,10 @@
 import { readFileSync } from "node:fs";
 import { hostname, networkInterfaces } from "node:os";
-import { dirname, join } from "node:path";
-import { fileURLToPath } from "node:url";
+import { join } from "node:path";
+import { kokDizin } from "./yerler.js";
 
-const kokDizin = join(dirname(fileURLToPath(import.meta.url)), "..");
+/** Ayar dosyasının tam yolu — ilk açılıştaki kurulum sihirbazı da buraya yazıyor. */
+export const ayarYolu = () => join(kokDizin, "ayarlar.json");
 
 /**
  * Ayarlar programın yanındaki ayarlar.json'dan okunuyor. Kasadaki kişi bu
@@ -12,14 +13,12 @@ const kokDizin = join(dirname(fileURLToPath(import.meta.url)), "..");
  * bulutta duruyor, işletme kaç kasa kullanırsa kullansın ayar tek yerde.
  */
 export function ayarlariOku() {
-  const yol = join(kokDizin, "ayarlar.json");
+  const yol = ayarYolu();
   let ham;
   try {
     ham = readFileSync(yol, "utf8");
   } catch {
-    throw new Error(
-      `Ayar dosyası bulunamadı: ${yol}\nayarlar.ornek.json dosyasını ayarlar.json adıyla kopyalayıp doldurun.`
-    );
+    throw new Error(`Ayar dosyası bulunamadı: ${yol}`);
   }
 
   let ayar;

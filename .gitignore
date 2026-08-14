@@ -12,6 +12,10 @@ dist
 
 # Köprünün kasadaki ayar dosyası — içinde şifre var, depoya girmez
 kopru/ayarlar.json
+
+# Köprünün paketlenmiş hâli — her paketlemede yeniden üretiliyor
+kopru/dagitim
+kopru/gecici-paket
 dist-ssr
 *.local
 

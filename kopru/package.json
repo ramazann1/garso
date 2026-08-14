@@ -1,17 +1,25 @@
 {
   "name": "garso-kopru",
-  "version": "0.1.0",
+  "version": "1.0.0",
   "private": true,
   "type": "module",
   "description": "Garso Kasa Köprüsü — kasada çalışır, yazdırma kuyruğundaki fişleri yazıcıya basar.",
   "main": "src/index.js",
   "scripts": {
     "start": "node src/index.js",
-    "yazicilar": "node src/index.js yazicilar"
+    "yazicilar": "node src/index.js yazicilar",
+    "paketle": "node paketle.js"
+  },
+  "devDependencies": {
+    "esbuild": "^0.25.0",
+    "postject": "^1.0.0-alpha.6"
   },
   "dependencies": {
     "@napi-rs/canvas": "^1.0.6",
     "@supabase/supabase-js": "^2.111.0",
     "qrcode": "^1.5.4"
+  },
+  "allowScripts": {
+    "esbuild@0.25.12": true
   }
 }

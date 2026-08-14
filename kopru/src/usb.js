@@ -2,8 +2,8 @@ import { spawn } from "node:child_process";
 import { randomUUID } from "node:crypto";
 import { writeFile, unlink } from "node:fs/promises";
 import { tmpdir } from "node:os";
-import { join, dirname } from "node:path";
-import { fileURLToPath } from "node:url";
+import { join } from "node:path";
+import { varlik } from "./yerler.js";
 
 /**
  * USB yazıcıya basma.
@@ -14,8 +14,7 @@ import { fileURLToPath } from "node:url";
  * Bu yüzden USB yolu yalnız Windows'ta çalışıyor — ağ yazıcısı her yerde.
  */
 
-const buKlasor = dirname(fileURLToPath(import.meta.url));
-const BETIK = join(buKlasor, "ham-yazdir.ps1");
+const BETIK = varlik("ham-yazdir.ps1");
 
 /**
  * Yazıcı basmaya hazır mı.

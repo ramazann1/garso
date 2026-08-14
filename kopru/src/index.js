@@ -1,4 +1,6 @@
-import { ayarlariOku, cihazKimligi } from "./ayar.js";
+import { spawnSync } from "node:child_process";
+import { existsSync } from "node:fs";
+import { ayarlariOku, ayarYolu, cihazKimligi } from "./ayar.js";
 import {
   cihazBildir,
   girisYap,
@@ -8,9 +10,12 @@ import {
   yaziciDurumBildir,
   yazicilariGetir,
 } from "./bulut.js";
-import { createRequire } from "node:module";
 import { cekmeceyiAc, yaziciDurumu, yaziciyaBas } from "./yazdir.js";
 import { kuruluYazicilar } from "./usb.js";
+import { baslangicaEkle, baslangictanCikar, ayarlariSor } from "./kurulum.js";
+import { SURUM } from "./surum.js";
+import { paketli } from "./yerler.js";
+import { createInterface } from "node:readline/promises";
 
 /**
  * Garso Kasa Köprüsü.
@@ -24,13 +29,8 @@ import { kuruluYazicilar } from "./usb.js";
 // Windows konsolu varsayılan olarak eski bir karakter tablosu kullanıyor ve
 // Türkçe harfler bozuk görünüyor; program açılırken tablo değiştiriliyor.
 if (process.platform === "win32") {
-  const { spawnSync } = await import("node:child_process");
-  spawnSync("chcp", ["65001"], { shell: true, stdio: "ignore" });
+  spawnSync("chcp.com", ["65001"], { stdio: "ignore" });
 }
-
-// Sürüm Bağlantı Durumu ekranında görünüyor: bir kasada eski köprü kalmışsa
-// oradan anlaşılsın.
-const SURUM = createRequire(import.meta.url)("../package.json").version;
 
 const bugun = () => new Date().toLocaleTimeString("tr-TR");
 const yaz = (metin) => console.log(`${bugun()}  ${metin}`);
@@ -61,6 +61,10 @@ async function turAt(cihaz) {
 }
 
 async function calis() {
+  // İlk açılış: ayar dosyası yoksa program hata verip kapanmıyor, bilgileri
+  // soruyor. Kasadaki kişinin dosya düzenlemesi gerekmiyor.
+  if (!existsSync(ayarYolu())) await ayarlariSor();
+
   const ayar = ayarlariOku();
   const cihaz = cihazKimligi();
 
@@ -144,9 +148,21 @@ async function yazicilariListele() {
   console.log("\nUSB yazıcıyı tanıtırken adı buradan birebir kopyalayın.\n");
 }
 
-const gorev = process.argv[2] === "yazicilar" ? yazicilariListele : calis;
+const KOMUTLAR = {
+  yazicilar: yazicilariListele,
+  kur: baslangicaEkle,
+  kaldir: baslangictanCikar,
+};
 
-gorev().catch((e) => {
+const gorev = KOMUTLAR[process.argv[2]] ?? calis;
+
+gorev().catch(async (e) => {
   console.error(`\n${e.message}\n`);
+  // Exe'ye çift tıklayan kişi pencere kapanıp gittiği için hatayı göremiyordu.
+  if (paketli && process.stdin.isTTY) {
+    const soru = createInterface({ input: process.stdin, output: process.stdout });
+    await soru.question("Kapatmak için Enter'a basın...");
+    soru.close();
+  }
   process.exit(1);
 });

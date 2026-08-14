@@ -1,7 +1,7 @@
 ﻿# GARSO — Teknik Tasarım: Veri Modeli & Ekran Haritası
 *Restoran ve cafe'ler için bulut tabanlı satış ve işletme yönetim sistemi.*
 
-## 0. SIRADAKİ İŞ (24 Ağu 2026'da güncellendi)
+## 0. SIRADAKİ İŞ (25 Ağu 2026'da güncellendi)
 
 *Ramazan seansa "devam edelim" diye giriyor — sıradaki iş bu listenin en üstündeki
 maddedir. Seans sonunda bu liste güncellenir: biten madde silinir, kalanlar
@@ -316,11 +316,33 @@ ekranı bitti.** Köprüden geriye yalnız paketleme kaldı. Bu seansta çıkanl
   sütunlarda duruyor, yanlarındaki yazı uzayınca kaymıyorlar; açıklamalar
   satıra yazı olarak değil `Ipucu` ("i") içine giriyor.
 
-1. **Köprünün paketlenmesi** — tek dosyaya (.exe) paketleme ve Windows
-   başlangıcına kaydolma. Bittiğinde kurulum "çalıştır ve işletme hesabıyla gir"
-   seviyesine iniyor; terminal tamamen kalkıyor. Sonraki adımda ÖKC ve CallerID.
-2. **Mutfak ekranı (KDS)** — Faz 2'nin ikinci büyük modülü, o da turlanmamış.
-3. **Yurt dışına açılırsa değişmesi gerekenler** — para birimi (₺ arayüzde sabit
+**25 Ağu 2026:** **Köprü paketlendi — kasada Node kurulumu ve terminal gerekmiyor.**
+`npm.cmd run paketle` ile `kopru/dagitim/` klasörü çıkıyor. Bu seansta çıkanlar:
+- **Paketleme yolu: esbuild + Node'un kendi SEA'sı.** Kaynak tek dosyaya
+  toplanıp node.exe kopyasının içine gömülüyor (`paketle.js`). **Dağıtım tek
+  dosya değil, tek klasör:** çizim kütüphanesi (`@napi-rs/canvas`) bir Windows
+  eklentisi, ancak diskteki dosyadan yüklenebiliyor; exe'nin yanındaki
+  `node_modules`'tan okunuyor.
+- **Dosya yerleri tek yerden** (`src/yerler.js`). Paketlenmiş programda kaynak
+  dosyalar exe'nin içinde kaldığı için `import.meta.url` ile yan dosya
+  bulunamıyor; kök, exe'nin klasörü oluyor. `import.meta.url` koddan tamamen
+  kalktı — paketleyici onu düz dosyaya çeviremiyor.
+- **Yazı tipi ve betik köprünün kendi klasöründe** (`kopru/varliklar/`). Poppins
+  ana projenin `node_modules`'ından okunuyordu; kasada o klasör yok.
+- **İlk açılış bilgileri kendi soruyor** — `ayarlar.json` yoksa program hata
+  verip kapanmıyor, dört soru sorup dosyayı kendi yazıyor.
+- **Windows başlangıcına Başlangıç klasörü kısayoluyla** (`garso-kopru.exe kur`),
+  kayıt defterine dokunulmadan; `kaldir` geri alıyor. `kur` önce programı
+  `%LOCALAPPDATA%\Garso\Kopru`'ya kopyalıyor — klasör masaüstünde kalırsa
+  silindiği gün köprü de gider, kasa fiş basmayı sessizce bırakır.
+- **Sürüm artık kodda** (`src/surum.js`, 1.0.0): exe'nin yanında `package.json`
+  yok. `package.json` ile birlikte elle güncelleniyor.
+
+1. **Mutfak ekranı (KDS)** — Faz 2'nin ikinci büyük modülü, o da turlanmamış
+   (önce Adisyo turu, sonra plan).
+2. **ÖKC ve arayan numara (CallerID)** — ikisi de köprünün üstüne biniyor.
+3. **Köprünün kendi kendini güncellemesi** — şu an yeni sürüm elle kopyalanıyor.
+4. **Yurt dışına açılırsa değişmesi gerekenler** — para birimi (₺ arayüzde sabit
    yazılı), tarih/saat biçimi (`tr-TR`) ve "KDV" teriminin kendisi. Bugünün işi
    değil, akılda dursun diye burada.
 
