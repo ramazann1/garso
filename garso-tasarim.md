@@ -3,9 +3,10 @@
 
 ## 0. SIRADAKİ İŞ (15 Ağu 2026'da güncellendi)
 
-> **Sonraki seansın ilk işi:** köprü programının (yazıcı programı) **tasarımı
-> tamamen değişecek**. Bu seansta koyu panele çevrildi ama Ramazan beğenmedi —
-> "hiç hoş durmuyor". İşleyişe dokunulmayacak, yalnız görünüş. Aşağıdaki 1a.
+> **Sonraki seansın ilk işi:** Garso'daki **"Yazıcı programını indir" düğmesinin
+> tasarımı** yeniden yapılacak — Ramazan beğenmedi, "hiç hoş durmuyor". Yeri
+> (Yazıcılar bölümünün alt sekme şeridinin sağ ucu, beş sekmede de görünmesi)
+> ve işleyişi doğru; değişecek olan yalnız görünüşü.
 
 
 *Ramazan seansa "devam edelim" diye giriyor — sıradaki iş bu listenin en üstündeki
