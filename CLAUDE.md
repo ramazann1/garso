@@ -79,6 +79,17 @@ React + TypeScript + Vite, Supabase (PostgreSQL), react-router-dom.
 - **pos-yol-haritasi.md** — Adisyo özellik envanteri, faz planı ve rakip
   analizi. "Sırada ne var, Adisyo bunu nasıl yapmış" sorularının kaynağı.
 
+## Sürüm
+
+Garso ile yazıcı programı (köprü) **tek sürüm numarasını** paylaşır. Her
+seansın sonunda, kaynak kontrolünden önce numara artırılır:
+
+- `npm.cmd run surum` — küçük parça artar (1.0.1 → 1.0.2), olağan seans
+- `npm.cmd run surum orta` — yeni modül bittiğinde (1.0.2 → 1.1.0)
+- `npm.cmd run surum buyuk` — büyük dönüşümde (1.1.0 → 2.0.0)
+
+Komut beş dosyadaki numarayı birlikte değiştirir; sürüm elle yazılmaz.
+
 ## Kaynak kontrolü
 
 Repo: github.com/ramazann1/garso

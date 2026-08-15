@@ -6,33 +6,60 @@ let kunye = { cihaz: "", surum: "" };
 const saat = (zaman) =>
   new Date(zaman).toLocaleTimeString("tr-TR", { hour: "2-digit", minute: "2-digit", second: "2-digit" });
 
-/** Bir bağlantı/yazıcı satırı: nokta · ad · durum etiketi. */
+/** Bir bağlantı/yazıcı satırı: sol kenarı durum rengi · ad · durum etiketi. */
 function satir(ad, durum, etiket, aciklama = "") {
   const kutu = document.createElement("div");
-  kutu.className = "satir";
+  kutu.className = `satir ${durum}`;
   kutu.innerHTML =
-    `<span class="nokta ${durum}"></span>` +
-    `<span class="satir-ad"><strong></strong><em></em></span>` +
-    `<span class="etiket ${durum}"></span>`;
+    `<span class="satir-ad"><strong></strong><em></em></span>` + `<span class="etiket ${durum}"></span>`;
   kutu.querySelector("strong").textContent = ad;
   kutu.querySelector("em").textContent = aciklama;
   kutu.querySelector(".etiket").textContent = etiket;
   return kutu;
 }
 
+/**
+ * Nabız satırı. Sıra önemli: sunucu bağlantısı yoksa yazıcıların durumu zaten
+ * anlamsız, önce o söyleniyor.
+ */
+function nabiz(durum) {
+  if (durum.bulut !== "bagli") {
+    return { hal: "kapali", baslik: "Sunucuya ulaşılamıyor", alt: durum.bulutHata || "Yeniden deneniyor" };
+  }
+
+  const basanlar = durum.yazicilar.filter((y) => y.durum !== "webusb");
+  const kapali = basanlar.filter((y) => y.durum !== "bagli");
+
+  if (!basanlar.length) {
+    return { hal: "bekliyor", baslik: "Yazıcı bekleniyor", alt: "Garso'da bu kasaya yazıcı tanımlanmamış" };
+  }
+  if (kapali.length === basanlar.length) {
+    return { hal: "kapali", baslik: "Yazıcılara ulaşılamıyor", alt: kapali.map((y) => y.ad).join(", ") };
+  }
+  if (kapali.length) {
+    return { hal: "bekliyor", baslik: "Fiş basılıyor, bir yazıcı kapalı", alt: `Kapalı: ${kapali.map((y) => y.ad).join(", ")}` };
+  }
+  return { hal: "acik", baslik: "Fiş basmaya hazır", alt: "Sunucu ve yazıcılar bağlı" };
+}
+
 function ciz(durum) {
   sonDurum = durum;
   if (!durum) return;
 
+  const n = nabiz(durum);
+  bul("nabiz").className = `nabiz ${n.hal}`;
+  bul("nabizBaslik").textContent = n.baslik;
+  bul("nabizAlt").textContent = n.alt;
+
   const oturum = durum.oturum ?? {};
   bul("isletme").textContent = oturum.isletme || "—";
-  bul("kisi").textContent = oturum.kisi ? `${oturum.kisi} · sürüm ${kunye.surum}` : `sürüm ${kunye.surum}`;
+  bul("kisi").textContent = oturum.kisi ? `· ${oturum.kisi}` : "";
 
   const kod = bul("kodKopyala");
   kod.hidden = !oturum.kod;
   kod.textContent = oturum.kod ? `Kod ${oturum.kod}` : "";
 
-  bul("cihaz").textContent = `Cihaz: ${durum.cihaz || kunye.cihaz}`;
+  bul("cihaz").textContent = durum.cihaz || kunye.cihaz;
 
   const bagli = durum.bulut === "bagli";
   const baglantilar = bul("baglantilar");
@@ -91,7 +118,8 @@ function ozetMetni() {
 
 kopru.kunye().then((k) => {
   kunye = k;
-  bul("cihaz").textContent = `Cihaz: ${k.cihaz}`;
+  bul("cihaz").textContent = k.cihaz;
+  bul("surum").textContent = `s${k.surum}`;
   ciz(sonDurum);
 });
 

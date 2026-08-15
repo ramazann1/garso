@@ -9,22 +9,18 @@
     <link rel="stylesheet" href="ortak.css" />
   </head>
   <body>
-    <div class="kutu">
-      <div class="marka">
-        <img src="../varliklar/simge-128.png" alt="" />
-        <div>
-          <h1>Garso Kasa Köprüsü</h1>
-          <p>Kasa ile yazıcılar arasındaki bağlantı</p>
-        </div>
-      </div>
+    <div class="band">
+      <img src="../varliklar/simge-128.png" alt="" />
+      <h1>Garso <em>Kasa Köprüsü</em></h1>
+      <span class="surum" id="surum">—</span>
+    </div>
 
-      <div class="bilgi">
-        <span>i</span>
-        <p>
-          Garso'da açtığınız teknik personelin telefonu ve şifresiyle giriş yapın.
-          Bilgiler bu bilgisayarda saklanır, bir daha sorulmaz.
-        </p>
-      </div>
+    <div class="giris">
+      <h2>Bu kasayı bağlayın</h2>
+      <p class="aciklama">
+        Garso'da açtığınız teknik personelin telefonu ve şifresi. Bilgiler bu
+        bilgisayarda saklanır, bir daha sorulmaz.
+      </p>
 
       <div class="uyari" id="uyari"></div>
 
@@ -37,14 +33,11 @@
 
         <button class="ana" id="dugme" type="submit">Bağlan</button>
       </form>
+    </div>
 
-      <div class="kunye">
-        <div>Sürüm <span id="surum">—</span></div>
-        <div>
-          Cihaz kimliği: <span id="cihaz">—</span>
-          <button type="button" id="kopyala">kopyala</button>
-        </div>
-      </div>
+    <div class="kunye">
+      Cihaz <span id="cihaz">—</span>
+      <button type="button" id="kopyala">Kopyala</button>
     </div>
 
     <script src="giris.js"></script>

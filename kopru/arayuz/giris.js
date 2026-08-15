@@ -14,7 +14,7 @@ uyariGoster(new URLSearchParams(location.search).get("hata") ?? "");
 
 kopru.kunye().then(({ cihaz, surum }) => {
   document.getElementById("cihaz").textContent = cihaz;
-  document.getElementById("surum").textContent = surum;
+  document.getElementById("surum").textContent = `s${surum}`;
   document.getElementById("kopyala").onclick = () => kopru.kopyala(cihaz);
 });
 

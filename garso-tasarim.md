@@ -1,7 +1,12 @@
 ﻿# GARSO — Teknik Tasarım: Veri Modeli & Ekran Haritası
 *Restoran ve cafe'ler için bulut tabanlı satış ve işletme yönetim sistemi.*
 
-## 0. SIRADAKİ İŞ (25 Ağu 2026'da güncellendi — 2. seans)
+## 0. SIRADAKİ İŞ (15 Ağu 2026'da güncellendi)
+
+> **Sonraki seansın ilk işi:** köprü programının (yazıcı programı) **tasarımı
+> tamamen değişecek**. Bu seansta koyu panele çevrildi ama Ramazan beğenmedi —
+> "hiç hoş durmuyor". İşleyişe dokunulmayacak, yalnız görünüş. Aşağıdaki 1a.
+
 
 *Ramazan seansa "devam edelim" diye giriyor — sıradaki iş bu listenin en üstündeki
 maddedir. Seans sonunda bu liste güncellenir: biten madde silinir, kalanlar
@@ -382,12 +387,45 @@ Bu seansta çıkanlar:
   Electron'un kendi yoluyla (`setLoginItemSettings`) ve her açılışta kontrol
   ediliyor — kayıt silinirse kendini onarıyor.
 
+**15 Ağu 2026:** **Kurulum sihirbaz oldu, köprü koyu panele geçti, indirme
+bağlantısı ve sürüm düzeni kuruldu.** Bu seansta çıkanlar:
+- **Kurulum artık tek tıkla değil sihirbaz** (`kopru/package.json` → `nsis`,
+  `kopru/kurulum/`). Kullanım koşulları sayfası, değiştirilebilir kurulum
+  klasörü, bitiş sayfası. Kaldırırken "ayarlar da silinsin mi?" soruluyor,
+  varsayılan **hayır** — yeni sürüm kurarken kasada tekrar şifre sorulmasın.
+  Kurulum penceresinin kenar görseli ve üst şeridi **paketleme sırasında
+  çiziliyor** (`paketle.js`); NSIS yalnız BMP kabul ettiği için BMP başlığı
+  elle yazılıyor. Kurulum kullanıcıya yapılıyor (`perMachine: false`) —
+  kasada yönetici şifresi sorulmuyor.
+- **Köprü pencereleri koyu.** Ana programın açık zemini bırakıldı: köprü bir
+  sayfa değil, kasada duran cihazın paneli. Durum penceresinin tepesinde tek
+  cümlelik **nabız** satırı (ışık + "Fiş basmaya hazır" / "Sunucuya
+  ulaşılamıyor"...); pencere kaymıyor, yalnız liste kendi içinde kayıyor.
+  **Tepsi menüsü kendi sözlerimizi aldı** — ilk satır renkli ışıklı durum,
+  sonra işletme·kod (tıklayınca kopyalanır), "Durum panelini aç", "Bu kasanın
+  bağlantısını kes", "Köprüyü kapat".
+- **Yazıcı programını indir bağlantısı** (`src/kopruIndirme.ts`,
+  `components/KopruIndir.tsx`). Yazıcılar bölümünün **alt sekme şeridinin sağ
+  ucunda**, beş sekmenin hepsinde. Adres hiçbir ekranda yazmıyor, tek dosyada
+  duruyor: **alan adı henüz alınmadı** ve değişebilir. Dosya yayına girene
+  kadar düğme sönük ve tıklanmıyor (`yayinda: false`) — kırık bağlantı
+  göstermek olmamasından kötü. Karar: dosya **kendi alan adımızda** duracak;
+  Supabase deposu elenmiş, çünkü indirme trafiği veritabanıyla aynı kotayı
+  yiyor (~200 MB'lık dosya bedava planı 25 indirmede bitirir).
+- **Tek sürüm numarası** (`surum.js`, `npm.cmd run surum`). Garso ile köprü
+  aynı numarayı taşıyor; ayrı numaralar "kasadaki program hangi Garso ile
+  uyumlu" sorusunu doğuruyordu. Numara beş dosyada birden değişiyor, elle
+  yazılmıyor. Seans sonunda artırılıyor (kural CLAUDE.md'de). Garso'nun sürümü
+  yan menüde işletme kodunun yanında.
+
 1. **Köprünün kalan işleri:**
-   a. **Köprü penceresinin kendi kimliği** — şu an Adisyo'nun düzenine fazla
-      benziyor (Ramazan'ın notu). İşleyişi kalsın, görünüş bizim olsun.
-   b. **Garso içinden indirme** — Ayarlar → Yazıcılar'a "Kasa programını indir"
-      bağlantısı; kurulum dosyası bir yerde yayınlanacak. Şu an dosya elle
-      taşınıyor.
+   a. **Köprü penceresinin tasarımı baştan** — 15 Ağu 2026'da pencereler koyu
+      panele çevrildi, tepsi menüsü kendi sözlerimizi aldı, kurulum sihirbaz
+      oldu. Yine de yeterli değil (Ramazan'ın notu): **bu programın tasarımı
+      tamamen değişecek**, bugünkü hâl ara adım. İşleyişe dokunulmayacak.
+   b. **Alan adı ve dosyanın yayınlanması** — bağlantı ekranda hazır, dosya
+      henüz hiçbir adreste yok. Alan adı alınıp dosya yüklenince
+      `src/kopruIndirme.ts`'te adres yazılıp `yayinda: true` yapılacak.
    c. **Cihaz anahtarı** — kasada personel şifresi durmasın; yalnız kuyruğa
       yetkili, iptal edilebilir cihaz anahtarı olsun.
    d. **Kod imzalama sertifikası** — Windows'un "bilinmeyen yayıncı" uyarısı

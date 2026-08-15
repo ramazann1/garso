@@ -55,7 +55,7 @@ const pencereAyari = (genislik, yukseklik) => ({
   title: "Garso Kasa Köprüsü",
   icon: nativeImage.createFromPath(simge(256)),
   autoHideMenuBar: true,
-  backgroundColor: "#faf7f2",
+  backgroundColor: "#15171c",
   show: false,
   webPreferences: {
     preload: join(buDizin, "onyuk.cjs"),
@@ -73,7 +73,7 @@ function girisPenceresiAc(hata = "") {
   }
 
   pencere = new BrowserWindow({
-    ...pencereAyari(420, 580),
+    ...pencereAyari(420, 620),
     resizable: false,
     maximizable: false,
   });
@@ -102,7 +102,7 @@ function durumPenceresiAc() {
     return;
   }
 
-  durumPenceresi = new BrowserWindow({ ...pencereAyari(500, 520), minWidth: 440, minHeight: 400 });
+  durumPenceresi = new BrowserWindow({ ...pencereAyari(500, 580), minWidth: 440, minHeight: 440 });
   durumPenceresi.loadFile(join(kopruKoku, "arayuz", "durum.html"));
   durumPenceresi.once("ready-to-show", () => durumPenceresi.show());
   durumPenceresi.on("closed", () => {
@@ -136,30 +136,49 @@ function tepsiyiKur() {
   tepsiyiTazele();
 }
 
+/**
+ * Köprünün tek cümlelik hâli. Durum penceresindeki nabız satırıyla aynı sıra:
+ * sunucu yoksa yazıcıların durumu zaten anlamsız, önce o söyleniyor.
+ */
+function nabiz() {
+  if (!motor) return { isik: "soluk", cumle: "Giriş yapılmadı" };
+  if (sonDurum?.bulut !== "bagli") return { isik: "kirmizi", cumle: "Sunucuya ulaşılamıyor" };
+
+  const basanlar = (sonDurum.yazicilar ?? []).filter((y) => y.durum !== "webusb");
+  const kapali = basanlar.filter((y) => y.durum !== "bagli");
+  if (!basanlar.length) return { isik: "mercan", cumle: "Yazıcı bekleniyor" };
+  if (kapali.length === basanlar.length) return { isik: "kirmizi", cumle: "Yazıcılara ulaşılamıyor" };
+  if (kapali.length) return { isik: "mercan", cumle: `Basıyor · ${kapali.length} yazıcı kapalı` };
+  return { isik: "yesil", cumle: "Fiş basmaya hazır" };
+}
+
 function tepsiyiTazele() {
   if (!tepsi) return;
 
   const oturum = sonDurum?.oturum;
-  const bagli = sonDurum?.bulut === "bagli";
-  const baslik = oturum ? `${oturum.isletme} (${oturum.kod})` : "Giriş yapılmadı";
+  const { isik, cumle } = nabiz();
+  const isikSimgesi = nativeImage.createFromPath(join(kopruKoku, "varliklar", `isik-${isik}.png`));
 
-  tepsi.setToolTip(`Garso Kasa Köprüsü — ${bagli ? "bağlı" : "bağlantı yok"}\n${baslik}`);
+  tepsi.setToolTip(`Garso Kasa Köprüsü\n${cumle}${oturum ? `\n${oturum.isletme}` : ""}`);
   tepsi.setContextMenu(
     Menu.buildFromTemplate([
-      { label: oturum ? `Giriş yapıldı: ${oturum.kisi}` : "Giriş yapılmadı", enabled: false },
+      // Menünün ilk satırı bilgi değil durum: kasadaki kişi sağ tıkladığında
+      // aradığı cevap zaten bu.
+      { label: cumle, icon: isikSimgesi, enabled: false },
+      { type: "separator" },
       {
-        label: baslik,
+        label: oturum ? `${oturum.isletme} · ${oturum.kod}` : "İşletme bağlı değil",
         enabled: Boolean(oturum?.kod),
         click: () => clipboard.writeText(String(oturum?.kod ?? "")),
         toolTip: "İşletme kodunu kopyalar",
       },
+      { label: oturum?.kisi ? `Kasa kişisi: ${oturum.kisi}` : "Kasa kişisi yok", enabled: false },
       { type: "separator" },
-      { label: bagli ? "Bağlantı: bağlı" : "Bağlantı: yok, yeniden deneniyor", enabled: false },
-      { label: "Durum penceresi", enabled: Boolean(motor), click: durumPenceresiAc },
+      { label: "Durum panelini aç", icon: nativeImage.createFromPath(simge(16)), enabled: Boolean(motor), click: durumPenceresiAc },
+      { label: "Garso'yu tarayıcıda aç", click: () => shell.openExternal("https://garso.app") },
       { type: "separator" },
-      { label: "Garso'yu aç", click: () => shell.openExternal("https://garso.app") },
-      { label: "Oturumu kapat", click: oturumuKapat },
-      { label: "Çıkış", click: cik },
+      { label: "Bu kasanın bağlantısını kes", click: oturumuKapat },
+      { label: "Köprüyü kapat", click: cik },
     ])
   );
 }

@@ -9886,3 +9886,45 @@ body {
   white-space: pre;
   overflow-x: auto;
 }
+
+/* Kasa programının indirme bağlantısı — Yazıcılar bölümünün alt sekme
+   şeridinin sağ ucunda, sekmelerle aynı yükseklikte küçük bir düğme. */
+.ayar-alt-satir {
+  display: flex;
+  align-items: center;
+  gap: 14px;
+}
+
+.kopru-indir {
+  display: inline-flex;
+  align-items: center;
+  gap: 7px;
+  margin-left: auto;
+  padding: 9px 14px;
+  border: 1px solid #f0d3c8;
+  border-radius: 12px;
+  background: #fff5f1;
+  color: #c2481f;
+  font-size: 14px;
+  font-weight: 600;
+  text-decoration: none;
+  white-space: nowrap;
+}
+
+/* Dosya yayında değilken: aynı düğme, sönük ve tıklanmaz. */
+.kopru-indir.sonuk {
+  opacity: 0.55;
+  cursor: default;
+}
+
+.kopru-indir:not(.sonuk):hover {
+  background: #ffece5;
+}
+
+/* Sürüm numarası bağlantının kendisi kadar önemli değil, yanında küçük durur. */
+.kopru-indir em {
+  font-style: normal;
+  font-weight: 500;
+  font-size: 13px;
+  color: #b8785f;
+}

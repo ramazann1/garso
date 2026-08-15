@@ -4,6 +4,7 @@ import { Banknote, ChartColumn, ChevronDown, Lock, LogOut, Settings, Store } fro
 import OnayModal from "./OnayModal";
 import { kilitKaldir, kilitliMi } from "../cikisKilidi";
 import { isletmeAdi, isletmeKodu } from "../isletmeAyarlari";
+import { GARSO_SURUM } from "../surum";
 import { kilitle, oturumuKapat, useOturum } from "../oturum";
 import { yolaGirebilir } from "../rotaYetkileri";
 import { kisaAd } from "../personel";
@@ -170,7 +171,11 @@ export default function Duzen({ children }: { children: React.ReactNode }) {
             <Store size={15} />
             <div className="menu-isletme-yazi">
               <strong>{isletmeAdi()}</strong>
-              {isletmeKodu() > 0 && <em>Kod {isletmeKodu()}</em>}
+              {isletmeKodu() > 0 && (
+                <em>
+                  Kod {isletmeKodu()} · s{GARSO_SURUM}
+                </em>
+              )}
             </div>
           </div>
         )}

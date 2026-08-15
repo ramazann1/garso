@@ -7,26 +7,39 @@
     <link rel="stylesheet" href="ortak.css" />
   </head>
   <body>
-    <div class="kutu durum-kutu">
-      <div class="kunye-kart">
-        <img src="../varliklar/simge-128.png" alt="" />
-        <div class="kunye-metin">
-          <strong id="isletme">—</strong>
-          <span id="kisi">—</span>
-        </div>
-        <button type="button" id="kodKopyala" class="kod-rozet" hidden></button>
-      </div>
+    <div class="band">
+      <img src="../varliklar/simge-128.png" alt="" />
+      <h1>Garso <em>Kasa Köprüsü</em></h1>
+      <span class="surum" id="surum">—</span>
+    </div>
 
-      <h2>Bağlantılar</h2>
+    <!-- Nabız: pencereyi açan kişinin tek bakışta anlaması gereken cümle.
+         Altındaki listeler ayrıntı; buradan çıkarım yapmak zorunda kalmasın. -->
+    <div class="nabiz" id="nabiz">
+      <span class="isik"></span>
+      <div>
+        <strong id="nabizBaslik">Bağlanıyor...</strong>
+        <span id="nabizAlt">Durum okunuyor</span>
+      </div>
+    </div>
+
+    <div class="kunye-serit">
+      <strong id="isletme">—</strong>
+      <em id="kisi"></em>
+      <button type="button" id="kodKopyala" class="kod-rozet" hidden></button>
+    </div>
+
+    <div class="liste">
+      <h2>Bağlantı</h2>
       <div class="satirlar" id="baglantilar"></div>
 
       <h2>Yazıcılar</h2>
       <div class="satirlar" id="yazicilar"></div>
+    </div>
 
-      <div class="alt">
-        <span id="cihaz">—</span>
-        <button type="button" id="hepsiniKopyala">Bilgileri Kopyala</button>
-      </div>
+    <div class="kunye">
+      Cihaz <span id="cihaz">—</span>
+      <button type="button" id="hepsiniKopyala">Bilgileri Kopyala</button>
     </div>
 
     <script src="durum.js"></script>

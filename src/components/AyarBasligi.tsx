@@ -1,5 +1,6 @@
 import { useLocation, useNavigate } from "react-router-dom";
 import AramaKutusu from "./AramaKutusu";
+import KopruIndir from "./KopruIndir";
 import { ayarBolumleri } from "./Duzen";
 
 // İşletme Ayarları'nın ortak başlığı: üstte ana bölümler, altında o bölümün
@@ -18,8 +19,9 @@ export default function AyarBasligi({
 
   // Kendi alt sekmeleri olan her bölüm (Personel, Yazıcılar) ikinci şeridi
   // çiziyor; liste Duzen'de tek yerde duruyor.
-  const altSerit =
-    ayarBolumleri.find((b) => b.alt?.some((a) => a.yol === pathname))?.alt ?? null;
+  const bolum = ayarBolumleri.find((b) => b.alt?.some((a) => a.yol === pathname));
+  const altSerit = bolum?.alt ?? null;
+  const yaziciBolumu = bolum?.ad === "Yazıcılar";
 
   return (
     <header className="menu-baslik">
@@ -45,16 +47,22 @@ export default function AyarBasligi({
       </div>
 
       {altSerit && (
-        <div className="ms-sekmeler alt">
-          {altSerit.map((b) => (
-            <button
-              key={b.yol}
-              className={pathname === b.yol ? "aktif" : ""}
-              onClick={() => navigate(b.yol)}
-            >
-              {b.ad}
-            </button>
-          ))}
+        <div className="ayar-alt-satir">
+          <div className="ms-sekmeler alt">
+            {altSerit.map((b) => (
+              <button
+                key={b.yol}
+                className={pathname === b.yol ? "aktif" : ""}
+                onClick={() => navigate(b.yol)}
+              >
+                {b.ad}
+              </button>
+            ))}
+          </div>
+
+          {/* Kasa programı Yazıcılar bölümünün her sekmesinde elin altında:
+              yazıcı tanımlayan kişi onu kurmadan hiçbirini çalıştıramıyor. */}
+          {yaziciBolumu && <KopruIndir />}
         </div>
       )}
     </header>

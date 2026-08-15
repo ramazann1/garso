@@ -1,0 +1,33 @@
+﻿GARSO KASA KÖPRÜSÜ — KULLANIM KOŞULLARI
+
+Bu program, Garso satış ve işletme yönetim sisteminin kasa bilgisayarında
+çalışan yardımcı parçasıdır. Görevi, Garso'da oluşan fişleri kasaya bağlı
+yazıcılara bastırmak ve para çekmecesini açmaktır.
+
+1. KULLANIM HAKKI
+Program, geçerli bir Garso aboneliği olan işletmelerin kullanımına sunulur.
+İşletme, programı kendi kasa bilgisayarlarına dilediği sayıda kurabilir.
+Programın kopyalanarak başka bir ürünün parçası olarak dağıtılması, satılması
+veya kaynak koduna dönüştürülmeye çalışılması serbest değildir.
+
+2. BAĞLANTI VE VERİ
+Program yalnızca Garso sunucusuna bağlanır; oradan yazdırma kuyruğunu okur ve
+işin sonucunu geri yazar. Kasada tutulan tek bilgi giriş bilgileri ve yazıcı
+ayarlarıdır. Şifre, Windows'un kendi şifrelemesiyle saklanır ve başka bir
+bilgisayarda açılamaz.
+
+3. YAZICILAR
+Program, kasadaki yazıcılara doğrudan gönderim yapar. Yazıcının, kablosunun
+veya para çekmecesinin donanım kaynaklı arızalarından ve yanlış yazıcı
+tanımından doğan hatalı çıktılardan Garso sorumlu tutulamaz.
+
+4. SORUMLULUK
+Program olduğu gibi sunulur. Garso, programın kesintisiz çalışacağını taahhüt
+etmez; kullanımından doğan dolaylı zararlardan sorumlu değildir. Kaynaklanan
+sorunlar destek hattı üzerinden giderilir.
+
+5. GÜNCELLEME
+Yeni sürümler yayınlandığında bu koşullar da güncellenebilir. Güncel sürümü
+kurmak, o sürümün koşullarını kabul etmek anlamına gelir.
+
+Programı kurarak yukarıdaki koşulları kabul etmiş olursunuz.
