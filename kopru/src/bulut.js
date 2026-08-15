@@ -40,7 +40,7 @@ export async function yazicilariGetir(zorla = false) {
 
   const { data, error } = await istemci
     .from("yazicilar")
-    .select("id, ad, baglanti, ip, port, sistem_ad, kagit_genislik, zil, cekmece, aktif");
+    .select("id, ad, baglanti, ip, port, sistem_ad, cihaz, kagit_genislik, zil, cekmece, aktif");
   if (error) throw new Error(`Yazıcılar okunamadı: ${error.message}`);
 
   yazicilar = new Map(
@@ -53,6 +53,7 @@ export async function yazicilariGetir(zorla = false) {
         ip: y.ip,
         port: y.port ?? 9100,
         sistemAd: y.sistem_ad ?? "",
+        cihaz: y.cihaz ?? "",
         kagitGenislik: y.kagit_genislik ?? 80,
         zil: y.zil ?? false,
         cekmece: y.cekmece ?? false,
@@ -98,6 +99,14 @@ export async function cihazBildir(cihaz, surum, kisi) {
     p_kisi: kisi,
   });
   if (error) throw new Error(error.message);
+}
+
+/**
+ * Kapanış haberi. Program kapatılırken tek satırlık bu haber gidiyor; olmasa
+ * ekran köprünün kapandığını ancak sessizlik sınırı dolunca anlıyor.
+ */
+export async function kapanisBildir(cihaz) {
+  await istemci.rpc("kopru_kapandi", { p_cihaz: cihaz });
 }
 
 /** Yazıcı yoklamasının sonucu; Bağlantı Durumu ekranı bunu okuyor. */

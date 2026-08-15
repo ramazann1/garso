@@ -1,29 +1,18 @@
 import { spawnSync } from "node:child_process";
 import { existsSync } from "node:fs";
-import { ayarlariOku, ayarYolu, cihazKimligi } from "./ayar.js";
-import {
-  cihazBildir,
-  girisYap,
-  isAl,
-  kuyruguDinle,
-  sonucBildir,
-  yaziciDurumBildir,
-  yazicilariGetir,
-} from "./bulut.js";
-import { cekmeceyiAc, yaziciDurumu, yaziciyaBas } from "./yazdir.js";
-import { kuruluYazicilar } from "./usb.js";
-import { baslangicaEkle, baslangictanCikar, ayarlariSor } from "./kurulum.js";
-import { SURUM } from "./surum.js";
-import { paketli } from "./yerler.js";
 import { createInterface } from "node:readline/promises";
+import { ayarlariOku, ayarYolu } from "./ayar.js";
+import { ayarlariSor } from "./kurulum.js";
+import { motorBaslat } from "./motor.js";
+import { kuruluYazicilar } from "./usb.js";
+import { paketli } from "./yerler.js";
 
 /**
- * Garso Kasa Köprüsü.
+ * Garso Kasa Köprüsü — terminal sürümü.
  *
- * Tarayıcı yerel ağa ham TCP açamıyor; işletmenin iç ağındaki yazıcıya bulut
- * sunucusu da ulaşamıyor. Aradaki tek yol kasada çalışan bu program: kuyruğa
- * düşen fişi alıp yazıcıya basıyor. Ayarların hiçbiri burada durmuyor —
- * yazıcı tanımı da fiş şablonu da bulutta.
+ * Kasaya giden asıl program pencereli sürüm (`elektron/ana.js`); burası
+ * geliştirirken ve tek komutluk işlerde (yazıcı listesi) kullanılıyor. İkisi de
+ * aynı motoru çalıştırıyor, davranış farkı yok.
  */
 
 // Windows konsolu varsayılan olarak eski bir karakter tablosu kullanıyor ve
@@ -32,33 +21,7 @@ if (process.platform === "win32") {
   spawnSync("chcp.com", ["65001"], { stdio: "ignore" });
 }
 
-const bugun = () => new Date().toLocaleTimeString("tr-TR");
-const yaz = (metin) => console.log(`${bugun()}  ${metin}`);
-
-let sonHata = "";
-
-async function turAt(cihaz) {
-  const isler = await isAl(cihaz);
-  if (!isler.length) return;
-
-  const yazicilar = await yazicilariGetir();
-
-  for (const is of isler) {
-    const yazici = yazicilar.get(is.yazici_id);
-    const cekmece = is.tip === "cekmece";
-    try {
-      cekmece ? await cekmeceyiAc(yazici) : await yaziciyaBas(yazici, is.icerik);
-      await sonucBildir(is.id, true);
-      yaz(`${cekmece ? "Çekmece açıldı" : "Basıldı"}: #${is.id} → ${yazici.ad}`);
-    } catch (e) {
-      await sonucBildir(is.id, false, e.message);
-      yaz(`${cekmece ? "Çekmece açılamadı" : "Basılamadı"}: #${is.id} → ${e.message}`);
-      // Yazıcı silinmiş ya da adresi değişmiş olabilir; liste tazelensin ki
-      // sonraki fiş eski bilgiyle tekrar patlamasın.
-      await yazicilariGetir(true).catch(() => {});
-    }
-  }
-}
+const yaz = (metin) => console.log(`${new Date().toLocaleTimeString("tr-TR")}  ${metin}`);
 
 async function calis() {
   // İlk açılış: ayar dosyası yoksa program hata verip kapanmıyor, bilgileri
@@ -66,71 +29,26 @@ async function calis() {
   if (!existsSync(ayarYolu())) await ayarlariSor();
 
   const ayar = ayarlariOku();
-  const cihaz = cihazKimligi();
+  let sonKayit = null;
 
-  yaz(`Garso Kasa Köprüsü açılıyor — cihaz: ${cihaz}`);
-  const oturum = await girisYap(ayar);
-  yaz(`Giriş yapıldı: ${oturum.kisi} · ${oturum.isletme} (${oturum.kod})`);
+  const motor = await motorBaslat(ayar, ({ durum }) => {
+    const kayit = durum.kayitlar[0];
+    if (!kayit || kayit === sonKayit) return;
+    sonKayit = kayit;
+    yaz(kayit.metin);
+  });
+
   yaz("Kuyruk dinleniyor. Kapatmak için Ctrl+C.");
 
-  // Fiş düşer düşmez basılıyor; yoklama yalnız canlı bağlantı koparsa ya da
-  // basılamamış bir fiş yeniden sıraya alındığında devreye giriyor.
-  let calisiyor = false;
-  const bas = async () => {
-    if (calisiyor) return;
-    calisiyor = true;
-    try {
-      await turAt(cihaz);
-      sonHata = "";
-    } catch (e) {
-      if (e.message !== sonHata) {
-        sonHata = e.message;
-        yaz(`Buluta ulaşılamıyor: ${e.message}`);
-      }
-    } finally {
-      calisiyor = false;
-    }
-  };
+  // Ctrl+C ile kapatılırken de buluta haber gidiyor; ekran köprünün kapandığını
+  // beklemeden görsün.
+  process.on("SIGINT", async () => {
+    await motor.kapat();
+    process.exit(0);
+  });
 
-  kuyruguDinle(bas);
-
-  // "Buradayım" haberi: Bağlantı Durumu ekranı köprünün açık olduğunu bundan
-  // anlıyor. Yirmi saniyede bir yeniliyor; ekran son haberin üstünden bir
-  // dakikadan fazla geçtiyse köprüyü kapalı sayıyor.
-  const haberVer = () =>
-    cihazBildir(cihaz, SURUM, oturum.kisi).catch(() => {
-      /* haber verilemedi diye fiş basmak durmasın */
-    });
-
-  await haberVer();
-  setInterval(haberVer, 20_000);
-
-  // Yazıcı yoklaması: kâğıt göndermeden yalnız ulaşılabiliyor mu diye bakılıyor.
-  // Fiş basmaktan ayrı bir tur, çünkü sipariş gelmediği sürece hiçbir yazıcıya
-  // dokunulmuyor ve kapalı yazıcı ancak ilk fiş kaybolunca fark ediliyordu.
-  const yazicilariYokla = async () => {
-    const yazicilar = await yazicilariGetir().catch(() => null);
-    if (!yazicilar) return;
-
-    for (const y of yazicilar.values()) {
-      if (y.baglanti === "webusb") continue;
-      const durum = await yaziciDurumu(y);
-      await yaziciDurumBildir(y.id, cihaz, durum.cevrimici, durum.hata).catch(() => {});
-    }
-  };
-
-  yazicilariYokla();
-  setInterval(yazicilariYokla, 30_000);
-
-  // Yedek yoklama: canlı bağlantının kaçırdığı ya da yeniden sıraya alınan
-  // fişler burada yakalanıyor.
-  for (;;) {
-    await bekle(ayar.yoklamaSaniye * 1000);
-    await bas();
-  }
+  await new Promise(() => {});
 }
-
-const bekle = (ms) => new Promise((t) => setTimeout(t, ms));
 
 /**
  * Kurulu yazıcıları listeleme. Garso tarayıcıda çalıştığı için kasadaki yazıcı
@@ -150,8 +68,6 @@ async function yazicilariListele() {
 
 const KOMUTLAR = {
   yazicilar: yazicilariListele,
-  kur: baslangicaEkle,
-  kaldir: baslangictanCikar,
 };
 
 const gorev = KOMUTLAR[process.argv[2]] ?? calis;

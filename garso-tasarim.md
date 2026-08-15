@@ -1,7 +1,7 @@
 ﻿# GARSO — Teknik Tasarım: Veri Modeli & Ekran Haritası
 *Restoran ve cafe'ler için bulut tabanlı satış ve işletme yönetim sistemi.*
 
-## 0. SIRADAKİ İŞ (25 Ağu 2026'da güncellendi)
+## 0. SIRADAKİ İŞ (25 Ağu 2026'da güncellendi — 2. seans)
 
 *Ramazan seansa "devam edelim" diye giriyor — sıradaki iş bu listenin en üstündeki
 maddedir. Seans sonunda bu liste güncellenir: biten madde silinir, kalanlar
@@ -338,16 +338,62 @@ ekranı bitti.** Köprüden geriye yalnız paketleme kaldı. Bu seansta çıkanl
 - **Sürüm artık kodda** (`src/surum.js`, 1.0.0): exe'nin yanında `package.json`
   yok. `package.json` ile birlikte elle güncelleniyor.
 
-1. **Köprüyü satılabilir hâle getirme** — paketleme bitti ama kurulum hâlâ
-   bizim bildiğimiz şeyleri biliyor. Maddeler tek tek konuşulacak:
-   a. **Sunucu adresi ve anahtarı exe'ye gömülsün**, kurulumda yalnız telefon
-      ve şifre sorulsun — o ikisi her işletmede aynı (Garso'nun kendi sunucusu),
-      işletmecinin bilmesi imkânsız. Sıranın en değerli maddesi bu.
-   b. **Simge ve düzgün pencere başlığı** — şu an simgesiz siyah terminal.
-   c. **Tek kurulum dosyası (setup)** — klasör kopyalama ve `kur` komutu kalksın.
+**25 Ağu 2026 (2. seans):** **Köprü pencereli bir Windows programı oldu ve tek
+kurulum dosyasına indi.** Terminal penceresi satılacak bir üründe duramazdı.
+Bu seansta çıkanlar:
+- **Electron seçildi.** Garso zaten React; köprünün penceresi de aynı dille
+  yazılıyor, ana programın rengini ve yazı tipini kullanıyor. Bedeli dosya
+  boyutu (~200 MB kurulum), kasaya bir kez kurulan program için önemsiz.
+  Eski tek dosya paketlemesi (SEA + esbuild + postject) tamamen kalktı.
+- **Program pencere olarak yaşamıyor, tepside yaşıyor** (Adisyo'nun düzeni,
+  görünüşü değil): ilk açılışta giriş penceresi, sonra saat yanındaki simge.
+  Pencerenin X'i programı kapatmıyor — kasada X'e basıp fiş basmayı durdurmak
+  kolay olmamalı. Çıkış yalnız tepsi menüsünden.
+- **Sunucu adresi ve anon anahtarı programa gömülü** (`src/sunucu.js`,
+  paketlerken `sunucu-gomulu.js` üretiliyor, kaynağı ana projenin `.env.local`
+  dosyası). Kurulumda yalnız telefon ve şifre soruluyor. Anahtar gizli bilgi
+  değil, tarayıcıdaki Garso'nun içinde de duruyor.
+- **Şifre diske düz metin yazılmıyor:** Windows'un kendi şifrelemesi (DPAPI,
+  Electron `safeStorage`). Dosya kopyalanıp başka bilgisayarda açılamıyor.
+  Kalıcı çözüm yine de cihaz anahtarı — aşağıda sırada.
+- **Motor pencereden ayrıldı** (`src/motor.js`): terminal sürümü ve pencereli
+  sürüm aynı motoru çalıştırıyor, arayüz yalnız olayları dinliyor.
+- **Cihaz kimliği bir kez hesaplanıp saklanıyor.** Her açılışta ağ kartından
+  yeniden hesaplanıyordu; birden çok kartı olan bilgisayarda tek kasa iki ayrı
+  cihaz gibi görünüyordu (Ramazan yakaladı). Ölü cihaz satırı Bağlantı
+  Durumu'ndan silinebiliyor.
+- **Köprü kapanırken haber veriyor** (`sql/2026-08-25-kopru-kapanis.sql`).
+  Ekran kapanmayı sessizlik sınırının dolmasıyla anlıyordu. Sınır 45 → 20 sn,
+  haber aralığı 20 → 5 sn, ekran tazelemesi 15 → 10 sn. Ekran artık
+  "Kapatıldı" ile "Ulaşılamıyor"u ayırıyor: biri program kapatılmış, diğerinde
+  bilgisayara ya da internete bir şey olmuş.
+- **Yazıcı kasaya bağlanabiliyor** (`sql/2026-08-25-yazici-kasa.sql`,
+  `yazicilar.cihaz`). USB yazıcı yalnız takılı olduğu bilgisayardan basabiliyor
+  ama kuyruktaki iş işaretlenmiyordu; iki kasalı işletmede fişi yanlış köprü
+  kapıyordu. Alan yalnız USB'de görünüyor, boş bırakılırsa eski davranış.
+  Köprü başka kasaya bağlı yazıcıyı yoklamıyor da — boşuna "çevrimdışı" yazardı.
+- **Durum penceresinde günlük yok** (karar): künye + bağlantılar + yazıcılar.
+  Akan işlem listesi ekranda çirkin duruyordu; "Bilgileri Kopyala" metninde
+  duruyor, destek hattı için en değerli bilgi o.
+- **Kurulum dosyası** electron-builder/NSIS ile: `npm.cmd run paketle` →
+  `%LOCALAPPDATA%\Garso\dagitim\garso-kopru-kurulum-<sürüm>.exe`. Çıktı proje
+  klasörünün dışında: Windows'un dizinleyicisi Masaüstü'nü sürekli tarıyor ve
+  paketlemeyi "EPERM" ile durduruyordu. Windows başlangıcına kayıt artık
+  Electron'un kendi yoluyla (`setLoginItemSettings`) ve her açılışta kontrol
+  ediliyor — kayıt silinirse kendini onarıyor.
+
+1. **Köprünün kalan işleri:**
+   a. **Köprü penceresinin kendi kimliği** — şu an Adisyo'nun düzenine fazla
+      benziyor (Ramazan'ın notu). İşleyişi kalsın, görünüş bizim olsun.
+   b. **Garso içinden indirme** — Ayarlar → Yazıcılar'a "Kasa programını indir"
+      bağlantısı; kurulum dosyası bir yerde yayınlanacak. Şu an dosya elle
+      taşınıyor.
+   c. **Cihaz anahtarı** — kasada personel şifresi durmasın; yalnız kuyruğa
+      yetkili, iptal edilebilir cihaz anahtarı olsun.
    d. **Kod imzalama sertifikası** — Windows'un "bilinmeyen yayıncı" uyarısı
       kalkar; yıllık ücretli, satışa yaklaşınca.
    e. **Kendi kendini güncelleme** — yeni sürüm şu an kasalara elle gidiyor.
+      Electron'un hazır altyapısı var, (b) ile birlikte düşünülecek.
 2. **Mutfak ekranı (KDS)** — Faz 2'nin ikinci büyük modülü, o da turlanmamış
    (önce Adisyo turu, sonra plan).
 3. **ÖKC ve arayan numara (CallerID)** — ikisi de köprünün üstüne biniyor.

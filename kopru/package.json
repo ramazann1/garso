@@ -4,15 +4,45 @@
   "private": true,
   "type": "module",
   "description": "Garso Kasa Köprüsü — kasada çalışır, yazdırma kuyruğundaki fişleri yazıcıya basar.",
-  "main": "src/index.js",
+  "main": "elektron/ana.js",
   "scripts": {
-    "start": "node src/index.js",
+    "start": "electron .",
+    "terminal": "node src/index.js",
     "yazicilar": "node src/index.js yazicilar",
     "paketle": "node paketle.js"
   },
+  "build": {
+    "appId": "app.garso.kopru",
+    "productName": "Garso Kasa Köprüsü",
+    "directories": {
+      "output": "${env.LOCALAPPDATA}/Garso/dagitim"
+    },
+    "files": [
+      "elektron/**",
+      "arayuz/**",
+      "src/**",
+      "varliklar/**"
+    ],
+    "asarUnpack": [
+      "varliklar/**",
+      "node_modules/@napi-rs/**"
+    ],
+    "win": {
+      "target": "nsis",
+      "icon": "varliklar/simge-256.png"
+    },
+    "nsis": {
+      "oneClick": true,
+      "perMachine": false,
+      "createDesktopShortcut": true,
+      "runAfterFinish": true,
+      "artifactName": "garso-kopru-kurulum-${version}.${ext}",
+      "shortcutName": "Garso Kasa Köprüsü"
+    }
+  },
   "devDependencies": {
-    "esbuild": "^0.25.0",
-    "postject": "^1.0.0-alpha.6"
+    "electron": "^43.4.0",
+    "electron-builder": "^26.15.3"
   },
   "dependencies": {
     "@napi-rs/canvas": "^1.0.6",

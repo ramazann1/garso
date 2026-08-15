@@ -7,6 +7,7 @@ import {
   Network,
   Printer,
   RefreshCw,
+  Trash2,
   Usb,
   XCircle,
   Zap,
@@ -19,6 +20,7 @@ import Ipucu from "../components/Ipucu";
 import OnayModal from "../components/OnayModal";
 import {
   koprulariGetir,
+  kopruSil,
   yaziciDurumlari,
   yaziciyiDene,
   type KopruCihazi,
@@ -84,6 +86,7 @@ export default function BaglantiDurumu() {
   const [denenen, setDenenen] = useState<number | null>(null);
   const [bildirim, setBildirim] = useState("");
   const [uyari, setUyari] = useState("");
+  const [silinecek, setSilinecek] = useState<string | null>(null);
 
   const oku = useCallback(async () => {
     try {
@@ -106,7 +109,7 @@ export default function BaglantiDurumu() {
   // kapandığını göstermesi gerekiyor, işletmecinin yenilemesini beklemeden.
   useEffect(() => {
     oku();
-    const zaman = setInterval(oku, 15_000);
+    const zaman = setInterval(oku, 10_000);
     return () => clearInterval(zaman);
   }, [oku]);
 
@@ -146,8 +149,7 @@ export default function BaglantiDurumu() {
           ) : kopruler.length === 0 ? (
             <div className="ayar-bos">
               <Laptop size={30} />
-              <p>Hiçbir kasada köprü çalışmamış. Kurulum için köprü klasöründeki
-                 açıklamayı izleyin.</p>
+              <p>Hiçbir kasada köprü çalışmamış.</p>
             </div>
           ) : (
             <div className="durum-liste">
@@ -164,8 +166,18 @@ export default function BaglantiDurumu() {
                       son haber {zamanMetni(k.sonGorulme)}
                     </em>
                   </span>
+                  {/* Kapatılmış köprü ile haber vermeyi kesen köprü aynı şey
+                      değil: birinde program kapatılmış, diğerinde bilgisayara
+                      ya da internete bir şey olmuş. */}
                   <span className={k.calisiyor ? "durum-etiket acik" : "durum-etiket kapali"}>
-                    {k.calisiyor ? "Çalışıyor" : "Ulaşılamıyor"}
+                    {k.calisiyor ? "Çalışıyor" : k.kapatildi ? "Kapatıldı" : "Ulaşılamıyor"}
+                  </span>
+                  <span className="durum-bilgi">
+                    {!k.calisiyor && (
+                      <button className="ayar-ekle" onClick={() => setSilinecek(k.cihaz)}>
+                        <Trash2 size={15} /> Sil
+                      </button>
+                    )}
                   </span>
                 </div>
               ))}
@@ -270,6 +282,25 @@ export default function BaglantiDurumu() {
         </section>
       </div>
 
+      {silinecek && (
+        <OnayModal
+          mesaj={`"${silinecek}" listeden silinsin mi? Köprü o bilgisayarda yeniden açılırsa listeye kendiliğinden geri gelir.`}
+          tehlikeli
+          onayMetni="Sil"
+          onKapat={() => setSilinecek(null)}
+          onOnay={async () => {
+            try {
+              await kopruSil(silinecek);
+              setBildirim("Cihaz listeden silindi.");
+            } catch (e) {
+              setUyari(e instanceof Error ? e.message : "Cihaz silinemedi.");
+            } finally {
+              setSilinecek(null);
+              oku();
+            }
+          }}
+        />
+      )}
       {uyari && <OnayModal mesaj={uyari} tekTus onKapat={() => setUyari("")} />}
       {bildirim && <Bildirim mesaj={bildirim} onKapat={() => setBildirim("")} />}
     </Duzen>

@@ -13,11 +13,13 @@ import { baglantiAdi, type Yazici } from "./yazicilar";
  */
 
 /**
- * Bu süre boyunca haber gelmezse köprü kapalı sayılıyor. Haber aralığı 20 saniye:
- * sınır bir kaçan haberi tolere edecek kadar geniş, kapanmayı geç fark
- * ettirmeyecek kadar dar.
+ * Bu süre boyunca haber gelmezse köprü kapalı sayılıyor. Haber aralığı 5 saniye:
+ * sınır kaçan haberleri tolere edecek kadar geniş, kapanmayı geç fark
+ * ettirmeyecek kadar dar. Program düzgün kapatıldığında zaten beklenmiyor,
+ * kapanış anında haber veriyor; bu sınır elektrik kesintisi gibi haber
+ * verilemeyen durumlar için.
  */
-const SESSIZLIK_SINIRI = 45_000;
+const SESSIZLIK_SINIRI = 20_000;
 
 export type KopruCihazi = {
   cihaz: string;
@@ -26,12 +28,14 @@ export type KopruCihazi = {
   baslangic: string;
   sonGorulme: string;
   calisiyor: boolean;
+  /** Program düzgün kapatıldıysa dolu; elektrik kesilmişse boş kalıyor. */
+  kapatildi: boolean;
 };
 
 export async function koprulariGetir(): Promise<KopruCihazi[]> {
   const { data, error } = await supabase
     .from("kopru_cihazlari")
-    .select("cihaz, surum, kisi, baslangic, son_gorulme")
+    .select("cihaz, surum, kisi, baslangic, son_gorulme, kapanis")
     .order("son_gorulme", { ascending: false });
   if (error) throw new Error("Köprü durumu okunamadı.");
 
@@ -42,8 +46,18 @@ export async function koprulariGetir(): Promise<KopruCihazi[]> {
     kisi: k.kisi ?? "",
     baslangic: k.baslangic,
     sonGorulme: k.son_gorulme,
-    calisiyor: simdi - new Date(k.son_gorulme).getTime() < SESSIZLIK_SINIRI,
+    kapatildi: Boolean(k.kapanis),
+    calisiyor: !k.kapanis && simdi - new Date(k.son_gorulme).getTime() < SESSIZLIK_SINIRI,
   }));
+}
+
+/**
+ * Listeden cihaz silme. Kasa değiştiğinde ya da bilgisayarın ağ kartı
+ * değiştiğinde eski satır listede ölü olarak kalıyor; silinebilmesi gerekiyor.
+ */
+export async function kopruSil(cihaz: string) {
+  const { error } = await supabase.from("kopru_cihazlari").delete().eq("cihaz", cihaz);
+  if (error) throw new Error("Cihaz silinemedi.");
 }
 
 export type YaziciDurumu = {

@@ -7,54 +7,64 @@ zincirin zorunlu halkası.
 
 ## Kasaya kurulum
 
-Kasada Node kurulu olması gerekmiyor; program tek dosyaya paketleniyor.
+Kasada Node kurulu olması gerekmiyor. Tek dosya: `garso-kopru-kurulum-<sürüm>.exe`.
 
-1. `dagitim` klasörünü kasadaki bilgisayara kopyalayın.
-2. `garso-kopru.exe` çalıştırın. İlk açılışta bağlantı bilgilerini soruyor
-   (sunucu adresi, sunucu anahtarı, köprünün gireceği personelin telefonu ve
-   şifresi) ve yanına `ayarlar.json` olarak yazıyor. Sonraki açılışlarda
-   sormuyor; değiştirmek gerekirse o dosya düzenleniyor.
-3. Bilgisayar açılınca kendiliğinden çalışsın diye, bir kez:
+1. Kurulum dosyasına çift tıklayın. Windows imzasız program için "bilinmeyen
+   yayıncı" uyarısı verir: **Daha fazla bilgi → Yine de çalıştır** (uyarı ancak
+   kod imzalama sertifikasıyla kalkıyor).
+2. Kurulum soru sormadan biter, program kendiliğinden açılır ve telefon/şifre
+   ister. Sunucu adresi ve anahtarı sorulmuyor — ikisi de programa gömülü.
+3. Girişten sonra pencere kapanır, program saat yanındaki simgeye iner. Simgeye
+   çift tıklayınca durum penceresi açılır; çıkış yalnız simgenin sağ tık
+   menüsünden.
 
-```bash
-garso-kopru.exe kur
-```
-
-Bu komut programı `%LOCALAPPDATA%\Garso\Kopru` altına kopyalıyor ve Windows'un
-Başlangıç klasörüne kısayol koyuyor. Kopyalama şart: klasör masaüstünde kalırsa
-silindiği gün köprü de gider. Geri almak için `garso-kopru.exe kaldir`.
+Bilgisayar açılınca köprü kendiliğinden çalışıyor; her açılışta kontrol edilip
+gerekirse kaydı yeniden yazılıyor.
 
 Köprü için ayrı bir personel açmak iyi olur (Adisyo bunu "Teknik" kullanıcı
-diye yapıyor): kim bastı bilgisi karışmaz, şifresi kasada durur.
+diye yapıyor): kim bastı bilgisi karışmaz, şifresi kasada durur. Şifre diske düz
+metin yazılmıyor, Windows'un kendi şifrelemesinden geçiyor.
 
-## Paketleme (geliştirici tarafı)
+## Kurulum dosyasını üretme (geliştirici tarafı)
 
 ```bash
-npm.cmd install
 npm.cmd run paketle
 ```
 
-`dagitim` klasörü çıkıyor: `garso-kopru.exe`, `varliklar` (yazı tipleri ve
-PowerShell betiği) ve `node_modules` (çizim kütüphanesi). Çizim kütüphanesi bir
-Windows eklentisi olduğu için exe'nin içine giremiyor — dağıtım tek dosya değil,
-tek klasör. Sürüm iki yerde yazılı: `package.json` ve `src/surum.js`.
+Çıkan dosya proje klasöründe değil, burada:
+
+```bash
+explorer "$env:LOCALAPPDATA\Garso\dagitim"
+```
+
+İşletmeye giden tek dosya `garso-kopru-kurulum-<sürüm>.exe`; yanındaki
+`win-unpacked` klasörü ve `.blockmap` dosyası ara ürün. Çıktının proje dışında
+olmasının sebebi Windows'un dosya dizinleyicisi: Masaüstü'nü sürekli taradığı
+için paketleyici klasör adını değiştiremiyor ve "EPERM" hatası veriyor.
+
+Paketleme sırasında sunucu adresi ve anon anahtarı ana projenin `.env.local`
+dosyasından okunup `src/sunucu-gomulu.js` olarak koda gömülüyor (o dosya depoya
+girmiyor). Sürüm iki yerde yazılı: `package.json` ve `src/surum.js`.
 
 ## Geliştirirken çalıştırma
 
 ```bash
 npm.cmd install
+```
+
+```bash
 npm.cmd start
 ```
 
-Ayarlar `ayarlar.json` dosyasından okunuyor (`ayarlar.ornek.json` kopyalanabilir):
+Pencereli sürüm açılır; giriş bilgileri Windows'un kullanıcı klasöründe
+(`%APPDATA%\Garso Kasa Köprüsü\ayarlar.json`) saklanır. Sunucu bilgisi
+geliştirirken ana projenin `.env.local` dosyasından okunur.
 
-| Alan | Ne yazılacak |
-|---|---|
-| `sunucu` | Supabase proje adresi |
-| `anahtar` | Supabase anon anahtarı |
-| `telefon` | Köprünün gireceği personelin telefonu |
-| `sifre` | O personelin şifresi |
-| `yoklamaSaniye` | Kuyruğun kaç saniyede bir yoklanacağı (varsayılan 3) |
+Penceresiz, düz terminal sürümü de duruyor:
+
+```bash
+npm.cmd run terminal
+```
 
 ## Şu an ne yapıyor
 
@@ -71,7 +81,9 @@ npm.cmd run yazicilar
 - Para çekmecesini açıyor: çekmece yazıcının arkasına takılı olduğu için istek
   kuyruğa "çekmece" işi olarak düşüyor, köprü fiş basmadan açma darbesini
   gönderiyor. Hangi yazıcıda olduğu Ayarlar › Yazıcılar'da işaretleniyor.
-- Aynı fişi iki kasa birden basmıyor: satır önce cihazın üstüne alınıyor.
+- Aynı fişi iki kasa birden basmıyor: satır önce cihazın üstüne alınıyor. USB
+  yazıcı belli bir kasaya bağlanabiliyor (Ayarlar › Yazıcılar); bağlıysa o
+  yazıcının işini başka köprü almıyor.
 - Basılamayan fiş "başarısız" olarak kalıyor, Yazdırma Kuyruğu ekranından
   yeniden sıraya alınabiliyor.
 

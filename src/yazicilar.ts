@@ -57,6 +57,12 @@ export type Yazici = {
   ip: string;
   port: number;
   sistemAd: string;
+  /**
+   * Yalnız bu kasadaki köprü bu yazıcıya basar. USB yazıcı takılı olduğu
+   * bilgisayardan başka yerden basılamıyor; boş bırakılırsa fişi hangi köprü
+   * önce alırsa o basıyor (ağ yazıcısının normal hâli).
+   */
+  cihaz: string;
   /** Kâğıdın milimetre cinsinden genişliği: 58 veya 80. Fiş buna göre çiziliyor. */
   kagitGenislik: number;
   /** Fiş çıkarken yazıcının zili çalsın mı — mutfakta fişin düştüğünü haber veriyor. */
@@ -217,7 +223,7 @@ export async function yazicilariGetir(): Promise<Yazici[]> {
   const { data } = await supabase
     .from("yazicilar")
     .select(
-      "id, ad, baglanti, ip, port, sistem_ad, kagit_genislik, zil, cekmece, turler, aktif, sira, istasyonlar:yazici_istasyonlari (istasyon_id)"
+      "id, ad, baglanti, ip, port, sistem_ad, cihaz, kagit_genislik, zil, cekmece, turler, aktif, sira, istasyonlar:yazici_istasyonlari (istasyon_id)"
     )
     .order("sira")
     .order("id");
@@ -229,6 +235,7 @@ export async function yazicilariGetir(): Promise<Yazici[]> {
     ip: y.ip ?? "",
     port: y.port,
     sistemAd: y.sistem_ad ?? "",
+    cihaz: y.cihaz ?? "",
     kagitGenislik: y.kagit_genislik ?? 80,
     zil: y.zil ?? false,
     cekmece: y.cekmece ?? false,
@@ -249,6 +256,8 @@ function yaziciSatiri(alanlar: YaziciAlanlari) {
     ip: ag ? alanlar.ip.trim() || null : null,
     port: ag ? alanlar.port : 9100,
     sistem_ad: alanlar.baglanti === "usb" ? alanlar.sistemAd.trim() || null : null,
+    // Kasaya bağlama yalnız USB'de anlamlı: ağ yazıcısına her kasa ulaşabiliyor.
+    cihaz: alanlar.baglanti === "usb" ? alanlar.cihaz.trim() || null : null,
     kagit_genislik: alanlar.kagitGenislik,
     zil: alanlar.zil,
     // WebUSB yazıcıya köprü dokunmuyor, çekmeceyi de açamaz.

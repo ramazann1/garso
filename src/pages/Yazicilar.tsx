@@ -16,6 +16,7 @@ import {
   X,
   Zap,
 } from "lucide-react";
+import { koprulariGetir, type KopruCihazi } from "../kopru";
 import Duzen from "../components/Duzen";
 import AyarBasligi from "../components/AyarBasligi";
 import Anahtar from "../components/Anahtar";
@@ -79,12 +80,20 @@ function YaziciPaneli({
   const [ip, setIp] = useState(yazici?.ip ?? "");
   const [port, setPort] = useState(String(yazici?.port ?? 9100));
   const [sistemAd, setSistemAd] = useState(yazici?.sistemAd ?? "");
+  const [cihaz, setCihaz] = useState(yazici?.cihaz ?? "");
+  const [kasalar, setKasalar] = useState<KopruCihazi[]>([]);
   const [kagit, setKagit] = useState(yazici?.kagitGenislik ?? 80);
   const [zil, setZil] = useState(yazici?.zil ?? false);
   const [cekmece, setCekmece] = useState(yazici?.cekmece ?? false);
   const [turler, setTurler] = useState<YaziciTuru[]>(yazici?.turler ?? ["adisyon"]);
   const [secilenler, setSecilenler] = useState<number[]>(yazici?.istasyonlar ?? []);
   const [aktif, setAktif] = useState(yazici?.aktif ?? true);
+
+  // Kasa listesi köprünün kendi bildirdiği cihazlardan geliyor; elle yazılan
+  // bir kimlik yanlış yazıldığında yazıcı sessizce basmaz olurdu.
+  useEffect(() => {
+    koprulariGetir().then(setKasalar).catch(() => setKasalar([]));
+  }, []);
 
   const turDegis = (kod: YaziciTuru, acik: boolean) =>
     setTurler((eski) => (acik ? [...eski, kod] : eski.filter((t) => t !== kod)));
@@ -159,14 +168,43 @@ function YaziciPaneli({
             )}
 
             {baglanti === "usb" && (
-              <div className="alan">
-                <label>Bilgisayardaki yazıcı adı</label>
-                <input
-                  value={sistemAd}
-                  onChange={(e) => setSistemAd(e.target.value)}
-                  placeholder="XP-80"
-                />
-              </div>
+              <>
+                <div className="alan">
+                  <label>Bilgisayardaki yazıcı adı</label>
+                  <input
+                    value={sistemAd}
+                    onChange={(e) => setSistemAd(e.target.value)}
+                    placeholder="XP-80"
+                  />
+                </div>
+
+                {/* USB yazıcı yalnız takılı olduğu bilgisayardan basabiliyor;
+                    işletmede birden çok kasa varsa fişin hangisine gideceği
+                    burada söyleniyor. Tek kasalı işletme bu alana hiç
+                    dokunmuyor. */}
+                <div className="alan">
+                  <label>Bu yazıcı hangi kasada takılı?</label>
+                  <div className="yz-cipler">
+                    <button
+                      className={cihaz ? "yz-cip" : "yz-cip secili"}
+                      onClick={() => setCihaz("")}
+                    >
+                      {!cihaz && <Check size={13} />}
+                      Fark etmez
+                    </button>
+                    {kasalar.map((k) => (
+                      <button
+                        key={k.cihaz}
+                        className={cihaz === k.cihaz ? "yz-cip secili" : "yz-cip"}
+                        onClick={() => setCihaz(k.cihaz)}
+                      >
+                        {cihaz === k.cihaz && <Check size={13} />}
+                        {k.cihaz}
+                      </button>
+                    ))}
+                  </div>
+                </div>
+              </>
             )}
 
             <div className="alan">
@@ -283,6 +321,7 @@ function YaziciPaneli({
                 ip,
                 port: Number(port) || 9100,
                 sistemAd,
+                cihaz,
                 kagitGenislik: kagit,
                 zil,
                 cekmece,

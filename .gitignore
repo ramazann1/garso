@@ -29,3 +29,6 @@ dist-ssr
 *.njsproj
 *.sln
 *.sw?
+
+# Paketlerken uretilen gomulu sunucu bilgisi
+kopru/src/sunucu-gomulu.js

@@ -1,0 +1,52 @@
+<!doctype html>
+<html lang="tr">
+  <head>
+    <meta charset="utf-8" />
+    <!-- Pencere yalnız kendi klasöründeki dosyaları yükleyebiliyor; internetten
+         hiçbir şey çekilmiyor. -->
+    <meta http-equiv="Content-Security-Policy" content="default-src 'self' file:" />
+    <title>Garso Kasa Köprüsü</title>
+    <link rel="stylesheet" href="ortak.css" />
+  </head>
+  <body>
+    <div class="kutu">
+      <div class="marka">
+        <img src="../varliklar/simge-128.png" alt="" />
+        <div>
+          <h1>Garso Kasa Köprüsü</h1>
+          <p>Kasa ile yazıcılar arasındaki bağlantı</p>
+        </div>
+      </div>
+
+      <div class="bilgi">
+        <span>i</span>
+        <p>
+          Garso'da açtığınız teknik personelin telefonu ve şifresiyle giriş yapın.
+          Bilgiler bu bilgisayarda saklanır, bir daha sorulmaz.
+        </p>
+      </div>
+
+      <div class="uyari" id="uyari"></div>
+
+      <form id="form">
+        <label for="telefon">Telefon</label>
+        <input id="telefon" type="tel" inputmode="tel" autocomplete="off" placeholder="0500 000 00 00" />
+
+        <label for="sifre">Şifre</label>
+        <input id="sifre" type="password" autocomplete="off" />
+
+        <button class="ana" id="dugme" type="submit">Bağlan</button>
+      </form>
+
+      <div class="kunye">
+        <div>Sürüm <span id="surum">—</span></div>
+        <div>
+          Cihaz kimliği: <span id="cihaz">—</span>
+          <button type="button" id="kopyala">kopyala</button>
+        </div>
+      </div>
+    </div>
+
+    <script src="giris.js"></script>
+  </body>
+</html>
