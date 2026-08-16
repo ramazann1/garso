@@ -50,6 +50,10 @@ export type SepetKalemi = {
   not?: string;
   /** İptal sebebi; sütuna değil, denetim defterine yazılıyor. */
   sebep?: string;
+  /** İkram kimin adına yazıldı — ödenmez listesindeki kişi. */
+  odenmezId?: number | null;
+  /** Aynı bilginin okunur hâli; Analiz ödenmez dökümünü bununla topluyor. */
+  odenmezAd?: string;
   turSira?: number;
   turSaat?: string; // turun kaydedildiği an; sepette tur başlığında görünüyor
   turGarson?: string; // turu yazan kişi; tur başlığında saatin yanında
@@ -64,6 +68,11 @@ export type Tahsilat = {
   kalemler?: Record<number, number>; // kalem kimliği → ödenen adet
   /** Ödeme tipi düzeltildiyse sebebi; sütuna değil, denetim defterine yazılıyor. */
   sebep?: string;
+  /**
+   * Açık hesap tipiyle alınan ödemede borcun yazıldığı müşteri. Tahsilat
+   * kaydedilirken cari harekete dönüşüyor.
+   */
+  musteriId?: number;
 };
 export type Adisyon = {
   sepet: SepetKalemi[];

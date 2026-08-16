@@ -21,6 +21,7 @@ const ROTA_YETKILERI: [string, string][] = [
   ["/kasa/giderler", "kasa.gider"],
   // Özet ile adisyon listesi gün sonu yetkisine açık; ciroyu kapatan kasiyer
   // kendi gününü görebilsin. Personel dökümü ve denetim kayıtları yönetici işi.
+  ["/musteriler", "cari.gor"],
   ["/analiz", "rapor.tumu"],
   ["/analiz/ozet", "rapor.gun_sonu"],
   ["/analiz/adisyonlar", "rapor.gun_sonu"],
@@ -29,6 +30,7 @@ const ROTA_YETKILERI: [string, string][] = [
   ["/ayarlar/personel", "tanim.personel"],
   ["/ayarlar/yetkiler", "tanim.personel"],
   ["/ayarlar/kisi-yetkileri", "tanim.personel"],
+  ["/ayarlar/odenmezler", "tanim.odenmez"],
   ["/ayarlar/yazicilar", "yazici.yonet"],
   ["/ayarlar/istasyonlar", "yazici.yonet"],
   ["/ayarlar/fis-tasarimi", "yazici.yonet"],

@@ -9887,8 +9887,9 @@ body {
   overflow-x: auto;
 }
 
-/* Kasa programının indirme bağlantısı — Yazıcılar bölümünün alt sekme
-   şeridinin sağ ucunda, sekmelerle aynı yükseklikte küçük bir düğme. */
+/* Kasa programının indirme düğmesi — açıklama şeridinin sağ ucunda, açıklama
+   kutusuyla aynı satırda: sayfanın üstü iki uçtan simetrik duruyor.
+   Yalnız Yazıcılar sekmesinde duruyor: kurulumun ilk adımı orası. */
 .ayar-alt-satir {
   display: flex;
   align-items: center;
@@ -9898,33 +9899,791 @@ body {
 .kopru-indir {
   display: inline-flex;
   align-items: center;
-  gap: 7px;
-  margin-left: auto;
-  padding: 9px 14px;
-  border: 1px solid #f0d3c8;
+  gap: 9px;
+  flex-shrink: 0;
+  padding: 10px 16px;
+  border: none;
   border-radius: 12px;
-  background: #fff5f1;
-  color: #c2481f;
-  font-size: 14px;
+  background: var(--mercan);
+  color: #fff;
+  font-size: 14.5px;
   font-weight: 600;
   text-decoration: none;
   white-space: nowrap;
+  /* Kurulumun ilk adımı bu: yazıcı tanımlayan kişi programı kurmadan hiçbir
+     şey yazdıramıyor. Nabız gibi atan halka gözü buraya çekiyor. */
+  animation: kopru-nabiz 2.4s ease-out infinite;
+  transition: transform 0.15s, box-shadow 0.15s;
 }
 
-/* Dosya yayında değilken: aynı düğme, sönük ve tıklanmaz. */
+@keyframes kopru-nabiz {
+  0% {
+    box-shadow: 0 0 0 0 rgba(255, 122, 89, 0.5);
+  }
+  70% {
+    box-shadow: 0 0 0 10px rgba(255, 122, 89, 0);
+  }
+  100% {
+    box-shadow: 0 0 0 0 rgba(255, 122, 89, 0);
+  }
+}
+
+/* Dosya yayında değilken: aynı düğme, mercanın soluk tonunda, hareketsiz ve
+   tıklanmaz — kutu aynı kutu, sadece "henüz hazır değil" diyor. */
 .kopru-indir.sonuk {
-  opacity: 0.55;
+  background: #ffab95;
+  animation: none;
   cursor: default;
 }
 
 .kopru-indir:not(.sonuk):hover {
-  background: #ffece5;
+  transform: translateY(-1px);
+  box-shadow: 0 4px 14px rgba(255, 122, 89, 0.4);
+  animation: none;
 }
 
-/* Sürüm numarası bağlantının kendisi kadar önemli değil, yanında küçük durur. */
+/* Sürüm numarası bağlantı kadar önemli değil; mercanın üstünde saydam bir çip. */
 .kopru-indir em {
+  padding: 2px 7px;
+  border-radius: 6px;
+  background: rgba(255, 255, 255, 0.25);
   font-style: normal;
   font-weight: 500;
-  font-size: 13px;
-  color: #b8785f;
+  font-size: 12.5px;
+}
+
+.kopru-indir.sonuk em {
+  background: rgba(255, 255, 255, 0.3);
+}
+
+
+/* ---- Müşteriler (cari hesap) ---- */
+
+/* Listenin üstündeki üç sayı: kaç müşteri var, kaçı borçlu, toplam alacak ne
+   kadar. Süzgeçten bağımsız — işletmenin gerçek durumu. */
+.musteri-ozet {
+  display: flex;
+  gap: 10px;
+  margin-top: 12px;
+}
+
+.musteri-ozet span {
+  display: flex;
+  flex-direction: column;
+  gap: 3px;
+  flex: 1;
+  padding: 12px 14px;
+  border: 1px solid #eee6dc;
+  border-radius: 12px;
+  background: var(--kart);
+  font-size: 19px;
+  font-weight: 600;
+}
+
+.musteri-ozet small {
+  font-size: 14px;
+  font-weight: 500;
+  color: var(--soluk);
+}
+
+.musteri-ozet span.borclu {
+  border-color: #f3cfc3;
+  color: #c2481f;
+}
+
+.musteri-liste {
+  display: flex;
+  flex-direction: column;
+  gap: 8px;
+  margin-top: 12px;
+}
+
+.musteri-satir {
+  display: grid;
+  grid-template-columns: 56px minmax(160px, 1fr) 130px 130px auto;
+  align-items: center;
+  gap: 12px;
+  padding: 10px 12px;
+  border: 1px solid #eee6dc;
+  border-radius: 10px;
+  background: var(--kart);
+}
+
+.musteri-satir.kapali { opacity: 0.6; }
+
+.musteri-no {
+  font-size: 14px;
+  font-weight: 600;
+  color: var(--soluk);
+}
+
+.musteri-ad {
+  display: flex;
+  flex-direction: column;
+  gap: 2px;
+  font-size: 15px;
+  font-weight: 600;
+}
+
+.musteri-ad small {
+  font-size: 14px;
+  font-weight: 400;
+  color: var(--soluk);
+}
+
+.musteri-etiket {
+  font-size: 14px;
+  color: var(--soluk);
+}
+
+/* Borç ile alacak aynı sütunda ama farklı yönde: müşterinin borcu mercan,
+   işletmenin ona borcu yeşil. Sıfır bakiye sakin kalıyor. */
+.musteri-bakiye {
+  font-size: 15px;
+  font-weight: 600;
+  text-align: right;
+  color: var(--soluk);
+}
+
+.musteri-bakiye.borclu { color: #c2481f; }
+.musteri-bakiye.alacakli { color: #1f8a68; }
+
+.musteri-satir > button {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  width: 30px;
+  height: 30px;
+  border: 1px solid #eee6dc;
+  border-radius: 8px;
+  background: var(--zemin);
+  color: var(--metin);
+  cursor: pointer;
+}
+
+.musteri-form .alan-ipucu {
+  display: block;
+  margin-top: 6px;
+  font-size: 14px;
+  color: var(--soluk);
+}
+
+/* Adresler müşteri panelinin içinde: ayrı ekrana gitmeden eklenip siliniyor. */
+.adres-liste {
+  display: flex;
+  flex-direction: column;
+  gap: 6px;
+  margin-bottom: 8px;
+}
+
+/* Adres satırı: solda ikon, ortada başlık ve adres, sağda iki küçük tuş.
+   Tuşlar durur hâlde soluk, satırın üstüne gelince beliriyor — liste sakin
+   kalıyor, tıklanacak şey gerektiğinde ortaya çıkıyor. */
+.adres-satir {
+  display: grid;
+  grid-template-columns: auto 1fr auto auto;
+  align-items: center;
+  gap: 10px;
+  padding: 10px 12px;
+  border: 1px solid #ece4d9;
+  border-radius: 12px;
+  background: var(--zemin);
+}
+
+.adres-satir > svg { color: var(--mercan); }
+
+.adres-satir > button { opacity: 0.45; }
+
+.adres-satir:hover > button { opacity: 1; }
+
+.adres-satir > button:hover {
+  border-color: var(--mercan);
+  color: var(--mercan);
+}
+
+.adres-metin {
+  display: flex;
+  flex-direction: column;
+  gap: 2px;
+  min-width: 0;
+}
+
+.adres-metin strong {
+  display: flex;
+  align-items: center;
+  gap: 7px;
+  font-size: 14px;
+}
+
+.adres-metin em {
+  padding: 2px 8px;
+  border-radius: 7px;
+  background: #fff1ec;
+  color: #c2481f;
+  font-style: normal;
+  font-size: 12.5px;
+  font-weight: 600;
+  letter-spacing: 0.2px;
+}
+
+.adres-metin small {
+  font-size: 14px;
+  color: var(--soluk);
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+.adres-satir > button {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  width: 28px;
+  height: 28px;
+  border: 1px solid #eee6dc;
+  border-radius: 8px;
+  background: var(--kart);
+  color: var(--metin);
+  cursor: pointer;
+}
+
+.adres-form {
+  display: flex;
+  flex-direction: column;
+  gap: 10px;
+  padding: 14px;
+  border: 1px solid #ece4d9;
+  border-radius: 14px;
+  background: var(--zemin);
+}
+
+/* Formun kendi düğmeleri modal alt şeridinin düğmeleri değil: orada iki tuş
+   pencerenin tamamını kaplıyor, burada satırın sağ ucunda küçük duruyorlar.
+   Vazgeç çerçevesiz bir yazı, Kaydet dolu mercan. */
+.adres-form-aksiyon {
+  display: flex;
+  align-items: center;
+  justify-content: flex-end;
+  gap: 6px;
+  margin-top: 2px;
+}
+
+.adres-form-aksiyon .iptal {
+  padding: 8px 12px;
+  border: none;
+  border-radius: 9px;
+  background: none;
+  color: var(--soluk);
+  font-family: inherit;
+  font-size: 14px;
+  font-weight: 500;
+  cursor: pointer;
+}
+
+.adres-form-aksiyon .iptal:hover {
+  background: #efe8df;
+  color: var(--metin);
+}
+
+.adres-form-aksiyon .uygula {
+  padding: 8px 16px;
+  border: none;
+  border-radius: 9px;
+  background: var(--mercan);
+  color: #fff;
+  font-family: inherit;
+  font-size: 14px;
+  font-weight: 600;
+  cursor: pointer;
+}
+
+.adres-form-aksiyon .uygula:disabled {
+  background: #f1d7cd;
+  cursor: default;
+}
+
+.adres-form-aksiyon .uygula:not(:disabled):hover {
+  background: #f56b45;
+}
+
+/* ---- Müşteri detay kartı ---- */
+
+/* Ekstre geniş bir tablo; yan panel dar kalıyordu. Detay ortada duran büyük
+   bir pencere: solda kimlik ve sayılar, sağda sekmeli içerik. */
+.cari-detay {
+  display: flex;
+  flex-direction: column;
+  width: min(1040px, 94vw);
+  max-height: 90vh;
+  margin: auto;
+  border-radius: 20px;
+  background: var(--kart);
+  box-shadow: 0 18px 54px rgba(45, 52, 54, 0.22);
+  animation: panel-gir 0.26s cubic-bezier(0.22, 0.92, 0.28, 1);
+  overflow: hidden;
+}
+
+/* Başlık şeridi: amblem, ad ve künye solda; işlemler sağda. Kart açılınca
+   kimin hesabına bakıldığı ilk satırdan okunuyor. */
+.cari-detay-ust {
+  display: flex;
+  align-items: center;
+  gap: 13px;
+  padding: 18px 22px;
+  border-bottom: 1px solid #f0e8de;
+  background: var(--zemin);
+}
+
+.cari-amblem {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  width: 44px;
+  height: 44px;
+  border-radius: 14px;
+  background: var(--mercan);
+  color: #fff;
+  font-size: 19px;
+  font-weight: 600;
+}
+
+.cari-baslik {
+  display: flex;
+  flex-direction: column;
+  gap: 3px;
+  flex: 1;
+  min-width: 0;
+}
+
+.cari-baslik h3 { font-size: 19px; }
+
+.cari-baslik small {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  font-size: 14px;
+  color: var(--soluk);
+}
+
+.cari-rozet {
+  padding: 2px 8px;
+  border-radius: 7px;
+  background: #fff1ec;
+  color: #c2481f;
+  font-style: normal;
+  font-size: 12.5px;
+  font-weight: 600;
+}
+
+.cari-detay-aksiyon {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+}
+
+.cari-detay-govde {
+  display: grid;
+  grid-template-columns: 280px 1fr;
+  gap: 22px;
+  padding: 20px 22px 24px;
+  overflow: auto;
+}
+
+.cari-kimlik {
+  display: flex;
+  flex-direction: column;
+  gap: 10px;
+}
+
+/* Adresler künyeyle aynı kutu dilinde, araya boşluk giriyor. */
+.cari-adresler {
+  padding: 13px 15px;
+  border-radius: 12px;
+  background: var(--zemin);
+}
+
+/* Kartın tek büyük sayısı: kalan bakiye. Borç varsa mercan zemin, kapalıysa
+   sakin. Diğer iki sayı altında yan yana, küçük. */
+.cari-bakiye {
+  display: flex;
+  flex-direction: column;
+  gap: 3px;
+  padding: 16px 18px;
+  border: 1px solid #eee6dc;
+  border-radius: 16px;
+  background: var(--zemin);
+}
+
+.cari-bakiye small {
+  font-size: 14px;
+  font-weight: 500;
+  color: var(--soluk);
+}
+
+.cari-bakiye strong {
+  font-size: 27px;
+  letter-spacing: -0.4px;
+}
+
+.cari-bakiye em {
+  font-style: normal;
+  font-size: 13.5px;
+  color: var(--soluk);
+}
+
+.cari-bakiye.borclu {
+  border-color: #f3cfc3;
+  background: #fff6f2;
+}
+
+.cari-bakiye.borclu strong { color: #c2481f; }
+
+.cari-sayilar {
+  display: flex;
+  gap: 8px;
+}
+
+.cari-sayilar span {
+  display: flex;
+  flex-direction: column;
+  gap: 2px;
+  flex: 1;
+  padding: 11px 13px;
+  border: 1px solid #eee6dc;
+  border-radius: 12px;
+  font-size: 16px;
+  font-weight: 600;
+}
+
+.cari-sayilar small {
+  font-size: 13.5px;
+  font-weight: 500;
+  color: var(--soluk);
+}
+
+.cari-kunye {
+  display: grid;
+  grid-template-columns: auto 1fr;
+  gap: 8px 12px;
+  padding: 13px 15px;
+  border-radius: 12px;
+  background: var(--zemin);
+  font-size: 14px;
+}
+
+.cari-kunye dt { color: var(--soluk); }
+.cari-kunye dd { font-weight: 500; }
+
+.cari-adresler h4 {
+  margin-bottom: 6px;
+  font-size: 14px;
+  color: var(--soluk);
+}
+
+.cari-adresler p {
+  font-size: 14px;
+  line-height: 1.5;
+}
+
+.cari-adresler strong { margin-right: 6px; }
+
+.cari-icerik {
+  display: flex;
+  flex-direction: column;
+  gap: 12px;
+  min-width: 0;
+}
+
+/* Tablo çerçeve içinde: sekme şeridiyle arasında sınır olmayınca satırlar
+   havada duruyordu. Başlık şeridi zeminli, satırlar ince çizgiyle ayrık. */
+.cari-tablo {
+  width: 100%;
+  border-collapse: collapse;
+  border: 1px solid #eee6dc;
+  border-radius: 14px;
+  overflow: hidden;
+  font-size: 14px;
+}
+
+.cari-tablo th {
+  padding: 10px 12px;
+  background: var(--zemin);
+  border-bottom: 1px solid #eee6dc;
+  color: var(--soluk);
+  font-weight: 500;
+  text-align: left;
+  white-space: nowrap;
+}
+
+.cari-tablo td {
+  padding: 11px 12px;
+  border-bottom: 1px solid #f5efe7;
+}
+
+.cari-tablo tbody tr:last-child td { border-bottom: none; }
+
+.cari-tablo .sag { text-align: right; }
+.cari-tablo .guclu { font-weight: 600; }
+
+.cari-tablo small { color: var(--soluk); }
+
+.cari-bos {
+  padding: 26px 4px;
+  font-size: 14px;
+  color: var(--soluk);
+}
+
+/* Ödeme Al ve Bakiye Düzelt: yan panelin dar hâli, tek işe bakıyorlar. */
+.ayar-panel.dar { width: 360px; }
+
+.cari-borc-satiri {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  margin-bottom: 16px;
+  padding: 12px 14px;
+  border-radius: 12px;
+  background: var(--zemin);
+  font-size: 15px;
+}
+
+.cari-borc-satiri strong { font-size: 18px; }
+
+.ayar-panel .alan-ipucu {
+  display: block;
+  margin-top: 6px;
+  font-size: 14px;
+  color: var(--soluk);
+}
+
+/* ---- Açık hesap müşteri seçici ---- */
+
+/* Satışta açık hesap tipine basılınca çıkan pencere: masada duran garson
+   ismi arayıp tek dokunuşla seçiyor. */
+.musteri-secici {
+  display: flex;
+  flex-direction: column;
+  gap: 12px;
+  width: min(440px, 92vw);
+  max-height: 80vh;
+  margin: auto;
+  padding: 18px 20px 20px;
+  border-radius: 20px;
+  background: var(--kart);
+  box-shadow: 0 18px 54px rgba(45, 52, 54, 0.22);
+}
+
+.musteri-secici header {
+  display: flex;
+  align-items: center;
+}
+
+.musteri-secici h3 {
+  flex: 1;
+  font-size: 18px;
+}
+
+.musteri-secici-ara {
+  padding: 11px 13px;
+  border: 1px solid #e6dbcd;
+  border-radius: 12px;
+  font-size: 15px;
+}
+
+.musteri-secici-liste {
+  display: flex;
+  flex-direction: column;
+  gap: 6px;
+  overflow-y: auto;
+}
+
+.musteri-secici-liste > button {
+  display: grid;
+  grid-template-columns: auto 1fr auto;
+  align-items: center;
+  gap: 11px;
+  padding: 11px 13px;
+  border: 1px solid #eee6dc;
+  border-radius: 12px;
+  background: var(--kart);
+  color: var(--metin);
+  font-family: inherit;
+  font-size: 15px;
+  text-align: left;
+  cursor: pointer;
+}
+
+.musteri-secici-liste > button:hover {
+  border-color: var(--mercan);
+  background: #fff7f4;
+}
+
+.musteri-secici-liste > button span {
+  display: flex;
+  flex-direction: column;
+  gap: 2px;
+  font-weight: 600;
+}
+
+.musteri-secici-liste > button small {
+  font-size: 14px;
+  font-weight: 400;
+  color: var(--soluk);
+}
+
+.musteri-secici-liste > button em {
+  font-style: normal;
+  font-size: 14px;
+  font-weight: 600;
+  color: var(--soluk);
+}
+
+.musteri-secici-liste > button em.borclu { color: #c2481f; }
+
+/* Adisyona bağlı ekstre satırı tıklanınca adisyonun kendisi açılıyor. */
+.cari-tablo tr.tiklanir { cursor: pointer; }
+.cari-tablo tr.tiklanir:hover { background: #fff7f4; }
+
+/* ---- Müşteri düzenleme paneli ---- */
+
+/* Panel uzun bir form; alanlar tek sıra hâlinde akınca nerede ne olduğu
+   kaybolmuştu. Küçük başlıklar formu üç bölüme ayırıyor: kimlik, hesap,
+   adres ve not. */
+.musteri-form {
+  display: flex;
+  flex-direction: column;
+  gap: 14px;
+}
+
+.musteri-form .form-baslik {
+  margin-top: 6px;
+  font-size: 13.5px;
+  font-weight: 600;
+  color: var(--soluk);
+  text-transform: uppercase;
+  letter-spacing: 0.5px;
+}
+
+.musteri-form .form-baslik:first-child { margin-top: 0; }
+
+.musteri-form .alan { margin: 0; }
+
+.musteri-form .alan-ikili { gap: 12px; }
+
+.musteri-form input {
+  width: 100%;
+  padding: 11px 13px;
+  border: 1px solid #e6dbcd;
+  border-radius: 11px;
+  font-size: 15px;
+}
+
+.musteri-form input:focus {
+  outline: none;
+  border-color: var(--mercan);
+}
+
+.musteri-form .alan-anahtarlar { margin: 0; }
+
+/* Adres formu panel içinde ayrı bir ada gibi duruyor: çerçeveli, kendi
+   düğmeleriyle. Ekleme düğmesi liste boşken de görünür kalıyor. */
+.musteri-form .adres-liste { margin-bottom: 0; }
+
+.musteri-form .adres-liste:empty { display: none; }
+
+/* "Adres ekle": dolu bir düğme değil, listenin devamı gibi duran kesik
+   çizgili bir satır — henüz olmayan bir şeyin yerini gösteriyor. */
+.musteri-form .satir-tus {
+  justify-content: center;
+  width: 100%;
+  margin-top: 8px;
+  padding: 11px;
+  border: 1px dashed #ddd0bf;
+  border-radius: 12px;
+  background: none;
+  color: var(--soluk);
+  font-size: 14px;
+  font-weight: 500;
+}
+
+.musteri-form .satir-tus:hover {
+  border-color: var(--mercan);
+  border-style: solid;
+  background: #fff7f4;
+  color: var(--mercan);
+}
+
+/* Ev / İşyeri / Diğer seçimi form içinde: kutular küçük ve yumuşak. */
+.adres-form .cip-secim { gap: 6px; }
+
+.adres-form { margin-top: 10px; }
+
+.adres-form input {
+  width: 100%;
+  padding: 10px 12px;
+  border: 1px solid #e6dbcd;
+  border-radius: 10px;
+  background: var(--kart);
+  font-size: 14.5px;
+}
+
+/* ---- Ödenmezler ---- */
+
+/* İkram penceresindeki "kime yazılsın" şeridi, sebep şeridiyle aynı dilde. */
+.onay-odenmez {
+  margin-top: 14px;
+}
+
+.onay-odenmez p {
+  margin-bottom: 8px;
+  font-size: 14px;
+  font-weight: 500;
+  color: var(--soluk);
+}
+
+.odenmez-satir {
+  display: grid;
+  grid-template-columns: auto minmax(160px, 1fr) 90px auto;
+  align-items: center;
+  gap: 12px;
+  padding: 10px 12px;
+  border: 1px solid #eee6dc;
+  border-radius: 12px;
+  background: var(--kart);
+}
+
+.odenmez-satir.kapali { opacity: 0.6; }
+
+.odenmez-satir > svg { color: var(--mercan); }
+
+.odenmez-satir > button {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  width: 30px;
+  height: 30px;
+  border: 1px solid #eee6dc;
+  border-radius: 8px;
+  background: var(--zemin);
+  color: var(--metin);
+  cursor: pointer;
+}
+
+/* Ödenmez dökümünde kişi satırına basınca ürünleri açılıyor. */
+.analiz-tablo tr.tiklanir { cursor: pointer; }
+.analiz-tablo tr.tiklanir:hover { background: #fff7f4; }
+
+.dokum-ok {
+  margin-right: 7px;
+  vertical-align: -2px;
+  color: var(--soluk);
+  transition: transform 0.15s;
+}
+
+.dokum-ok.acik { transform: rotate(90deg); }
+
+.analiz-tablo tr.dokum-alt td {
+  padding-left: 32px;
+  background: var(--zemin);
+  color: var(--soluk);
 }

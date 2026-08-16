@@ -719,8 +719,8 @@ export default function Siparis() {
           kalan={kalan}
           onIndirimDegis={(tutar, kaynak) => { setIndirim(tutar); setIndirimTanim(kaynak); }}
           onKapat={() => setHizliAcik(false)}
-          onSec={async (tip, tutar, kapat, bahsis) => {
-            const tahsilatlar = [...kayitliTahsilatlar, { tip, tutar, bahsis }];
+          onSec={async (tip, tutar, kapat, bahsis, musteriId) => {
+            const tahsilatlar = [...kayitliTahsilatlar, { tip, tutar, bahsis, musteriId }];
             await adisyonuYaz({ sepet, indirim, indirimTanim, tahsilatlar }, kapat);
             if (kapat) {
               kilitKaldir();

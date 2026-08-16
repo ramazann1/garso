@@ -12,9 +12,15 @@ type Props = {
    * serbest yazma kutusu vardır. Sebep seçilmeden onay düğmesi çalışmaz.
    */
   sebepler?: string[];
+  /**
+   * Verilirse pencere "kime yazılsın" diye sorar: ödenmez listesi düğme olarak
+   * çıkar. Seçim zorunlu değil — belirtilmeden de onaylanabiliyor, ikram yine
+   * yapılıyor, yalnız kırılımda "belirtilmemiş" kalıyor.
+   */
+  odenmezler?: { id: number; ad: string }[];
   onayMetni?: string;
   iptalMetni?: string;
-  onOnay?: (sebep?: string) => void;
+  onOnay?: (sebep?: string, odenmezId?: number) => void;
   onKapat: () => void;
 };
 
@@ -25,6 +31,7 @@ export default function OnayModal({
   tekTus,
   tehlikeli,
   sebepler,
+  odenmezler,
   onayMetni,
   iptalMetni,
   onOnay,
@@ -32,6 +39,7 @@ export default function OnayModal({
 }: Props) {
   const [secili, setSecili] = useState("");
   const [serbest, setSerbest] = useState("");
+  const [odenmezId, setOdenmezId] = useState<number | null>(null);
 
   const sebep = secili === "diger" ? serbest.trim() : secili;
   const onaylanabilir = !sebepler || !!sebep;
@@ -79,6 +87,23 @@ export default function OnayModal({
           </div>
         )}
 
+        {odenmezler && odenmezler.length > 0 && (
+          <div className="onay-odenmez">
+            <p>Kime yazılsın?</p>
+            <div className="onay-sebepler">
+              {odenmezler.map((o) => (
+                <button
+                  key={o.id}
+                  className={odenmezId === o.id ? "onay-sebep secili" : "onay-sebep"}
+                  onClick={() => setOdenmezId(odenmezId === o.id ? null : o.id)}
+                >
+                  {o.ad}
+                </button>
+              ))}
+            </div>
+          </div>
+        )}
+
         <div className="modal-aksiyonlar">
           {tekTus ? (
             <button className="uygula" onClick={onKapat}>Tamam</button>
@@ -88,7 +113,7 @@ export default function OnayModal({
               <button
                 className={tehlikeli ? "uygula tehlikeli" : "uygula"}
                 disabled={!onaylanabilir}
-                onClick={() => onOnay?.(sebep || undefined)}
+                onClick={() => onOnay?.(sebep || undefined, odenmezId ?? undefined)}
               >
                 {onayMetni ?? (tehlikeli ? "Evet, sil" : "Evet")}
               </button>

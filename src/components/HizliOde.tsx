@@ -4,6 +4,7 @@ import IndirimModal from "./IndirimModal";
 import type { IndirimKaynagi } from "../indirimler";
 import OnayModal from "./OnayModal";
 import OdemeTipDugmeleri from "./OdemeTipDugmeleri";
+import MusteriSecici from "./MusteriSecici";
 import { indirimYapabilir } from "../oturum";
 import { ayarlar } from "../isletmeAyarlari";
 import { paraGoster } from "../para";
@@ -18,7 +19,13 @@ type Props = {
   odenen: number;
   kalan: number;
   onIndirimDegis: (tutar: number, kaynak?: IndirimKaynagi) => void;
-  onSec: (tip: string, tutar: number, kapat: boolean, bahsis?: number) => void;
+  onSec: (
+    tip: string,
+    tutar: number,
+    kapat: boolean,
+    bahsis?: number,
+    musteriId?: number
+  ) => void;
   onKapat: () => void;
 };
 
@@ -48,6 +55,9 @@ export default function HizliOde({
   const [gonderiliyor, setGonderiliyor] = useState(false);
   // Kalandan fazla girilen tutar onaya düşer: üstü bahşiş mi, yanlış giriş mi?
   const [bahsisSorusu, setBahsisSorusu] = useState<{ tip: string; bahsis: number } | null>(null);
+  // Açık hesap tipine basıldığında borcun kime yazılacağı soruluyor; tutar
+  // seçim penceresi kapanana kadar burada bekliyor.
+  const [cariSorusu, setCariSorusu] = useState<{ tip: string; tutar: number } | null>(null);
 
   useEffect(() => {
     odemeTipleriniGetir().then(setOdemeTipleri);
@@ -72,15 +82,21 @@ export default function HizliOde({
       setBahsisSorusu({ tip, bahsis: tutar - kalan });
       return;
     }
+    // Açık hesap kasaya para getirmiyor, birinin borcuna yazılıyor: kime
+    // yazıldığı sorulmadan tahsilat işlenmiyor.
+    if (odemeTipleri.find((t) => t.ad === tip)?.acikHesap) {
+      setCariSorusu({ tip, tutar });
+      return;
+    }
     gonder(tip, tutar);
   };
 
   // Tahsilat kalanı kapatmıyorsa adisyon açık kalmalı; yarım ödemeyle masa
   // kapanırsa geri kalan tutar kaybolur. Bahşiş kalanı azaltmadığı için
   // tahsilata kalanın kendisi yazılır, üstü ayrı gider.
-  const gonder = (tip: string, tutar: number, bahsis?: number) => {
+  const gonder = (tip: string, tutar: number, bahsis?: number, musteriId?: number) => {
     setGonderiliyor(true);
-    onSec(tip, tutar, kapat && tutar >= kalan, bahsis);
+    onSec(tip, tutar, kapat && tutar >= kalan, bahsis, musteriId);
   };
 
   return (
@@ -194,6 +210,16 @@ export default function HizliOde({
             setBahsisSorusu(null);
           }}
           onKapat={() => setBahsisSorusu(null)}
+        />
+      )}
+
+      {cariSorusu && (
+        <MusteriSecici
+          onSec={(m) => {
+            gonder(cariSorusu.tip, cariSorusu.tutar, undefined, m.id);
+            setCariSorusu(null);
+          }}
+          onKapat={() => setCariSorusu(null)}
         />
       )}
 

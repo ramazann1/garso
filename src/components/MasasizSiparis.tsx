@@ -1,7 +1,9 @@
 import { useState } from "react";
-import { Bike, ShoppingBag, X } from "lucide-react";
+import { Bike, ShoppingBag, UserRound, X } from "lucide-react";
 import Bilgi from "./Bilgi";
+import MusteriSecici from "./MusteriSecici";
 import type { MusteriBilgisi } from "../adisyonlar";
+import { adresleriGetir, tamAd, type Musteri } from "../cari";
 import { ayarlar } from "../isletmeAyarlari";
 
 type Tip = "gelal" | "paket";
@@ -27,6 +29,21 @@ export default function MasasizSiparis({
   const [ad, setAd] = useState(mevcut?.ad ?? "");
   const [telefon, setTelefon] = useState(mevcut?.telefon ?? "");
   const [adres, setAdres] = useState(mevcut?.adres ?? "");
+  const [musteriId, setMusteriId] = useState<number | null>(mevcut?.musteriId ?? null);
+  const [seciciAcik, setSeciciAcik] = useState(false);
+
+  // Kayıtlı müşteri seçilince alanlar onun bilgisiyle doluyor; adres varsayılan
+  // adresinden geliyor. Sonrasında elle düzeltilebiliyor — bugün başka bir
+  // adrese gidiyor olabilir.
+  const musteriyiAl = async (m: Musteri) => {
+    setMusteriId(m.id);
+    setAd(tamAd(m));
+    setTelefon(m.telefon);
+    const adresler = await adresleriGetir(m.id);
+    const secili = adresler.find((a) => a.varsayilan) ?? adresler[0];
+    if (secili) setAdres(secili.adres);
+    setSeciciAcik(false);
+  };
 
   return (
     <div className="panel-fon" onClick={onKapat}>
@@ -68,10 +85,19 @@ export default function MasasizSiparis({
             <label>Müşteri adı</label>
             <input
               value={ad}
-              onChange={(e) => setAd(e.target.value)}
+              onChange={(e) => {
+                setAd(e.target.value);
+                // Ad elle değiştirildiyse artık kayıtlı müşteri değil: bağlantı
+                // kopuyor, yoksa başkasının carisine sipariş yazılabilirdi.
+                setMusteriId(null);
+              }}
               placeholder="İsteğe bağlı"
               autoFocus
             />
+            <button className="satir-tus musteri-sec" onClick={() => setSeciciAcik(true)}>
+              <UserRound size={15} />
+              {musteriId ? "Başka müşteri seç" : "Kayıtlı müşteriden seç"}
+            </button>
           </div>
 
           <div className="alan">
@@ -100,12 +126,28 @@ export default function MasasizSiparis({
           <button className="iptal" onClick={onKapat}>Vazgeç</button>
           <button
             className="uygula"
-            onClick={() => onAc(tip, { ad, telefon, adres: tip === "paket" ? adres : "" })}
+            onClick={() =>
+              onAc(tip, {
+                ad,
+                telefon,
+                adres: tip === "paket" ? adres : "",
+                musteriId,
+              })
+            }
           >
             {mevcut ? "Kaydet" : "Siparişi aç"}
           </button>
         </footer>
       </div>
+
+      {seciciAcik && (
+        <MusteriSecici
+          baslik="Müşteri seç"
+          hepsi
+          onSec={musteriyiAl}
+          onKapat={() => setSeciciAcik(false)}
+        />
+      )}
     </div>
   );
 }

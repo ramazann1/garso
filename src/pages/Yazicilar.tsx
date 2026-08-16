@@ -21,6 +21,7 @@ import Duzen from "../components/Duzen";
 import AyarBasligi from "../components/AyarBasligi";
 import Anahtar from "../components/Anahtar";
 import Bilgi from "../components/Bilgi";
+import KopruIndir from "../components/KopruIndir";
 import Bildirim from "../components/Bildirim";
 import OnayModal from "../components/OnayModal";
 import {
@@ -471,6 +472,8 @@ export default function Yazicilar() {
               ? "İstasyon, siparişin hazırlandığı yerdir: mutfak, bar, nargile. Ürünün hangi istasyona gideceğini kategorisi belirler, gerekirse ürün kendi istasyonunu seçer."
               : "Fişlerin hangi yazıcıdan çıkacağını buradan tanımlarsınız."}
           </Bilgi>
+          {/* Program yalnız Yazıcılar sekmesinde: kurulumun ilk adımı orası. */}
+          {!istasyonBolumu && <KopruIndir />}
         </div>
 
         {yukleniyor ? (

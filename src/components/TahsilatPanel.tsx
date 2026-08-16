@@ -7,6 +7,7 @@ import OnayModal from "./OnayModal";
 import EksikKapat from "./EksikKapat";
 import KdvDokum from "./KdvDokum";
 import OdemeTipDugmeleri from "./OdemeTipDugmeleri";
+import MusteriSecici from "./MusteriSecici";
 import { kalemTutari } from "../adisyonlar";
 import { indirimYapabilir, yetkiVar } from "../oturum";
 import { odemeTipleriniGetir } from "../odemeTipleri";
@@ -69,6 +70,9 @@ export default function TahsilatPanel({ kalemler, toplam, araToplam, indirim, kd
   const [uyari, setUyari] = useState<string | null>(null);
   // Kalandan fazla girilen tutar onaya düşer: üstü bahşiş mi, yanlış giriş mi?
   const [bahsisSorusu, setBahsisSorusu] = useState<{ tip: string; bahsis: number } | null>(null);
+  // Açık hesap tipinde borcun kime yazılacağı soruluyor; tahsilat seçim
+  // penceresi kapanana kadar bekliyor.
+  const [cariSorusu, setCariSorusu] = useState<{ tip: string; tutar: number } | null>(null);
   // Kaydedilmiş tahsilatın silinmesi sebep soruyor; sıradaki satırın yeri.
   const [silmeSorusu, setSilmeSorusu] = useState<number | null>(null);
   const [eksikAcik, setEksikAcik] = useState(false);
@@ -221,14 +225,23 @@ export default function TahsilatPanel({ kalemler, toplam, araToplam, indirim, kd
     const tutar = girilen ? Number(girilen) : kalan;
     if (tutar <= 0) return;
     if (tutar > kalan) { setBahsisSorusu({ tip, bahsis: tutar - kalan }); return; }
+    // Açık hesap kasaya para getirmiyor, birinin borcuna yazılıyor: kime
+    // yazıldığı sorulmadan tahsilat işlenmiyor.
+    if (odemeTipleri.find((t) => t.ad === tip)?.acikHesap) {
+      setCariSorusu({ tip, tutar });
+      return;
+    }
     tahsilatIsle(tip, tutar);
   };
 
   // Bahşiş kalanı azaltmaz; tahsilata kalanın kendisi yazılır, üstü ayrı alanda
   // durur. Yoksa hesap eksi kalana düşer.
-  const tahsilatIsle = (tip: string, tutar: number, bahsis?: number) => {
+  const tahsilatIsle = (tip: string, tutar: number, bahsis?: number, musteriId?: number) => {
     const secilenKalemler = Object.keys(secilen).length > 0 ? kalemPaylari(tutar) : undefined;
-    const yeni = [...(tahsilatlar ?? []), { tip, tutar, bahsis, kalemler: secilenKalemler }];
+    const yeni = [
+      ...(tahsilatlar ?? []),
+      { tip, tutar, bahsis, musteriId, kalemler: secilenKalemler },
+    ];
     setTahsilatlar(yeni);
     setSecilen({});
     setGirilen("");
@@ -434,6 +447,16 @@ export default function TahsilatPanel({ kalemler, toplam, araToplam, indirim, kd
             setBahsisSorusu(null);
           }}
           onKapat={() => setBahsisSorusu(null)}
+        />
+      )}
+
+      {cariSorusu && (
+        <MusteriSecici
+          onSec={(m) => {
+            tahsilatIsle(cariSorusu.tip, cariSorusu.tutar, undefined, m.id);
+            setCariSorusu(null);
+          }}
+          onKapat={() => setCariSorusu(null)}
         />
       )}
 

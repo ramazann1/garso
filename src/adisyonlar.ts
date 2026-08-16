@@ -7,6 +7,7 @@ import { kisaAd } from "./personel";
 import { denetimYaz } from "./denetim";
 import { cekmeceyiAc, mutfakFisiYaz } from "./yazicilar";
 import { kasayaGirerMi } from "./odemeTipleri";
+import { adisyonuCariyeYaz } from "./cari";
 import type { DenetimIslemi, DenetimKaydi } from "./denetim";
 import type { SepetKalemi, Tahsilat } from "./types";
 
@@ -71,7 +72,7 @@ export function yeniKalemId() {
 }
 
 const KALEM_ALANLARI =
-  "id, urun_id, porsiyon_id, ad, porsiyon, secimler, adet, fiyat, kdv_oran, durum, not_metni, indirim, indirim_tanim_id, indirim_ad";
+  "id, urun_id, porsiyon_id, ad, porsiyon, secimler, adet, fiyat, kdv_oran, durum, not_metni, indirim, indirim_tanim_id, indirim_ad, odenmez_id";
 
 type KalemSatiri = {
   id: number;
@@ -88,6 +89,7 @@ type KalemSatiri = {
   indirim?: number | null;
   indirim_tanim_id?: number | null;
   indirim_ad?: string | null;
+  odenmez_id?: number | null;
   tur_sira?: number;
   tur_saat?: string;
   tur_garson?: string;
@@ -109,6 +111,7 @@ function kalemeCevir(s: KalemSatiri): SepetKalemi {
     indirim: Number(s.indirim ?? 0) || undefined,
     indirimTanimId: s.indirim_tanim_id ?? undefined,
     indirimAd: s.indirim_ad ?? undefined,
+    odenmezId: s.odenmez_id ?? null,
     turSira: s.tur_sira,
     turSaat: s.tur_saat,
     turGarson: s.tur_garson,
@@ -222,6 +225,8 @@ export type MusteriBilgisi = {
   ad?: string;
   telefon?: string;
   adres?: string;
+  /** Kayıtlı müşteriden seçildiyse onun kimliği; serbest yazılan misafirde boş. */
+  musteriId?: number | null;
 };
 
 export type MasasizAdisyon = MusteriBilgisi & {
@@ -248,6 +253,7 @@ export async function masasizAc(
       musteri_ad: musteri.ad?.trim() || null,
       musteri_telefon: musteri.telefon?.trim() || null,
       adres: musteri.adres?.trim() || null,
+      musteri_id: musteri.musteriId ?? null,
     })
     .select("id")
     .single();
@@ -262,6 +268,7 @@ export async function masasizGuncelle(adisyonId: number, musteri: MusteriBilgisi
       musteri_ad: musteri.ad?.trim() || null,
       musteri_telefon: musteri.telefon?.trim() || null,
       adres: musteri.adres?.trim() || null,
+      musteri_id: musteri.musteriId ?? null,
       guncelleme: new Date().toISOString(),
     })
     .eq("id", adisyonId);
@@ -277,7 +284,7 @@ export async function masasizAdisyonlar(): Promise<MasasizAdisyon[]> {
   const { data } = await supabase
     .from("adisyonlar")
     .select(
-      `id, adisyon_no, tip, indirim, acilis, musteri_ad, musteri_telefon, adres,
+      `id, adisyon_no, tip, indirim, acilis, musteri_ad, musteri_telefon, adres, musteri_id,
        turlar (adisyon_kalemleri (adet, fiyat, durum, indirim)),
        tahsilatlar (tutar)`
     )
@@ -311,6 +318,7 @@ export async function masasizAdisyonlar(): Promise<MasasizAdisyon[]> {
       ad: satir.musteri_ad ?? undefined,
       telefon: satir.musteri_telefon ?? undefined,
       adres: satir.adres ?? undefined,
+      musteriId: satir.musteri_id ?? null,
     };
   });
 }
@@ -456,7 +464,11 @@ export async function adisyonIptal(adisyonId: number, sebep: string) {
  * indirimi kalkar ve adisyon kapanır. Kalemler ikram durumunda kaldığı için
  * ne satıldığı görünmeye devam ediyor, yalnız ciroya girmiyor.
  */
-export async function adisyonIkram(adisyonId: number, sebep?: string) {
+export async function adisyonIkram(
+  adisyonId: number,
+  sebep?: string,
+  odenmezId?: number
+) {
   const tutar = await adisyonTutari(adisyonId);
   const yer = await adisyonYeri(adisyonId);
 
@@ -470,7 +482,15 @@ export async function adisyonIkram(adisyonId: number, sebep?: string) {
     // İptal edilmiş kalemler olduğu gibi kalıyor: iptal ikramdan başka bir şey.
     await supabase
       .from("adisyon_kalemleri")
-      .update({ durum: "ikram", indirim: 0, indirim_tanim_id: null, indirim_ad: null })
+      .update({
+        durum: "ikram",
+        indirim: 0,
+        indirim_tanim_id: null,
+        indirim_ad: null,
+        // Kalemler de aynı kişiye yazılıyor: ödenmez dökümü kalem kalem
+        // toplandığı için hepsinin üstünde bilgi durmalı.
+        odenmez_id: odenmezId ?? null,
+      })
       .in("tur_id", turIdler)
       .eq("durum", "normal");
   }
@@ -482,13 +502,25 @@ export async function adisyonIkram(adisyonId: number, sebep?: string) {
       indirim: 0,
       indirim_tanim_id: null,
       indirim_ad: null,
+      odenmez_id: odenmezId ?? null,
       kapanis: new Date().toISOString(),
       guncelleme: new Date().toISOString(),
     })
     .eq("id", adisyonId);
   if (error) throw new Error("Adisyon ikram edilemedi.");
 
-  await denetimYaz([{ islem: "adisyon_ikram", adisyonId, yer, tutar, sebep }]);
+  const adlar = await odenmezAdlariniGetir(odenmezId ? [odenmezId] : []);
+
+  await denetimYaz([
+    {
+      islem: "adisyon_ikram",
+      adisyonId,
+      yer,
+      tutar,
+      sebep,
+      odenmez: odenmezId ? adlar.get(odenmezId) : undefined,
+    },
+  ]);
 }
 
 /**
@@ -657,10 +689,19 @@ async function kalemleriYaz(
   // Duran kalemler her kaydetmede tek tek güncelleniyordu: on kalemlik masada
   // on ayrı istek, her biri sunucuya gidiş dönüş. Artık yalnız gerçekten
   // değişenler yazılıyor ve onlar da aynı anda gidiyor.
+  // İkram deftere kimin adına yazıldığıyla düşüyor; ad tek sorguda çekiliyor.
+  const odenmezAdlari = await odenmezAdlariniGetir(
+    veri.sepet.map((k) => k.odenmezId).filter((id): id is number => !!id)
+  );
+
   const guncellemeler: Promise<unknown>[] = [];
   for (const k of veri.sepet) {
     if (!k.id || k.id < 0) continue;
-    const denetim = durumDegisimi(oncekiDurumlar.get(k.id) ?? "normal", k);
+    const denetim = durumDegisimi(
+      oncekiDurumlar.get(k.id) ?? "normal",
+      k,
+      k.odenmezId ? odenmezAdlari.get(k.odenmezId) : undefined
+    );
     if (denetim) denetimler.push(denetim);
 
     const satir = {
@@ -671,6 +712,7 @@ async function kalemleriYaz(
       indirim: k.indirim ?? 0,
       indirim_tanim_id: k.indirimTanimId ?? null,
       indirim_ad: k.indirimAd ?? null,
+      odenmez_id: k.odenmezId ?? null,
     };
     if (ayniKalem(oncekiKalemler.get(k.id), satir)) continue;
 
@@ -716,6 +758,7 @@ async function kalemleriYaz(
           indirim: k.indirim ?? 0,
           indirim_tanim_id: k.indirimTanimId ?? null,
           indirim_ad: k.indirimAd ?? null,
+          odenmez_id: k.odenmezId ?? null,
         }))
       )
       .select("id");
@@ -805,8 +848,15 @@ async function kalemleriYaz(
         .single();
       // Kimlik geri dönüyor ki aynı ekranda yapılan ikinci kayıt bu tahsilatı
       // yeni sanıp bir daha eklemesin.
-      yazilanTahsilatlar.push({ ...t, id: eklenen ? (eklenen as any).id : undefined });
+      const yeniId = eklenen ? ((eklenen as any).id as number) : undefined;
+      yazilanTahsilatlar.push({ ...t, id: yeniId });
       yeniTahsilatTipleri.push(t.tip);
+
+      // Açık hesaba yazılan ödeme kasaya para getirmiyor, müşterinin borcunu
+      // büyütüyor. Cari hareketi tahsilata bağlı: ödeme silinirse borç da gider.
+      if (t.musteriId) {
+        await adisyonuCariyeYaz(t.musteriId, adisyonId, t.tutar, yeniId, t.tip);
+      }
     }
   }
 
@@ -865,7 +915,11 @@ function cekmeceyiGerekirseAc(tipler: string[]) {
  * İptalin sebebi kalemin üstünde geliyor (`sebep`) — sütuna yazılmıyor,
  * yalnız denetim kaydına geçiyor.
  */
-function durumDegisimi(onceki: string, k: SepetKalemi): DenetimKaydi | null {
+function durumDegisimi(
+  onceki: string,
+  k: SepetKalemi,
+  odenmezAdi?: string
+): DenetimKaydi | null {
   const yeni = k.durum ?? "normal";
   if (onceki === yeni) return null;
 
@@ -885,7 +939,19 @@ function durumDegisimi(onceki: string, k: SepetKalemi): DenetimKaydi | null {
     adet: k.adet,
     tutar: kalemTutari(k),
     sebep: k.sebep,
+    odenmez: yeni === "ikram" ? odenmezAdi : undefined,
   };
+}
+
+/** Kimlikten ada: denetim defterine ödenmezin adı yazılıyor, numarası değil. */
+async function odenmezAdlariniGetir(idler: number[]) {
+  const adlar = new Map<number, string>();
+  const tekil = [...new Set(idler)];
+  if (tekil.length === 0) return adlar;
+
+  const { data } = await supabase.from("odenmezler").select("id, ad").in("id", tekil);
+  for (const o of (data as any[]) ?? []) adlar.set(o.id, o.ad);
+  return adlar;
 }
 
 /** Defterde adisyonun hangi masa olduğu yazılı dursun; masasızlarda tipi. */

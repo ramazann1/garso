@@ -22,6 +22,7 @@ import MasaSecim from "../components/MasaSecim";
 import MasaPlani, { yerlesimiVar } from "../components/MasaPlani";
 import OnayModal from "../components/OnayModal";
 import HizliOde from "../components/HizliOde";
+import { odenmezleriGetir, type Odenmez } from "../odenmezler";
 import Duzen from "../components/Duzen";
 import MasasizSiparis from "../components/MasasizSiparis";
 import Kasa from "../components/Kasa";
@@ -149,12 +150,18 @@ export default function Salon() {
   const [islem, setIslem] = useState<{ tip: "tasi" | "birlestir"; masa: Masa } | null>(null);
   const [onay, setOnay] = useState<{ mesaj: string; onOnay: () => void } | null>(null);
   const [uyari, setUyari] = useState<string | null>(null);
+  // İkram penceresindeki "kime yazılsın" listesi; ekran açılırken bir kez okunuyor.
+  const [odenmezler, setOdenmezler] = useState<Odenmez[]>([]);
   // Adisyonun tamamına iptal/ikram: ikisi de sebep sorduğu için ayrı pencere.
   const [adisyonIslem, setAdisyonIslem] = useState<
     { tip: "iptal" | "ikram"; masa: Masa; adisyonId: number } | null
   >(null);
   // Hızlı Öde masadan açılıyor; adisyonun tamamı okunup panele veriliyor.
   const [hizli, setHizli] = useState<{ masa: Masa; veri: AdisyonVerisi } | null>(null);
+
+  useEffect(() => {
+    odenmezleriGetir().then(setOdenmezler);
+  }, []);
 
   useEffect(() => {
     Promise.all([bolgeleriGetir(), tumAdisyonlar(), masasizAdisyonlar()]).then(([b, a, m]) => {
@@ -564,13 +571,16 @@ export default function Salon() {
                   setUyari(e instanceof Error ? e.message : "İndirim kaydedilemedi.");
                 }
               }}
-              onSec={async (tip, tutar, kapat, bahsis) => {
+              onSec={async (tip, tutar, kapat, bahsis, musteriId) => {
                 const { masa, veri } = hizli;
                 setHizli(null);
                 try {
                   await adisyonKaydet(
                     masa.id,
-                    { ...veri, tahsilatlar: [...veri.tahsilatlar, { tip, tutar, bahsis }] },
+                    {
+                      ...veri,
+                      tahsilatlar: [...veri.tahsilatlar, { tip, tutar, bahsis, musteriId }],
+                    },
                     kapat
                   );
                   await yenile();
@@ -592,6 +602,7 @@ export default function Salon() {
                     ad: duzenlenen.ad,
                     telefon: duzenlenen.telefon,
                     adres: duzenlenen.adres,
+                    musteriId: duzenlenen.musteriId,
                   }
                 : undefined
             }
@@ -643,12 +654,14 @@ export default function Salon() {
                 : ["İşletme ikramı", "Müşteri şikâyeti", "Tanıtım"]
             }
             onayMetni={adisyonIslem.tip === "iptal" ? "Evet, iptal et" : "Evet, ikram et"}
-            onOnay={async (sebep) => {
+            // İkramda kime yazıldığı da soruluyor; iptalde böyle bir şey yok.
+            odenmezler={adisyonIslem.tip === "ikram" ? odenmezler : undefined}
+            onOnay={async (sebep, odenmezId) => {
               const { tip, adisyonId } = adisyonIslem;
               setAdisyonIslem(null);
               try {
                 if (tip === "iptal") await adisyonIptal(adisyonId, sebep ?? "");
-                else await adisyonIkram(adisyonId, sebep);
+                else await adisyonIkram(adisyonId, sebep, odenmezId);
                 await yenile();
               } catch (e) {
                 setUyari(e instanceof Error ? e.message : "İşlem tamamlanamadı.");

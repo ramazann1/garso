@@ -1,6 +1,6 @@
 import { useState } from "react";
 import { useLocation, useNavigate } from "react-router-dom";
-import { Banknote, ChartColumn, ChevronDown, Lock, LogOut, Settings, Store } from "lucide-react";
+import { Banknote, ChartColumn, ChevronDown, Lock, LogOut, Settings, Store, UsersRound } from "lucide-react";
 import OnayModal from "./OnayModal";
 import { kilitKaldir, kilitliMi } from "../cikisKilidi";
 import { isletmeAdi, isletmeKodu } from "../isletmeAyarlari";
@@ -37,6 +37,7 @@ export const ayarBolumleri: Bolum[] = [
   { yol: "/ayarlar/personel", ad: "Personel ve Yetkiler", alt: personelBolumleri },
   { yol: "/ayarlar/odeme-tipleri", ad: "Ödeme Tipleri" },
   { yol: "/ayarlar/satis", ad: "Satış" },
+  { yol: "/ayarlar/odenmezler", ad: "Ödenmezler" },
   { yol: "/ayarlar/yazicilar", ad: "Yazıcılar", alt: yaziciBolumleri },
 ];
 
@@ -62,6 +63,8 @@ export const analizBolumleri: Bolum[] = [
   { yol: "/analiz/urunler", ad: "Ürünler" },
   { yol: "/analiz/personel", ad: "Personel" },
   { yol: "/analiz/giderler", ad: "Giderler" },
+  { yol: "/analiz/acik-hesap", ad: "Açık Hesap" },
+  { yol: "/analiz/odenmezler", ad: "Ödenmezler" },
   { yol: "/analiz/denetim", ad: "Denetim" },
 ];
 
@@ -69,6 +72,7 @@ const baglantilar = [
   { yol: "/", ad: "Salon", ikon: "salon" },
   { yol: "/menu", ad: "Menü Stüdyosu", ikon: "menu", alt: menuBolumleri },
   { yol: "/kasa", ad: "Kasa", ikon: "kasa", alt: kasaBolumleri },
+  { yol: "/musteriler", ad: "Müşteriler", ikon: "musteri" },
   { yol: "/analiz", ad: "Analiz", ikon: "analiz", alt: analizBolumleri },
   { yol: "/ayarlar", ad: "İşletme Ayarları", ikon: "ayar", alt: ayarBolumleri },
 ];
@@ -100,6 +104,7 @@ function Ikon({ tip }: { tip: string }) {
   if (tip === "ayar") return <Settings />;
   if (tip === "kasa") return <Banknote />;
   if (tip === "analiz") return <ChartColumn />;
+  if (tip === "musteri") return <UsersRound />;
   return (
     <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2">
       <path d="M4 5h16M4 12h16M4 19h10" strokeLinecap="round" />

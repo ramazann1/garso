@@ -1,12 +1,16 @@
 ﻿# GARSO — Teknik Tasarım: Veri Modeli & Ekran Haritası
 *Restoran ve cafe'ler için bulut tabanlı satış ve işletme yönetim sistemi.*
 
-## 0. SIRADAKİ İŞ (15 Ağu 2026'da güncellendi)
+## 0. SIRADAKİ İŞ (16 Ağu 2026'da güncellendi)
 
-> **Sonraki seansın ilk işi:** Garso'daki **"Yazıcı programını indir" düğmesinin
-> tasarımı** yeniden yapılacak — Ramazan beğenmedi, "hiç hoş durmuyor". Yeri
-> (Yazıcılar bölümünün alt sekme şeridinin sağ ucu, beş sekmede de görünmesi)
-> ve işleyişi doğru; değişecek olan yalnız görünüşü.
+> **Sonraki seansın ilk işi:** **Kuver / Garsoniye** (Faz 2). Adisyo'da tek ana
+> anahtarın altında iki sütun: her biri "siparişe otomatik eklensin" + ad + tip
+> (Tutar/Yüzde) + değer. Kuver kişi sayısıyla çarpılıyor — `adisyonlar.kisi_sayisi`
+> zaten var. Ayrıntı: `pos-yol-haritasi.md` bölüm 8, "Kuver/Garsoniye".
+>
+> Sırada bekleyenler: **Ödenmezler ekranının Excel aktarımı**, **cari için Excel
+> yükle/indir**, **müşteri detayında "Yapılan Ödemeler" fiş numarası** (tahsilat
+> numarası henüz yok), **KDS** (mutfak ekranı).
 
 
 *Ramazan seansa "devam edelim" diye giriyor — sıradaki iş bu listenin en üstündeki
@@ -440,8 +444,43 @@ bağlantısı ve sürüm düzeni kuruldu.** Bu seansta çıkanlar:
    yazılı), tarih/saat biçimi (`tr-TR`) ve "KDV" teriminin kendisi. Bugünün işi
    değil, akılda dursun diye burada.
 
-**Ödenmezler** ve **Kuver/Garsoniye** Faz 2'ye yazıldı (yol haritası bölüm 8);
-bu listeye satış çekirdeği bitince girecekler.
+**Ödenmezler** 16 Ağu 2026'da yapıldı; **Kuver/Garsoniye** sıradaki iş.
+
+**16 Ağu 2026 (Faz 2 açıldı):** **Cari hesap ve ödenmezler bitti.**
+
+*Cari hesap* (`sql/2026-08-16-cari.sql`, `src/cari.ts`, `/musteriler`):
+- Üç tablo: `musteriler` (işletme içinde 1'den başlayan kendi numarası),
+  `musteri_adresleri`, `cari_hareketler`. **Bakiye sütun değil** — hareketlerin
+  toplamı (borç − alacak). İki yerde para tutulursa er geç birbirini tutmaz.
+- Yeni yetkiler `cari.gor` · `cari.duzenle` · `cari.tahsilat` ("Cari" grubu).
+  Garson yalnız görüyor: siparişi doğru kişiye bağlasın, parasına dokunmasın.
+- **Müşteri detay kartı**: kalan bakiye tek büyük sayı, üç sekme (Hesap Ekstresi
+  yürüyen bakiyeyle, Adisyonlar, Ödemeler). Adisyona bağlı satıra basınca
+  Analiz'in adisyon detay penceresi açılıyor — pencere tek yerde duruyor.
+- **Ödeme Al** ve **Bakiye Düzelt**. Düzeltmede sebep zorunlu, fark hareket
+  olarak yazılıyor; bakiyenin kendisi hiçbir yerde ezilmiyor.
+- **Satışa bağlandı:** açık hesap işaretli ödeme tipine basılınca müşteri
+  soruluyor (Hızlı Öde ve Tahsilat paneli), borç `cari_hareketler`'e
+  `tahsilat_id` ile bağlı yazılıyor — **tahsilat silinirse borç da düşüyor**.
+- **Gel Al / Paket'te "kayıtlı müşteriden seç"**: ad, telefon ve varsayılan
+  adres kendiliğinden doluyor (`adisyonlar.musteri_id`). Ad elle değiştirilirse
+  bağ kopuyor, yoksa başkasının carisine sipariş yazılabilirdi.
+- Analiz'e **Açık Hesap** sekmesi: borç ve tahsilat hareketleri ayrı tablolar.
+
+*Ödenmezler* (`sql/2026-08-16-odenmezler.sql`, `src/odenmezler.ts`):
+- `odenmezler` tablosu ve `/ayarlar/odenmezler`; **personele bağlanmıyor** —
+  ödenmez yalnız çalışan olmuyor (ev sahibi, tedarikçi) ve ayrılanın geçmiş
+  ikramları listede kalmalı. "Personelden aktar" tek yönlü kopyalama.
+- İkram artık **kime yazıldığını soruyor**: `OnayModal`'a `odenmezler` özelliği
+  eklendi, kalem ikramında ve adisyon ikramında aynı pencere. Seçim zorunlu
+  değil — belirtilmeyen ikram "Belirtilmemiş" satırında toplanıyor, gizlenmiyor.
+- `adisyon_kalemleri.odenmez_id`, `adisyonlar.odenmez_id`,
+  `denetim_kayitlari.odenmez`. Adisyonun tamamı ikram edilince kalemlerin
+  hepsine aynı kişi yazılıyor ki döküm tek yerden toplanabilsin.
+- Analiz'e **Ödenmezler** sekmesi: kişi başına tutar ve pay, satır açılınca
+  hangi üründen kaç adet.
+- Yeni yetki `tanim.odenmez` — ikram yapabilen listeyi değiştirememeli, yoksa
+  kendi adına satır açıp oraya yazardı.
 
 **İkon seti:** `lucide-react`. 7 Ağu 2026'da **tüm ekranlar geçti** — düz
 karakter simgesi (× ← ✓ ⌫ ⧉ ⇅ ✎) kalmadı. Bundan sonra her yeni düğme, başlık

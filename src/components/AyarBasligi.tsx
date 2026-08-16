@@ -1,6 +1,5 @@
 import { useLocation, useNavigate } from "react-router-dom";
 import AramaKutusu from "./AramaKutusu";
-import KopruIndir from "./KopruIndir";
 import { ayarBolumleri } from "./Duzen";
 
 // İşletme Ayarları'nın ortak başlığı: üstte ana bölümler, altında o bölümün
@@ -21,7 +20,6 @@ export default function AyarBasligi({
   // çiziyor; liste Duzen'de tek yerde duruyor.
   const bolum = ayarBolumleri.find((b) => b.alt?.some((a) => a.yol === pathname));
   const altSerit = bolum?.alt ?? null;
-  const yaziciBolumu = bolum?.ad === "Yazıcılar";
 
   return (
     <header className="menu-baslik">
@@ -59,10 +57,6 @@ export default function AyarBasligi({
               </button>
             ))}
           </div>
-
-          {/* Kasa programı Yazıcılar bölümünün her sekmesinde elin altında:
-              yazıcı tanımlayan kişi onu kurmadan hiçbirini çalıştıramıyor. */}
-          {yaziciBolumu && <KopruIndir />}
         </div>
       )}
     </header>

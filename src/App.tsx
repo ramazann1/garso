@@ -7,10 +7,12 @@ import Siparis from "./pages/Siparis";
 import MenuStudyosu from "./pages/MenuStudyosu";
 import KasaGecmisi from "./pages/KasaGecmisi";
 import Giderler from "./pages/Giderler";
+import Musteriler from "./pages/Musteriler";
 import Analiz from "./pages/Analiz";
 import IsletmeAyarlari from "./pages/IsletmeAyarlari";
 import Personel from "./pages/Personel";
 import Yetkiler from "./pages/Yetkiler";
+import Odenmezler from "./pages/Odenmezler";
 import Yazicilar from "./pages/Yazicilar";
 import BaglantiDurumu from "./pages/BaglantiDurumu";
 import FisTasarimi from "./pages/FisTasarimi";
@@ -92,12 +94,14 @@ function App() {
         />
         <Route path="/kasa/gecmis" element={<KasaGecmisi />} />
         <Route path="/kasa/giderler" element={<Giderler />} />
+        <Route path="/musteriler" element={<Musteriler />} />
         <Route path="/analiz" element={<Navigate to="/analiz/ozet" replace />} />
         <Route path="/analiz/:bolum" element={<Analiz />} />
         <Route path="/ayarlar" element={<Navigate to="/ayarlar/masalar" replace />} />
         <Route path="/ayarlar/personel" element={<Personel />} />
         <Route path="/ayarlar/yetkiler" element={<Yetkiler />} />
         <Route path="/ayarlar/kisi-yetkileri" element={<Yetkiler />} />
+        <Route path="/ayarlar/odenmezler" element={<Odenmezler />} />
         <Route path="/ayarlar/yazicilar" element={<Yazicilar />} />
         <Route path="/ayarlar/istasyonlar" element={<Yazicilar />} />
         <Route path="/ayarlar/fis-tasarimi" element={<FisTasarimi />} />

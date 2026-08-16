@@ -16,18 +16,18 @@ export default function KopruIndir() {
   if (!yayinda) {
     return (
       <span className="kopru-indir sonuk" title="Dosya yayına hazırlanıyor">
-        <MonitorDown size={15} />
+        <MonitorDown size={16} />
         Yazıcı programını indir
-        <em>{surum}</em>
+        <em>v{surum}</em>
       </span>
     );
   }
 
   return (
     <a className="kopru-indir" href={adres} download title={`Sürüm ${surum}`}>
-      <MonitorDown size={15} />
+      <MonitorDown size={16} />
       Yazıcı programını indir
-      <em>{surum}</em>
+      <em>v{surum}</em>
     </a>
   );
 }

@@ -19,6 +19,7 @@ import OdemeTipDuzelt from "./OdemeTipDuzelt";
 import { paraGoster } from "../para";
 import { yetkiVar } from "../oturum";
 import { adisyonIkram, adisyonIptal } from "../adisyonlar";
+import { odenmezleriGetir, type Odenmez } from "../odenmezler";
 import {
   adisyonAktifEt,
   adisyonDetayi,
@@ -63,7 +64,12 @@ export default function AdisyonDetay({
   const [islem, setIslem] = useState<"iptal" | "ikram" | null>(null);
   const [duzeltilen, setDuzeltilen] = useState<Detay["tahsilatlar"][number] | null>(null);
   const [hata, setHata] = useState("");
+  const [odenmezler, setOdenmezler] = useState<Odenmez[]>([]);
   const navigate = useNavigate();
+
+  useEffect(() => {
+    odenmezleriGetir().then(setOdenmezler);
+  }, []);
 
   useEffect(() => {
     setYukleniyor(true);
@@ -307,12 +313,13 @@ export default function AdisyonDetay({
               : ["İşletme ikramı", "Müşteri şikâyeti", "Tanıtım"]
           }
           onayMetni={islem === "iptal" ? "Evet, iptal et" : "Evet, ikram et"}
-          onOnay={async (sebep) => {
+          odenmezler={islem === "ikram" ? odenmezler : undefined}
+          onOnay={async (sebep, odenmezId) => {
             const tip = islem;
             setIslem(null);
             try {
               if (tip === "iptal") await adisyonIptal(detay.id, sebep ?? "");
-              else await adisyonIkram(detay.id, sebep);
+              else await adisyonIkram(detay.id, sebep, odenmezId);
               setDetay(await adisyonDetayi(adisyonId));
               onDegisti?.();
             } catch (e) {

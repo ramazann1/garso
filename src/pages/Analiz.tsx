@@ -1,4 +1,4 @@
-import { useEffect, useMemo, useState } from "react";
+import { Fragment, useEffect, useMemo, useState } from "react";
 import { useNavigate, useParams } from "react-router-dom";
 import {
   ArrowDown,
@@ -9,6 +9,7 @@ import {
   ClipboardList,
   CreditCard,
   DoorOpen,
+  Gift,
   Layers,
   Package,
   Receipt,
@@ -28,9 +29,11 @@ import { ayarlar } from "../isletmeAyarlari";
 import {
   BOS_FILTRE,
   analizAdisyonlari,
+  analizCariHareketleri,
   analizDenetimi,
   analizGiderleri,
   analizGiderOzeti,
+  analizOdenmezleri,
   analizOzeti,
   analizPersoneli,
   analizUrunleri,
@@ -39,8 +42,10 @@ import {
   type AnalizAdisyon,
   type AnalizFiltre as Filtre,
   type AnalizOzeti,
+  type CariHareketSatiri,
   type DenetimSatiri,
   type GiderOzeti,
+  type OdenmezSatiri,
   type PersonelOzeti,
   type PersonelSatiri,
   type UrunKategorisi,
@@ -48,6 +53,7 @@ import {
   type UrunSatiri,
 } from "../analiz";
 import { odemeAdi, type Masraf } from "../masraflar";
+import { kisaAd } from "../personel";
 
 export default function Analiz() {
   const { bolum = "ozet" } = useParams();
@@ -57,6 +63,7 @@ export default function Analiz() {
   const [adisyonlar, setAdisyonlar] = useState<AnalizAdisyon[]>([]);
   const [giderler, setGiderler] = useState<Masraf[]>([]);
   const [denetim, setDenetim] = useState<DenetimSatiri[]>([]);
+  const [cariHareketler, setCariHareketler] = useState<CariHareketSatiri[]>([]);
   const [yukleniyor, setYukleniyor] = useState(true);
   const [secili, setSecili] = useState<number | null>(null);
   // Adisyon yeniden açılınca liste eskiyor; sayaç değişince sorgu tekrarlanıyor.
@@ -74,15 +81,19 @@ export default function Analiz() {
   useEffect(() => {
     let gecerli = true;
     setYukleniyor(true);
-    Promise.all([analizAdisyonlari(filtre), analizGiderleri(filtre), analizDenetimi(filtre)]).then(
-      ([a, g, d]) => {
-        if (!gecerli) return;
-        setAdisyonlar(a);
-        setGiderler(g);
-        setDenetim(d);
-        setYukleniyor(false);
-      }
-    );
+    Promise.all([
+      analizAdisyonlari(filtre),
+      analizGiderleri(filtre),
+      analizDenetimi(filtre),
+      analizCariHareketleri(filtre),
+    ]).then(([a, g, d, c]) => {
+      if (!gecerli) return;
+      setAdisyonlar(a);
+      setGiderler(g);
+      setDenetim(d);
+      setCariHareketler(c);
+      setYukleniyor(false);
+    });
     return () => {
       gecerli = false;
     };
@@ -95,6 +106,7 @@ export default function Analiz() {
   );
   const personel = useMemo(() => analizPersoneli(adisyonlar), [adisyonlar]);
   const giderOzeti = useMemo(() => analizGiderOzeti(giderler), [giderler]);
+  const odenmezler = useMemo(() => analizOdenmezleri(adisyonlar), [adisyonlar]);
 
   return (
     <Duzen>
@@ -145,6 +157,10 @@ export default function Analiz() {
           <Personel ozet={personel} />
         ) : bolum === "giderler" ? (
           <Giderler giderler={giderler} ozet={giderOzeti} ciro={ozet.ciro} />
+        ) : bolum === "odenmezler" ? (
+          <OdenmezDokumu satirlar={odenmezler} />
+        ) : bolum === "acik-hesap" ? (
+          <AcikHesap hareketler={cariHareketler} />
         ) : bolum === "denetim" ? (
           <Denetim kayitlar={denetim} />
         ) : (
@@ -1369,6 +1385,208 @@ function Denetim({ kayitlar }: { kayitlar: DenetimSatiri[] }) {
           </table>
         </div>
       </section>
+    </div>
+  );
+}
+
+/**
+ * İkramların kime gittiği. Kişi satırına basınca hangi üründen kaç adet
+ * ikram edildiği açılıyor — "ayda 300 lira çay ikramı" satırının altında ne
+ * olduğu görünmezse rakam bir şey anlatmıyor.
+ */
+function OdenmezDokumu({ satirlar }: { satirlar: OdenmezSatiri[] }) {
+  const [acik, setAcik] = useState<string | null>(null);
+
+  if (satirlar.length === 0) {
+    return (
+      <section className="ayar-bolum">
+        <div className="ayar-bos">
+          <Gift size={30} />
+          <p>Bu dönemde ikram yok.</p>
+        </div>
+      </section>
+    );
+  }
+
+  const toplam = satirlar.reduce((t, s) => t + s.tutar, 0);
+  const adet = satirlar.reduce((t, s) => t + s.adet, 0);
+  const belirtilmemis = satirlar.find((s) => s.ad === "Belirtilmemiş");
+
+  return (
+    <div className="analiz-ozet">
+      <section className="ozet-serit">
+        <div className="serit-satir">
+          <div className="serit-sayi">
+            <span className="serit-etiket">
+              <Gift size={15} /> Toplam ikram
+            </span>
+            <strong>{paraGoster(toplam)}</strong>
+            <em>{adet} adet ürün</em>
+          </div>
+          <div className="serit-sayi">
+            <span className="serit-etiket">Kişi sayısı</span>
+            <strong>{satirlar.filter((s) => s.ad !== "Belirtilmemiş").length}</strong>
+            <em>adına yazıldı</em>
+          </div>
+          <div className="serit-sayi">
+            <span className="serit-etiket">Belirtilmemiş</span>
+            <strong>{paraGoster(belirtilmemis?.tutar ?? 0)}</strong>
+            <em>kime yazıldığı yok</em>
+          </div>
+        </div>
+      </section>
+
+      <section className="ayar-bolum">
+        <div className="analiz-liste-ust">
+          <h2>Kime yazıldı</h2>
+        </div>
+
+        <div className="tablo-kaydir">
+          <table className="analiz-tablo urun-tablo">
+            <thead>
+              <tr>
+                <th>Kişi</th>
+                <th className="orta">Ürün adedi</th>
+                <th className="sag">Tutar</th>
+                <th className="sag">Pay</th>
+              </tr>
+            </thead>
+            <tbody>
+              {satirlar.map((s) => (
+                <Fragment key={s.ad}>
+                  <tr
+                    className="tiklanir"
+                    onClick={() => setAcik(acik === s.ad ? null : s.ad)}
+                  >
+                    <td>
+                      <ChevronRight
+                        size={14}
+                        className={acik === s.ad ? "dokum-ok acik" : "dokum-ok"}
+                      />
+                      {s.ad}
+                    </td>
+                    <td className="orta">{s.adet}</td>
+                    <td className="sag">{paraGoster(s.tutar)}</td>
+                    <td className="sag">
+                      {toplam > 0 ? `%${Math.round((s.tutar / toplam) * 100)}` : "—"}
+                    </td>
+                  </tr>
+
+                  {acik === s.ad &&
+                    s.urunler.map((u) => (
+                      <tr key={u.ad} className="dokum-alt">
+                        <td colSpan={2}>{u.ad}</td>
+                        <td className="orta">{u.adet}</td>
+                        <td className="sag">{paraGoster(u.tutar)}</td>
+                      </tr>
+                    ))}
+                </Fragment>
+              ))}
+            </tbody>
+          </table>
+        </div>
+      </section>
+    </div>
+  );
+}
+
+/**
+ * Açık Hesap Hareketleri. Adisyo'daki gibi iki ayrı tablo: hesaba yazılan
+ * borçlar ve müşterilerden alınan tahsilatlar. Tek listede karışınca "bugün
+ * ne kadar veresiye verdik, ne kadar topladık" sorusu okunmuyordu.
+ */
+function AcikHesap({ hareketler }: { hareketler: CariHareketSatiri[] }) {
+  const borclar = hareketler.filter((h) => h.borc > 0);
+  const tahsilatlar = hareketler.filter((h) => h.alacak > 0);
+
+  const toplamBorc = borclar.reduce((t, h) => t + h.borc, 0);
+  const toplamTahsilat = tahsilatlar.reduce((t, h) => t + h.alacak, 0);
+
+  if (hareketler.length === 0) {
+    return (
+      <section className="ayar-bolum">
+        <div className="ayar-bos">
+          <ClipboardList size={30} />
+          <p>Bu dönemde açık hesap hareketi yok.</p>
+        </div>
+      </section>
+    );
+  }
+
+  const tablo = (
+    liste: CariHareketSatiri[],
+    baslik: string,
+    tutarBasligi: string,
+    tutar: (h: CariHareketSatiri) => number
+  ) => (
+    <section className="ayar-bolum">
+      <div className="analiz-liste-ust">
+        <h2>{baslik}</h2>
+      </div>
+      {liste.length === 0 ? (
+        <div className="ayar-bos">
+          <p>Bu dönemde kayıt yok.</p>
+        </div>
+      ) : (
+        <div className="tablo-kaydir">
+          <table className="analiz-tablo urun-tablo">
+            <thead>
+              <tr>
+                <th>Tarih</th>
+                <th>Müşteri</th>
+                <th>Açıklama</th>
+                <th>İşlemi yapan</th>
+                <th className="sag">{tutarBasligi}</th>
+              </tr>
+            </thead>
+            <tbody>
+              {liste.map((h) => (
+                <tr key={h.id}>
+                  <td>{zamanMetni(h.zaman)}</td>
+                  <td>
+                    {h.musteri}
+                    {h.musteriNo ? <small> #{h.musteriNo}</small> : null}
+                  </td>
+                  <td>
+                    {h.adisyonId
+                      ? `Adisyon #${h.adisyonId}`
+                      : h.aciklama || h.odemeTipi || "—"}
+                  </td>
+                  <td>{kisaAd(h.kisi) || "—"}</td>
+                  <td className="sag">{paraGoster(tutar(h))}</td>
+                </tr>
+              ))}
+            </tbody>
+          </table>
+        </div>
+      )}
+    </section>
+  );
+
+  return (
+    <div className="analiz-ozet">
+      <section className="ozet-serit">
+        <div className="serit-satir">
+          <div className="serit-sayi">
+            <span className="serit-etiket">Hesaba yazılan</span>
+            <strong>{paraGoster(toplamBorc)}</strong>
+            <em>{borclar.length} işlem</em>
+          </div>
+          <div className="serit-sayi">
+            <span className="serit-etiket">Tahsil edilen</span>
+            <strong>{paraGoster(toplamTahsilat)}</strong>
+            <em>{tahsilatlar.length} işlem</em>
+          </div>
+          <div className="serit-sayi">
+            <span className="serit-etiket">Dönem farkı</span>
+            <strong>{paraGoster(toplamBorc - toplamTahsilat)}</strong>
+            <em>alacak artışı</em>
+          </div>
+        </div>
+      </section>
+
+      {tablo(borclar, "Borç hareketleri", "Borç", (h) => h.borc)}
+      {tablo(tahsilatlar, "Tahsilat hareketleri", "Tahsilat", (h) => h.alacak)}
     </div>
   );
 }

@@ -27,6 +27,8 @@ export type DenetimKaydi = {
   adet?: number;
   tutar?: number;
   sebep?: string;
+  /** İkram kimin adına yazıldı; defter tek başına okununca da tam olsun. */
+  odenmez?: string;
 };
 
 const ISLEM_ADLARI: Record<DenetimIslemi, string> = {
@@ -64,6 +66,7 @@ export async function denetimYaz(kayitlar: DenetimKaydi[]) {
       adet: k.adet ?? null,
       tutar: k.tutar ?? 0,
       sebep: k.sebep?.trim() || null,
+      odenmez: k.odenmez?.trim() || null,
     }))
   );
 
@@ -84,12 +87,14 @@ export type DenetimSatiri = {
   adet: number | null;
   tutar: number;
   sebep: string;
+  /** İkram satırlarında kimin adına yazıldığı. */
+  odenmez: string;
 };
 
 export async function denetimGetir(bas: string, bit: string): Promise<DenetimSatiri[]> {
   const { data } = await supabase
     .from("denetim_kayitlari")
-    .select("id, zaman, kisi_id, kisi_ad, islem, adisyon_id, yer, konu, adet, tutar, sebep")
+    .select("id, zaman, kisi_id, kisi_ad, islem, adisyon_id, yer, konu, adet, tutar, sebep, odenmez")
     .gte("zaman", bas)
     .lt("zaman", bit)
     .order("zaman", { ascending: false })
@@ -108,5 +113,6 @@ export async function denetimGetir(bas: string, bit: string): Promise<DenetimSat
     adet: s.adet ?? null,
     tutar: Number(s.tutar ?? 0),
     sebep: s.sebep ?? "",
+    odenmez: s.odenmez ?? "",
   }));
 }

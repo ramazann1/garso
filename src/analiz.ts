@@ -210,7 +210,8 @@ const ALANLAR = `id, adisyon_no, tip, durum, iptal_sebep, acilis, kapanis, indir
        masa:masalar (ad, bolge_id, bolgeler (ad)),
        acan:personel!adisyonlar_acan_id_fkey (id, ad),
        turlar (garson:personel!turlar_garson_id_fkey (id, ad),
-               adisyon_kalemleri (id, urun_id, ad, adet, fiyat, kdv_oran, durum, indirim)),
+               adisyon_kalemleri (id, urun_id, ad, adet, fiyat, kdv_oran, durum, indirim,
+                                   odenmez:odenmez_id (ad))),
        tahsilatlar (tip, tutar, bahsis)`;
 
 async function varsayilanKdvOrani() {
@@ -239,6 +240,7 @@ function satiraCevir(s: any, varsayilanKdv?: number): AnalizAdisyon {
         kdvOran: k.kdv_oran ?? undefined,
         durum: k.durum ?? "normal",
         indirim: Number(k.indirim ?? 0) || undefined,
+        odenmezAd: k.odenmez?.ad ?? undefined,
       });
     }
   }
@@ -823,6 +825,55 @@ export type GiderOzeti = {
   odemeler: OzetDilimi[];
 };
 
+export type OdenmezSatiri = {
+  ad: string;
+  adet: number;
+  tutar: number;
+  urunler: { ad: string; adet: number; tutar: number }[];
+};
+
+/**
+ * İkramların kime gittiği. Kalem kalem toplanıyor: adisyonun tamamı ikram
+ * edildiğinde de kalemlerin üstünde aynı ad duruyor, iki yol tek sayıda
+ * birleşiyor. Kimse seçilmemişse "Belirtilmemiş" satırında toplanıyor —
+ * gizlenmiyor, çünkü asıl bakılması gereken satır o.
+ */
+export function analizOdenmezleri(adisyonlar: AnalizAdisyon[]): OdenmezSatiri[] {
+  const tutar = (k: SepetKalemi) =>
+    Math.max(0, Math.round((k.fiyat * k.adet - (k.indirim ?? 0)) * 100) / 100);
+
+  const satirlar = new Map<string, OdenmezSatiri>();
+
+  for (const a of adisyonlar) {
+    if (a.durum === "iptal") continue;
+
+    for (const k of a.kalemler) {
+      if (k.durum !== "ikram") continue;
+
+      const ad = k.odenmezAd || "Belirtilmemiş";
+      let satir = satirlar.get(ad);
+      if (!satir) {
+        satir = { ad, adet: 0, tutar: 0, urunler: [] };
+        satirlar.set(ad, satir);
+      }
+
+      satir.adet += k.adet;
+      satir.tutar = Math.round((satir.tutar + tutar(k)) * 100) / 100;
+
+      const urun = satir.urunler.find((u) => u.ad === k.ad);
+      if (urun) {
+        urun.adet += k.adet;
+        urun.tutar = Math.round((urun.tutar + tutar(k)) * 100) / 100;
+      } else {
+        satir.urunler.push({ ad: k.ad, adet: k.adet, tutar: tutar(k) });
+      }
+    }
+  }
+
+  for (const s of satirlar.values()) s.urunler.sort((a, b) => b.tutar - a.tutar);
+  return [...satirlar.values()].sort((a, b) => b.tutar - a.tutar);
+}
+
 /** Giderin türe ve ödeme tipine göre dökümü; liste ekranda ayrıca duruyor. */
 export function analizGiderOzeti(giderler: Masraf[]): GiderOzeti {
   const grupla = (alan: (g: Masraf) => string) => {
@@ -849,6 +900,54 @@ export function analizGiderOzeti(giderler: Masraf[]): GiderOzeti {
 export function analizDenetimi(f: AnalizFiltre) {
   const { bas, bit } = donemAraligi(f);
   return denetimGetir(bas.toISOString(), bit.toISOString());
+}
+
+/**
+ * Dönemin cari hareketleri. Adisyo'nun "Açık Hesap Hareketleri" raporu iki
+ * tabloya ayrılıyor: borca yazılanlar ve müşteriden tahsil edilenler.
+ */
+export type CariHareketSatiri = {
+  id: number;
+  zaman: string;
+  musteri: string;
+  musteriNo: number;
+  tip: string;
+  borc: number;
+  alacak: number;
+  odemeTipi: string;
+  adisyonId: number | null;
+  aciklama: string;
+  kisi: string;
+};
+
+export async function analizCariHareketleri(f: AnalizFiltre): Promise<CariHareketSatiri[]> {
+  const { bas, bit } = donemAraligi(f);
+
+  const { data } = await supabase
+    .from("cari_hareketler")
+    .select(
+      `id, olusturma, tip, borc, alacak, odeme_tipi, adisyon_id, aciklama,
+       musteri:musteri_id (ad, soyad, no),
+       personel:personel_id (ad)`
+    )
+    .gte("olusturma", bas.toISOString())
+    .lt("olusturma", bit.toISOString())
+    .order("olusturma", { ascending: false })
+    .limit(2000);
+
+  return ((data as any[]) ?? []).map((s) => ({
+    id: s.id,
+    zaman: s.olusturma,
+    musteri: `${s.musteri?.ad ?? ""} ${s.musteri?.soyad ?? ""}`.trim() || "—",
+    musteriNo: s.musteri?.no ?? 0,
+    tip: s.tip,
+    borc: Number(s.borc ?? 0),
+    alacak: Number(s.alacak ?? 0),
+    odemeTipi: s.odeme_tipi ?? "",
+    adisyonId: s.adisyon_id ?? null,
+    aciklama: s.aciklama ?? "",
+    kisi: s.personel?.ad ?? "",
+  }));
 }
 
 /** Dönemin giderleri — özet ekranındaki net kâr satırı buna dayanıyor. */

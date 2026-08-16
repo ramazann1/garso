@@ -8,6 +8,7 @@ import { tumAdisyonlar, yeniKalemId } from "../adisyonlar";
 import { bolgeleriGetir } from "../masalar";
 import { paraMetin, paraSayi, paraYaz } from "../para";
 import { yetkiVar } from "../oturum";
+import { odenmezleriGetir, type Odenmez } from "../odenmezler";
 import type { Bolge, MenuUrun, SepetKalemi } from "../types";
 
 type Props = {
@@ -48,6 +49,12 @@ export default function KalemPaneli({
   const [porsiyon, setPorsiyon] = useState(kalem.porsiyon);
   const [notMetni, setNotMetni] = useState(kalem.not ?? "");
   const [iptalSorusu, setIptalSorusu] = useState(false);
+  const [ikramSorusu, setIkramSorusu] = useState(false);
+  const [odenmezler, setOdenmezler] = useState<Odenmez[]>([]);
+
+  useEffect(() => {
+    odenmezleriGetir().then(setOdenmezler);
+  }, []);
   const [tasimaAcik, setTasimaAcik] = useState(false);
   const [bolgeler, setBolgeler] = useState<Bolge[]>([]);
   const [doluIdler, setDoluIdler] = useState<Set<number>>(new Set());
@@ -69,7 +76,11 @@ export default function KalemPaneli({
     if (p) setFiyat(paraMetin(porsiyonFiyat(p, "masa")));
   };
 
-  const kaydet = (durum: SepetKalemi["durum"], sebep?: string) => {
+  const kaydet = (
+    durum: SepetKalemi["durum"],
+    sebep?: string,
+    odenmezId?: number | null
+  ) => {
     const temel = {
       ...kalem,
       adet,
@@ -77,6 +88,8 @@ export default function KalemPaneli({
       porsiyon,
       not: notMetni.trim() || undefined,
       sebep,
+      // İkramdan çıkan kalem kimseye yazılı kalmasın.
+      odenmezId: durum === "ikram" ? (odenmezId ?? null) : null,
     };
 
     // "2 salebin biri ikram": adet satırın tamamından azsa satır ikiye ayrılır —
@@ -226,7 +239,7 @@ export default function KalemPaneli({
                       İkramı geri al
                     </button>
                   ) : (
-                    <button className="kp-islem" onClick={() => kaydet("ikram")}>
+                    <button className="kp-islem" onClick={() => setIkramSorusu(true)}>
                       <Gift size={16} />
                       İkram et
                       <em>Hesaba girmez</em>
@@ -297,6 +310,24 @@ export default function KalemPaneli({
             onTasi(m.id, adet);
           }}
           onKapat={() => setTasimaAcik(false)}
+        />
+      )}
+
+      {/* İkram sebep sormuyor ama kime yazıldığını soruyor: ay sonunda
+          ikramların kime gittiği ancak böyle toplanabiliyor. Seçim zorunlu
+          değil, "Evet, ikram et" doğrudan da basılabiliyor. */}
+      {ikramSorusu && (
+        <OnayModal
+          baslik="İkram"
+          ikon={<Gift size={20} />}
+          mesaj={`“${kalem.ad}” hesaptan düşülecek, ürün adisyonda ikram olarak kalacak.`}
+          odenmezler={odenmezler}
+          onayMetni="Evet, ikram et"
+          onOnay={(_sebep, odenmezId) => {
+            setIkramSorusu(false);
+            kaydet("ikram", undefined, odenmezId ?? null);
+          }}
+          onKapat={() => setIkramSorusu(false)}
         />
       )}
 
