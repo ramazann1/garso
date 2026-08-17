@@ -1,16 +1,24 @@
 ﻿# GARSO — Teknik Tasarım: Veri Modeli & Ekran Haritası
 *Restoran ve cafe'ler için bulut tabanlı satış ve işletme yönetim sistemi.*
 
-## 0. SIRADAKİ İŞ (16 Ağu 2026'da güncellendi)
+## 0. SIRADAKİ İŞ (17 Ağu 2026'da güncellendi)
 
-> **Sonraki seansın ilk işi:** **Kuver / Garsoniye** (Faz 2). Adisyo'da tek ana
-> anahtarın altında iki sütun: her biri "siparişe otomatik eklensin" + ad + tip
-> (Tutar/Yüzde) + değer. Kuver kişi sayısıyla çarpılıyor — `adisyonlar.kisi_sayisi`
-> zaten var. Ayrıntı: `pos-yol-haritasi.md` bölüm 8, "Kuver/Garsoniye".
+> **Önce yarım kalan test:** Kuver satırındaki **kaldırma (×) düğmesi ekranda
+> görünmedi**. Rakamlar doğru (Kuver ₺25 · Garsoniye ₺9 · Toplam ₺124), düğme
+> `siparis.servis` yetkisine bağlı ve Yönetici oturumunda çıkmadı. Kontrol:
+> `select r.ad, count(y.id) from roller r left join rol_yetkileri ry on
+> ry.rol_id = r.id left join yetkiler y on y.id = ry.yetki_id and
+> y.kod = 'siparis.servis' group by r.ad;` — 0 çıkıyorsa göçün son bloğu rol
+> adıyla eşleşmemiş, 1 çıkıyorsa kodda bakılacak.
 >
-> Sırada bekleyenler: **Ödenmezler ekranının Excel aktarımı**, **cari için Excel
-> yükle/indir**, **müşteri detayında "Yapılan Ödemeler" fiş numarası** (tahsilat
-> numarası henüz yok), **KDS** (mutfak ekranı).
+> **Sonraki seansın ilk işi:** **Ödenmezler ekranının Excel aktarımı** — menü ve
+> müşteri tarafında olan "Excel ile yükle / indir" düğmeleri ödenmez listesinde
+> yok; `src/aktarim.ts` hazır, ekrana bağlanacak.
+>
+> Sırada bekleyenler: **cari için Excel yükle/indir**, **müşteri detayında
+> "Yapılan Ödemeler" fiş numarası** (tahsilat numarası henüz yok), **Analiz'in
+> Adisyonlar tablosuna kuver/garsoniye sütunları** (veri hazır, sütunlar
+> eklenmedi), **KDS** (mutfak ekranı).
 
 
 *Ramazan seansa "devam edelim" diye giriyor — sıradaki iş bu listenin en üstündeki
@@ -444,7 +452,32 @@ bağlantısı ve sürüm düzeni kuruldu.** Bu seansta çıkanlar:
    yazılı), tarih/saat biçimi (`tr-TR`) ve "KDV" teriminin kendisi. Bugünün işi
    değil, akılda dursun diye burada.
 
-**Ödenmezler** 16 Ağu 2026'da yapıldı; **Kuver/Garsoniye** sıradaki iş.
+**Ödenmezler** 16 Ağu, **Kuver/Garsoniye** 17 Ağu 2026'da yapıldı.
+
+**17 Ağu 2026:** **Kuver ve garsoniye bitti** (`sql/2026-08-17-kuver.sql`,
+`src/servis.ts`).
+- **Servis bedeli ürün değil, adisyonun kendi sütunu.** Sepete kalem olarak
+  girseydi mutfağa düşer, ürün raporunda satır tutardı. `adisyonlar.kuver_tutar`
+  ve `garsoniye_tutar` satış anında hesaplanıp yazılıyor; Analiz onları yeniden
+  hesaplamıyor, **kasada ne yazdıysa onu okuyor**.
+- **Tanım işletme ayarında** (`isletme_ayarlari`): tek ana anahtar + her ikisi
+  için otomatik/ad/tip/değer. Ana anahtar **açık adisyon varken değiştirilemez**
+  (KDV ayarındaki kural) — oturan müşterinin hesabına sonradan kuver binmesin.
+- **Kuver kişi sayısıyla çarpılıyor** (tutar tipinde); misafir sayısı girilmemiş
+  adisyona kuver yazılmıyor, uydurma "1 kişi" varsayılmıyor. Yüzde tipinde ikisi
+  de indirim düşülmüş tutarın yüzdesi. **Üstlerine ayrıca KDV hesaplanmıyor.**
+- **Otomatik ekleme yalnız masada**; gel al ve pakette oturan misafir yok, yetkisi
+  olan elle ekliyor. Karar `kuver_uygula`/`garsoniye_uygula` sütunlarında:
+  boş = ayarın dediği, true = elle eklendi, false = bu hesapta kaldırıldı. Ayarın
+  otomatik olup olmamasından bağımsız durduğu için "bu masada kuver istenmedi"
+  bilgisi kayboluyor değil.
+- Sepet özetinde kendi satırları var; kaldırma ve geri koyma **yeni yetkiye**
+  bağlı (`siparis.servis`). Tamamı ikram edilen adisyondan servis de düşüyor.
+- **Ciroda masayı açana yazılıyor**: kuver belli bir ürünün değil masanın bedeli,
+  kalemlere dağıtılsaydı hangi garsona yazılacağı keyfi olurdu. Personel
+  ciroları toplamı özetteki ciroyu tutmaya devam ediyor.
+- Masa birleştirme ve kalem taşımadan sonra tutar yeniden yazılıyor
+  (`servisiTazele`): yüzdeli garsoniye sepet değişince eski rakamda kalmasın.
 
 **16 Ağu 2026 (Faz 2 açıldı):** **Cari hesap ve ödenmezler bitti.**
 

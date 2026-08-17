@@ -26,7 +26,12 @@ import AramaKutusu from "../components/AramaKutusu";
 import { acikAdisyonSayisi } from "../adisyonlar";
 import { ayarlar, ayarlariKaydet, isletmeAdi, isletmeKodu } from "../isletmeAyarlari";
 import { eslesiyor } from "../arama";
-import type { IsletmeAyarlari as IsletmeAyarlariTipi } from "../isletmeAyarlari";
+import { servisEtiketi } from "../servis";
+import type {
+  IsletmeAyarlari as IsletmeAyarlariTipi,
+  ServisTanimi,
+  ServisTipi,
+} from "../isletmeAyarlari";
 import {
   indirimTanimiEkle,
   indirimTanimiGuncelle,
@@ -504,6 +509,99 @@ function IndirimPaneli({
   );
 }
 
+/**
+ * Kuver ya da garsoniyenin tanımı. İkisi de aynı dört alandan oluşuyor; panel
+ * tek, hangisinin düzenlendiğini başlık söylüyor.
+ */
+function ServisPaneli({
+  baslik,
+  tanim,
+  kisiBasi,
+  onKapat,
+  onKaydet,
+}: {
+  baslik: string;
+  tanim: ServisTanimi;
+  /** Kuverde tutar kişi sayısıyla çarpılıyor; panelde bunun yazması gerekiyor. */
+  kisiBasi?: boolean;
+  onKapat: () => void;
+  onKaydet: (yeni: ServisTanimi) => void;
+}) {
+  const [ad, setAd] = useState(tanim.ad);
+  const [tip, setTip] = useState<ServisTipi>(tanim.tip);
+  const [deger, setDeger] = useState(tanim.deger ? String(tanim.deger) : "");
+  const [otomatik, setOtomatik] = useState(tanim.otomatik);
+
+  const sayi = Number(deger.replace(",", "."));
+  const gecerli = ad.trim().length > 0 && sayi >= 0 && (tip !== "yuzde" || sayi <= 100);
+
+  return (
+    <div className="panel-fon" onClick={onKapat}>
+      <div className="ayar-panel" onClick={(e) => e.stopPropagation()}>
+        <header className="panel-ust">
+          <h3>{baslik}</h3>
+          <button className="panel-kapat" onClick={onKapat}><X size={19} /></button>
+        </header>
+
+        <div className="panel-govde">
+          <div className="alan">
+            <label>Hesapta yazacak ad</label>
+            <input value={ad} onChange={(e) => setAd(e.target.value)} autoFocus />
+          </div>
+
+          <div className="alan">
+            <label>Hesaplama türü</label>
+            <div className="mod-sec">
+              <button className={tip === "tutar" ? "aktif" : ""} onClick={() => setTip("tutar")}>
+                Tutar
+              </button>
+              <button className={tip === "yuzde" ? "aktif" : ""} onClick={() => setTip("yuzde")}>
+                Yüzde
+              </button>
+            </div>
+          </div>
+
+          <div className="alan">
+            <label>{tip === "yuzde" ? "Oran (%)" : kisiBasi ? "Kişi başı tutar (₺)" : "Tutar (₺)"}</label>
+            <input
+              value={deger}
+              onChange={(e) => setDeger(e.target.value)}
+              placeholder={tip === "yuzde" ? "10" : "25"}
+              inputMode="decimal"
+            />
+          </div>
+
+          <Anahtar
+            etiket="Siparişe kendiliğinden eklensin"
+            ipucu="Kapatırsanız tanım durur ama hesaba girmez; yetkisi olan personel masada elle ekler"
+            acik={otomatik}
+            degistir={setOtomatik}
+          />
+
+          <Bilgi>
+            {kisiBasi && tip === "tutar"
+              ? "Kuver misafir sayısıyla çarpılır. Misafir sayısı girilmemiş adisyona kuver yazılmaz — kuver kullanacaksanız \"Misafir sayısı zorunlu\" ayarını da açın."
+              : tip === "yuzde"
+                ? "Yüzde, indirim düşüldükten sonraki hesap tutarı üzerinden alınır."
+                : "Hesabın tamamına bir kez eklenir."}
+          </Bilgi>
+        </div>
+
+        <footer className="modal-aksiyonlar">
+          <button className="iptal" onClick={onKapat}>Vazgeç</button>
+          <button
+            className="uygula"
+            disabled={!gecerli}
+            onClick={() => onKaydet({ ad: ad.trim(), tip, deger: sayi, otomatik })}
+          >
+            Kaydet
+          </button>
+        </footer>
+      </div>
+    </div>
+  );
+}
+
 export default function IsletmeAyarlari() {
   const { bolum } = useParams();
   const odemeBolumu = bolum === "odeme-tipleri";
@@ -520,6 +618,8 @@ export default function IsletmeAyarlari() {
   const [indirimler, setIndirimler] = useState<IndirimTanimi[]>([]);
   const [indirimPaneli, setIndirimPaneli] = useState<IndirimTanimi | null | undefined>(undefined);
   const [silinecekIndirim, setSilinecekIndirim] = useState<IndirimTanimi | null>(null);
+  // Açık olan servis tanımı: "kuver" ya da "garsoniye".
+  const [servisPaneli, setServisPaneli] = useState<"kuver" | "garsoniye" | null>(null);
 
   const [bolgeler, setBolgeler] = useState<Bolge[]>([]);
   const [seciliId, setSeciliId] = useState<number | null>(null);
@@ -586,6 +686,19 @@ export default function IsletmeAyarlari() {
       setGenel(oncesi);
       setUyari(e instanceof Error ? e.message : "Ayar kaydedilemedi.");
     }
+  };
+
+  // Servis ana anahtarı açık hesapların toplamını değiştiriyor: masalar doluyken
+  // açılırsa oturan müşterinin hesabına sonradan kuver biner.
+  const servisAnahtari = async (yeni: boolean) => {
+    if ((await acikAdisyonSayisi()) > 0) {
+      setUyari("Açık adisyon varken bu ayar değiştirilemez. Önce tüm hesapları kapatın.");
+      return;
+    }
+    await genelDegistir(
+      { servisAcik: yeni },
+      yeni ? "Kuver ve garsoniye açıldı" : "Kuver ve garsoniye kapatıldı"
+    );
   };
 
   // Sıra numaraları listedeki yerden geliyor; komşuyla takas edilir.
@@ -1070,6 +1183,37 @@ export default function IsletmeAyarlari() {
             </AyarSatiri>
 
             <AyarSatiri
+              ad="Kuver ve garsoniye"
+              ara={ara}
+              ipucu="Adisyona kendiliğinden eklenen servis bedelleri. Kuver misafir başına alınır (ekmek, çerez, servis takımı), garsoniye hesabın yüzdesi ya da sabit tutarıdır. Açık adisyon varken açılıp kapatılamaz. Otomatik ekleme yalnız masalarda çalışır; gel al ve pakette elle eklenir."
+            >
+              <AyarAnahtari acik={genel.servisAcik} degistir={servisAnahtari} />
+            </AyarSatiri>
+
+            {genel.servisAcik && !ara && (
+              <ul className="indirim-liste">
+                {(["kuver", "garsoniye"] as const).map((hangi) => {
+                  const tanim = genel[hangi];
+                  return (
+                    <li key={hangi} className={tanim.deger > 0 ? undefined : "kapali"}>
+                      <span className="indirim-ad">{tanim.ad}</span>
+                      <span className="indirim-deger">
+                        {tanim.deger > 0 ? servisEtiketi(tanim) : "Tanımsız"}
+                        {hangi === "kuver" && tanim.tip === "tutar" && tanim.deger > 0
+                          ? " · kişi başı"
+                          : ""}
+                      </span>
+                      {!tanim.otomatik && <span className="indirim-gizli">Elle</span>}
+                      <button onClick={() => setServisPaneli(hangi)} title="Düzenle">
+                        <Pencil size={14} />
+                      </button>
+                    </li>
+                  );
+                })}
+              </ul>
+            )}
+
+            <AyarSatiri
               ad="İndirim tanımları"
               ara={ara}
               ipucu="Satışta hazır listeden seçilen indirimler. Serbest indirim yetkisi olmayan personel yalnızca buradaki tanımları uygulayabilir; tanım yoksa indirim yapamaz."
@@ -1263,6 +1407,21 @@ export default function IsletmeAyarlari() {
               setIndirimPaneli(undefined);
               setUyari(e instanceof Error ? e.message : "İndirim kaydedilemedi.");
             }
+          }}
+        />
+      )}
+
+      {servisPaneli && (
+        <ServisPaneli
+          key={servisPaneli}
+          baslik={servisPaneli === "kuver" ? "Kuver" : "Garsoniye"}
+          tanim={genel[servisPaneli]}
+          kisiBasi={servisPaneli === "kuver"}
+          onKapat={() => setServisPaneli(null)}
+          onKaydet={async (yeni) => {
+            const hangi = servisPaneli;
+            setServisPaneli(null);
+            await genelDegistir({ [hangi]: yeni }, `${yeni.ad} kaydedildi`);
           }}
         />
       )}

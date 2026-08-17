@@ -15,6 +15,8 @@ type Props = {
   baslik: string;
   araToplam: number;
   indirim: number;
+  /** Hesaba giren kuver/garsoniye satırları; yoksa boş geliyor. */
+  servis?: { ad: string; tutar: number }[];
   toplam: number;
   odenen: number;
   kalan: number;
@@ -38,6 +40,7 @@ export default function HizliOde({
   baslik,
   araToplam,
   indirim,
+  servis,
   toplam,
   odenen,
   kalan,
@@ -123,6 +126,12 @@ export default function HizliOde({
               <span>−₺{indirim}</span>
             </div>
           )}
+          {(servis ?? []).map((s) => (
+            <div key={s.ad} className="hizli-satir">
+              <span>{s.ad}</span>
+              <span>₺{s.tutar}</span>
+            </div>
+          ))}
           {odenen > 0 && (
             <div className="hizli-satir odendi">
               <span>Ödenen</span>

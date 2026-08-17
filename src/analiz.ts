@@ -198,6 +198,9 @@ export type AnalizAdisyon = {
   ikram: number;
   matrah: number;
   kdv: number;
+  /** Kuver ve garsoniye adisyonun kendi sütunlarından okunuyor. */
+  kuver: number;
+  garsoniye: number;
   toplam: number;
   odenen: number;
   kalan: number;
@@ -206,7 +209,7 @@ export type AnalizAdisyon = {
 };
 
 const ALANLAR = `id, adisyon_no, tip, durum, iptal_sebep, acilis, kapanis, indirim, ad, kisi_sayisi,
-       musteri_ad, masa_id,
+       musteri_ad, masa_id, kuver_tutar, garsoniye_tutar,
        masa:masalar (ad, bolge_id, bolgeler (ad)),
        acan:personel!adisyonlar_acan_id_fkey (id, ad),
        turlar (garson:personel!turlar_garson_id_fkey (id, ad),
@@ -258,9 +261,14 @@ function satiraCevir(s: any, varsayilanKdv?: number): AnalizAdisyon {
   const dokum = kdvDokumu(satilanlar, indirim, varsayilanKdv);
   const kdv = dokum.reduce((t, d) => t + d.kdv, 0);
   const matrah = dokum.reduce((t, d) => t + d.matrah, 0);
+  // Servis bedeli satış anında hesaplanıp adisyona yazılıyor; rapor onu yeniden
+  // hesaplamıyor, kasada ne yazdıysa onu okuyor.
+  const kuver = Number(s.kuver_tutar ?? 0);
+  const garsoniye = Number(s.garsoniye_tutar ?? 0);
   // KDV dahil düzende vergi zaten fiyatın içinde; hariç düzende toplamın üstüne
   // biniyor. Adisyon ekranındaki hesapla aynı kural.
-  const toplam = Math.max(0, araToplam - indirim) + (ayarlar().kdvDahil ? 0 : kdv);
+  const toplam =
+    Math.max(0, araToplam - indirim) + kuver + garsoniye + (ayarlar().kdvDahil ? 0 : kdv);
 
   const tahsilatlar = (s.tahsilatlar ?? []) as any[];
   const odenen = tahsilatlar.reduce((t, o) => t + Number(o.tutar), 0);
@@ -291,6 +299,8 @@ function satiraCevir(s: any, varsayilanKdv?: number): AnalizAdisyon {
     ikram,
     matrah,
     kdv,
+    kuver,
+    garsoniye,
     toplam,
     odenen,
     kalan: Math.max(0, toplam - odenen),
@@ -510,6 +520,8 @@ export type AnalizOzeti = {
   ikram: number;
   matrah: number;
   kdv: number;
+  /** Kuver ve garsoniyenin dönem toplamı; cironun içinde duruyor. */
+  servis: number;
   bahsis: number;
   /** Kapanmamış adisyonlar ciroya girmiyor; ayrı gösteriliyor. */
   acik: number;
@@ -588,6 +600,7 @@ export function analizOzeti(adisyonlar: AnalizAdisyon[], giderler: Masraf[]): An
     ikram: topla(kapanan, (a) => a.ikram),
     matrah: topla(kapanan, (a) => a.matrah),
     kdv: topla(kapanan, (a) => a.kdv),
+    servis: topla(kapanan, (a) => a.kuver + a.garsoniye),
     bahsis: topla(kapanan, (a) => a.bahsis),
     acik: acikOlanlar.length,
     acikTutar,
@@ -780,6 +793,16 @@ export function analizPersoneli(adisyonlar: AnalizAdisyon[]): PersonelOzeti {
     let kalanIndirim = Math.min(a.indirim, kalemToplami);
 
     const dokunan = new Set<string>();
+
+    // Kuver ve garsoniye belli bir ürünün değil masanın bedeli: masayı açanın
+    // cirosuna yazılıyor ki personel toplamı özetteki ciroyu tutsun.
+    const servis = a.kuver + a.garsoniye;
+    if (servis > 0) {
+      const acan = satir(a.garsonId ?? undefined, a.garson || BILINMEYEN);
+      acan.ciro = Math.round((acan.ciro + servis) * 100) / 100;
+      dokunan.add(acan.anahtar);
+    }
+
     satilanlar.forEach((k, i) => {
       const s = satir(k.turGarsonId, k.turGarson || BILINMEYEN);
       const ham = kalemTutari(k);

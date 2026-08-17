@@ -33,7 +33,8 @@ import KampanyaSecim from "../components/KampanyaSecim";
 import TahsilatPanel from "../components/TahsilatPanel";
 import HizliOde from "../components/HizliOde";
 import IndirimModal from "../components/IndirimModal";
-import { indirimYapabilir } from "../oturum";
+import { indirimYapabilir, yetkiVar } from "../oturum";
+import { servisEtiketi, servisSatirlari, servisTutarlari, servisVar } from "../servis";
 import KdvDokum from "../components/KdvDokum";
 import OnayModal from "../components/OnayModal";
 import KalemPaneli from "../components/KalemPaneli";
@@ -55,18 +56,23 @@ import type {
   Tahsilat,
 } from "../types";
 
+/** Kuver ve garsoniyenin bu adisyondaki durumu; ikisi birlikte taşınıyor. */
+type ServisDurumu = { kuver?: boolean | null; garsoniye?: boolean | null };
+
 // Adisyonun kaydedilmiş hâliyle karşılaştırmak için sadeleştirilmiş imzası.
 function adisyonImzasi(
   sepet: SepetKalemi[],
   indirim: number,
   tahsilatlar: Tahsilat[],
-  bilgi: AdisyonBilgisi = {}
+  bilgi: AdisyonBilgisi = {},
+  servis: ServisDurumu = {}
 ) {
   return JSON.stringify({
     sepet: sepet.map((k) => [k.id, k.adet, k.fiyat, k.durum ?? "normal", k.indirim ?? 0]),
     indirim,
     tahsilat: tahsilatlar.map((t) => [t.tip, t.tutar]),
     bilgi: [bilgi.ad ?? "", bilgi.kisiSayisi ?? 0, bilgi.not ?? "", bilgi.musteriAd ?? "", bilgi.musteriTelefon ?? ""],
+    servis: [servis.kuver ?? null, servis.garsoniye ?? null],
   });
 }
 
@@ -80,6 +86,11 @@ function adisyondanBilgi(veri: AdisyonVerisi): AdisyonBilgisi {
     musteriTelefon: veri.musteri?.telefon,
   };
 }
+
+const adisyondanServis = (veri: AdisyonVerisi): ServisDurumu => ({
+  kuver: veri.kuverUygula ?? null,
+  garsoniye: veri.garsoniyeUygula ?? null,
+});
 
 // Aynı ürünün aynı durumdaki satırları tek satırda toplanır — ikram veya iptal
 // geri alınınca adisyon yeniden sadeleşsin. Ödemesi işlenmiş kalem birleşmez;
@@ -172,6 +183,9 @@ export default function Siparis() {
   // Adisyonun kendi bilgileri: ad, kişi sayısı, not ve müşteri. Sepetle birlikte
   // kaydediliyor — masalı adisyon ilk ürün girilene kadar diskte yok.
   const [bilgi, setBilgi] = useState<AdisyonBilgisi>({});
+  // Servis bedelinin bu hesaptaki durumu: boş = ayarın dediği, true = elle
+  // eklendi, false = kaldırıldı.
+  const [servis, setServis] = useState<ServisDurumu>({});
   const [bilgiAcik, setBilgiAcik] = useState(false);
   const [kisiSorusu, setKisiSorusu] = useState(false);
   const [adisyonNo, setAdisyonNo] = useState<number | undefined>();
@@ -188,6 +202,11 @@ export default function Siparis() {
       kisiSayisi: bilgi.kisiSayisi ?? 0,
       not: bilgi.not ?? "",
       musteri: { ad: bilgi.musteriAd ?? "", telefon: bilgi.musteriTelefon ?? "" },
+      // Servis bedeli kişi sayısına ve sipariş tipine bağlı; ikisi de kayda
+      // buradan giriyor ki hangi yoldan kaydedilirse kaydedilsin aynı çıksın.
+      tip: masasiz ? masasizBilgi?.tip ?? "gelal" : "masa",
+      kuverUygula: servis.kuver ?? null,
+      garsoniyeUygula: servis.garsoniye ?? null,
     };
     const yazma = masasiz ? masasizKaydet(adisyonId, tam, kapat) : adisyonKaydet(masaId, tam, kapat);
     // Yeni alınan ödemeler kayıtta kimlik kazanıyor; ekran bu kimlikleri geri
@@ -225,10 +244,17 @@ export default function Siparis() {
       setIndirimTanim(veri.indirimTanim);
       setKayitliTahsilatlar(veri.tahsilatlar);
       setKayitliImza(
-        adisyonImzasi(veri.sepet, veri.indirim, veri.tahsilatlar, adisyondanBilgi(veri))
+        adisyonImzasi(
+          veri.sepet,
+          veri.indirim,
+          veri.tahsilatlar,
+          adisyondanBilgi(veri),
+          adisyondanServis(veri)
+        )
       );
       setAdisyonNo(veri.no);
       setBilgi(adisyondanBilgi(veri));
+      setServis(adisyondanServis(veri));
       if (masasiz) setMasasizBilgi(veri);
       // Misafir sayısı zorunluysa soru masaya girer girmez çıkıyor. Masasız
       // siparişte (gel al / paket) kişi kavramı yok.
@@ -342,12 +368,27 @@ export default function Siparis() {
   const eklenenKdv = ayarlar().kdvDahil
     ? 0
     : kdvSatirlari.reduce((t, s) => t + s.kdv, 0);
-  const toplam = Math.max(0, araToplam - indirim) + eklenenKdv;
+  const matrah = Math.max(0, araToplam - indirim);
+  // Kuver ve garsoniye ürün değil, hesabın kendi bedeli: indirimden sonra
+  // ekleniyor. Kişi sayısı ekranda değişince tutar da anında değişiyor.
+  const servisGirdi = {
+    matrah,
+    kisiSayisi: bilgi.kisiSayisi,
+    tip: masasiz ? masasizBilgi?.tip ?? "gelal" : ("masa" as const),
+    kuverUygula: servis.kuver,
+    garsoniyeUygula: servis.garsoniye,
+  };
+  const servisTutar = servisTutarlari(servisGirdi);
+  const servisListesi = servisSatirlari(servisGirdi);
+  // Servis bedelini kaldırmak parayı azaltıyor; her garsona açık değil.
+  const servisYetkisi = yetkiVar("siparis.servis");
+  const toplam = matrah + servisTutar.toplam + eklenenKdv;
   const odenen = kayitliTahsilatlar.reduce((t, o) => t + o.tutar, 0);
   const kalan = Math.max(0, toplam - odenen);
 
   const kirli =
-    !yukleniyor && adisyonImzasi(sepet, indirim, kayitliTahsilatlar, bilgi) !== kayitliImza;
+    !yukleniyor &&
+    adisyonImzasi(sepet, indirim, kayitliTahsilatlar, bilgi, servis) !== kayitliImza;
 
   // Sol menü de aynı kilide bakıyor; sipariş ekranı bugün menüsüz açılıyor ama
   // kural tek yerden işlesin.
@@ -364,8 +405,15 @@ export default function Siparis() {
     setIndirim(veri.indirim);
     setKayitliTahsilatlar(veri.tahsilatlar);
     setBilgi(adisyondanBilgi(veri));
+    setServis(adisyondanServis(veri));
     setKayitliImza(
-      adisyonImzasi(veri.sepet, veri.indirim, veri.tahsilatlar, adisyondanBilgi(veri))
+      adisyonImzasi(
+        veri.sepet,
+        veri.indirim,
+        veri.tahsilatlar,
+        adisyondanBilgi(veri),
+        adisyondanServis(veri)
+      )
     );
   };
 
@@ -625,6 +673,57 @@ export default function Siparis() {
                   <span>−{paraGoster(indirim)}</span>
                 </div>
               )}
+              {servisVar() &&
+                (["kuver", "garsoniye"] as const).map((hangi) => {
+                  const tanim = ayarlar()[hangi];
+                  if (tanim.deger <= 0) return null;
+
+                  // Hesapta duruyor mu: kararı verilmişse o, verilmemişse ayarın
+                  // dediği. Gel al ve pakette servis kendiliğinden girmiyor.
+                  const acik = servis[hangi] ?? (tanim.otomatik && !masasiz);
+                  const tutar = hangi === "kuver" ? servisTutar.kuver : servisTutar.garsoniye;
+                  const kisiBasi = hangi === "kuver" && tanim.tip === "tutar";
+
+                  if (!acik) {
+                    return servisYetkisi ? (
+                      <button
+                        key={hangi}
+                        className="ozet-satir servis-ekle"
+                        onClick={() => setServis((s) => ({ ...s, [hangi]: true }))}
+                      >
+                        <span>+ {tanim.ad} ekle</span>
+                        <span>{servisEtiketi(tanim)}</span>
+                      </button>
+                    ) : null;
+                  }
+
+                  return (
+                    <div key={hangi} className="ozet-satir servis">
+                      <span>
+                        {tanim.ad}
+                        {kisiBasi && (
+                          <em className="servis-not">
+                            {bilgi.kisiSayisi
+                              ? ` · ${bilgi.kisiSayisi} kişi`
+                              : " · kişi sayısı girilmedi"}
+                          </em>
+                        )}
+                      </span>
+                      <span>
+                        {paraGoster(tutar)}
+                        {servisYetkisi && (
+                          <button
+                            className="servis-cikar"
+                            title={`${tanim.ad} kaldır`}
+                            onClick={() => setServis((s) => ({ ...s, [hangi]: false }))}
+                          >
+                            ×
+                          </button>
+                        )}
+                      </span>
+                    </div>
+                  );
+                })}
               {kayitliTahsilatlar.length > 0 && (
                 <>
                   <div className="ozet-satir odendi">
@@ -684,6 +783,7 @@ export default function Siparis() {
           toplam={toplam}
           araToplam={araToplam}
           indirim={indirim}
+          servis={servisListesi}
           kdvSatirlari={kdvSatirlari}
           kayitliTahsilatlar={kayitliTahsilatlar}
           onKaydet={(t) => setKayitliTahsilatlar(t)}
@@ -714,6 +814,7 @@ export default function Siparis() {
           baslik={masaAdi}
           araToplam={araToplam}
           indirim={indirim}
+          servis={servisListesi}
           toplam={toplam}
           odenen={odenen}
           kalan={kalan}

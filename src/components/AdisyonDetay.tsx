@@ -200,6 +200,18 @@ export default function AdisyonDetay({
                   <dt>KDV</dt>
                   <dd>{paraGoster(detay.kdv)}</dd>
                 </div>
+                {detay.kuver > 0 && (
+                  <div>
+                    <dt>Kuver{detay.kisiSayisi ? ` (${detay.kisiSayisi} kişi)` : ""}</dt>
+                    <dd>{paraGoster(detay.kuver)}</dd>
+                  </div>
+                )}
+                {detay.garsoniye > 0 && (
+                  <div>
+                    <dt>Garsoniye</dt>
+                    <dd>{paraGoster(detay.garsoniye)}</dd>
+                  </div>
+                )}
                 <div className="dokum-toplam">
                   <dt>Toplam</dt>
                   <dd>{paraGoster(detay.toplam)}</dd>

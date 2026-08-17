@@ -47,6 +47,8 @@ type Props = {
   toplam: number;
   araToplam: number;
   indirim: number;
+  /** Hesaba giren kuver/garsoniye satırları; yoksa boş geliyor. */
+  servis?: { ad: string; tutar: number }[];
   kdvSatirlari: KdvSatiri[];
   kayitliTahsilatlar: Tahsilat[];
   onKaydet: (tahsilatlar: Tahsilat[]) => void;
@@ -61,7 +63,7 @@ type Props = {
   musteri?: string;
 };
 
-export default function TahsilatPanel({ kalemler, toplam, araToplam, indirim, kdvSatirlari, kayitliTahsilatlar, musteri, onKaydet, onSil, onIndirimDegis, onKalemIndirim, onKapat, onOdendi }: Props) {
+export default function TahsilatPanel({ kalemler, toplam, araToplam, indirim, servis, kdvSatirlari, kayitliTahsilatlar, musteri, onKaydet, onSil, onIndirimDegis, onKalemIndirim, onKapat, onOdendi }: Props) {
   const [tahsilatlar, setTahsilatlar] = useState<Tahsilat[]>(kayitliTahsilatlar ?? []);
   const [girilen, setGirilen] = useState("");
   const [secilen, setSecilen] = useState<Record<number, number>>({});
@@ -342,6 +344,11 @@ export default function TahsilatPanel({ kalemler, toplam, araToplam, indirim, kd
                   <span>İndirim</span><span>−₺{indirim}</span>
                 </div>
               )}
+              {(servis ?? []).map((s) => (
+                <div key={s.ad} className="tutar-satir">
+                  <span>{s.ad}</span><span>₺{s.tutar}</span>
+                </div>
+              ))}
               <KdvDokum satirlar={kdvSatirlari} />
               {odenen > 0 && (
                 <div className="tutar-satir odendi">

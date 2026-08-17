@@ -8,6 +8,8 @@ import { denetimYaz } from "./denetim";
 import { cekmeceyiAc, mutfakFisiYaz } from "./yazicilar";
 import { kasayaGirerMi } from "./odemeTipleri";
 import { adisyonuCariyeYaz } from "./cari";
+import { servisTutarlari } from "./servis";
+import type { ServisGirdisi } from "./servis";
 import type { DenetimIslemi, DenetimKaydi } from "./denetim";
 import type { SepetKalemi, Tahsilat } from "./types";
 
@@ -37,6 +39,12 @@ export type AdisyonVerisi = {
   ad?: string;
   kisiSayisi?: number;
   not?: string;
+  /**
+   * Kuver ve garsoniye bu hesapta uygulanıyor mu: boş = ayarın dediği,
+   * true = elle eklendi, false = elle kaldırıldı.
+   */
+  kuverUygula?: boolean | null;
+  garsoniyeUygula?: boolean | null;
 };
 
 /**
@@ -59,9 +67,33 @@ export function adisyonOzeti(veri: AdisyonVerisi, varsayilanKdv?: number) {
   const kdv = ayarlar().kdvDahil
     ? 0
     : kdvDokumu(satilanlar, veri.indirim, varsayilanKdv).reduce((t, s) => t + s.kdv, 0);
-  const toplam = Math.max(0, araToplam - veri.indirim) + kdv;
+  const matrah = Math.max(0, araToplam - veri.indirim);
+  // Kuver ve garsoniye ürünlerin dışında, hesabın kendi bedeli: indirimden
+  // sonra ekleniyor ve üstlerine ayrıca KDV hesaplanmıyor.
+  const servis = servisTutarlari(servisGirdisi(veri, matrah));
+  const toplam = matrah + servis.toplam + kdv;
   const odenen = veri.tahsilatlar.reduce((t, o) => t + o.tutar, 0);
-  return { araToplam, kdv, toplam, odenen, kalan: toplam - odenen };
+  return {
+    araToplam,
+    kdv,
+    kuver: servis.kuver,
+    garsoniye: servis.garsoniye,
+    servis: servis.toplam,
+    toplam,
+    odenen,
+    kalan: toplam - odenen,
+  };
+}
+
+/** Servis hesabının adisyondan aldığı alanlar; üç yerde aynı şekilde kuruluyor. */
+export function servisGirdisi(veri: AdisyonVerisi, matrah: number): ServisGirdisi {
+  return {
+    matrah,
+    kisiSayisi: veri.kisiSayisi,
+    tip: veri.tip,
+    kuverUygula: veri.kuverUygula,
+    garsoniyeUygula: veri.garsoniyeUygula,
+  };
 }
 
 // Ekranda yeni açılan kalemin de bir kimliği olmalı ki tahsilat ona bağlanabilsin.
@@ -120,6 +152,7 @@ function kalemeCevir(s: KalemSatiri): SepetKalemi {
 
 const ADISYON_ALANLARI = `id, adisyon_no, indirim, indirim_tanim_id, indirim_ad, acilis, garson, tip,
        ad, kisi_sayisi, not_metni, musteri_ad, musteri_telefon, adres,
+       kuver_uygula, garsoniye_uygula,
        acan:personel!adisyonlar_acan_id_fkey (ad),
        turlar (sira, olusturma, garson:personel!turlar_garson_id_fkey (ad),
                adisyon_kalemleri (${KALEM_ALANLARI})),
@@ -211,6 +244,10 @@ function adisyonaCevir(data: any): AdisyonVerisi {
     ad: (data as any).ad ?? undefined,
     kisiSayisi: (data as any).kisi_sayisi ?? undefined,
     not: (data as any).not_metni ?? undefined,
+    // Tutarlar değil kararlar okunuyor: ekrandaki hesap sepetle birlikte
+    // yeniden çıkıyor, diskteki tutar kapanmış adisyonun kaydı.
+    kuverUygula: (data as any).kuver_uygula ?? null,
+    garsoniyeUygula: (data as any).garsoniye_uygula ?? null,
     musteri: {
       ad: (data as any).musteri_ad ?? undefined,
       telefon: (data as any).musteri_telefon ?? undefined,
@@ -285,6 +322,7 @@ export async function masasizAdisyonlar(): Promise<MasasizAdisyon[]> {
     .from("adisyonlar")
     .select(
       `id, adisyon_no, tip, indirim, acilis, musteri_ad, musteri_telefon, adres, musteri_id,
+       kuver_tutar, garsoniye_tutar,
        turlar (adisyon_kalemleri (adet, fiyat, durum, indirim)),
        tahsilatlar (tutar)`
     )
@@ -304,7 +342,7 @@ export async function masasizAdisyonlar(): Promise<MasasizAdisyon[]> {
         }
       }
     }
-    const net = Math.max(0, tutar - Number(satir.indirim ?? 0));
+    const net = Math.max(0, tutar - Number(satir.indirim ?? 0)) + servisToplami(satir);
     const odenen = (satir.tahsilatlar ?? []).reduce((t: number, o: any) => t + Number(o.tutar), 0);
     return {
       id: satir.id,
@@ -322,6 +360,13 @@ export async function masasizAdisyonlar(): Promise<MasasizAdisyon[]> {
     };
   });
 }
+
+/**
+ * Kayıtlı servis bedeli. Liste ekranları hesabı yeniden kurmuyor, adisyonun
+ * kendi sütunundaki tutarı okuyor — masa kartındaki rakam kasada yazan tutar.
+ */
+const servisToplami = (satir: any) =>
+  Number(satir.kuver_tutar ?? 0) + Number(satir.garsoniye_tutar ?? 0);
 
 export type MasaOzeti = {
   id: number;
@@ -350,7 +395,7 @@ export async function tumAdisyonlar(): Promise<Record<number, MasaOzeti>> {
   const { data } = await supabase
     .from("adisyonlar")
     .select(
-      `id, masa_id, acilis, indirim, ad, kisi_sayisi,
+      `id, masa_id, acilis, indirim, ad, kisi_sayisi, kuver_tutar, garsoniye_tutar,
        acan:personel!adisyonlar_acan_id_fkey (ad),
        turlar (adisyon_kalemleri (adet, fiyat, durum, indirim)),
        tahsilatlar (tutar)`
@@ -370,7 +415,7 @@ export async function tumAdisyonlar(): Promise<Record<number, MasaOzeti>> {
         }
       }
     }
-    const net = Math.max(0, tutar - Number(satir.indirim ?? 0));
+    const net = Math.max(0, tutar - Number(satir.indirim ?? 0)) + servisToplami(satir);
     const odenen = (satir.tahsilatlar ?? []).reduce(
       (t: number, o: any) => t + Number(o.tutar),
       0
@@ -408,7 +453,9 @@ async function acikAdisyonBul(masaId: number) {
 async function adisyonTutari(adisyonId: number) {
   const { data } = await supabase
     .from("adisyonlar")
-    .select("indirim, turlar (adisyon_kalemleri (adet, fiyat, indirim, durum))")
+    .select(
+      "indirim, kuver_tutar, garsoniye_tutar, turlar (adisyon_kalemleri (adet, fiyat, indirim, durum))"
+    )
     .eq("id", adisyonId)
     .maybeSingle();
   if (!data) return 0;
@@ -421,7 +468,47 @@ async function adisyonTutari(adisyonId: number) {
       toplam += Math.max(0, Number(k.fiyat) * Number(k.adet) - Number(k.indirim ?? 0));
     }
   }
-  return Math.max(0, Math.round((toplam - Number(satir.indirim ?? 0)) * 100) / 100);
+  const net = Math.max(0, toplam - Number(satir.indirim ?? 0)) + servisToplami(satir);
+  return Math.round(net * 100) / 100;
+}
+
+/**
+ * Adisyonun servis tutarlarını diskteki hâline göre yeniden yazar. Masa
+ * birleştirme ve kalem taşıma sepeti ekrandan geçirmeden değiştiriyor; yüzdeli
+ * garsoniye eski tutarında kalırsa masa kartı yanlış rakam gösterirdi.
+ */
+async function servisiTazele(adisyonId: number) {
+  const { data } = await supabase
+    .from("adisyonlar")
+    .select(
+      `indirim, tip, kisi_sayisi, kuver_uygula, garsoniye_uygula,
+       turlar (adisyon_kalemleri (adet, fiyat, indirim, durum))`
+    )
+    .eq("id", adisyonId)
+    .maybeSingle();
+  if (!data) return;
+
+  const satir = data as any;
+  let toplam = 0;
+  for (const tur of satir.turlar ?? []) {
+    for (const k of tur.adisyon_kalemleri ?? []) {
+      if ((k.durum ?? "normal") !== "normal") continue;
+      toplam += Math.max(0, Number(k.fiyat) * Number(k.adet) - Number(k.indirim ?? 0));
+    }
+  }
+
+  const { kuver, garsoniye } = servisTutarlari({
+    matrah: Math.max(0, Math.round((toplam - Number(satir.indirim ?? 0)) * 100) / 100),
+    kisiSayisi: satir.kisi_sayisi ?? undefined,
+    tip: satir.tip,
+    kuverUygula: satir.kuver_uygula,
+    garsoniyeUygula: satir.garsoniye_uygula,
+  });
+
+  await supabase
+    .from("adisyonlar")
+    .update({ kuver_tutar: kuver, garsoniye_tutar: garsoniye })
+    .eq("id", adisyonId);
 }
 
 /**
@@ -502,6 +589,12 @@ export async function adisyonIkram(
       indirim: 0,
       indirim_tanim_id: null,
       indirim_ad: null,
+      // Tamamı ikram edilen hesaptan servis bedeli de alınmıyor; kaldırıldığı
+      // yazılıyor ki adisyon yeniden açılırsa kuver kendiliğinden geri gelmesin.
+      kuver_tutar: 0,
+      garsoniye_tutar: 0,
+      kuver_uygula: false,
+      garsoniye_uygula: false,
       odenmez_id: odenmezId ?? null,
       kapanis: new Date().toISOString(),
       guncelleme: new Date().toISOString(),
@@ -548,6 +641,7 @@ export async function adisyonKaydet(
         masa_id: masaId,
         ...indirimAlanlari(veri),
         ...bilgiAlanlari(veri),
+        ...servisAlanlari(veri),
         acan_id: acikOturum()?.id ?? null,
       })
       .select("id, acilis, indirim")
@@ -559,6 +653,7 @@ export async function adisyonKaydet(
       .update({
         ...indirimAlanlari(veri),
         ...bilgiAlanlari(veri),
+        ...servisAlanlari(veri),
         guncelleme: new Date().toISOString(),
       })
       .eq("id", adisyon.id);
@@ -581,6 +676,7 @@ export async function masasizKaydet(
     .update({
       ...indirimAlanlari(veri),
       ...bilgiAlanlari(veri),
+      ...servisAlanlari(veri),
       guncelleme: new Date().toISOString(),
     })
     .eq("id", adisyonId);
@@ -605,6 +701,21 @@ function bilgiAlanlari(veri: AdisyonVerisi) {
     if (m.adres !== undefined) alanlar.adres = m.adres.trim() || null;
   }
   return alanlar;
+}
+
+/**
+ * Servis bedelinin sütunları. Tutar her kayıtta yeniden hesaplanıp yazılıyor:
+ * masaya bir ürün daha girince yüzdeli garsoniye de büyümeli. Kapanmış adisyonda
+ * kayıt donuyor, çünkü kapandıktan sonra yeni bir kayıt geçmiyor.
+ */
+function servisAlanlari(veri: AdisyonVerisi) {
+  const ozet = adisyonOzeti(veri);
+  return {
+    kuver_tutar: ozet.kuver,
+    garsoniye_tutar: ozet.garsoniye,
+    kuver_uygula: veri.kuverUygula ?? null,
+    garsoniye_uygula: veri.garsoniyeUygula ?? null,
+  };
 }
 
 // Hesap geneli indirim tutarıyla birlikte hangi tanımdan geldiğini de yazıyor.
@@ -1028,6 +1139,7 @@ export async function masaBirlestir(kaynakMasaId: number, hedefMasaId: number) {
     .eq("id", hedef.id);
 
   await supabase.from("adisyonlar").delete().eq("id", kaynak.id);
+  await servisiTazele(hedef.id);
 }
 
 /**
@@ -1106,6 +1218,7 @@ export async function kalemTasi(
   }
 
   await bosAdisyonuTemizle(kaynak.id);
+  await Promise.all([servisiTazele(kaynak.id), servisiTazele(hedef.id)]);
 }
 
 /** Son kalemi de gidince adisyon masayı işgal etmesin — boşsa siliniyor. */

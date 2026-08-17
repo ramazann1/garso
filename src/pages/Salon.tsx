@@ -40,8 +40,10 @@ import {
   masasizAdisyonlar,
   masasizGuncelle,
   masasizSil,
+  servisGirdisi,
   tumAdisyonlar,
 } from "../adisyonlar";
+import { servisSatirlari } from "../servis";
 import type { AdisyonVerisi, MasaOzeti, MasasizAdisyon } from "../adisyonlar";
 import { adisyonFisiYaz } from "../yazicilar";
 import { bolgeleriGetir } from "../masalar";
@@ -554,6 +556,9 @@ export default function Salon() {
               baslik={hizli.masa.ad}
               araToplam={araToplam}
               indirim={hizli.veri.indirim}
+              servis={servisSatirlari(
+                servisGirdisi(hizli.veri, Math.max(0, araToplam - hizli.veri.indirim))
+              )}
               toplam={toplam}
               odenen={odenen}
               kalan={kalan}

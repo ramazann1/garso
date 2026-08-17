@@ -522,6 +522,12 @@ function Ozet({ ozet, onEksigeGit }: { ozet: AnalizOzeti; onEksigeGit: () => voi
               <dt>KDV</dt>
               <dd>{paraGoster(ozet.kdv)}</dd>
             </div>
+            {ozet.servis > 0 && (
+              <div>
+                <dt>Kuver / garsoniye</dt>
+                <dd>{paraGoster(ozet.servis)}</dd>
+              </div>
+            )}
             <div className="kasa-beklenen">
               <dt>Ciro</dt>
               <dd>{paraGoster(ozet.ciro)}</dd>

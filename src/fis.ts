@@ -1,4 +1,5 @@
-import { adisyonOzeti, kalemTutari } from "./adisyonlar";
+import { adisyonOzeti, kalemTutari, servisGirdisi } from "./adisyonlar";
+import { servisSatirlari } from "./servis";
 import type { AdisyonVerisi } from "./adisyonlar";
 import { ayarlar, isletmeAdi } from "./isletmeAyarlari";
 import { kdvDokumu } from "./kdv";
@@ -173,6 +174,13 @@ export function fisIcerigi(
   if (!mutfak || p.siparis_toplami) {
     if (!mutfak && adisyon.indirim > 0)
       s.push({ t: "ikiUc", sol: "İndirim", sag: `-${paraGoster(adisyon.indirim)}`, alan: "odeme" });
+    // Kuver ve garsoniye toplamın içinde duruyor; müşteri neyi ödediğini fişte
+    // görmeli, yoksa ürünler toplamı tutmuyor gibi görünür.
+    if (!mutfak)
+      for (const satir of servisSatirlari(
+        servisGirdisi(adisyon, Math.max(0, ozet.araToplam - adisyon.indirim))
+      ))
+        s.push({ t: "ikiUc", sol: satir.ad, sag: paraGoster(satir.tutar), alan: "odeme" });
     // Fişte yazan KDV, toplama eklenen değil hesabın içindeki vergidir: fiyatlar
     // KDV dahil yazıldığında toplama eklenen bir şey olmuyor ama fişte verginin
     // görünmesi gerekiyor.

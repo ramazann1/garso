@@ -1196,6 +1196,28 @@ body {
   padding: 2px 0;
 }
 .ozet-satir.indirim { color: var(--mercan); }
+/* Kuver/garsoniye satırı: tutarın yanında kaldırma çarpısı duruyor. */
+.ozet-satir.servis span:last-child { display: inline-flex; align-items: center; gap: 6px; }
+.ozet-satir .servis-not { font-style: normal; color: var(--soluk); }
+.ozet-satir .servis-cikar {
+  border: none;
+  background: none;
+  padding: 0 2px;
+  font-size: 17px;
+  line-height: 1;
+  color: var(--soluk);
+  cursor: pointer;
+}
+.ozet-satir .servis-cikar:hover { color: var(--mercan); }
+.ozet-satir.servis-ekle {
+  width: 100%;
+  border: none;
+  background: none;
+  font: inherit;
+  color: var(--mercan);
+  cursor: pointer;
+  text-align: left;
+}
 .ozet-satir.odendi { color: var(--yesil); }
 .ozet-satir.kalan { color: var(--mercan); font-weight: 600; }
 .ozet-satir.toplam-satir {

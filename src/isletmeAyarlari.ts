@@ -1,6 +1,20 @@
 import { acikOturum } from "./oturum";
 import { supabase } from "./supabase";
 
+export type ServisTipi = "tutar" | "yuzde";
+
+/**
+ * Kuver ya da garsoniyenin tanımı. Tutar tipinde kuver kişi sayısıyla çarpılır,
+ * yüzde tipinde ikisi de indirim düşülmüş hesabın yüzdesini alır.
+ */
+export type ServisTanimi = {
+  /** Hesaba kendiliğinden girsin mi; kapalıysa yalnız elle ekleniyor. */
+  otomatik: boolean;
+  ad: string;
+  tip: ServisTipi;
+  deger: number;
+};
+
 export type IsletmeAyarlari = {
   /** Menü fiyatları KDV dahil mi yazılıyor? Türkiye'de olağan olan dahil. */
   kdvDahil: boolean;
@@ -25,6 +39,10 @@ export type IsletmeAyarlari = {
   paraHareketiAcik: boolean;
   /** Kasaya para giren bir tahsilat alınınca para çekmecesi kendiliğinden açılsın mı. */
   cekmeceNakitteAcilsin: boolean;
+  /** Kuver ve garsoniyenin ana anahtarı; kapalıyken hiçbir hesaba servis girmez. */
+  servisAcik: boolean;
+  kuver: ServisTanimi;
+  garsoniye: ServisTanimi;
 };
 
 const VARSAYILAN: IsletmeAyarlari = {
@@ -41,6 +59,9 @@ const VARSAYILAN: IsletmeAyarlari = {
   kasaKapanisUyari: "",
   paraHareketiAcik: true,
   cekmeceNakitteAcilsin: true,
+  servisAcik: false,
+  kuver: { otomatik: true, ad: "Kuver", tip: "tutar", deger: 0 },
+  garsoniye: { otomatik: true, ad: "Garsoniye", tip: "yuzde", deger: 0 },
 };
 
 // Ayar her hesapta lazım ama satış sırasında değişmiyor; bir kez okunup burada
@@ -55,6 +76,14 @@ export function ayarlar(): IsletmeAyarlari {
 // içinde saniyesiz duruyor.
 const saat = (deger: unknown, varsayilan: string) =>
   typeof deger === "string" ? deger.slice(0, 5) : varsayilan;
+
+// Kuver ve garsoniye aynı dört alandan oluşuyor; okuma tek yerde.
+const servisTanimi = (s: any, on: string, varsayilan: ServisTanimi): ServisTanimi => ({
+  otomatik: s?.[`${on}_otomatik`] ?? varsayilan.otomatik,
+  ad: s?.[`${on}_ad`] || varsayilan.ad,
+  tip: (s?.[`${on}_tip`] as ServisTipi) ?? varsayilan.tip,
+  deger: Number(s?.[`${on}_deger`] ?? varsayilan.deger),
+});
 
 // Tablo artık işletme başına tek satır tutuyor; hangi satırın okunacağını
 // satır güvenliği belirliyor, sorguda ayrıca süzmeye gerek yok.
@@ -75,6 +104,9 @@ export async function ayarlariGetir(): Promise<IsletmeAyarlari> {
     kasaKapanisUyari: saat(s?.kasa_kapanis_uyari, VARSAYILAN.kasaKapanisUyari),
     paraHareketiAcik: s?.para_hareketi_acik ?? VARSAYILAN.paraHareketiAcik,
     cekmeceNakitteAcilsin: s?.cekmece_nakitte_acilsin ?? VARSAYILAN.cekmeceNakitteAcilsin,
+    servisAcik: s?.servis_acik ?? VARSAYILAN.servisAcik,
+    kuver: servisTanimi(s, "kuver", VARSAYILAN.kuver),
+    garsoniye: servisTanimi(s, "garsoniye", VARSAYILAN.garsoniye),
   };
   return onbellek;
 }
@@ -103,6 +135,15 @@ export async function ayarlariKaydet(degisen: Partial<IsletmeAyarlari>) {
       kasa_kapanis_uyari: yeni.kasaKapanisUyari || null,
       para_hareketi_acik: yeni.paraHareketiAcik,
       cekmece_nakitte_acilsin: yeni.cekmeceNakitteAcilsin,
+      servis_acik: yeni.servisAcik,
+      kuver_otomatik: yeni.kuver.otomatik,
+      kuver_ad: yeni.kuver.ad,
+      kuver_tip: yeni.kuver.tip,
+      kuver_deger: yeni.kuver.deger,
+      garsoniye_otomatik: yeni.garsoniye.otomatik,
+      garsoniye_ad: yeni.garsoniye.ad,
+      garsoniye_tip: yeni.garsoniye.tip,
+      garsoniye_deger: yeni.garsoniye.deger,
     },
     { onConflict: "isletme_id" }
   );
