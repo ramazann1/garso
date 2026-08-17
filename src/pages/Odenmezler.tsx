@@ -1,5 +1,15 @@
-import { useEffect, useState } from "react";
-import { Gift, Pencil, Plus, Trash2, UserRound, Users, X } from "lucide-react";
+import { useEffect, useRef, useState } from "react";
+import {
+  Download,
+  Gift,
+  Pencil,
+  Plus,
+  Trash2,
+  Upload,
+  UserRound,
+  Users,
+  X,
+} from "lucide-react";
 import Duzen from "../components/Duzen";
 import AyarBasligi from "../components/AyarBasligi";
 import Anahtar from "../components/Anahtar";
@@ -8,12 +18,23 @@ import Bildirim from "../components/Bildirim";
 import OnayModal from "../components/OnayModal";
 import { eslesiyor } from "../arama";
 import {
+  ODENMEZ_SUTUNLARI,
   odenmezKaydet,
+  odenmezPlaniHazirla,
+  odenmezPlaniYaz,
   odenmezSil,
+  odenmezTablosu,
   odenmezleriGetir,
   personeldenAktar,
   type Odenmez,
+  type OdenmezPlani,
 } from "../odenmezler";
+
+const bugun = () => {
+  const t = new Date();
+  const iki = (n: number) => String(n).padStart(2, "0");
+  return `${t.getFullYear()}-${iki(t.getMonth() + 1)}-${iki(t.getDate())}`;
+};
 
 function OdenmezPaneli({
   kayit,
@@ -86,6 +107,9 @@ export default function Odenmezler() {
   const [bildirim, setBildirim] = useState("");
   const [hata, setHata] = useState("");
   const [ara, setAra] = useState("");
+  const [plan, setPlan] = useState<OdenmezPlani | null>(null);
+  const [yaziliyor, setYaziliyor] = useState(false);
+  const dosyaSecici = useRef<HTMLInputElement>(null);
 
   const tazele = async () => setListe(await odenmezleriGetir(true));
 
@@ -124,6 +148,74 @@ export default function Odenmezler() {
     );
   };
 
+  // Excel kütüphaneleri düğmeye basılınca yükleniyor; program açılışına binmesin.
+  const indir = async () => {
+    const { default: excelYaz } = await import("write-excel-file/browser");
+    await excelYaz(odenmezTablosu(liste), {
+      sheet: "Ödenmezler",
+      columns: ODENMEZ_SUTUNLARI.map((width) => ({ width })),
+      stickyRowsCount: 1,
+    }).toFile(`garso-odenmezler-${bugun()}.xlsx`);
+  };
+
+  const dosyaSecildi = async (dosya?: File) => {
+    if (dosyaSecici.current) dosyaSecici.current.value = "";
+    if (!dosya) return;
+
+    let tablo: unknown[][];
+    try {
+      const { readSheet } = await import("read-excel-file/browser");
+      tablo = await readSheet(dosya);
+    } catch {
+      setHata("Dosya okunamadı. Excel dosyası (.xlsx) olduğundan emin ol.");
+      return;
+    }
+
+    const hazir = odenmezPlaniHazirla(tablo, liste);
+    if (!hazir.yeniler.length && !hazir.guncellenecekler.length && !hazir.hatalar.length) {
+      setBildirim(
+        hazir.degismeyen ? "Dosyada değişen bir şey yok" : "Dosyada kayıt satırı bulunamadı"
+      );
+      return;
+    }
+    setPlan(hazir);
+  };
+
+  const planiYaz = async () => {
+    if (!plan) return;
+    setYaziliyor(true);
+    try {
+      await odenmezPlaniYaz(plan, Math.max(0, ...liste.map((o) => o.sira)));
+      const adet = plan.yeniler.length + plan.guncellenecekler.length;
+      setPlan(null);
+      await tazele();
+      setBildirim(`${adet} kayıt yazıldı`);
+    } catch (e) {
+      setPlan(null);
+      setHata(e instanceof Error ? e.message : "Dosya yazılamadı.");
+    } finally {
+      setYaziliyor(false);
+    }
+  };
+
+  // Özet tek metin olarak veriliyor; satır sonları modalda korunuyor.
+  const planOzeti = (p: OdenmezPlani) => {
+    const satirlar = [
+      `${p.yeniler.length} yeni kayıt eklenecek`,
+      `${p.guncellenecekler.length} kayıt güncellenecek`,
+      `${p.degismeyen} kayıt değişmemiş, atlanacak`,
+    ];
+    if (p.hatalar.length) {
+      satirlar.push(
+        "",
+        `${p.hatalar.length} satır atlanacak:`,
+        ...p.hatalar.slice(0, 8).map((h) => `• ${h.satir}. satır — ${h.mesaj}`)
+      );
+      if (p.hatalar.length > 8) satirlar.push(`• …ve ${p.hatalar.length - 8} satır daha`);
+    }
+    return satirlar.join("\n");
+  };
+
   const gorunen = liste.filter((o) => eslesiyor(`${o.ad} ${o.unvan}`, ara));
 
   return (
@@ -145,6 +237,19 @@ export default function Odenmezler() {
               <h2><Gift size={17} /> Ödenmezler</h2>
               <button className="satir-tus" onClick={aktar}>
                 <Users size={15} /> Personelden aktar
+              </button>
+              <button className="satir-tus" onClick={indir} disabled={!liste.length}>
+                <Download size={15} /> Excel indir
+              </button>
+              <input
+                ref={dosyaSecici}
+                type="file"
+                accept=".xlsx"
+                hidden
+                onChange={(e) => dosyaSecildi(e.target.files?.[0])}
+              />
+              <button className="satir-tus" onClick={() => dosyaSecici.current?.click()}>
+                <Upload size={15} /> Excel'den yükle
               </button>
               <button className="ayar-ekle" onClick={() => setPanel(null)}>
                 <Plus size={15} /> Ödenmez ekle
@@ -204,6 +309,17 @@ export default function Odenmezler() {
           tehlikeli
           onOnay={sil}
           onKapat={() => setSilinecek(null)}
+        />
+      )}
+
+      {plan && (
+        <OnayModal
+          baslik="Dosyadan yüklenecekler"
+          ikon={<Upload size={17} />}
+          mesaj={planOzeti(plan)}
+          onayMetni={yaziliyor ? "Yazılıyor…" : "Yaz"}
+          onOnay={planiYaz}
+          onKapat={() => !yaziliyor && setPlan(null)}
         />
       )}
 

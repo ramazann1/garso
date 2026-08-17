@@ -1,5 +1,14 @@
-import { useEffect, useState } from "react";
-import { MapPin, Pencil, Plus, Trash2, UsersRound, X } from "lucide-react";
+import { useEffect, useRef, useState } from "react";
+import {
+  Download,
+  MapPin,
+  Pencil,
+  Plus,
+  Trash2,
+  Upload,
+  UsersRound,
+  X,
+} from "lucide-react";
 import Duzen from "../components/Duzen";
 import AramaKutusu from "../components/AramaKutusu";
 import Anahtar from "../components/Anahtar";
@@ -11,19 +20,30 @@ import { eslesiyor } from "../arama";
 import { paraGoster, paraSayi, paraYaz } from "../para";
 import { yetkiVar } from "../oturum";
 import {
+  MUSTERI_SUTUNLARI,
   adresKaydet,
   adresSil,
   adresleriGetir,
   musteriKaydet,
+  musteriPlaniHazirla,
+  musteriPlaniYaz,
   musteriSil,
+  musteriTablosu,
   musterileriGetir,
   tamAd,
   type Adres,
   type Musteri,
   type MusteriAlanlari,
+  type MusteriPlani,
 } from "../cari";
 
 const ADRES_BASLIKLARI = ["Ev", "İşyeri", "Diğer"];
+
+const bugun = () => {
+  const t = new Date();
+  const iki = (n: number) => String(n).padStart(2, "0");
+  return `${t.getFullYear()}-${iki(t.getMonth() + 1)}-${iki(t.getDate())}`;
+};
 
 /** Müşterinin adresleri müşteri panelinin içinde düzenleniyor: ayrı bir ekrana
  *  gitmek, tek satır adres eklemek için fazla yol. */
@@ -280,6 +300,10 @@ export default function Musteriler() {
   const [ara, setAra] = useState("");
   const [yalnizAcikHesap, setYalnizAcikHesap] = useState(false);
   const [yalnizBorclu, setYalnizBorclu] = useState(false);
+  const [hata, setHata] = useState("");
+  const [plan, setPlan] = useState<MusteriPlani | null>(null);
+  const [yaziliyor, setYaziliyor] = useState(false);
+  const dosyaSecici = useRef<HTMLInputElement>(null);
 
   const duzenleyebilir = yetkiVar("cari.duzenle");
 
@@ -306,6 +330,98 @@ export default function Musteriler() {
     setPanel(undefined);
     await tazele();
     setBildirim(sonuc === "pasif" ? "Müşteri pasife alındı" : "Müşteri silindi");
+  };
+
+  // Excel kütüphaneleri düğmeye basılınca yükleniyor; program açılışına binmesin.
+  const indir = async () => {
+    const { default: excelYaz } = await import("write-excel-file/browser");
+    await excelYaz(musteriTablosu(liste), {
+      sheet: "Müşteriler",
+      columns: MUSTERI_SUTUNLARI.map((width) => ({ width })),
+      stickyRowsCount: 1,
+    }).toFile(`garso-musteriler-${bugun()}.xlsx`);
+  };
+
+  const dosyaSecildi = async (dosya?: File) => {
+    if (dosyaSecici.current) dosyaSecici.current.value = "";
+    if (!dosya) return;
+
+    let tablo: unknown[][];
+    try {
+      const { readSheet } = await import("read-excel-file/browser");
+      tablo = await readSheet(dosya);
+    } catch {
+      setHata("Dosya okunamadı. Excel dosyası (.xlsx) olduğundan emin ol.");
+      return;
+    }
+
+    const hazir = musteriPlaniHazirla(tablo, liste);
+    const isVar =
+      hazir.yeniler.length || hazir.guncellenecekler.length || hazir.hatalar.length;
+    if (!isVar && !hazir.bakiyeUyarilari.length) {
+      setBildirim(
+        hazir.degismeyen ? "Dosyada değişen bir şey yok" : "Dosyada müşteri satırı bulunamadı"
+      );
+      return;
+    }
+    setPlan(hazir);
+  };
+
+  const planiYaz = async () => {
+    if (!plan) return;
+    setYaziliyor(true);
+    try {
+      await musteriPlaniYaz(plan);
+      const adet = plan.yeniler.length + plan.guncellenecekler.length;
+      setPlan(null);
+      await tazele();
+      setBildirim(`${adet} müşteri yazıldı`);
+    } catch (e) {
+      setPlan(null);
+      setHata(e instanceof Error ? e.message : "Dosya yazılamadı.");
+    } finally {
+      setYaziliyor(false);
+    }
+  };
+
+  // Özet tek metin olarak veriliyor; satır sonları onay penceresinde korunuyor.
+  const planOzeti = (p: MusteriPlani) => {
+    const satirlar = [
+      `${p.yeniler.length} yeni müşteri eklenecek`,
+      `${p.guncellenecekler.length} müşteri güncellenecek`,
+      `${p.degismeyen} müşteri değişmemiş, atlanacak`,
+    ];
+
+    const devreden = p.yeniler.filter((y) => (y.acilisBakiye ?? 0) > 0);
+    if (devreden.length) {
+      const toplam = devreden.reduce((t, y) => t + (y.acilisBakiye ?? 0), 0);
+      satirlar.push(
+        "",
+        `${devreden.length} yeni müşteriye devreden borç yazılacak — toplam ${paraGoster(toplam)}.`
+      );
+    }
+
+    if (p.bakiyeUyarilari.length) {
+      satirlar.push(
+        "",
+        `${p.bakiyeUyarilari.length} müşterinin bakiyesi dosyada farklı yazılmış, değiştirilmeyecek:`,
+        ...p.bakiyeUyarilari.slice(0, 5).map((ad) => `• ${ad}`)
+      );
+      if (p.bakiyeUyarilari.length > 5)
+        satirlar.push(`• …ve ${p.bakiyeUyarilari.length - 5} müşteri daha`);
+      satirlar.push("Bakiye, hesap hareketlerinin toplamıdır; müşteri detayından düzeltilir.");
+    }
+
+    if (p.hatalar.length) {
+      satirlar.push(
+        "",
+        `${p.hatalar.length} satır atlanacak:`,
+        ...p.hatalar.slice(0, 8).map((h) => `• ${h.satir}. satır — ${h.mesaj}`)
+      );
+      if (p.hatalar.length > 8) satirlar.push(`• …ve ${p.hatalar.length - 8} satır daha`);
+    }
+
+    return satirlar.join("\n");
   };
 
   const gorunen = liste.filter((m) => {
@@ -355,9 +471,24 @@ export default function Musteriler() {
                 </button>
               </div>
               {duzenleyebilir && (
-                <button className="ayar-ekle" onClick={() => setPanel(null)}>
-                  <Plus size={15} /> Müşteri ekle
-                </button>
+                <>
+                  <button className="satir-tus" onClick={indir} disabled={!liste.length}>
+                    <Download size={15} /> Excel indir
+                  </button>
+                  <input
+                    ref={dosyaSecici}
+                    type="file"
+                    accept=".xlsx"
+                    hidden
+                    onChange={(e) => dosyaSecildi(e.target.files?.[0])}
+                  />
+                  <button className="satir-tus" onClick={() => dosyaSecici.current?.click()}>
+                    <Upload size={15} /> Excel'den yükle
+                  </button>
+                  <button className="ayar-ekle" onClick={() => setPanel(null)}>
+                    <Plus size={15} /> Müşteri ekle
+                  </button>
+                </>
               )}
             </div>
 
@@ -465,6 +596,18 @@ export default function Musteriler() {
         />
       )}
 
+      {plan && (
+        <OnayModal
+          baslik="Dosyadan yüklenecekler"
+          ikon={<Upload size={17} />}
+          mesaj={planOzeti(plan)}
+          onayMetni={yaziliyor ? "Yazılıyor…" : "Yaz"}
+          onOnay={planiYaz}
+          onKapat={() => !yaziliyor && setPlan(null)}
+        />
+      )}
+
+      {hata && <OnayModal mesaj={hata} tekTus onKapat={() => setHata("")} />}
       {bildirim && <Bildirim mesaj={bildirim} onKapat={() => setBildirim("")} />}
     </Duzen>
   );

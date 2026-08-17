@@ -1999,6 +1999,7 @@ body {
   color: var(--metin);
   line-height: 1.5;
   margin-bottom: 20px;
+  white-space: pre-line;
 }
 
 .modal-aksiyonlar .uygula.tehlikeli {
@@ -10448,6 +10449,14 @@ body {
 .cari-tablo .guclu { font-weight: 600; }
 
 .cari-tablo small { color: var(--soluk); }
+
+/* Fiş numarası müşterinin elindeki kağıtla karşılaştırılıyor; rakamlar aynı
+   genişlikte olsun ki göz alt alta kayabilsin. */
+.cari-tablo .cari-fis-no {
+  font-variant-numeric: tabular-nums;
+  font-weight: 600;
+  white-space: nowrap;
+}
 
 .cari-bos {
   padding: 26px 4px;

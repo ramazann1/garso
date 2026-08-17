@@ -1,6 +1,7 @@
 import { useEffect, useState } from "react";
 import { HandCoins, Pencil, Scale, X } from "lucide-react";
 import AdisyonDetay from "./AdisyonDetay";
+import Bildirim from "./Bildirim";
 import { paraGoster, paraSayi, paraYaz } from "../para";
 import { kisaAd } from "../personel";
 import { yetkiVar } from "../oturum";
@@ -190,6 +191,7 @@ export default function MusteriDetay({
   const [odeme, setOdeme] = useState(false);
   const [duzeltme, setDuzeltme] = useState(false);
   const [acikAdisyon, setAcikAdisyon] = useState<number | null>(null);
+  const [bildirim, setBildirim] = useState("");
 
   const tahsilatYapabilir = yetkiVar("cari.tahsilat");
 
@@ -218,10 +220,11 @@ export default function MusteriDetay({
   const odemeler = hareketler.filter((h) => h.tip === "tahsilat");
 
   const tahsilEt = async (tutar: number, tip: string) => {
-    await tahsilatAl(musteri.id, tutar, tip);
+    const fisNo = await tahsilatAl(musteri.id, tutar, tip);
     setOdeme(false);
     await tazele();
     onDegisti();
+    setBildirim(fisNo ? `Ödeme alındı · Fiş No ${fisNo}` : "Ödeme alındı");
   };
 
   const duzelt = async (yeni: number, sebep: string) => {
@@ -356,6 +359,7 @@ export default function MusteriDetay({
                         <td>{hareketAdi(h.tip)}</td>
                         <td>
                           {h.aciklama || h.odemeTipi || "—"}
+                          {h.fisNo && <small> · Fiş {h.fisNo}</small>}
                           {h.kisi && <small> · {kisaAd(h.kisi)}</small>}
                         </td>
                         <td className="sag">{h.borc ? paraGoster(h.borc) : "—"}</td>
@@ -413,6 +417,7 @@ export default function MusteriDetay({
                 <table className="cari-tablo">
                   <thead>
                     <tr>
+                      <th>Fiş No</th>
                       <th>Tarih</th>
                       <th>Ödeme tipi</th>
                       <th>Alan</th>
@@ -422,6 +427,7 @@ export default function MusteriDetay({
                   <tbody>
                     {odemeler.map((h) => (
                       <tr key={h.id}>
+                        <td className="cari-fis-no">{h.fisNo ?? "—"}</td>
                         <td>
                           {gunMetni(h.zaman)}
                           <small> {saatMetni(h.zaman)}</small>
@@ -458,6 +464,8 @@ export default function MusteriDetay({
           }}
         />
       )}
+
+      {bildirim && <Bildirim mesaj={bildirim} onKapat={() => setBildirim("")} />}
 
       {duzeltme && (
         <BakiyeDuzelt

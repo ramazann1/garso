@@ -1,11 +1,8 @@
 import { useEffect, useRef, useState } from "react";
 import type { ReactNode } from "react";
 import { CircleCheckBig, Clock, MoreVertical, Plus, Users } from "lucide-react";
+import { paraGoster } from "../para";
 import type { Masa, MasaDurumu } from "../types";
-
-// Salon kartında kuruş yer kaplıyor; tam lira yeterli, garson tutarı tek bakışta
-// okuyor.
-const tutarYaz = (v: number) => "₺" + Math.round(v).toLocaleString("tr-TR");
 
 export type MasaAksiyon = {
   ad: string;
@@ -101,11 +98,11 @@ export default function MasaKarti({ masa, durum, aksiyonlar, onClick }: Props) {
           <span className="masa-rakamlar">
             <span className="masa-rakam">
               <em>Toplam</em>
-              <strong>{tutarYaz(durum.tutar)}</strong>
+              <strong>{paraGoster(durum.tutar)}</strong>
             </span>
             <span className="masa-rakam">
               <em>Ödenen</em>
-              <strong>{tutarYaz(odenen)}</strong>
+              <strong>{paraGoster(odenen)}</strong>
             </span>
             <span className="masa-rakam kalan">
               <em>{odendi ? "Durum" : "Kalan"}</em>
@@ -116,7 +113,7 @@ export default function MasaKarti({ masa, durum, aksiyonlar, onClick }: Props) {
                     Ödendi
                   </>
                 ) : (
-                  tutarYaz(kalan)
+                  paraGoster(kalan)
                 )}
               </strong>
             </span>

@@ -1,24 +1,15 @@
 ﻿# GARSO — Teknik Tasarım: Veri Modeli & Ekran Haritası
 *Restoran ve cafe'ler için bulut tabanlı satış ve işletme yönetim sistemi.*
 
-## 0. SIRADAKİ İŞ (17 Ağu 2026'da güncellendi)
+## 0. SIRADAKİ İŞ (18 Ağu 2026'da güncellendi)
 
-> **Önce yarım kalan test:** Kuver satırındaki **kaldırma (×) düğmesi ekranda
-> görünmedi**. Rakamlar doğru (Kuver ₺25 · Garsoniye ₺9 · Toplam ₺124), düğme
-> `siparis.servis` yetkisine bağlı ve Yönetici oturumunda çıkmadı. Kontrol:
-> `select r.ad, count(y.id) from roller r left join rol_yetkileri ry on
-> ry.rol_id = r.id left join yetkiler y on y.id = ry.yetki_id and
-> y.kod = 'siparis.servis' group by r.ad;` — 0 çıkıyorsa göçün son bloğu rol
-> adıyla eşleşmemiş, 1 çıkıyorsa kodda bakılacak.
+> **Sonraki seansın ilk işi:** **Analiz'in Adisyonlar tablosuna kuver ve
+> garsoniye sütunları** — veri akıyor ama kendi sütunları yok, tutar ara toplamın
+> içinde eriyor; "kuverden ne kadar kazandık" sorusu okunamıyor. Kısa iş.
 >
-> **Sonraki seansın ilk işi:** **Ödenmezler ekranının Excel aktarımı** — menü ve
-> müşteri tarafında olan "Excel ile yükle / indir" düğmeleri ödenmez listesinde
-> yok; `src/aktarim.ts` hazır, ekrana bağlanacak.
->
-> Sırada bekleyenler: **cari için Excel yükle/indir**, **müşteri detayında
-> "Yapılan Ödemeler" fiş numarası** (tahsilat numarası henüz yok), **Analiz'in
-> Adisyonlar tablosuna kuver/garsoniye sütunları** (veri hazır, sütunlar
-> eklenmedi), **KDS** (mutfak ekranı).
+> Sırada bekleyenler: **KDS** (mutfak ekranı — büyük modül, kendi seansını
+> istiyor), **tahsilat fişinin yazıcıdan basılması** (numara artık var, fiş
+> tasarımı yok).
 
 
 *Ramazan seansa "devam edelim" diye giriyor — sıradaki iş bu listenin en üstündeki
@@ -514,6 +505,34 @@ bağlantısı ve sürüm düzeni kuruldu.** Bu seansta çıkanlar:
   hangi üründen kaç adet.
 - Yeni yetki `tanim.odenmez` — ikram yapabilen listeyi değiştirememeli, yoksa
   kendi adına satır açıp oraya yazardı.
+
+**18 Ağu 2026:** **Excel aktarımı cari ve ödenmez tarafına yayıldı, tahsilat
+fiş numarası kazandı.**
+
+- **Ödenmezler Excel'i** (`src/odenmezler.ts`): No · Ad Soyad · Unvan · Listede
+  Görünsün. Eşleştirme No → ad. Menüdeki gibi ayrı bir `aktarim.ts` açılmadı,
+  dört sütun kendi modülüne sığdı.
+- **Müşteri Excel'i** (`src/cari.ts`): Müşteri No · Ad · Soyad · Telefon ·
+  Telefon 2 · Açık Hesap · Notlar · Aktif · Bakiye. Eşleştirme No → **telefon**
+  → ad+soyad; telefon karşılaştırması yalnız rakamlar ve son 10 hane üzerinden
+  (`+90 532…` ile `0532…` aynı kişi).
+- **Karar: var olan müşterinin bakiyesi Excel'den değişmez.** Bakiye
+  hareketlerin toplamı; tabloya yazılan rakam ekstredeki geçmişle tutmayan bir
+  bakiye yaratırdı. Ama sessizce yok sayılmıyor — dosyada farklı yazılmışsa özet
+  penceresi "şu müşterilerin bakiyesi değiştirilmeyecek" diye listeliyor.
+  **Yeni müşteride** ise bakiye devreden borç olarak açılış hareketine yazılıyor;
+  eski programdan liste taşımanın asıl ihtiyacı bu.
+- Her iki ekranda da yazmadan önce **özet penceresi** (kaç yeni, kaç güncellenecek,
+  kaç atlanan satır). Menüdeki tam sayfa özet paneli bu ekranlar için ağır kaçıyor;
+  `OnayModal` yetti. `.onay-modal p` artık satır sonlarını koruyor.
+- **Tahsilat fiş numarası** (`sql/2026-08-26-tahsilat-no.sql`):
+  `cari_hareketler.fis_no`, sayaç `isletmeler.son_tahsilat_no`, numarayı
+  tetikleyici veriyor — adisyon ve sipariş numarasıyla **aynı yol**. 9000'den
+  başlıyor ki adisyon (3000'ler) ve siparişle (50000'ler) karışmasın. Yalnız
+  tahsilat satırı numara alıyor: satışın adisyon numarası zaten var, düzeltme ve
+  açılış müşteriye fiş verilen işlemler değil. Ödemeler sekmesinde **Fiş No**
+  sütunu, ekstrede küçük "· Fiş 9001" notu, tahsilat alınınca bildirimde numara.
+- **Eksik:** fişin yazıcıdan basılması. Numara var, fiş tasarımı yok.
 
 **İkon seti:** `lucide-react`. 7 Ağu 2026'da **tüm ekranlar geçti** — düz
 karakter simgesi (× ← ✓ ⌫ ⧉ ⇅ ✎) kalmadı. Bundan sonra her yeni düğme, başlık
