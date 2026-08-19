@@ -10,9 +10,11 @@
 > (şimdilik yalnız Adisyonlar tablosu kendi penceresi gibi kayıyor).
 >
 > **En sona bırakılanlar — KDS'in kalan parçaları.** Çekirdek çalışıyor, acelesi
-> yok (19 Ağu 2026 kararı): pişirme/paketleme aşamalarının ekrana yansıması,
-> mutfak fişinin yazıcıdan basılması, hazırlık süresi raporu, birden çok
-> istasyonun aynı kartı paylaşması.
+> yok (19 Ağu 2026 kararı). **Bunlar listenin en altında kalır: sonradan çıkan
+> her yeni iş de KDS'in kalanının önüne geçer.** Bekleyenler:
+> pişirme/paketleme aşamalarının ekrana yansıması, mutfak fişinin yazıcıdan
+> basılması, hazırlık süresi raporu, birden çok istasyonun aynı kartı
+> paylaşması.
 
 
 *Ramazan seansa "devam edelim" diye giriyor — sıradaki iş bu listenin en üstündeki
