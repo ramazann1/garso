@@ -68,7 +68,7 @@ bir tablo; **"Eksik tahsilat" durumu bizim eklememiz** (kapanmış ama parası
 eksik kalan hesap Adisyo'da ayrı işaretlenmiyor). Yeni yetki:
 `siparis.aktif_et` (kapanmış adisyonu yeniden açma).
 
-**20 Ağu 2026: Offline dayanıklılık — aşama 1 bitti (kabuk + bağlantı durumu).**
+**19 Ağu 2026 (3. seans): Offline dayanıklılık — aşama 1 bitti (kabuk + bağlantı durumu).**
 Seansın başında iki karar düzeltildi:
 
 1. **Tahsilat fişi yapılmayacak.** Adisyo canlı turlandı: müşteri detayında
@@ -78,7 +78,7 @@ Seansın başında iki karar düzeltildi:
    Mutfak). "Açık Hesap Alacak Fişi" Adisyo'da bir kayıt türünün adı, kâğıda
    basılan bir şey değil. Fiş numarası bizde de aynı işi görüyor: kaydı
    konuşabilmek için.
-2. **Faz 2 sırası düzeltildi.** 19 Ağu'da "KDS'in kalanı kurye atamasından önce"
+2. **Faz 2 sırası düzeltildi.** Bir önceki seansta "KDS'in kalanı kurye atamasından önce"
    yazılmıştı; doğrusu **KDS'in kalanı en sonda** — offline dayanıklılık, sonra
    garson mobil, sonra kurye atama. Karar daha önce konuşulmuş ama dosyaya
    işlenmemişti.
@@ -123,7 +123,7 @@ kutusu + Yeniden dene düğmesi; eskiden halka sonsuza kadar dönüyordu.
 **Aşama 1'in bilinen sınırı:** çevrimdışıyken giriş yapılamıyor (şifre sunucuda
 doğrulanıyor) ve veri görünmüyor. İkisi de aşama 2'nin işi.
 
-**19 Ağu 2026 (3. seans): Offline dayanıklılık bitti — aşama 2 (okuma önbelleği) ve
+**19 Ağu 2026 (4. seans): Offline dayanıklılık bitti — aşama 2 (okuma önbelleği) ve
 aşama 3 (yazma kuyruğu).** Kasa artık internetsiz de satış alıyor.
 
 Aşama 2 — `onbellek.ts`. Kural **önce sunucu, olmazsa cihazdaki kopya**:
@@ -316,7 +316,7 @@ SQL editöründe oturum olmadığı için göç dosyalarında bu sütun **elle
 yazılmalı** (kaynağı ilgili satırın kendi işletmesi). `rol_yetkileri`'ne yetki
 eklerken bu yüzden hata alındı.
 
-**20 Ağu 2026:** **Kayıt ekranı korumaya alındı ve işletme kimliği kuruldu.**
+**19 Ağu 2026:** **Kayıt ekranı korumaya alındı ve işletme kimliği kuruldu.**
 Bu iki maddeyle birlikte sıradaki iş listesinin yapılabilir kısmı bitti; Faz 1
 (satış çekirdeği) tamamlandı, sıra Faz 2'de.
 - **Kayıt hız sınırı** (`sql/2026-08-20-kayit-koruma.sql`). Tasarım notunda
