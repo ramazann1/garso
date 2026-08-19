@@ -9,12 +9,10 @@
 > Sırada bekleyenler: **Analiz'in diğer tablolarına da kendi kutusunda kaydırma**
 > (şimdilik yalnız Adisyonlar tablosu kendi penceresi gibi kayıyor).
 >
-> **En sona bırakılanlar — KDS'in kalan parçaları.** Çekirdek çalışıyor, acelesi
-> yok (19 Ağu 2026 kararı). **Bunlar listenin en altında kalır: sonradan çıkan
-> her yeni iş de KDS'in kalanının önüne geçer.** Bekleyenler:
-> pişirme/paketleme aşamalarının ekrana yansıması, mutfak fişinin yazıcıdan
-> basılması, hazırlık süresi raporu, birden çok istasyonun aynı kartı
-> paylaşması.
+> **KDS'in kalan parçaları** — pişirme/paketleme aşamalarının ekrana yansıması,
+> mutfak fişinin yazıcıdan basılması, hazırlık süresi raporu, birden çok
+> istasyonun aynı kartı paylaşması. Çekirdek çalıştığı için acelesi yok:
+> Faz 2'de **kurye atamasından önce** gelir (19 Ağu 2026 kararı).
 
 
 *Ramazan seansa "devam edelim" diye giriyor — sıradaki iş bu listenin en üstündeki
