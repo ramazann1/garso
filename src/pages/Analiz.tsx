@@ -1,4 +1,4 @@
-import { Fragment, useEffect, useMemo, useState } from "react";
+import { Fragment, useEffect, useMemo, useRef, useState } from "react";
 import { useNavigate, useParams } from "react-router-dom";
 import {
   ArrowDown,
@@ -197,6 +197,8 @@ type AdisyonAlani =
   | "garson"
   | "durum"
   | "tahsilat"
+  | "kuver"
+  | "garsoniye"
   | "indirim"
   | "bahsis"
   | "toplam";
@@ -227,6 +229,10 @@ function adisyonDegeri(a: AnalizAdisyon, alan: AdisyonAlani): string | number {
       return durumMetni(a);
     case "tahsilat":
       return tahsilatMetni(a);
+    case "kuver":
+      return a.kuver;
+    case "garsoniye":
+      return a.garsoniye;
     case "indirim":
       return a.indirim;
     case "bahsis":
@@ -263,6 +269,23 @@ function Adisyonlar({
     alan: "acilis",
     artan: false,
   });
+
+  // Liste kutusu ekranda kendisine kalan yeri alıyor: alt kenarı — yatay
+  // kaydırma çubuğuyla birlikte — hep görünür kalsın, ona ulaşmak için sayfayı
+  // aşağı kaydırmak gerekmesin.
+  const kutu = useRef<HTMLDivElement>(null);
+  const [boy, setBoy] = useState(0);
+  useEffect(() => {
+    const olc = () => {
+      const k = kutu.current;
+      if (!k) return;
+      const ustten = k.getBoundingClientRect().top + window.scrollY;
+      setBoy(Math.max(280, window.innerHeight - ustten - 20));
+    };
+    olc();
+    window.addEventListener("resize", olc);
+    return () => window.removeEventListener("resize", olc);
+  }, [hepsi.length]);
 
   const adisyonlar = useMemo(() => {
     const ara = arama.trim().toLocaleLowerCase("tr");
@@ -310,6 +333,17 @@ function Adisyonlar({
   const topla = (alan: (a: AnalizAdisyon) => number) =>
     adisyonlar.reduce((t, a) => t + alan(a), 0);
 
+  const toplamSatiri = (
+    <tr className="analiz-toplam">
+      <th colSpan={9}>Toplam</th>
+      <th className="sag">{paraGoster(topla((a) => a.kuver))}</th>
+      <th className="sag">{paraGoster(topla((a) => a.garsoniye))}</th>
+      <th className="sag">{paraGoster(topla((a) => a.indirim))}</th>
+      <th className="sag">{paraGoster(topla((a) => a.bahsis))}</th>
+      <th className="sag hucre-tutar">{paraGoster(topla((a) => a.toplam))}</th>
+    </tr>
+  );
+
   return (
     <section className="ayar-bolum">
       <div className="analiz-liste-ust">
@@ -320,7 +354,7 @@ function Adisyonlar({
         <AramaKutusu deger={arama} degistir={setArama} yer="Adisyon no, masa, müşteri" />
       </div>
 
-      <div className="tablo-kaydir">
+      <div className="tablo-kaydir tablo-kaydir-dikey" ref={kutu} style={{ maxHeight: boy || undefined }}>
         <table className="analiz-tablo">
           <thead>
             <tr>
@@ -333,6 +367,8 @@ function Adisyonlar({
               <SiraBaslik alan="garson" ad="Açan" sira={sira} sirala={sirala} />
               <SiraBaslik alan="durum" ad="Durum" sira={sira} sirala={sirala} />
               <SiraBaslik alan="tahsilat" ad="Tahsilat" sira={sira} sirala={sirala} />
+              <SiraBaslik alan="kuver" ad="Kuver" sag sira={sira} sirala={sirala} />
+              <SiraBaslik alan="garsoniye" ad="Garsoniye" sag sira={sira} sirala={sirala} />
               <SiraBaslik alan="indirim" ad="İndirim" sag sira={sira} sirala={sirala} />
               <SiraBaslik alan="bahsis" ad="Bahşiş" sag sira={sira} sirala={sirala} />
               <SiraBaslik alan="toplam" ad="Tutar" sag sira={sira} sirala={sirala} />
@@ -352,20 +388,15 @@ function Adisyonlar({
                   <Durum adisyon={a} />
                 </td>
                 <td>{tahsilatMetni(a)}</td>
+                <td className="sag">{a.kuver ? paraGoster(a.kuver) : "—"}</td>
+                <td className="sag">{a.garsoniye ? paraGoster(a.garsoniye) : "—"}</td>
                 <td className="sag">{a.indirim ? paraGoster(a.indirim) : "—"}</td>
                 <td className="sag">{a.bahsis ? paraGoster(a.bahsis) : "—"}</td>
                 <td className="sag hucre-tutar">{paraGoster(a.toplam)}</td>
               </tr>
             ))}
           </tbody>
-          <tfoot>
-            <tr>
-              <td colSpan={9}>Toplam</td>
-              <td className="sag">{paraGoster(topla((a) => a.indirim))}</td>
-              <td className="sag">{paraGoster(topla((a) => a.bahsis))}</td>
-              <td className="sag hucre-tutar">{paraGoster(topla((a) => a.toplam))}</td>
-            </tr>
-          </tfoot>
+          <tfoot>{toplamSatiri}</tfoot>
         </table>
       </div>
     </section>

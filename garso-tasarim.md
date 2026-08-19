@@ -1,15 +1,18 @@
 ﻿# GARSO — Teknik Tasarım: Veri Modeli & Ekran Haritası
 *Restoran ve cafe'ler için bulut tabanlı satış ve işletme yönetim sistemi.*
 
-## 0. SIRADAKİ İŞ (18 Ağu 2026'da güncellendi)
+## 0. SIRADAKİ İŞ (19 Ağu 2026'da güncellendi)
 
-> **Sonraki seansın ilk işi:** **Analiz'in Adisyonlar tablosuna kuver ve
-> garsoniye sütunları** — veri akıyor ama kendi sütunları yok, tutar ara toplamın
-> içinde eriyor; "kuverden ne kadar kazandık" sorusu okunamıyor. Kısa iş.
+> **Sonraki seansın ilk işi:** **tahsilat fişinin yazıcıdan basılması** —
+> numara artık var, fiş tasarımı yok.
 >
-> Sırada bekleyenler: **KDS** (mutfak ekranı — büyük modül, kendi seansını
-> istiyor), **tahsilat fişinin yazıcıdan basılması** (numara artık var, fiş
-> tasarımı yok).
+> Sırada bekleyenler: **Analiz'in diğer tablolarına da kendi kutusunda kaydırma**
+> (şimdilik yalnız Adisyonlar tablosu kendi penceresi gibi kayıyor).
+>
+> **En sona bırakılanlar — KDS'in kalan parçaları.** Çekirdek çalışıyor, acelesi
+> yok (19 Ağu 2026 kararı): pişirme/paketleme aşamalarının ekrana yansıması,
+> mutfak fişinin yazıcıdan basılması, hazırlık süresi raporu, birden çok
+> istasyonun aynı kartı paylaşması.
 
 
 *Ramazan seansa "devam edelim" diye giriyor — sıradaki iş bu listenin en üstündeki
@@ -57,6 +60,61 @@ durunca kalabalık oluyordu. Adisyonlar listesi Adisyo'nun sütunlarıyla gerçe
 bir tablo; **"Eksik tahsilat" durumu bizim eklememiz** (kapanmış ama parası
 eksik kalan hesap Adisyo'da ayrı işaretlenmiyor). Yeni yetki:
 `siparis.aktif_et` (kapanmış adisyonu yeniden açma).
+
+**19 Ağu 2026 (2. seans): İstasyon ekranı (KDS) çekirdeği bitti.** Önce Adisyo'nun
+mutfak ekranı canlı turlandı (yol haritası bölüm "KDS (Mutfak) Ekranı"). Turda
+ürün → istasyon eşlemesinin bizde zaten kurulu olduğu görüldü (`istasyonlar`
+tablosu, `pisirme`/`paketleme` sütunlarıyla), o yüzden ön adım gerekmedi.
+
+Ekran `/istasyon` adresinde, giriş istasyon seçtiriyor, seçilen tezgâh
+`/istasyon/:id`'de açılıyor. Veri katmanı `mutfak.ts`, göç
+`sql/2026-08-27-mutfak-hazir.sql`.
+
+Adisyo'dan bilinçli ayrıldığımız yerler:
+- **Kart = tur, adisyon değil.** Adisyo'da iki saat önce girilen ürünle az önce
+  söylenen aynı kartta duruyor; tezgâh yeni geleni ayırt edemiyor. Bizde her
+  sipariş turu kendi kartı.
+- **Sayaç kartta, kalem satırında değil.** Adisyo her satıra ayrı sayaç koyuyor,
+  kart kalabalıklaşıyor. Bizde tek sayaç + kartın sol kenarında şerit: süre
+  dolunca yeşilden mercana dönüyor, eşik işletme ayarı (`mutfak_gecikme_dk`,
+  Ayarlar › Genel). Adisyo'da eşik sabit.
+- **Onay yok, geri alma var.** Hazır düğmesi tek dokunuşla işaretliyor (mutfakta
+  hız var); yanlış basılan on saniye boyunca alttaki şeritten, sonrasında
+  Hazırlananlar panelinden geri alınıyor. Adisyo'da geri alma hiç yok.
+- **Koyu zemin.** Adisyo'nunki bembeyaz; mutfak ekranı uzaktan okunuyor, koyu
+  zeminde kartlar öne çıkıyor. Yan menü yok, ekran tam ekran.
+- **Kartlar sabit boyda** (340px; punto kademesine göre 300/400). İki ürünlü
+  sipariş de on ürünlüsü de aynı kutuda; sığmayan liste kartın içinde kayıyor,
+  başlık ve "Tümü hazır" yerinde kalıyor — Analiz'deki kendi kaydırma penceresi
+  kararının aynısı. Düğmeler bütün kartlarda aynı hizada.
+- **Garson adı masa adının üstünde**, kendi satırında ve koyu. Künye satırında
+  nokta ayraçları arasında kayboluyordu.
+
+Veri tarafındaki kararlar:
+- Hazır durumu ayrı tablo değil, kalemin kendi sütunu (`hazir_at`, `hazir_kisi`).
+  Boşsa bekliyor, doluysa hazır; üçüncü durum yok. Aşamalar geldiğinde bu
+  sütunlar yerinde kalacak.
+- **İkram hazırlanır, iptal hazırlanmaz.** İstasyonu olmayan ürün hiçbir ekrana
+  düşmez — mutfak fişindeki kuralın aynısı, ikisi aynı haritadan okuyor
+  (`urunIstasyonlari`).
+- Ekran canlı yayınla besleniyor; kablosuz zayıflarsa 30 saniyelik yoklama
+  yedekte duruyor.
+- Yazı boyutu (üç kademe) cihazda saklanıyor, sunucuda değil: aynı işletmede
+  mutfak tabletle, bar duvar ekranıyla çalışabiliyor.
+- Yeni yetki: `mutfak.ekran`.
+
+Turda çıkan ve bu seansta yapılmayan işler en sona bırakıldı (bölüm 0).
+
+**19 Ağu 2026:** Analiz → Adisyonlar tablosuna **Kuver** ve **Garsoniye**
+sütunları eklendi (sıralanabilir, alt toplam satırında dönem toplamı). Aynı
+tabloya **kendi kaydırma penceresi** verildi: kutu ekranda kendisine kalan yeri
+ölçüp o kadar yükseliyor, liste kendi dikey çubuğuyla kayıyor, sütun başlıkları
+ve Toplam satırı sabit duruyor. Karar: **liste kutusunun yüksekliği sabit `vh`
+ile verilmez** — üstteki başlık, sekmeler ve filtre şeridi yer kapladığı için
+kutunun alt kenarı (ve yatay çubuğu) ekranın dışında kalıyordu. Denenip
+vazgeçilen iki fikir: toplam satırının bir kopyasını başlıkların altına koymak
+ve tablonun üstüne ikinci bir yatay kaydırma çubuğu koymak — kutu kendi içinde
+kayınca ikisi de gereksizleşti.
 
 **17 Ağu 2026:** **Analiz'in Denetim dışındaki bütün sekmeleri bitti.** Özet
 yeniden kuruldu: üstte toplama işlemi gibi okunan üç sayı (`Kapanan ciro +

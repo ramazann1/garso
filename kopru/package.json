@@ -1,6 +1,6 @@
 {
   "name": "garso-kopru",
-  "version": "1.0.4",
+  "version": "1.1.0",
   "private": true,
   "type": "module",
   "description": "Garso Kasa Köprüsü — kasada çalışır, yazdırma kuyruğundaki fişleri yazıcıya basar.",

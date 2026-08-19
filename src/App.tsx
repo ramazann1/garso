@@ -5,6 +5,7 @@ import { ayarlar, ayarlariGetir, isletmeKimliginiGetir } from "./isletmeAyarlari
 import Salon from "./pages/Salon";
 import Siparis from "./pages/Siparis";
 import MenuStudyosu from "./pages/MenuStudyosu";
+import Istasyon from "./pages/Istasyon";
 import KasaGecmisi from "./pages/KasaGecmisi";
 import Giderler from "./pages/Giderler";
 import Musteriler from "./pages/Musteriler";
@@ -84,6 +85,9 @@ function App() {
         <Route path="/siparis/:masaId" element={<Siparis />} />
         <Route path="/adisyon/:adisyonId" element={<Siparis />} />
         <Route path="/menu" element={<Navigate to="/menu/kategoriler" replace />} />
+        {/* İstasyon ekranı yan menüsüz, tam ekran: mutfaktaki tablette kart alanı bölünmesin. */}
+        <Route path="/istasyon" element={<Istasyon />} />
+        <Route path="/istasyon/:istasyonId" element={<Istasyon />} />
         <Route path="/menu/:bolum" element={<MenuStudyosu />} />
         {/* Kasa takibi kapalıysa geçmiş ekranı yok; başlık doğrudan Giderler'i açar. */}
         <Route

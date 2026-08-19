@@ -27,6 +27,8 @@ export type IsletmeAyarlari = {
   kilitSuresi: number;
   /** Hızlı Öde'de verilen tutardan para üstü hesaplansın. */
   paraUstu: boolean;
+  /** İstasyon ekranında kart bu kadar dakika beklerse geciken sayılır; 0 = kapalı. */
+  mutfakGecikmeDk: number;
   /** Kullanılmayan sipariş türü arayüzde hiç durmasın. */
   gelalAcik: boolean;
   paketAcik: boolean;
@@ -52,6 +54,7 @@ const VARSAYILAN: IsletmeAyarlari = {
   kisiSayisiZorunlu: false,
   kilitSuresi: 0,
   paraUstu: true,
+  mutfakGecikmeDk: 15,
   gelalAcik: true,
   paketAcik: true,
   kasaTakibi: false,
@@ -97,6 +100,7 @@ export async function ayarlariGetir(): Promise<IsletmeAyarlari> {
     kisiSayisiZorunlu: s?.kisi_sayisi_zorunlu ?? VARSAYILAN.kisiSayisiZorunlu,
     kilitSuresi: s?.kilit_suresi ?? VARSAYILAN.kilitSuresi,
     paraUstu: s?.para_ustu ?? VARSAYILAN.paraUstu,
+    mutfakGecikmeDk: s?.mutfak_gecikme_dk ?? VARSAYILAN.mutfakGecikmeDk,
     gelalAcik: s?.gelal_acik ?? VARSAYILAN.gelalAcik,
     paketAcik: s?.paket_acik ?? VARSAYILAN.paketAcik,
     kasaTakibi: s?.kasa_takibi ?? VARSAYILAN.kasaTakibi,
@@ -127,6 +131,7 @@ export async function ayarlariKaydet(degisen: Partial<IsletmeAyarlari>) {
       kisi_sayisi_zorunlu: yeni.kisiSayisiZorunlu,
       kilit_suresi: yeni.kilitSuresi,
       para_ustu: yeni.paraUstu,
+      mutfak_gecikme_dk: yeni.mutfakGecikmeDk,
       gelal_acik: yeni.gelalAcik,
       paket_acik: yeni.paketAcik,
       kasa_takibi: yeni.kasaTakibi,

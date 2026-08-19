@@ -1,6 +1,6 @@
 import { useState } from "react";
 import { useLocation, useNavigate } from "react-router-dom";
-import { Banknote, ChartColumn, ChevronDown, Lock, LogOut, Settings, Store, UsersRound } from "lucide-react";
+import { Banknote, ChartColumn, ChevronDown, Lock, LogOut, Settings, Store, UsersRound, UtensilsCrossed } from "lucide-react";
 import OnayModal from "./OnayModal";
 import { kilitKaldir, kilitliMi } from "../cikisKilidi";
 import { isletmeAdi, isletmeKodu } from "../isletmeAyarlari";
@@ -71,6 +71,7 @@ export const analizBolumleri: Bolum[] = [
 const baglantilar = [
   { yol: "/", ad: "Salon", ikon: "salon" },
   { yol: "/menu", ad: "Menü Stüdyosu", ikon: "menu", alt: menuBolumleri },
+  { yol: "/istasyon", ad: "İstasyon Ekranı", ikon: "istasyon" },
   { yol: "/kasa", ad: "Kasa", ikon: "kasa", alt: kasaBolumleri },
   { yol: "/musteriler", ad: "Müşteriler", ikon: "musteri" },
   { yol: "/analiz", ad: "Analiz", ikon: "analiz", alt: analizBolumleri },
@@ -103,6 +104,7 @@ function Ikon({ tip }: { tip: string }) {
   }
   if (tip === "ayar") return <Settings />;
   if (tip === "kasa") return <Banknote />;
+  if (tip === "istasyon") return <UtensilsCrossed />;
   if (tip === "analiz") return <ChartColumn />;
   if (tip === "musteri") return <UsersRound />;
   return (

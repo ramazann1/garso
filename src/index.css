@@ -9320,6 +9320,28 @@ body {
   padding: 0 22px;
 }
 
+/* Uzun liste sayfayı uzatmasın: tablo kendi penceresi gibi, kendi dikey
+   çubuğuyla kayıyor. Başlık satırı ve toplam satırı yerinde duruyor. */
+.tablo-kaydir-dikey {
+  max-height: 62vh;
+  overflow-y: auto;
+}
+
+.tablo-kaydir-dikey thead th {
+  position: sticky;
+  top: 0;
+  z-index: 2;
+  background: var(--kart);
+}
+
+.tablo-kaydir-dikey tfoot th {
+  position: sticky;
+  bottom: 0;
+  z-index: 2;
+  background: var(--kart);
+  box-shadow: 0 -1px 0 #ece1d4;
+}
+
 .analiz-tablo {
   width: 100%;
   border-collapse: collapse;
@@ -9378,6 +9400,22 @@ body {
   border-bottom: none;
   font-weight: 600;
   color: var(--metin);
+}
+
+/* Aynı toplam satırı hem başlıkların altında hem listenin sonunda duruyor. */
+.analiz-tablo tr.analiz-toplam th {
+  padding: 11px 14px 11px 0;
+  font-size: 14px;
+  font-weight: 600;
+  color: var(--metin);
+}
+
+.analiz-tablo thead tr.analiz-toplam th {
+  border-bottom: 2px solid #ece1d4;
+}
+
+.analiz-tablo tfoot tr.analiz-toplam th {
+  border-bottom: none;
 }
 
 .rozet {
@@ -10718,3 +10756,644 @@ body {
   background: var(--zemin);
   color: var(--soluk);
 }
+
+/* ---- İstasyon ekranı (mutfak/bar) ---- */
+
+/* Tezgâhın ekranı koyu: mutfakta cihaz uzaktan ve göz ucuyla okunuyor, krem
+   zeminde beyaz kartlar birbirine karışıyordu. Koyu zeminde kart öne çıkıyor.
+   Yan menü de yok — sipariş kartları bütün ekranı kullansın. */
+.istasyon {
+  display: flex;
+  flex-direction: column;
+  min-height: 100vh;
+  background: #232a2e;
+  color: #fff;
+}
+
+.istasyon-ust {
+  display: flex;
+  align-items: center;
+  gap: 18px;
+  padding: 14px 20px;
+  background: #1b2124;
+  border-bottom: 1px solid #313a3f;
+}
+
+.istasyon-cik,
+.istasyon-boyut button,
+.istasyon-panel-dugme {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  gap: 8px;
+  border: 1px solid #3a4449;
+  border-radius: 12px;
+  background: #2b3337;
+  color: #fff;
+  cursor: pointer;
+}
+
+.istasyon-cik {
+  width: 44px;
+  height: 44px;
+  flex: none;
+}
+
+.istasyon-cik svg,
+.istasyon-boyut svg,
+.istasyon-panel-dugme svg {
+  width: 20px;
+  height: 20px;
+}
+
+.istasyon-ad {
+  flex: 1;
+  min-width: 0;
+}
+
+.istasyon-ad h1 {
+  font-size: 24px;
+  font-weight: 600;
+  line-height: 1.2;
+}
+
+.istasyon-ad span {
+  font-size: 14px;
+  color: #b9c4c9;
+}
+
+.istasyon-araclar {
+  display: flex;
+  align-items: center;
+  gap: 12px;
+}
+
+.istasyon-boyut {
+  display: flex;
+  align-items: center;
+  gap: 4px;
+  padding: 4px;
+  border: 1px solid #3a4449;
+  border-radius: 12px;
+}
+
+.istasyon-boyut button {
+  width: 36px;
+  height: 36px;
+  border: none;
+  background: transparent;
+}
+
+.istasyon-boyut button:disabled {
+  opacity: 0.35;
+  cursor: default;
+}
+
+.istasyon-boyut span {
+  min-width: 44px;
+  text-align: center;
+  font-size: 14px;
+  color: #b9c4c9;
+}
+
+.istasyon-panel-dugme {
+  height: 44px;
+  padding: 0 16px;
+  font-size: 15px;
+  font-weight: 500;
+}
+
+.istasyon-panel-dugme.acik {
+  border-color: var(--mercan);
+  color: var(--mercan);
+}
+
+.istasyon-panel-dugme b {
+  padding: 1px 8px;
+  border-radius: 999px;
+  background: var(--mercan);
+  color: #fff;
+  font-size: 13px;
+}
+
+.istasyon-govde {
+  display: flex;
+  flex: 1;
+  min-height: 0;
+}
+
+.istasyon-kartlar {
+  flex: 1;
+  display: grid;
+  grid-template-columns: repeat(auto-fill, minmax(300px, 1fr));
+  align-content: start;
+  gap: 16px;
+  padding: 20px;
+  overflow-y: auto;
+}
+
+/* Yazı boyutu üç kademe: aynı işletmede mutfak tablet, bar duvar ekranı
+   olabiliyor. Kart genişliği de büyüyor, yoksa ürün adı ikinci satıra kaçıyor. */
+.istasyon-orta .istasyon-kartlar { font-size: 16px; }
+
+/* Yazı büyüdükçe kartın da boyu artıyor; yoksa büyük puntoda listeye iki
+   satır sığmıyor ve her kart çubuklu görünüyordu. */
+.istasyon-kucuk .istasyon-kart { height: 300px; }
+.istasyon-buyuk .istasyon-kart { height: 400px; }
+.istasyon-buyuk .istasyon-kartlar {
+  font-size: 19px;
+  grid-template-columns: repeat(auto-fill, minmax(370px, 1fr));
+}
+.istasyon-kucuk .istasyon-kartlar {
+  font-size: 14px;
+  grid-template-columns: repeat(auto-fill, minmax(260px, 1fr));
+}
+
+.istasyon-kart {
+  position: relative;
+  display: flex;
+  flex-direction: column;
+  gap: 12px;
+  padding: 16px 16px 16px 22px;
+  border-radius: 16px;
+  background: var(--kart);
+  color: var(--metin);
+  overflow: hidden;
+  /* Bütün kartlar aynı boyda: iki ürünlü sipariş de on ürünlü sipariş de aynı
+     kutuda duruyor, ızgara düzgün bir tabaka gibi görünüyor. Sığmayan liste
+     kartın içinde kayıyor; başlık, sayaç ve düğme yerinde kalıyor. */
+  height: 340px;
+}
+
+/* Kartın sol kenarındaki şerit bekleme süresini anlatıyor: yeşilse sipariş
+   yeni, mercansa gecikmiş. Sayaç okumadan, ekrana bakar bakmaz görülüyor. */
+.istasyon-kart::before {
+  content: "";
+  position: absolute;
+  inset: 0 auto 0 0;
+  width: 7px;
+  background: var(--yesil);
+}
+
+.istasyon-kart.geciken::before { background: var(--mercan); }
+
+.istasyon-kart > header {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 12px;
+}
+
+.istasyon-kart-masa {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  min-width: 0;
+  flex: 1;
+}
+
+/* Masa adı ile künye satırı sayaç uzayınca (2:19 → 1 sa 5 dk) sıkışıp alt
+   satıra kırılıyordu; kart yüksekliği oynamasın diye tek satırda kalıp
+   taşan yeri üç noktayla bitiriyor. */
+.istasyon-kart-masa > div {
+  min-width: 0;
+}
+
+.istasyon-kart-masa > svg {
+  width: 22px;
+  height: 22px;
+  flex: none;
+  color: var(--mercan);
+}
+
+/* Garson adı masa adının üstünde, kendi satırında. Künye satırındaki
+   nokta ayraçlarının arasında kaybolmasın diye ayrı ve daha koyu duruyor. */
+.istasyon-kart-masa em {
+  display: block;
+  font-size: 0.8em;
+  font-style: normal;
+  font-weight: 600;
+  line-height: 1.3;
+  color: var(--metin);
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
+}
+
+.istasyon-kart-masa strong {
+  display: block;
+  font-size: 1.25em;
+  font-weight: 600;
+  line-height: 1.2;
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
+}
+
+.istasyon-kart-masa span {
+  display: block;
+  font-size: 0.82em;
+  color: var(--soluk);
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
+}
+
+.istasyon-kart-sure {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  gap: 6px;
+  flex: none;
+  /* Rakam genişledikçe rozet büyüyüp başlığı itmesin. */
+  min-width: 86px;
+  white-space: nowrap;
+  padding: 5px 10px;
+  border-radius: 999px;
+  background: var(--zemin);
+  font-size: 0.9em;
+  font-weight: 600;
+  font-variant-numeric: tabular-nums;
+}
+
+.istasyon-kart-sure svg { width: 15px; height: 15px; }
+
+.istasyon-kart.geciken .istasyon-kart-sure {
+  background: #ffeee9;
+  color: #c2410c;
+}
+
+/* Adisyonun geneline yazılan not: acele, çocuk var gibi. */
+.istasyon-kart-not {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  padding: 8px 10px;
+  border-radius: 10px;
+  background: #fff4ef;
+  color: #b23c17;
+  font-size: 0.88em;
+  font-weight: 500;
+}
+
+.istasyon-kart-not svg { width: 16px; height: 16px; flex: none; }
+
+.istasyon-kart ul {
+  display: flex;
+  flex-direction: column;
+  gap: 2px;
+  list-style: none;
+  /* Kartlar ızgarada eşit boyda duruyor; liste kalan yeri doldurunca
+     "Tümü hazır" düğmeleri bütün kartlarda aynı hizaya geliyor. */
+  flex: 1;
+  min-height: 0;
+  overflow-y: auto;
+  scrollbar-width: thin;
+  scrollbar-color: #d8cfc4 transparent;
+}
+
+.istasyon-kart ul::-webkit-scrollbar { width: 6px; }
+
+.istasyon-kart ul::-webkit-scrollbar-thumb {
+  border-radius: 999px;
+  background: #d8cfc4;
+}
+
+.istasyon-kart li {
+  display: flex;
+  align-items: center;
+  gap: 12px;
+  padding: 9px 0;
+  border-top: 1px solid #f1ece5;
+}
+
+.istasyon-kart li:first-child { border-top: none; }
+
+.istasyon-adet {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  width: 30px;
+  height: 30px;
+  flex: none;
+  border-radius: 9px;
+  background: var(--zemin);
+  font-size: 0.95em;
+  font-weight: 600;
+}
+
+.istasyon-urun {
+  flex: 1;
+  min-width: 0;
+}
+
+.istasyon-urun strong {
+  display: block;
+  font-weight: 500;
+  line-height: 1.3;
+}
+
+.istasyon-urun span {
+  font-size: 0.82em;
+  color: var(--soluk);
+}
+
+/* Ürün notu mutfağın en kritik satırı; ayrı renkte ve ikonlu duruyor ki
+   ürün adının devamı sanılmasın. */
+.istasyon-urun em {
+  display: flex;
+  align-items: center;
+  gap: 5px;
+  margin-top: 3px;
+  color: var(--mercan);
+  font-size: 0.85em;
+  font-style: normal;
+  font-weight: 500;
+}
+
+.istasyon-urun em svg { width: 14px; height: 14px; flex: none; }
+
+/* Hazır düğmesi: eldivenli elle basılıyor, hedef geniş tutuluyor. */
+.istasyon-kart li > button {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  width: 42px;
+  height: 42px;
+  flex: none;
+  border: 1.5px solid #e6ded4;
+  border-radius: 12px;
+  background: var(--kart);
+  color: var(--soluk);
+  cursor: pointer;
+  transition: background 0.12s, color 0.12s, border-color 0.12s;
+}
+
+.istasyon-kart li > button svg { width: 22px; height: 22px; }
+
+.istasyon-kart li > button:hover {
+  border-color: var(--yesil);
+  background: var(--yesil);
+  color: #fff;
+}
+
+.istasyon-tumu {
+  margin-top: auto;
+  flex: none;
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  gap: 8px;
+  height: 44px;
+  border: none;
+  border-radius: 12px;
+  background: var(--metin);
+  color: #fff;
+  font-size: 0.92em;
+  font-weight: 500;
+  cursor: pointer;
+}
+
+.istasyon-tumu svg { width: 19px; height: 19px; }
+
+.istasyon-tumu:hover { background: #1b2124; }
+
+.istasyon-bos {
+  grid-column: 1 / -1;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  gap: 10px;
+  padding: 90px 20px;
+  color: #b9c4c9;
+}
+
+.istasyon-bos svg { width: 46px; height: 46px; color: #4a565b; }
+.istasyon-bos p { font-size: 20px; font-weight: 500; color: #dfe6e9; }
+.istasyon-bos span { font-size: 15px; }
+
+/* ---- Hazırlananlar paneli ---- */
+
+.istasyon-panel {
+  width: 320px;
+  flex: none;
+  padding: 20px 16px;
+  background: #1b2124;
+  border-left: 1px solid #313a3f;
+  overflow-y: auto;
+}
+
+.istasyon-panel h2 {
+  margin-bottom: 14px;
+  font-size: 16px;
+  font-weight: 600;
+}
+
+.istasyon-panel-bos {
+  font-size: 14px;
+  color: #b9c4c9;
+}
+
+.istasyon-panel-kart {
+  margin-bottom: 12px;
+  padding: 12px;
+  border-radius: 12px;
+  background: #262f33;
+}
+
+.istasyon-panel-kart > header {
+  display: flex;
+  align-items: baseline;
+  justify-content: space-between;
+  margin-bottom: 8px;
+  font-size: 15px;
+}
+
+.istasyon-panel-kart > header span { color: #b9c4c9; font-size: 13px; }
+
+.istasyon-panel-satir {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  padding: 6px 0;
+  font-size: 14px;
+}
+
+.istasyon-panel-satir > svg {
+  width: 16px;
+  height: 16px;
+  flex: none;
+  color: var(--yesil);
+}
+
+.istasyon-panel-satir > span {
+  flex: 1;
+  min-width: 0;
+}
+
+.istasyon-panel-satir time {
+  color: #b9c4c9;
+  font-size: 13px;
+  font-variant-numeric: tabular-nums;
+}
+
+.istasyon-panel-satir > button {
+  display: inline-flex;
+  width: 30px;
+  height: 30px;
+  flex: none;
+  align-items: center;
+  justify-content: center;
+  border: 1px solid #3a4449;
+  border-radius: 8px;
+  background: transparent;
+  color: #dfe6e9;
+  cursor: pointer;
+}
+
+.istasyon-panel-satir > button svg { width: 15px; height: 15px; }
+
+/* ---- Geri alma şeridi ---- */
+
+/* Hazır düğmesinde onay penceresi yok: tezgâhta her dokunuşa emin misin diye
+   sorulmuyor. Yanlış basılanın karşılığı bu şerit, birkaç saniye duruyor. */
+.istasyon-geri-serit {
+  position: fixed;
+  left: 50%;
+  bottom: 24px;
+  transform: translateX(-50%);
+  display: flex;
+  align-items: center;
+  gap: 16px;
+  padding: 12px 14px 12px 20px;
+  border-radius: 14px;
+  background: #fff;
+  color: var(--metin);
+  box-shadow: 0 10px 30px rgba(0, 0, 0, 0.3);
+  font-size: 15px;
+}
+
+.istasyon-geri-serit button {
+  display: inline-flex;
+  align-items: center;
+  gap: 7px;
+  padding: 9px 14px;
+  border: none;
+  border-radius: 10px;
+  background: var(--metin);
+  color: #fff;
+  font-size: 14px;
+  font-weight: 500;
+  cursor: pointer;
+}
+
+.istasyon-geri-serit button svg { width: 16px; height: 16px; }
+
+/* ---- İstasyon seçim ekranı ---- */
+
+.istasyon-secim {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  min-height: 100vh;
+  padding: 20px;
+  background: #232a2e;
+}
+
+.istasyon-yukleniyor {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  min-height: 100vh;
+  background: #232a2e;
+  color: #dfe6e9;
+}
+
+.istasyon-secim-kutu {
+  width: 100%;
+  max-width: 440px;
+  padding: 26px;
+  border-radius: 20px;
+  background: var(--kart);
+}
+
+.istasyon-secim-kutu > header {
+  display: flex;
+  align-items: center;
+  gap: 14px;
+  margin-bottom: 22px;
+}
+
+.istasyon-secim-kutu > header > svg {
+  width: 26px;
+  height: 26px;
+  flex: none;
+  color: var(--mercan);
+}
+
+.istasyon-secim-kutu h1 {
+  font-size: 21px;
+  font-weight: 600;
+}
+
+.istasyon-secim-kutu p {
+  font-size: 14px;
+  color: var(--soluk);
+}
+
+.istasyon-secim-kutu ul {
+  list-style: none;
+  display: flex;
+  flex-direction: column;
+  gap: 8px;
+}
+
+.istasyon-secim-kutu li > button {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  width: 100%;
+  padding: 16px 18px;
+  border: 1.5px solid #eee6dc;
+  border-radius: 14px;
+  background: var(--zemin);
+  color: var(--metin);
+  font-size: 17px;
+  font-weight: 500;
+  cursor: pointer;
+  transition: border-color 0.12s, background 0.12s;
+}
+
+.istasyon-secim-kutu li > button:hover {
+  border-color: var(--mercan);
+  background: #fff4ef;
+}
+
+.istasyon-secim-kutu li > button svg {
+  width: 19px;
+  height: 19px;
+  color: var(--mercan);
+}
+
+.istasyon-bos-tanim {
+  padding: 16px;
+  border-radius: 12px;
+  background: var(--zemin);
+  font-size: 14px;
+  color: var(--metin);
+}
+
+.istasyon-geri-baglanti {
+  display: inline-flex;
+  align-items: center;
+  gap: 7px;
+  margin-top: 20px;
+  border: none;
+  background: none;
+  color: var(--soluk);
+  font-size: 14px;
+  cursor: pointer;
+}
+
+.istasyon-geri-baglanti svg { width: 16px; height: 16px; }

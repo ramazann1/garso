@@ -1111,6 +1111,31 @@ export default function IsletmeAyarlari() {
             </AyarSatiri>
 
             <AyarSatiri
+              ad="İstasyon ekranında gecikme"
+              ara={ara}
+              ipucu="Mutfak ve bar ekranında sipariş kartının kenarı bu süre dolunca renk değiştirir; tezgâhın önünde bekleyen iş uzaktan bakınca görülür. Kartlar kaybolmaz, yalnız işaretlenir. Kapalı seçilirse kenar hep aynı renkte durur."
+            >
+              <div className="mod-sec kompakt dar">
+                {[0, 5, 10, 15, 25].map((d) => (
+                  <button
+                    key={d}
+                    className={genel.mutfakGecikmeDk === d ? "aktif" : ""}
+                    onClick={() =>
+                      genelDegistir(
+                        { mutfakGecikmeDk: d },
+                        d === 0
+                          ? "Gecikme işareti kapalı"
+                          : `Kart ${d} dakika sonra geciken sayılacak`
+                      )
+                    }
+                  >
+                    {d === 0 ? "Kapalı" : `${d} dk`}
+                  </button>
+                ))}
+              </div>
+            </AyarSatiri>
+
+            <AyarSatiri
               ad="Çalışma tipleri"
               ara={ara}
               ipucu="Yapmadığınız iş arayüzde durmasın. Masa servisi kapatılamaz — kapanırsa satış yapacak ekran kalmaz."

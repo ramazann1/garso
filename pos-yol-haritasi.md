@@ -283,8 +283,72 @@ Yetki kategorileri ve örnek izinler:
 - Özet kartları: Net Kâr, Alınan Ödemeler (Açık Hesap Tahsilatları + Adisyonlu Tahsilatlar ayrımı), Tahsil Edilmemiş Tutar, Toplam Masraf, Ödeme Tipi Detayı, İade Tutarı, Toplam Bahşiş (ciroya oran %), Kurye Başarı Yüzdesi, Kasa...
 - Filtrele / İndir / Yazdır aksiyonları her raporda standart.
 
-### KDS (Mutfak) Ekranı
-- Giriş: mutfak grubu seçimi (Mutfak | Bar | Nargile) → her istasyon kendi ekranını açıyor.
+### KDS (Mutfak) Ekranı — 19 Ağu 2026 canlı turu
+
+**Mutfak Grupları ayarı** (`#/app/kitchen-groups`)
+- Tablo üç sütun: Grup Adı · Mutfak Durumu · Düzenle/Sil. İşletmede Mutfak, Bar,
+  Nargile tanımlı.
+- Düzenleme modalı çok sade: **ad + iki kutu** (Pişirme aşaması, Paketleme aşaması).
+- Ekrandaki uyarı: varsayılan akış **Hazırlanıyor → Hazırlandı**. Kutular
+  işaretlenirse o istasyonun akışı uzuyor. Yani aşama sayısı grup bazında,
+  ekranın kolonları sabit değil.
+- Ürün → mutfak grubu eşlemesi Menü/Ürünler ekranında yapılıyor; grup ekranı
+  yalnızca tanımı tutuyor.
+
+**KDS girişi** (`#/app/kitchen`)
+- Tam ekran, arka planda bulanık salon görseli, ortada "Mutfak Grupları / Mutfak
+  grubu seçiniz" kutusu. Seçilince `#/app/kitchen-detail/<grup id>`'ye gidiyor —
+  her istasyon kendi ekranı, aynı anda birden çok cihazda açılabiliyor.
+
+**KDS ana ekranı** (`#/app/kitchen-detail/40264`)
+- Üst şerit: Geri Dön · **Sırala** · **Hazırlanıyor Aşaması** · **Hazırlanan
+  Siparişler** · **Ayarlar**.
+- Kartlar soldan sağa diziliyor, ızgara düzeni. Sayfalama yok, "Siparişler
+  otomatik olarak yüklenecektir" — canlı akış, elle yenileme yok.
+- **Sipariş kartı:** üstte sipariş türü ikonu (sarı daire), **personel adı /
+  adisyon no**, altında **bölge / masa** (B / B 14), sağda **Tümü Hazır**.
+- **Kalem satırı:** solda "Hazırlanıyor" etiketi + **süre sayacı**, ortada ürünü
+  ekleyen kullanıcı ve **1 Tam - KÖFTE IZGARA** (miktar + porsiyon + ad),
+  varsa altında **ürün notu kırmızıyla**, sağda **Hazır**.
+- **Sayaç rengi süreye göre değişiyor:** yeni kalem soluk yeşil (00:00:11),
+  bekleyen kalem koyu kırmızı (02:17:41). Eşik değeri ayarda görünmüyor.
+- Aynı üründen iki adet girilince **iki ayrı satır** oluyor, miktar
+  birleştirilmiyor — her porsiyon tek tek hazır işaretlenebilsin diye.
+- **Yalnız kendi grubunun ürünleri düşüyor:** teste kola da eklendi, Mutfak
+  ekranında görünmedi.
+
+**Hazır akışı** (turda bizzat denendi, sonra sipariş iptal edildi)
+- Kalemdeki **Hazır**'a basınca satır karttan anında siliniyor, onay sorulmuyor.
+- **Tümü Hazır** kartın tamamını kapatıyor.
+- Hazır olanlar **Hazırlanan Siparişler** panelinde toplanıyor: sağda açılan
+  ikinci sütun, adisyon başlığı + **"Hazırlanma: 14:43:17"** saati + her kalemin
+  yanında yeşil tik. Notlar burada da duruyor. Panel aç/kapa düğmesiyle
+  gizleniyor, kapalıyken kartlar tüm genişliği kullanıyor.
+
+**Aşama filtresi** — "Hazırlanıyor Aşaması" düğmesi "Mutfak Aşamaları" modalını
+açıyor: hangi aşamaların ekranda görüneceğini seçtiriyorsun. Grup ayarındaki
+kutular kapalıyken listede tek satır var (Hazırlanıyor Aşaması). Modalın kapatma
+düğmesi yok, yalnız Kaydet ile çıkılıyor.
+
+**KDS ayarları** (dişli, cihaz bazında)
+- **Ürün yazı boyutu** — üç kademe (mutfak ekranı uzaktan okunuyor).
+- **Ürünü ekleyen kullanıcıyı göster**
+- **Hazır butonunu ürün bazında göster** — kapalıysa yalnız "Tümü hazır" kalıyor.
+- **Ürün birimlerini göster** — "Tam", "Yarım" ifadeleri.
+
+**Klon için çıkarımlar**
+1. Ekran **iki bölgeli**: hazırlananlar (sol, geniş) + hazırlananlar (sağ, dar
+   panel). Kanban kolonu değil; aşamalar grup bazında değiştiği için sabit kolon
+   kurmak yanlış olur.
+2. Süre sayacı ve renk eşiği KDS'in en operasyonel parçası — eşik bizde işletme
+   parametresi olmalı, Adisyo'da sabit görünüyor.
+3. Hazır'a onay sorulmaması bilinçli: mutfakta hız var. Bizde de onay modalı
+   çıkmamalı; yanlışlıkla basılana **geri alma** daha doğru.
+4. Miktarın satırlara bölünmesi veri modelini etkiliyor: adet değil **kalem
+   bazlı hazır durumu** tutulmalı.
+5. Ayarların cihaz bazında olması KDS'in tablet/TV'de açılacağını gösteriyor —
+   sunucuda değil cihazda saklanmalı.
+6. Ürün notu mutfağın en kritik bilgisi; kartta ayrı renkle duruyor.
 
 ### Klon İçin Yeni Çıkarımlar
 1. Masa kartındaki "açık kalma süresi" ve bölge tabındaki doluluk sayacı küçük ama operasyonel olarak kritik detaylar.

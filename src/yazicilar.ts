@@ -398,7 +398,7 @@ export function istasyonHaritasiniUnut() {
   istasyonHaritasi = null;
 }
 
-async function urunIstasyonlari() {
+export async function urunIstasyonlari() {
   if (istasyonHaritasi) return istasyonHaritasi;
 
   const [urn, kat] = await Promise.all([

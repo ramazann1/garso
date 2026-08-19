@@ -17,6 +17,7 @@ const ROTA_YETKILERI: [string, string][] = [
   ["/siparis", "siparis.al"],
   ["/adisyon", "siparis.al"],
   ["/menu", "tanim.menu"],
+  ["/istasyon", "mutfak.ekran"],
   ["/kasa/gecmis", "kasa.ac_kapat"],
   ["/kasa/giderler", "kasa.gider"],
   // Özet ile adisyon listesi gün sonu yetkisine açık; ciroyu kapatan kasiyer
