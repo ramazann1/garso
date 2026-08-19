@@ -15,6 +15,11 @@ import { yetkiVar } from "./oturum";
  */
 const ROTA_YETKILERI: [string, string][] = [
   ["/siparis", "siparis.al"],
+  // Mobil arayüz aynı yetkileri istiyor; alt sekme çubuğu da bu listeye bakarak
+  // hangi sekmenin çıkacağına karar veriyor.
+  ["/mobil/masalar", "siparis.al"],
+  ["/mobil/siparis", "siparis.al"],
+  ["/mobil/mutfak", "mutfak.ekran"],
   ["/adisyon", "siparis.al"],
   ["/menu", "tanim.menu"],
   ["/istasyon", "mutfak.ekran"],

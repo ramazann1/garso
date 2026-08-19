@@ -1,6 +1,6 @@
 import { useState } from "react";
 import { useLocation, useNavigate } from "react-router-dom";
-import { Banknote, ChartColumn, ChevronDown, Lock, LogOut, Settings, Store, UsersRound, UtensilsCrossed } from "lucide-react";
+import { Banknote, ChartColumn, ChevronDown, Lock, LogOut, Settings, Smartphone, Store, UsersRound, UtensilsCrossed } from "lucide-react";
 import OnayModal from "./OnayModal";
 import { kilitKaldir, kilitliMi } from "../cikisKilidi";
 import { isletmeAdi, isletmeKodu } from "../isletmeAyarlari";
@@ -8,6 +8,7 @@ import { GARSO_SURUM } from "../surum";
 import { kilitle, oturumuKapat, useOturum } from "../oturum";
 import { yolaGirebilir } from "../rotaYetkileri";
 import { kisaAd } from "../personel";
+import { darEkran, gorunumSec } from "../mobil/mobilTercih";
 
 // İşletme ayarları tek ekranda büyüdükçe kalabalıklaşıyor; başlıklar menüden
 // ayrı ayrı açılıyor, her biri kendi sayfası.
@@ -281,6 +282,17 @@ export default function Duzen({ children }: { children: React.ReactNode }) {
               </span>
               {acik && <Lock className="kisi-cik" size={16} />}
             </button>
+            {/* Telefondan masaüstü görünüme geçen kişinin dönüş yolu. Geniş
+                ekranda gösterilmiyor: kasada işe yaramaz, yer kaplar. */}
+            {acik && darEkran() && (
+              <button
+                className="kisi-cikis"
+                onClick={() => gorunumSec("mobil")}
+                title="Mobil görünüme geç"
+              >
+                <Smartphone size={16} />
+              </button>
+            )}
             {acik && (
               <button
                 className="kisi-cikis"

@@ -3,9 +3,14 @@
 
 ## 0. SIRADAKİ İŞ (19 Ağu 2026'da güncellendi)
 
-> **Sonraki seansın ilk işi:** **garson mobil sipariş ekranı (PWA).** Garson
-> telefondan/tabletten masaya sipariş girsin; kabuk ve offline altyapı hazır,
-> eksik olan mobil ölçüde çalışan sipariş akışı.
+> **Sonraki seansın ilk işi:** **mobil arayüz (PWA) — aşama 3: ödeme.**
+> Adisyonun kendi ekranı: kalemler, döküm, ödeme tipi kartlarıyla tek dokunuşla
+> kapatma ve tutar girmeli tahsilat. Sipariş ekranında ödeme yok — bilinçli.
+>
+> Mobilin sonraki parçaları (aşama 3'ten sonra): **Paket / Gel Al sekmesi**
+> (masasız adisyon mobilde hiç yok), **Satış sekmesi** (günün cirosu, açık
+> masalar, ödeme tipi dökümü), **Mutfak sekmesinin kendi mobil düzeni**
+> (şimdilik masaüstü İstasyon ekranı kabuğun içinde açılıyor).
 >
 > Sırada bekleyenler: **kurye atama ve teslimat takibi** → **KDS'in kalan
 > parçaları** (pişirme/paketleme aşamaları, mutfak fişi, hazırlık süresi
@@ -67,6 +72,96 @@ durunca kalabalık oluyordu. Adisyonlar listesi Adisyo'nun sütunlarıyla gerçe
 bir tablo; **"Eksik tahsilat" durumu bizim eklememiz** (kapanmış ama parası
 eksik kalan hesap Adisyo'da ayrı işaretlenmiyor). Yeni yetki:
 `siparis.aktif_et` (kapanmış adisyonu yeniden açma).
+
+**19 Ağu 2026 (5. seans): Mobil arayüz — aşama 1 (kabuk + Masalar) ve
+aşama 2 (sipariş ekranı) bitti.** Kapsam kararı yukarıda; burada yapılanlar.
+
+Aşama 1 — kabuk. `mobilTercih.ts` cihazın dar olup olmadığına bakıyor (sınır
+820px) ve elle seçimi cihazda tutuyor; `MobilKabuk.tsx` alt sekme çubuğu,
+sekmeler `rotaYetkileri`den hesaplanıyor (tek sekmesi olana çubuk hiç
+çizilmiyor). `App.tsx`'te `GorunumKapisi` yalnız iki uç adreste yönlendiriyor
+(masaüstü kökü ve `/mobil`) — kişi elle bir adrese gittiyse ekran altından
+kaydırılmıyor. Mobil adresler de yetki listesine girdi: menüden gizlemek koruma
+değil. `Masalar.tsx` bölge çipleri (doluluk sayılı) + masa ızgarası, kuyrukta
+bekleyen masa dolu görünüyor ve "Gönderilmedi" işareti taşıyor. `Ben.tsx`
+kilit, masaüstüne geçiş ve çıkış. Masaüstü `Duzen.tsx`'e de mobile dönüş
+düğmesi kondu (yalnız dar ekranda; kasada yer kaplıyor).
+
+Aşama 2 — `mobil/Siparis.tsx`. Konuşulan üç ayrışmanın hepsi burada: sepet
+şeridi hep ekranda (dokununca tam adisyon açılıyor, kalemler saat damgalı
+turlar hâlinde), ürüne dokunmak doğrudan ekliyor ve tekrar dokunmak adedi
+artırıyor (adet penceresi yok; porsiyonu veya seçeneği olan üründe pencere
+kendiliğinden açılıyor, uzun basış her üründe açıyor), tek ana düğme Gönder.
+Bağlantı yoksa ikon buluta dönüyor, kayıt kuyruğa girip garson beklemiyor.
+Veri katmanı masaüstüyle ortak: `adisyonKaydet`, `menuGetir`, `porsiyonFiyat`,
+`kuyruk`. Kaydedilmiş turun kalemi mobilde değiştirilemiyor — geri alma, ikram
+ve iptal yetkiye bağlı işler, kasa ekranında kalıyor.
+
+Ekran denenince çıkan üç hata (üçü de kapatıldı):
+1. Seçeneksiz ürünün adının yanında **0** yazıyordu: `k.secimler?.length && (...)`
+   ifadesi boş listede 0'a düşüyor, React sıfırı basıyor. JSX'te sayıya düşen
+   koşul her yerde aynı tuzağı kuruyor, `!!` ile boolean'a çevriliyor.
+2. **Toplam doğru ama dökümsüzdü.** Kuver ve garsoniye toplama giriyor, sepet
+   sayfasında görünmüyordu — garson farkın nereden geldiğini göremiyordu. Alta
+   döküm eklendi (ara toplam · indirim · kuver · garsoniye · KDV), satırlar
+   masaüstüyle aynı `servisSatirlari`ndan geliyor.
+3. **Sessiz olan ve asıl ciddi olanı:** `kuver_uygula` / `garsoniye_uygula`
+   okunmuyordu, `servisAlanlari` her kayıtta `null` yazıyordu. Kasiyerin o
+   hesaptan kaldırdığı kuver, garson mobilden bir ürün ekleyince geri geliyordu.
+   Alanlar artık okunup geri yazılıyor. **Kural: adisyonun bir sütununu
+   yazan her ekran onu önce okumak zorunda** — kaydetme çağrısı kısmi değil,
+   verinin tamamını yazıyor.
+
+**Yazdırma mobilde ayrıca kurulmadı, gerekmiyor:** mutfak fişi `adisyonKaydet`
+içinde veritabanındaki yazdırma kuyruğuna düşüyor, kasadaki köprü basıyor.
+Telefonun yazıcıyla doğrudan ilişkisi yok.
+
+**19 Ağu 2026 (5. seans): Mobil arayüz kapsamı yeniden tanımlandı.**
+Yol haritasındaki madde "garson mobil sipariş ekranı"ydı; konuşmada üç şey
+netleşti ve kapsam değişti.
+
+1. **Mobil, web ekranlarının dar hâli değil — kendi arayüzü.** Garsonun işi
+   kasiyerinkinden farklı: ayakta, tek elle, saniyeler içinde. Ekranlar
+   `src/mobil/` altında kendi bileşenleriyle yazılıyor; `Salon.tsx` ve
+   `Siparis.tsx` masaüstü ekranı olarak kalıyor, dokunulmuyor.
+   **Veri katmanı tek kalıyor** (`menu.ts`, `adisyonlar.ts`, `masalar.ts`,
+   `kuyruk.ts`, `onbellek.ts`) — fiyat, kuruş yuvarlaması ve offline kuyruğu
+   iki kere yazılmaz. Ayrışma yalnız ekranda.
+2. **Tek uygulama, role göre şekillenen alt sekmeler.** Adisyo'da mobil sadece
+   garsonun değil; mutfak personelinin ve yöneticinin de yüzeyi. Bizde sekmeler
+   kişinin yetkisinden hesaplanıyor, `rotaYetkileri.ts` aynen kullanılıyor:
+   Masalar (`siparis.al`) · Paket/Gel Al (`siparis.al`) · Mutfak
+   (`mutfak.ekran`) · Satış (`rapor.gun_sonu`) · Ben (herkes: vardiya, kilit,
+   çıkış). Garson üç sekme görür, mutfakçı bir tane, yönetici beşini.
+   Ayrı uygulama, ayrı giriş, ayrı "patron uygulaması" yok.
+3. **Adisyo'nun mobili kopyalanmıyor.** Turda zayıf bulunan üç noktada bilinçli
+   ayrılıyoruz:
+   - **Sepet hep ekranda.** Adisyo'da sepet alttan kayan ayrı sayfa; garson ürün
+     seçerken ne girdiğini görmüyor. Bizde altta ince şerit — son kalem, adet,
+     toplam sürekli görünür; yukarı çekince tam liste.
+   - **Adet için pencere yok.** Ürüne tekrar dokunmak adedi artırıyor. Uzun
+     basış porsiyon/seçenek/not açıyor.
+   - **Tek ana düğme: Gönder.** Adisyo'nun Kaydet / Öde / Hızlı Öde üçlüsü her
+     siparişte karar verdiriyor, acemi personel orada takılıyor. Ödeme sipariş
+     girme ekranında değil, adisyonun kendi ekranında — ayrı an, ayrı iş.
+   - Bizim ekimiz: çevrimdışıyken şerit kaç siparişin kuyrukta beklediğini
+     söylüyor. Adisyo'da garson gönderdi mi göndermedi mi bilmiyor.
+
+**Mağaza paketlemesi (Capacitor) ertelendi, iptal değil.** Aynı React kodu
+sonradan App Store / Google Play'e konulabilir bir uygulamaya sarılabiliyor;
+bugünkü işin üstüne biniyor, kod baştan yazılmıyor. Maliyeti Apple 99 $/yıl +
+iOS derlemesi için Mac, Google 25 $ tek sefer ve her güncellemede mağaza onayı.
+Ürün satışa çıkarken "App Store'da var mı" sorusu geldiğinde yapılacak.
+React Native ile ayrı mobil uygulama **reddedildi**: ikinci kod tabanı her
+özelliği iki kere yazdırır.
+
+**Mutfak sekmesi** şimdilik mevcut İstasyon ekranının mobil hâli. Derinleşmesi
+(pişirme/paketleme aşamaları, hazırlık süresi) KDS'in kalanıyla birlikte, sırası
+geldiğinde. **Satış sekmesi** Analiz'in tamamı değil, telefonda bakılacak kadarı:
+günün cirosu, açık masalar, ödeme tipi dökümü.
+
+Aşamalar: **(1) kabuk + rol bazlı alt sekmeler + Masalar**, (2) sipariş ekranı
+(kategori/ürün, hep görünen sepet), (3) ödeme (adisyon ekranında).
 
 **19 Ağu 2026 (3. seans): Offline dayanıklılık — aşama 1 bitti (kabuk + bağlantı durumu).**
 Seansın başında iki karar düzeltildi:

@@ -1,5 +1,5 @@
 import { useEffect, useState } from "react";
-import { BrowserRouter, Navigate, Routes, Route, useLocation } from "react-router-dom";
+import { BrowserRouter, Navigate, Routes, Route, useLocation, useNavigate } from "react-router-dom";
 import { yolaGirebilir } from "./rotaYetkileri";
 import { ayarlar, ayarlariGetir, isletmeKimliginiGetir } from "./isletmeAyarlari";
 import Salon from "./pages/Salon";
@@ -19,6 +19,11 @@ import BaglantiDurumu from "./pages/BaglantiDurumu";
 import FisTasarimi from "./pages/FisTasarimi";
 import YazdirmaKuyrugu from "./pages/YazdirmaKuyrugu";
 import Giris from "./pages/Giris";
+import MobilKabuk, { acikSekmeler } from "./mobil/MobilKabuk";
+import MobilMasalar from "./mobil/Masalar";
+import MobilSiparis from "./mobil/Siparis";
+import Ben from "./mobil/Ben";
+import { useGorunum } from "./mobil/mobilTercih";
 import KilitEkrani from "./components/KilitEkrani";
 import CevrimdisiSerit from "./components/CevrimdisiSerit";
 import { baglantiyiIzle, sureSinirli, useBaglanti } from "./baglanti";
@@ -106,8 +111,16 @@ function App() {
     // eski değerlerle çizilmiş olabilir.
     <Ekran>
     <BrowserRouter key={ayarTik}>
+      <GorunumKapisi />
       <YetkiKapisi>
         <Route path="/" element={<Salon />} />
+        {/* Mobil arayüz kendi ekranlarıyla; masaüstü sayfaları olduğu gibi kalıyor. */}
+        <Route path="/mobil" element={<MobilAcilis />} />
+        <Route path="/mobil/masalar" element={<MobilKabuk><MobilMasalar /></MobilKabuk>} />
+        {/* Sipariş ekranı kabuksuz: sepet şeridi altta, sekme çubuğu onun yerini almasın. */}
+        <Route path="/mobil/siparis/:masaId" element={<MobilSiparis />} />
+        <Route path="/mobil/mutfak" element={<MobilKabuk><Istasyon /></MobilKabuk>} />
+        <Route path="/mobil/ben" element={<MobilKabuk><Ben /></MobilKabuk>} />
         <Route path="/siparis/:masaId" element={<Siparis />} />
         <Route path="/adisyon/:adisyonId" element={<Siparis />} />
         <Route path="/menu" element={<Navigate to="/menu/kategoriler" replace />} />
@@ -155,6 +168,34 @@ function Ekran({ children }: { children: React.ReactNode }) {
       {children}
     </>
   );
+}
+
+/**
+ * Mobil arayüzün girişi: kişinin ilk açık sekmesi. Garson Masalar'a, mutfak
+ * personeli doğrudan Mutfak'a düşüyor — kimse kendine kapalı bir ekranı
+ * görmüyor.
+ */
+function MobilAcilis() {
+  return <Navigate to={acikSekmeler()[0]?.yol ?? "/mobil/ben"} replace />;
+}
+
+/**
+ * Cihaza göre doğru arayüzü açıyor: telefon mobile, kasa bilgisayarı masaüstüne.
+ * Yönlendirme yalnız iki uç adreste yapılıyor (masaüstünün ana ekranı ve mobil
+ * kök) — kişi elle bir adrese gittiyse orada bırakılıyor, ekran altından
+ * kaydırılmıyor.
+ */
+function GorunumKapisi() {
+  const gorunum = useGorunum();
+  const { pathname } = useLocation();
+  const git = useNavigate();
+
+  useEffect(() => {
+    if (gorunum === "mobil" && pathname === "/") git("/mobil", { replace: true });
+    if (gorunum === "masaustu" && pathname.startsWith("/mobil")) git("/", { replace: true });
+  }, [gorunum, pathname]);
+
+  return null;
 }
 
 /**
