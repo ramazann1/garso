@@ -1,18 +1,25 @@
 ﻿# GARSO — Teknik Tasarım: Veri Modeli & Ekran Haritası
 *Restoran ve cafe'ler için bulut tabanlı satış ve işletme yönetim sistemi.*
 
-## 0. SIRADAKİ İŞ (19 Ağu 2026'da güncellendi)
+## 0. SIRADAKİ İŞ (20 Ağu 2026'da güncellendi)
 
-> **Sonraki seansın ilk işi:** **tahsilat fişinin yazıcıdan basılması** —
-> numara artık var, fiş tasarımı yok.
+> **Sonraki seansın ilk işi:** **offline dayanıklılık — aşama 2: yerel okuma
+> önbelleği.** Menü, masalar ve işletme ayarları cihazda dursun; çevrimdışıyken
+> de masa açılıp ürün seçilebilsin, oturum cihazda hatırlansın (şu an bağlantı
+> yokken giriş ekranına düşülüyor). Aşama 1 bitti, aşağıda.
 >
-> Sırada bekleyenler: **Analiz'in diğer tablolarına da kendi kutusunda kaydırma**
-> (şimdilik yalnız Adisyonlar tablosu kendi penceresi gibi kayıyor).
+> Sonra **aşama 3: yazma kuyruğu** — sipariş cihazda kuyruğa girsin, bağlantı
+> gelince sunucuya aksın. Orada bir mimari karar var: kayıt numaralarını sunucu
+> mu cihaz mı üretecek.
 >
-> **KDS'in kalan parçaları** — pişirme/paketleme aşamalarının ekrana yansıması,
-> mutfak fişinin yazıcıdan basılması, hazırlık süresi raporu, birden çok
-> istasyonun aynı kartı paylaşması. Çekirdek çalıştığı için acelesi yok:
-> Faz 2'de **kurye atamasından önce** gelir (19 Ağu 2026 kararı).
+> Sırada bekleyenler: **garson mobil sipariş ekranı (PWA)** → **kurye atama ve
+> teslimat takibi** → **KDS'in kalan parçaları** (pişirme/paketleme aşamaları,
+> mutfak fişi, hazırlık süresi raporu, çoklu istasyon).
+>
+> Küçük iş: **Analiz'in diğer tablolarına da kendi kutusunda kaydırma**
+> (19 Ağu'da yazılmıştı, 20 Ağu'da atlandı — acil değil).
+> Küçük iş: **PWA simgesi** — `public/favicon.svg` hâlâ Vite'ın mor varsayılan
+> logosu; kısayol eklenince o görünüyor, Garso'nun kendi simgesi gerekiyor.
 
 
 *Ramazan seansa "devam edelim" diye giriyor — sıradaki iş bu listenin en üstündeki
@@ -60,6 +67,61 @@ durunca kalabalık oluyordu. Adisyonlar listesi Adisyo'nun sütunlarıyla gerçe
 bir tablo; **"Eksik tahsilat" durumu bizim eklememiz** (kapanmış ama parası
 eksik kalan hesap Adisyo'da ayrı işaretlenmiyor). Yeni yetki:
 `siparis.aktif_et` (kapanmış adisyonu yeniden açma).
+
+**20 Ağu 2026: Offline dayanıklılık — aşama 1 bitti (kabuk + bağlantı durumu).**
+Seansın başında iki karar düzeltildi:
+
+1. **Tahsilat fişi yapılmayacak.** Adisyo canlı turlandı: müşteri detayında
+   yazdırma yok (üst şerit Geri · İndir · Bakiye Güncelle · Ödeme Al), Ödeme Al
+   modalında yazdırma seçeneği yok, Tahsilat No'ya tıklamak fiş değil ödemeyi
+   *düzenleme* penceresi açıyor, Çıktı Tasarımı'nda yalnız iki tür var (Adisyon,
+   Mutfak). "Açık Hesap Alacak Fişi" Adisyo'da bir kayıt türünün adı, kâğıda
+   basılan bir şey değil. Fiş numarası bizde de aynı işi görüyor: kaydı
+   konuşabilmek için.
+2. **Faz 2 sırası düzeltildi.** 19 Ağu'da "KDS'in kalanı kurye atamasından önce"
+   yazılmıştı; doğrusu **KDS'in kalanı en sonda** — offline dayanıklılık, sonra
+   garson mobil, sonra kurye atama. Karar daha önce konuşulmuş ama dosyaya
+   işlenmemişti.
+
+**Offline neden önce:** kasa internetsiz kalınca satış tamamen duruyordu.
+Uygulama üç aşamada dayanıklı hale geliyor — (1) kabuk ve bağlantı durumu,
+(2) yerel okuma önbelleği, (3) yazma kuyruğu. Sıra bu: kuyruk tek başına işe
+yaramıyor, menü yüklenemezse garson zaten ürün seçemiyor.
+
+Aşama 1'de yapılanlar:
+- **Service worker** (`vite-plugin-pwa`, `vite.config.ts`): uygulamanın kabuğu
+  (HTML, JS, CSS, Poppins) cihazda. İnternetsiz açılışta eskiden tarayıcının
+  hata sayfası geliyordu. **Veri istekleri bilerek önbelleğe alınmıyor** —
+  bayat menü göstermek hiç göstermemekten tehlikeli, garson olmayan fiyattan
+  satar. Çevrimdışı veri aşama 2'nin işi, kendi tazelik kuralıyla gelecek.
+- **`baglanti.ts`**: bağlantı durumu tek yerden. `navigator.onLine` yetmiyor
+  (modem açık ama internet yoksa "bağlı" diyor), Supabase'e gerçekten yoklama
+  atılıyor — bağlıyken 30 sn, kopukken 5 sn arayla. `sureSinirli()` ekranların
+  cevapsız istekte asılı kalmasını engelliyor (sınır 5 sn).
+- **`supabase.ts`**: istemcinin `fetch`'i sarıldı. 113 çağrının her biri durumu
+  besliyor, ayrıca cevapsız istek 12 sn'de kesiliyor. Sunucudan gelen "yetkin
+  yok" gibi cevaplar kopukluk sayılmıyor — cevap dönmesi ulaşıldığının kanıtı.
+- **`CevrimdisiSerit`**: ekranın üstünde mercan şerit, giriş ve kilit ekranı
+  dahil. Sayfanın üstüne biniyor, düzeni kaydırmıyor.
+
+Turda çıkan ve kapatılan **beş gerçek hata** (hepsi offline'a bakınca görüldü):
+1. `Siparis.kaydet` hatayı hiç yakalamıyordu: bağlantı yokken Kaydet'e basınca
+   ne kayıt oluyordu ne uyarı çıkıyordu.
+2. Ödeme kapatma ve Hızlı Öde de aynı şekilde sessizce düşüyordu.
+3. Cari tahsilat da öyle.
+4. **Oturum çevrimdışıyken kapanıyordu:** `kisiyiYukle` okuma hatasını "kişi
+   yok" sayıyor, çağıran da `signOut()` çağırıyordu — geçici ağ kopukluğu
+   kalıcı çıkışa dönüşüyordu. Okuma hatası artık ayrı.
+5. **Yoklama döngüsü ölüyordu:** sekme arkaya alınınca zamanlayıcı temizleniyor,
+   öne gelince yeniden kurulmuyordu; bir kez "kopuk" diyen ekran bağlantı
+   gelse de öyle kalıyordu.
+
+Bağlantı gelince ekran kendiliğinden toparlanıyor: oturum yeniden okunuyor,
+Salon kendini dolduruyor. Salon'un okuma hatası artık "Masalar yüklenemedi"
+kutusu + Yeniden dene düğmesi; eskiden halka sonsuza kadar dönüyordu.
+
+**Aşama 1'in bilinen sınırı:** çevrimdışıyken giriş yapılamıyor (şifre sunucuda
+doğrulanıyor) ve veri görünmüyor. İkisi de aşama 2'nin işi.
 
 **19 Ağu 2026 (2. seans): İstasyon ekranı (KDS) çekirdeği bitti.** Önce Adisyo'nun
 mutfak ekranı canlı turlandı (yol haritası bölüm "KDS (Mutfak) Ekranı"). Turda

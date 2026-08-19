@@ -20,6 +20,8 @@ import FisTasarimi from "./pages/FisTasarimi";
 import YazdirmaKuyrugu from "./pages/YazdirmaKuyrugu";
 import Giris from "./pages/Giris";
 import KilitEkrani from "./components/KilitEkrani";
+import CevrimdisiSerit from "./components/CevrimdisiSerit";
+import { baglantiyiIzle, sureSinirli, useBaglanti } from "./baglanti";
 import { girisKuruldu, kilitle, oturumuYukle, useOturum } from "./oturum";
 
 function App() {
@@ -28,13 +30,31 @@ function App() {
   // ki fiyatlar bir an yanlış görünüp sonra düzelmesin.
   const [hazir, setHazir] = useState(false);
   const [girisGerekli, setGirisGerekli] = useState(true);
+
+  // Bağlantı izlemesi program açılır açılmaz başlıyor: giriş ekranındayken de
+  // kopukluk görünsün, garson "şifremi mi yanlış girdim" diye uğraşmasın.
+  useEffect(baglantiyiIzle, []);
+
   useEffect(() => {
+    // Her okuma kendi hatasını yutuyor ve süreyle sınırlı: bağlantı yokken
+    // biri düşse ya da cevapsız kalsa bile ekran açılıyor. Açılmazsa garson
+    // dönen halkaya bakıp kalıyor, sorunun ne olduğunu göremiyor.
+    const dene = (is: Promise<unknown>) => sureSinirli(is.catch(() => undefined));
+
     Promise.all([
-      ayarlariGetir(),
-      oturumuYukle(),
-      girisKuruldu().then(setGirisGerekli),
+      dene(ayarlariGetir()),
+      dene(oturumuYukle()),
+      dene(girisKuruldu().then(setGirisGerekli)),
     ]).finally(() => setHazir(true));
   }, []);
+
+  // Bağlantı geri geldiğinde oturum yeniden okunuyor. Kopukken kişi bilgisi
+  // sunucudan alınamadığı için program giriş ekranında kalıyor; bağlantı
+  // gelince kendiliğinden içeri dönsün, kimse yeniden şifre girmesin.
+  const cevrimici = useBaglanti();
+  useEffect(() => {
+    if (cevrimici && !oturum) oturumuYukle().catch(() => undefined);
+  }, [cevrimici]);
 
   // Ayarlar program açılırken okunuyor ama o an henüz oturum yok — satır
   // güvenliği hiçbir satır döndürmüyor, elde varsayılanlar kalıyor. Giriş
@@ -71,14 +91,15 @@ function App() {
   if (!hazir) return <div className="yukleniyor"><div className="cember" /></div>;
 
   // Oturum yoksa hiçbir ekran açılmıyor; adresi elle yazmak da giriş ekranına düşer.
-  if (!oturum && girisGerekli) return <Giris />;
+  if (!oturum && girisGerekli) return <Ekran><Giris /></Ekran>;
 
   // Kilit oturumu kapatmıyor, üstünü örtüyor: açık adisyonlar yerinde duruyor.
-  if (oturum && kilitli) return <KilitEkrani />;
+  if (oturum && kilitli) return <Ekran><KilitEkrani /></Ekran>;
 
   return (
     // Ayarlar tazelenince ekranlar yeniden kuruluyor: fiyat ve kasa kuralları
     // eski değerlerle çizilmiş olabilir.
+    <Ekran>
     <BrowserRouter key={ayarTik}>
       <YetkiKapisi>
         <Route path="/" element={<Salon />} />
@@ -114,6 +135,20 @@ function App() {
         <Route path="/ayarlar/:bolum" element={<IsletmeAyarlari />} />
       </YetkiKapisi>
     </BrowserRouter>
+    </Ekran>
+  );
+}
+
+/**
+ * Hangi ekran açık olursa olsun üstte duran şerit. Giriş ve kilit ekranı da
+ * dahil: bağlantı kopukken şifre denemenin de anlamı yok, sebebi görünsün.
+ */
+function Ekran({ children }: { children: React.ReactNode }) {
+  return (
+    <>
+      <CevrimdisiSerit />
+      {children}
+    </>
   );
 }
 

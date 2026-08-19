@@ -5,6 +5,7 @@ import Bildirim from "./Bildirim";
 import { paraGoster, paraSayi, paraYaz } from "../para";
 import { kisaAd } from "../personel";
 import { yetkiVar } from "../oturum";
+import { hataMesaji } from "../baglanti";
 import { odemeTipleriniGetir, type OdemeTipi } from "../odemeTipleri";
 import {
   adresleriGetir,
@@ -220,7 +221,15 @@ export default function MusteriDetay({
   const odemeler = hareketler.filter((h) => h.tip === "tahsilat");
 
   const tahsilEt = async (tutar: number, tip: string) => {
-    const fisNo = await tahsilatAl(musteri.id, tutar, tip);
+    let fisNo: number | null;
+    try {
+      fisNo = await tahsilatAl(musteri.id, tutar, tip);
+    } catch (e) {
+      // Ödeme penceresi açık kalıyor: tutar girildiği gibi duruyor, bağlantı
+      // gelince yeniden gönderilebilsin.
+      setBildirim(hataMesaji(e, "Ödeme kaydedilemedi."));
+      return;
+    }
     setOdeme(false);
     await tazele();
     onDegisti();

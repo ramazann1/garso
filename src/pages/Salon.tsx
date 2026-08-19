@@ -7,12 +7,14 @@ import {
   ChevronLeft,
   CircleCheckBig,
   Clock,
+  CloudOff,
   Combine,
   Gift,
   LayoutGrid,
   Pencil,
   Plus,
   Printer,
+  RotateCw,
   ShoppingBag,
   Trash2,
   Zap,
@@ -28,6 +30,7 @@ import MasasizSiparis from "../components/MasasizSiparis";
 import Kasa from "../components/Kasa";
 import { yetkiVar } from "../oturum";
 import { ayarlar } from "../isletmeAyarlari";
+import { sureSinirli, useBaglanti } from "../baglanti";
 import {
   adisyonGetir,
   adisyonIkram,
@@ -145,6 +148,7 @@ export default function Salon() {
   const [yeniSiparis, setYeniSiparis] = useState(false);
   const [duzenlenen, setDuzenlenen] = useState<MasasizAdisyon | null>(null);
   const [yukleniyor, setYukleniyor] = useState(true);
+  const [okunamadi, setOkunamadi] = useState(false);
   // Açık kalma süreleri kendiliğinden ilerlesin; garson ekranı yenilemek zorunda
   // kalmasın diye dakikada bir yeniden çiziliyor.
   const [, setTik] = useState(0);
@@ -165,20 +169,45 @@ export default function Salon() {
     odenmezleriGetir().then(setOdenmezler);
   }, []);
 
+  const salonuOku = async () => {
+    setYukleniyor(true);
+    setOkunamadi(false);
+
+    // Okuma düşerse ya da cevapsız kalırsa halka sonsuza kadar dönüyordu:
+    // ekran boş, sebep yok. Salon kasanın açılış ekranı; hiçbir şey söylemeden
+    // dönmesi en kötüsü. Süre dolduğunda da okunamadı sayılıyor.
+    const sonuc = await sureSinirli(
+      Promise.all([bolgeleriGetir(), tumAdisyonlar(), masasizAdisyonlar()]).catch(
+        () => undefined
+      )
+    );
+    setYukleniyor(false);
+
+    if (!sonuc) {
+      setOkunamadi(true);
+      return;
+    }
+
+    const [b, a, m] = sonuc;
+    setBolgeler(b);
+    setAdisyonlar(a);
+    setMasasizlar(m);
+    // Kayıtlı bölge silinmiş olabilir; öyleyse ilk bölgeye dönülüyor.
+    setSeciliId((s) =>
+      s === "tumu" || s === "masasiz" || b.some((x) => x.id === s) ? s : b[0]?.id ?? "tumu"
+    );
+  };
+
   useEffect(() => {
-    Promise.all([bolgeleriGetir(), tumAdisyonlar(), masasizAdisyonlar()]).then(([b, a, m]) => {
-      setBolgeler(b);
-      setAdisyonlar(a);
-      setMasasizlar(m);
-      // Kayıtlı bölge silinmiş olabilir; öyleyse ilk bölgeye dönülüyor.
-      setSeciliId((s) =>
-        s === "tumu" || s === "masasiz" || b.some((x) => x.id === s)
-          ? s
-          : b[0]?.id ?? "tumu"
-      );
-      setYukleniyor(false);
-    });
+    salonuOku();
   }, []);
+
+  // Bağlantı geri gelince salon kendiliğinden doluyor: garson "Yeniden dene"ye
+  // basmayı beklemesin, ekran zaten düzelmiş olsun.
+  const cevrimici = useBaglanti();
+  useEffect(() => {
+    if (cevrimici && okunamadi) salonuOku();
+  }, [cevrimici]);
 
   // Çalışma tipleri: kapatılan tür arayüzde hiç durmuyor. İkisi de kapalıysa
   // sekmenin kendisi kalkıyor, tek tür açıksa sekme adını o tür alıyor.
@@ -398,6 +427,16 @@ export default function Salon() {
       <div className="sayfa">
         {yukleniyor ? (
           <div className="yukleniyor"><div className="cember" /></div>
+        ) : okunamadi ? (
+          <div className="ayar-bos">
+            <CloudOff size={30} />
+            <p>
+              Masalar yüklenemedi. Sunucuya ulaşılamıyor; bağlantı gelince yeniden deneyin.
+            </p>
+            <button className="ayar-ekle" onClick={salonuOku}>
+              <RotateCw size={16} /> Yeniden dene
+            </button>
+          </div>
         ) : bolgeler.length === 0 ? (
           <div className="ayar-bos">
             <LayoutGrid size={30} />

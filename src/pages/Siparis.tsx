@@ -42,6 +42,7 @@ import AdisyonBilgi from "../components/AdisyonBilgi";
 import MisafirSayisi from "../components/MisafirSayisi";
 import type { AdisyonBilgisi } from "../components/AdisyonBilgi";
 import { kilitKaldir, kilitKur } from "../cikisKilidi";
+import { hataMesaji } from "../baglanti";
 import { kdvDokumu } from "../kdv";
 import { paraGoster } from "../para";
 import { ayarlar } from "../isletmeAyarlari";
@@ -443,7 +444,14 @@ export default function Siparis() {
       setKisiSorusu(true);
       return;
     }
-    await adisyonuYaz({ sepet, indirim, indirimTanim, tahsilatlar: kayitliTahsilatlar });
+    // Kayıt düşerse salona dönülmüyor: ekrandaki sipariş garsonun elinde
+    // kalsın, bağlantı gelince aynı tuşla yeniden gönderebilsin.
+    try {
+      await adisyonuYaz({ sepet, indirim, indirimTanim, tahsilatlar: kayitliTahsilatlar });
+    } catch (e) {
+      setUyari(hataMesaji(e, "Adisyon kaydedilemedi."));
+      return;
+    }
     kilitKaldir();
     navigate("/");
   };
@@ -802,7 +810,14 @@ export default function Siparis() {
           musteri={bilgi.musteriAd || bilgi.ad}
           onOdendi={async (tahsilatlar, eksik) => {
             // Kapanan adisyon silinmiyor, kapalıya çekiliyor — gün sonu raporu ona bakacak.
-            await adisyonuYaz({ sepet, indirim, indirimTanim, tahsilatlar, eksik }, true);
+            try {
+              await adisyonuYaz({ sepet, indirim, indirimTanim, tahsilatlar, eksik }, true);
+            } catch (e) {
+              // Ödeme paneli açık kalıyor: tahsilat ekranda duruyor, bağlantı
+              // gelince aynı yerden kapatılabilsin.
+              setUyari(hataMesaji(e, "Adisyon kapatılamadı."));
+              return;
+            }
             kilitKaldir();
             navigate("/");
           }}
@@ -822,7 +837,12 @@ export default function Siparis() {
           onKapat={() => setHizliAcik(false)}
           onSec={async (tip, tutar, kapat, bahsis, musteriId) => {
             const tahsilatlar = [...kayitliTahsilatlar, { tip, tutar, bahsis, musteriId }];
-            await adisyonuYaz({ sepet, indirim, indirimTanim, tahsilatlar }, kapat);
+            try {
+              await adisyonuYaz({ sepet, indirim, indirimTanim, tahsilatlar }, kapat);
+            } catch (e) {
+              setUyari(hataMesaji(e, "Ödeme kaydedilemedi."));
+              return;
+            }
             if (kapat) {
               kilitKaldir();
               navigate("/");

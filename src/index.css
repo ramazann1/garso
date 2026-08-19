@@ -11397,3 +11397,37 @@ body {
 }
 
 .istasyon-geri-baglanti svg { width: 16px; height: 16px; }
+
+/* Bağlantı kopunca ekranın üstünde beliren şerit. Sayfanın üstüne biniyor,
+   yer kaplamıyor: kopukluk anında bütün düzen aşağı kaymasın. */
+.cevrimdisi-serit {
+  position: fixed;
+  top: 0;
+  left: 50%;
+  transform: translateX(-50%);
+  z-index: 900;
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  max-width: min(720px, calc(100% - 24px));
+  padding: 11px 20px;
+  border-radius: 0 0 14px 14px;
+  background: var(--mercan);
+  color: #fff;
+  box-shadow: 0 6px 18px rgba(45, 52, 54, 0.18);
+}
+
+.cevrimdisi-serit strong { font-size: 15px; }
+
+.cevrimdisi-serit span {
+  font-size: 14px;
+  /* Beyaz üstünde tam beyaz ile ikincil ton arasındaki fark okunurluğu
+     bozmayacak kadar dar tutuluyor; silik yazı burada da yok. */
+  color: #fff2ed;
+}
+
+.cevrimdisi-serit svg { flex-shrink: 0; }
+
+@media (max-width: 700px) {
+  .cevrimdisi-serit { flex-wrap: wrap; row-gap: 3px; }
+}

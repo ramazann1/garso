@@ -112,7 +112,11 @@ Amaç: Yoğun bir restoranın mutfak-servis akışını taşıyabilmeli.
 - [ ] Garson mobil sipariş ekranı (PWA)
 - [ ] Personel + PIN girişi; adisyonu açan garson masa kartında, turu yazan
       garson tur başlığında (`turlar.garson_id`) — karar 7
-- [ ] Offline dayanıklılık: bağlantı kopunca kuyruklama, senkronizasyon
+- [ ] Offline dayanıklılık: bağlantı kopunca kuyruklama, senkronizasyon.
+      Üç aşamalı. **Aşama 1 (kabuk + bağlantı durumu) 20 Ağu 2026'da bitti:**
+      service worker, `baglanti.ts`, çevrimdışı şeridi, sarılmış `fetch`.
+      Aşama 2 yerel okuma önbelleği (menü/masa/ayar + oturumun cihazda
+      hatırlanması), aşama 3 yazma kuyruğu. Ayrıntısı `garso-tasarim.md`'de.
 - [x] **İşletme kaydı ekranı (yeni müşteri açılışı).** 19 Ağu 2026'da yapıldı —
       `isletme_kur` fonksiyonu ve `pages/Kayit.tsx`. Örnek salon ve menüyle
       birlikte kuruluyor. Kötüye kullanım koruması da eklendi.
@@ -715,6 +719,13 @@ telefon, adres, Sil / Düzenle. Sağda 4 sekme:
 - **Hesap Ekstresi** — üstte **BORÇ / ALACAK / BAKİYE**; satırlar: Tarih · Hareket
   (Satış, Bakiye Güncelleme) · Ödeme Tipi · Borç · Alacak · **yürüyen bakiye**.
 
+**Tahsilat fişi yok (20 Ağu 2026 canlı turu).** Adisyo açık hesap tahsilatını
+kâğıda basmıyor: müşteri detayının üst şeridinde yazıcı düğmesi yok, Ödeme Al
+modalında yazdırma seçeneği yok, Yapılan Ödemeler satırında yazıcı ikonu yok
+(Tahsilat No'ya tıklamak ödemeyi *düzenleme* penceresi açıyor) ve Çıktı
+Tasarımı'nda yalnız Adisyon ve Mutfak çıktısı var. "Açık Hesap Alacak Fişi"
+kâğıt değil, kaydın türünün adı. Garso da basmıyor — fiş numarası kaydı
+konuşabilmek için var.
 **Ödeme Al modalı:** Toplam Tutar (borç) · **İndirim Tutarı + "Uygula"** · Ödenecek
 Tutar · Ödeme Tipi · Kaydet. **Bakiye Güncelleme modalı:** tek alan "Yeni Bakiye";
 fark ekstreye "Açık Hesap Alacak Fişi" olarak düşüyor.

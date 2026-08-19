@@ -40,11 +40,16 @@ export function hesapEpostasi(telefon: string) {
 // Yetki kümesi girişte bir kez hesaplanıp bellekte tutuluyor; her düğme için
 // veritabanına gidilmiyor. Yetkiler değişirse kişi yeniden giriş yapıyor.
 async function kisiyiYukle(sutun: "auth_id" | "id", deger: string | number) {
-  const { data } = await supabase
+  const { data, error } = await supabase
     .from("personel")
     .select("id, ad, rol_id, isletme_id, aktif, giris_engelli, roller (ad)")
     .eq(sutun, deger)
     .single();
+
+  // Okuma hiç yapılamadıysa "kişi yok" demek değil. Ayrım kritik: aşağıdaki
+  // çağıran kişi bulamayınca oturumu kapatıyor, yani bağlantı kopukluğu kalıcı
+  // çıkışa dönüşürdü — kasa internetsiz kalınca herkes oturumundan düşerdi.
+  if (error) throw new Error("Kişi bilgisi okunamadı.");
 
   const satir = data as any;
   if (!satir || !satir.aktif || satir.giris_engelli) return null;

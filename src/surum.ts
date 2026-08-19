@@ -5,4 +5,4 @@
  * Elle değiştirilmiyor — `npm.cmd run surum` bütün dosyalardaki numarayı
  * birlikte artırıyor.
  */
-export const GARSO_SURUM = "1.1.0";
+export const GARSO_SURUM = "1.1.1";
