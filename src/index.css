@@ -12076,3 +12076,1360 @@ body {
 .m-dokum + .m-sayfa-alt {
   border-top: 1px solid #eee6dc;
 }
+
+/* --- Mobil adisyon ekranı ------------------------------------------------ */
+
+.m-adisyon {
+  display: flex;
+  flex-direction: column;
+  height: 100vh;
+  height: 100dvh;
+  padding: 14px 14px 0;
+  background: var(--zemin);
+}
+
+.m-adisyon-kalan {
+  font-size: 17px;
+  font-weight: 600;
+}
+
+.m-adisyon-icerik {
+  flex: 1;
+  overflow-y: auto;
+  -webkit-overflow-scrolling: touch;
+  padding-bottom: 10px;
+}
+
+.m-adisyon-kalemler {
+  margin-bottom: 12px;
+}
+
+.m-adisyon .m-kalem {
+  grid-template-columns: 1fr auto;
+}
+
+/* Ekranın kendi dökümü kart içinde duruyor; sepet sayfasındakinden farklı
+   olarak toplam satırı da burada, ödeme alanı altta ayrı kalıyor. */
+.m-adisyon .m-dokum {
+  border: 1px solid #eee6dc;
+  border-radius: 14px;
+  margin-bottom: 12px;
+}
+
+.m-dokum-satir.toplam {
+  padding-top: 8px;
+  margin-top: 4px;
+  border-top: 1px solid #eee6dc;
+  color: var(--metin);
+  font-size: 15px;
+}
+
+.m-dokum-satir.toplam strong {
+  font-size: 17px;
+}
+
+.m-odenenler {
+  padding: 12px 14px;
+  border: 1px solid #eee6dc;
+  border-radius: 14px;
+  background: var(--kart);
+}
+
+.m-alt-baslik {
+  margin-bottom: 6px;
+  font-size: 14px;
+  font-weight: 600;
+  color: var(--soluk);
+}
+
+.m-odeme-satir {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  padding: 5px 0;
+  font-size: 15px;
+}
+
+.m-odeme-satir span {
+  display: flex;
+  align-items: center;
+  gap: 7px;
+}
+
+.m-odeme-satir em {
+  margin-left: 6px;
+  font-style: normal;
+  font-size: 13.5px;
+  color: var(--soluk);
+}
+
+.m-odeme {
+  padding: 12px 0;
+  padding-bottom: calc(12px + env(safe-area-inset-bottom));
+  border-top: 1px solid #eee6dc;
+}
+
+.m-odeme-kapali {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  gap: 8px;
+  padding: 14px;
+  border-radius: 12px;
+  background: var(--kart);
+  border: 1px solid #eee6dc;
+  font-size: 15px;
+  color: var(--metin);
+}
+
+.m-numpad {
+  display: flex;
+  gap: 10px;
+  margin-bottom: 10px;
+}
+
+.m-numpad-ekran {
+  flex: 1;
+  min-width: 0;
+  padding: 0 14px;
+  border: 1px solid #eee6dc;
+  border-radius: 12px;
+  background: var(--kart);
+  color: var(--metin);
+  font-size: 22px;
+  font-weight: 600;
+  text-align: right;
+}
+
+.m-numpad-ekran:focus {
+  outline: none;
+  border-color: var(--mercan);
+}
+
+.m-numpad-grid {
+  display: grid;
+  grid-template-columns: repeat(3, 62px);
+  gap: 6px;
+}
+
+.m-numpad-tus {
+  height: 46px;
+  display: grid;
+  place-items: center;
+  border: 1px solid #eee6dc;
+  border-radius: 11px;
+  background: var(--kart);
+  color: var(--metin);
+  font-size: 17px;
+  font-weight: 500;
+  cursor: pointer;
+}
+
+/* Ödeme tipleri parmakla basılacak büyüklükte; masaüstünün dar düğmeleri
+   telefonda yanlış tipe dokundurtuyor. */
+.m-odeme-tipler .odeme-tipler {
+  display: grid;
+  grid-template-columns: repeat(2, 1fr);
+  gap: 8px;
+}
+
+.m-odeme-tipler .odeme-tip-btn {
+  min-height: 58px;
+  border: none;
+  border-radius: 13px;
+  font-size: 16px;
+  font-weight: 600;
+}
+
+.m-odeme-tipler .odeme-grup-baslik {
+  margin: 8px 0 5px;
+  font-size: 13.5px;
+  font-weight: 600;
+  color: var(--soluk);
+}
+
+.m-eksik-btn {
+  width: 100%;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  gap: 8px;
+  margin-top: 10px;
+  padding: 13px;
+  border: 1px solid #eee6dc;
+  border-radius: 12px;
+  background: var(--kart);
+  color: var(--metin);
+  font-size: 15px;
+  font-weight: 500;
+  cursor: pointer;
+}
+
+/* Sepet sayfasının alt şeridinde Öde düğmesi toplamın yanında duruyor. */
+.m-sayfa-alt .m-dugme {
+  margin-left: auto;
+  padding: 10px 18px;
+}
+
+/* --- Mobil satış ekranı --------------------------------------------------- */
+
+.m-baslik-alt {
+  margin-top: 2px;
+  font-size: 14px;
+  color: var(--soluk);
+}
+
+.m-satis {
+  display: flex;
+  flex-direction: column;
+  gap: 12px;
+  padding-bottom: 18px;
+}
+
+/* Günün cirosu ekranın tek kahramanı: telefonu açan işletmeci başka hiçbir
+   yere bakmadan rakamı görsün. */
+.m-ciro {
+  padding: 20px 18px;
+  border-radius: 16px;
+  background: var(--mercan);
+  color: #fff;
+}
+
+.m-ciro-etiket {
+  font-size: 14px;
+  opacity: 0.92;
+}
+
+.m-ciro-tutar {
+  display: block;
+  margin: 6px 0 12px;
+  font-size: 34px;
+  font-weight: 600;
+  letter-spacing: -0.5px;
+}
+
+.m-ciro-alt {
+  display: flex;
+  gap: 18px;
+  font-size: 14.5px;
+}
+
+.m-ciro-alt b {
+  font-weight: 600;
+}
+
+.m-kutu {
+  padding: 14px 16px;
+  border: 1px solid #eee6dc;
+  border-radius: 16px;
+  background: var(--kart);
+}
+
+.m-kutu-satir {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 12px;
+  padding: 7px 0;
+  font-size: 15px;
+}
+
+.m-kutu-satir > span:first-child {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  color: var(--soluk);
+}
+
+.m-kutu-deger {
+  font-weight: 600;
+}
+
+.m-kutu-satir.toplam {
+  margin-top: 6px;
+  padding-top: 11px;
+  border-top: 1px solid #f2ece4;
+}
+
+.m-kutu-satir.toplam strong {
+  font-size: 18px;
+}
+
+.m-kutu-satir.eksik .m-kutu-deger {
+  color: #d64545;
+}
+
+.m-kutu-bos {
+  padding: 6px 0 2px;
+  font-size: 15px;
+  color: var(--soluk);
+}
+
+.m-pay {
+  padding: 9px 0;
+  border-bottom: 1px solid #f2ece4;
+}
+
+.m-pay:last-child {
+  border-bottom: none;
+  padding-bottom: 2px;
+}
+
+.m-pay-ust {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 12px;
+  font-size: 15px;
+}
+
+.m-pay-ust > span:first-child {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  font-weight: 500;
+}
+
+.m-pay-cubuk {
+  height: 7px;
+  margin: 7px 0 5px;
+  border-radius: 999px;
+  background: #f2ece4;
+  overflow: hidden;
+}
+
+.m-pay-cubuk div {
+  height: 100%;
+  border-radius: 999px;
+  background: var(--mercan);
+}
+
+.m-pay-adet {
+  font-size: 13.5px;
+  color: var(--soluk);
+}
+
+.m-satis-not {
+  padding: 0 2px;
+  font-size: 14px;
+  color: var(--soluk);
+}
+
+/* --- Mobil istasyon ekranı ------------------------------------------------ */
+
+.m-istasyon-ad {
+  display: flex;
+  align-items: center;
+  gap: 4px;
+  padding: 0;
+  border: none;
+  background: none;
+  color: var(--metin);
+  cursor: pointer;
+}
+
+.m-kartlar {
+  display: flex;
+  flex-direction: column;
+  gap: 12px;
+  padding-bottom: 18px;
+}
+
+.m-kart {
+  padding: 12px;
+  border: 1px solid #eee6dc;
+  border-radius: 16px;
+  background: var(--kart);
+}
+
+/* Geciken kart tezgâhta göze ilk çarpan şey olmalı. */
+.m-kart.geciken {
+  border-color: var(--mercan);
+  box-shadow: inset 0 0 0 1px var(--mercan);
+}
+
+.m-kart-ust {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 10px;
+  padding-bottom: 10px;
+  border-bottom: 1px solid #f2ece4;
+}
+
+.m-kart-masa {
+  display: flex;
+  align-items: center;
+  gap: 7px;
+  min-width: 0;
+  font-size: 16px;
+}
+
+.m-kart-masa b {
+  font-weight: 600;
+}
+
+.m-kart-masa em {
+  font-style: normal;
+  font-size: 14px;
+  color: var(--soluk);
+}
+
+.m-kart-ust > span:last-child,
+.m-kart-sure {
+  display: flex;
+  align-items: center;
+  gap: 5px;
+  font-size: 15px;
+  font-weight: 500;
+  color: var(--soluk);
+}
+
+.m-kart.geciken .m-kart-sure {
+  color: var(--mercan);
+}
+
+.m-kart-not {
+  display: flex;
+  align-items: center;
+  gap: 6px;
+  margin-top: 10px;
+  padding: 8px 10px;
+  border-radius: 10px;
+  background: var(--zemin);
+  font-size: 14px;
+}
+
+.m-kart-kalemler {
+  display: flex;
+  flex-direction: column;
+  gap: 6px;
+  margin: 10px 0;
+}
+
+/* Kalemin tamamı düğme: tezgâhta eldiveni çıkarmadan, bakmadan basılıyor. */
+.m-kart-kalem {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  width: 100%;
+  padding: 11px 12px;
+  border: 1px solid #eee6dc;
+  border-radius: 12px;
+  background: var(--zemin);
+  color: var(--metin);
+  text-align: left;
+  cursor: pointer;
+}
+
+.m-kart-adet {
+  min-width: 30px;
+  height: 30px;
+  display: grid;
+  place-items: center;
+  border-radius: 9px;
+  background: var(--mercan);
+  color: #fff;
+  font-size: 15px;
+  font-weight: 600;
+}
+
+.m-kart-urun {
+  flex: 1;
+  min-width: 0;
+  display: flex;
+  flex-direction: column;
+  gap: 2px;
+  font-size: 16px;
+  font-weight: 500;
+}
+
+.m-kart-urun small {
+  font-size: 14px;
+  font-weight: 400;
+  color: var(--soluk);
+}
+
+.m-kart-urun em {
+  display: flex;
+  align-items: center;
+  gap: 5px;
+  font-style: normal;
+  font-size: 14px;
+  color: var(--mercan);
+}
+
+.m-hazir-satir {
+  display: flex;
+  align-items: center;
+  gap: 9px;
+  padding: 9px 0;
+  border-bottom: 1px solid #f2ece4;
+  font-size: 15px;
+}
+
+.m-hazir-satir:last-child {
+  border-bottom: none;
+  padding-bottom: 0;
+}
+
+.m-hazir-satir span {
+  flex: 1;
+  min-width: 0;
+}
+
+.m-hazir-satir time {
+  font-size: 14px;
+  color: var(--soluk);
+}
+
+.m-hazir-satir button {
+  width: 36px;
+  height: 36px;
+  display: grid;
+  place-items: center;
+  border: 1px solid #eee6dc;
+  border-radius: 10px;
+  background: var(--zemin);
+  color: var(--metin);
+  cursor: pointer;
+}
+
+/* Geri alma şeridi sekme çubuğunun hemen üstünde duruyor. */
+.m-geri-serit {
+  position: fixed;
+  left: 12px;
+  right: 12px;
+  bottom: calc(74px + env(safe-area-inset-bottom));
+  z-index: 40;
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 12px;
+  padding: 11px 14px;
+  border-radius: 13px;
+  background: var(--metin);
+  color: #fff;
+  font-size: 15px;
+}
+
+.m-geri-serit button {
+  display: flex;
+  align-items: center;
+  gap: 6px;
+  padding: 8px 13px;
+  border: none;
+  border-radius: 10px;
+  background: rgba(255, 255, 255, 0.16);
+  color: #fff;
+  font-size: 15px;
+  font-weight: 500;
+  cursor: pointer;
+}
+
+/* Yetkisi olmayana adet düzenlenebilir kutu yerine düz rakam gösteriliyor. */
+.kp-sabit {
+  font-size: 16px;
+  font-weight: 600;
+}
+
+/* --- Mobil ödeme düzeni (yenilendi) --------------------------------------- */
+
+.m-masa-menu {
+  position: absolute;
+  top: 6px;
+  right: 6px;
+  width: 30px;
+  height: 30px;
+  display: grid;
+  place-items: center;
+  border-radius: 9px;
+  background: rgba(255, 255, 255, 0.22);
+}
+
+.m-masa {
+  position: relative;
+}
+
+/* Tahsil edilecek tutar ekranın kahramanı; ödeme alırken göz onda. */
+.m-odeme-tutar {
+  display: flex;
+  align-items: baseline;
+  justify-content: space-between;
+  gap: 10px;
+  padding: 0 2px 10px;
+}
+
+.m-odeme-tutar span {
+  font-size: 15px;
+  color: var(--soluk);
+}
+
+.m-odeme-tutar strong {
+  font-size: 28px;
+  font-weight: 600;
+  letter-spacing: -0.5px;
+}
+
+.m-odeme-tutar em {
+  flex-basis: 100%;
+  font-style: normal;
+  font-size: 14px;
+  color: var(--soluk);
+  text-align: right;
+}
+
+.m-numpad {
+  display: flex;
+  gap: 8px;
+}
+
+.m-numpad-grid {
+  flex: 1;
+  display: grid;
+  grid-template-columns: repeat(3, 1fr);
+  gap: 7px;
+}
+
+.m-numpad-tus {
+  height: 54px;
+  display: grid;
+  place-items: center;
+  border: 1px solid #eee6dc;
+  border-radius: 12px;
+  background: var(--kart);
+  color: var(--metin);
+  font-size: 20px;
+  font-weight: 500;
+  cursor: pointer;
+}
+
+/* İş düğmeleri rakamların yanında dik şeritte: ikisi de başparmağın altında
+   ama birbirine karışmıyor. */
+.m-numpad-yan {
+  width: 104px;
+  display: flex;
+  flex-direction: column;
+  gap: 7px;
+}
+
+.m-yan-tus {
+  flex: 1;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  gap: 6px;
+  border: 1px solid #eee6dc;
+  border-radius: 12px;
+  background: var(--kart);
+  color: var(--metin);
+  font-size: 15px;
+  font-weight: 500;
+  cursor: pointer;
+}
+
+.m-yan-tus.ana {
+  border: none;
+  background: var(--mercan);
+  color: #fff;
+  font-size: 17px;
+  font-weight: 600;
+}
+
+.m-yan-tus:disabled {
+  opacity: 0.55;
+}
+
+/* Ödemeden sonra ne olacağı tipe dokunmadan önce seçiliyor. */
+.m-sonuc-sec {
+  display: flex;
+  gap: 7px;
+  padding: 12px 16px 0;
+  overflow-x: auto;
+}
+
+.m-sonuc {
+  flex: none;
+  padding: 9px 14px;
+  border: 1px solid #eee6dc;
+  border-radius: 999px;
+  background: var(--kart);
+  color: var(--metin);
+  font-size: 14.5px;
+  font-weight: 500;
+  white-space: nowrap;
+  cursor: pointer;
+}
+
+.m-sonuc.secili {
+  border-color: var(--mercan);
+  background: var(--mercan);
+  color: #fff;
+}
+
+/* Masa işlem menüsündeki satırlar: ikon solda, ok sağda. */
+.m-satir svg:first-child {
+  flex: none;
+  color: var(--soluk);
+}
+
+.m-satir-ok {
+  margin-left: auto;
+  color: var(--soluk);
+}
+
+.m-satir.tehlikeli svg:first-child {
+  color: #d64545;
+}
+
+/* --- Mobil arayüz: yenilenen düzen ---------------------------------------- */
+
+/* Masa kartı: ad üstte, tutar ortada büyük, süre ve kişi altta. */
+.m-masa {
+  position: relative;
+  min-height: 104px;
+  display: flex;
+  flex-direction: column;
+  justify-content: space-between;
+  align-items: stretch;
+  gap: 4px;
+  padding: 11px 12px;
+  text-align: left;
+}
+
+.m-masa-ust {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 6px;
+}
+
+.m-masa-ad {
+  font-size: 15.5px;
+  font-weight: 600;
+}
+
+.m-masa-menu {
+  width: 28px;
+  height: 28px;
+  margin: -4px -5px -4px 0;
+  display: grid;
+  place-items: center;
+  border-radius: 8px;
+  background: rgba(255, 255, 255, 0.2);
+}
+
+.m-masa:not(.dolu) .m-masa-menu {
+  background: var(--zemin);
+}
+
+.m-masa-tutar {
+  font-size: 20px;
+  font-weight: 600;
+  letter-spacing: -0.4px;
+}
+
+.m-masa-alt {
+  display: flex;
+  align-items: center;
+  gap: 6px;
+  font-size: 13px;
+  color: rgba(255, 255, 255, 0.92);
+}
+
+.m-masa-alt em {
+  display: flex;
+  align-items: center;
+  gap: 3px;
+  font-style: normal;
+}
+
+.m-masa-bos {
+  display: grid;
+  place-items: center;
+  flex: 1;
+  color: var(--soluk);
+}
+
+/* Seçim modu: hedef olamayan masalar geri çekiliyor, seçilen mercan çerçeveli. */
+.m-masalar.secim .m-masa.kapali {
+  opacity: 0.35;
+}
+
+.m-masalar.secim .m-masa.kaynak {
+  outline: 2px dashed var(--mercan);
+  outline-offset: -2px;
+  opacity: 1;
+}
+
+.m-masa.secili {
+  outline: 2px solid var(--mercan);
+  outline-offset: -2px;
+}
+
+.m-secim-serit {
+  position: fixed;
+  left: 12px;
+  right: 12px;
+  bottom: calc(74px + env(safe-area-inset-bottom));
+  z-index: 40;
+  display: flex;
+  flex-direction: column;
+  gap: 10px;
+  padding: 13px 14px;
+  border-radius: 15px;
+  background: var(--metin);
+  color: #fff;
+  font-size: 15px;
+}
+
+.m-secim-serit > div {
+  display: flex;
+  gap: 8px;
+}
+
+.m-secim-serit button {
+  flex: 1;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  gap: 6px;
+  padding: 11px;
+  border: none;
+  border-radius: 11px;
+  font-size: 15px;
+  font-weight: 600;
+  cursor: pointer;
+}
+
+.m-serit-vazgec {
+  background: rgba(255, 255, 255, 0.16);
+  color: #fff;
+}
+
+.m-serit-onay {
+  background: var(--mercan);
+  color: #fff;
+}
+
+.m-serit-onay:disabled {
+  opacity: 0.45;
+}
+
+/* İşlem listesi: ikon + ad, açıklama yok. */
+.m-islemler {
+  display: flex;
+  flex-direction: column;
+  padding: 4px 8px 8px;
+}
+
+.m-islem {
+  display: flex;
+  align-items: center;
+  gap: 13px;
+  padding: 15px 12px;
+  border: none;
+  border-bottom: 1px solid #f2ece4;
+  background: none;
+  color: var(--metin);
+  font-size: 16px;
+  font-weight: 500;
+  text-align: left;
+  cursor: pointer;
+}
+
+.m-islem:last-child {
+  border-bottom: none;
+}
+
+.m-islem svg {
+  color: var(--soluk);
+}
+
+.m-islem.tehlikeli,
+.m-islem.tehlikeli svg {
+  color: #d64545;
+}
+
+/* Ödeme tipi kartı: ikon kendi renginde daire içinde, ad altında. */
+.m-sayfa-baslik {
+  display: flex;
+  align-items: baseline;
+  gap: 10px;
+}
+
+.m-sayfa-baslik strong {
+  font-size: 19px;
+  font-weight: 600;
+  color: var(--mercan);
+}
+
+.m-tip-izgara {
+  display: grid;
+  grid-template-columns: repeat(3, 1fr);
+  gap: 10px;
+  margin-bottom: 6px;
+}
+
+.m-tip {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 9px;
+  padding: 14px 8px;
+  border: 1px solid #eee6dc;
+  border-radius: 15px;
+  background: var(--kart);
+  color: var(--metin);
+  font-size: 14.5px;
+  font-weight: 500;
+  line-height: 1.25;
+  text-align: center;
+  cursor: pointer;
+}
+
+.m-tip:active {
+  border-color: var(--mercan);
+}
+
+.m-tip-ikon {
+  width: 46px;
+  height: 46px;
+  display: grid;
+  place-items: center;
+  border-radius: 14px;
+}
+
+.m-sonuc {
+  display: flex;
+  align-items: center;
+  gap: 6px;
+}
+
+/* Kategoriler kendi renginde kart; seçili olan çerçeveyle öne çıkıyor. */
+.m-kategoriler {
+  display: grid;
+  grid-template-columns: repeat(3, 1fr);
+  gap: 8px;
+  margin-bottom: 12px;
+  max-height: 132px;
+  overflow-y: auto;
+  -webkit-overflow-scrolling: touch;
+}
+
+.m-kategori {
+  min-height: 52px;
+  display: grid;
+  place-items: center;
+  padding: 8px 6px;
+  border: none;
+  border-radius: 13px;
+  font-size: 13.5px;
+  font-weight: 600;
+  line-height: 1.2;
+  text-align: center;
+  cursor: pointer;
+}
+
+.m-kategori.secili {
+  outline: 2.5px solid var(--metin);
+  outline-offset: -2.5px;
+}
+
+/* Ürün kartı: ad üstte, fiyat altta, adisyondaki adet mercan rozette. */
+.m-urun {
+  min-height: 84px;
+}
+
+.m-urun-ad {
+  font-size: 15px;
+  font-weight: 600;
+}
+
+.m-urun-fiyat {
+  font-size: 14.5px;
+  font-weight: 500;
+  color: var(--metin);
+}
+
+/* Kartların hepsi aynı boyda: içeriği kısa olan masa küçülmüyor, ızgara
+   satır yüksekliğini sabitliyor. */
+.m-masalar {
+  grid-template-columns: repeat(3, 1fr);
+  grid-auto-rows: 104px;
+}
+
+.m-masa {
+  height: 100%;
+  min-height: 0;
+  overflow: hidden;
+}
+
+.m-masa-alt {
+  min-height: 18px;
+}
+
+/* Ödeme alanı: iki düğme, tuş takımı ekranda durmuyor. */
+.m-odeme-dugmeler {
+  display: flex;
+  gap: 10px;
+}
+
+.m-tutar-btn {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  gap: 8px;
+  padding: 16px 18px;
+  border: 1px solid #eee6dc;
+  border-radius: 14px;
+  background: var(--kart);
+  color: var(--metin);
+  font-size: 16px;
+  font-weight: 500;
+  cursor: pointer;
+}
+
+.m-ode-btn {
+  flex: 1;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  gap: 9px;
+  padding: 16px;
+  border: none;
+  border-radius: 14px;
+  background: var(--mercan);
+  color: #fff;
+  font-size: 17px;
+  font-weight: 600;
+  cursor: pointer;
+}
+
+.m-ode-btn:disabled {
+  background: #e6ded4;
+  color: var(--soluk);
+}
+
+.m-tutar-govde {
+  padding: 14px 16px;
+  padding-bottom: calc(14px + env(safe-area-inset-bottom));
+}
+
+.m-tutar-kalan {
+  padding-bottom: 12px;
+  font-size: 15px;
+  color: var(--soluk);
+}
+
+.m-tutar-govde .m-numpad-grid {
+  gap: 8px;
+}
+
+.m-tutar-govde .m-numpad-tus {
+  height: 58px;
+  font-size: 22px;
+}
+
+.m-tutar-alt {
+  display: flex;
+  gap: 10px;
+  margin-top: 12px;
+}
+
+/* --- Tahsilat sayfası ----------------------------------------------------- */
+
+.m-odeme-ust {
+  display: flex;
+  align-items: flex-start;
+  justify-content: space-between;
+  gap: 12px;
+  padding: 18px 16px 14px;
+}
+
+.m-odeme-ust p {
+  font-size: 14.5px;
+  color: var(--soluk);
+}
+
+.m-odeme-ust strong {
+  display: block;
+  margin-top: 2px;
+  font-size: 32px;
+  font-weight: 600;
+  letter-spacing: -0.8px;
+}
+
+.m-odeme-govde {
+  display: flex;
+  flex-direction: column;
+  gap: 10px;
+  padding: 4px 16px 16px;
+  padding-bottom: calc(16px + env(safe-area-inset-bottom));
+  overflow-y: auto;
+}
+
+/* En sık kullanılan iki tip tam genişlikte: nişan almadan basılıyor. */
+.m-tip.buyuk {
+  flex-direction: row;
+  justify-content: flex-start;
+  gap: 14px;
+  min-height: 72px;
+  padding: 12px 16px;
+  font-size: 17px;
+  font-weight: 600;
+  text-align: left;
+}
+
+.m-tip-ikon.kucuk {
+  width: 38px;
+  height: 38px;
+  border-radius: 11px;
+}
+
+.m-tip-izgara {
+  display: grid;
+  grid-template-columns: repeat(3, 1fr);
+  gap: 10px;
+  margin: 0;
+}
+
+.m-tip-izgara .m-tip {
+  padding: 12px 6px;
+  font-size: 13.5px;
+}
+
+/* Sonuç seçimi tutarın altında, sayfanın kendi şeridinde. */
+.m-sonuc-sec {
+  padding: 0 16px 6px;
+}
+
+/* Ödeme tipi düğmeleri tipin kendi renginde dolu: kart içinde küçük renkli
+   ikon yerine düğmenin tamamı renk, yazı da üstünde. Uzaktan tanınıyor. */
+.m-tip {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  gap: 7px;
+  min-height: 74px;
+  padding: 12px 8px;
+  border: none;
+  border-radius: 15px;
+  font-size: 14.5px;
+  font-weight: 600;
+  line-height: 1.2;
+  text-align: center;
+  cursor: pointer;
+}
+
+.m-tip.buyuk {
+  flex-direction: row;
+  justify-content: flex-start;
+  gap: 13px;
+  min-height: 66px;
+  padding: 12px 18px;
+  font-size: 17.5px;
+  text-align: left;
+}
+
+.m-tip:disabled {
+  opacity: 0.6;
+}
+
+/* Alt şeritteki ikincil düğmeler yan yana, ana düğme altlarında tam genişlikte. */
+.m-odeme-dugmeler {
+  flex-direction: column;
+  gap: 9px;
+}
+
+.m-odeme-ikincil {
+  display: flex;
+  gap: 9px;
+}
+
+.m-odeme-ikincil .m-tutar-btn {
+  flex: 1;
+  padding: 13px;
+  font-size: 15px;
+}
+
+/* Ödeme tipi satırı: sade liste. Renk yalnız ikonda, gerisi sakin. */
+.m-tip {
+  display: flex;
+  flex-direction: row;
+  align-items: center;
+  gap: 13px;
+  width: 100%;
+  min-height: 62px;
+  padding: 12px 14px;
+  border: 1px solid #eee6dc;
+  border-radius: 14px;
+  background: var(--kart);
+  color: var(--metin);
+  font-size: 16.5px;
+  font-weight: 500;
+  text-align: left;
+  cursor: pointer;
+}
+
+.m-tip-ikon {
+  width: 40px;
+  height: 40px;
+  display: grid;
+  place-items: center;
+  border-radius: 12px;
+  background: var(--zemin);
+}
+
+.m-tip-ok {
+  margin-left: auto;
+  color: var(--soluk);
+}
+
+/* --- Kalem satırı ve kalem işlemleri -------------------------------------- */
+
+/* Adet solda kutuda, ad ortada, tutar sağda: göz üç sütunda sabit kalıyor. */
+.m-kalem {
+  display: grid;
+  grid-template-columns: auto 1fr auto auto;
+  align-items: center;
+  gap: 11px;
+  width: 100%;
+  padding: 11px 12px;
+  margin-bottom: 7px;
+  border: 1px solid #eee6dc;
+  border-radius: 13px;
+  background: var(--kart);
+  color: var(--metin);
+  text-align: left;
+  cursor: pointer;
+}
+
+.m-kalem-adet {
+  min-width: 30px;
+  height: 30px;
+  display: grid;
+  place-items: center;
+  padding: 0 7px;
+  border-radius: 9px;
+  background: var(--zemin);
+  font-size: 15px;
+  font-weight: 600;
+}
+
+.m-kalem.ikram,
+.m-kalem.iptal {
+  opacity: 0.7;
+}
+
+.m-kalem.iptal .m-kalem-ad {
+  text-decoration: line-through;
+}
+
+.m-kalem-tutar s {
+  margin-right: 6px;
+  color: var(--soluk);
+  font-weight: 400;
+}
+
+.m-kalem-ust {
+  display: flex;
+  align-items: flex-start;
+  justify-content: space-between;
+  gap: 12px;
+  padding: 16px 16px 12px;
+}
+
+.m-kalem-ust h2 {
+  font-size: 19px;
+  font-weight: 600;
+}
+
+.m-kalem-ust p {
+  margin-top: 3px;
+  font-size: 14px;
+  color: var(--soluk);
+}
+
+.m-kalem-rozet {
+  display: inline-block;
+  margin-top: 7px;
+  padding: 3px 9px;
+  border-radius: 999px;
+  font-size: 13px;
+  font-weight: 500;
+}
+
+.m-kalem-rozet.ikram {
+  background: #eef6ec;
+  color: #3f7a3a;
+}
+
+.m-kalem-rozet.iptal {
+  background: #fbeaea;
+  color: #b33c3c;
+}
+
+.m-kalem-sayac {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 14px;
+  padding: 0 16px 14px;
+  border-bottom: 1px solid #eee6dc;
+}
+
+.m-kalem-sayac strong {
+  font-size: 20px;
+  font-weight: 600;
+}
+
+.m-sayac.kucuk {
+  gap: 14px;
+  padding: 0;
+}
+
+.m-sayac.kucuk button {
+  width: 46px;
+  height: 46px;
+  border-radius: 13px;
+}
+
+.m-sayac.kucuk span {
+  min-width: 34px;
+  font-size: 22px;
+}
+
+.m-sayac-sabit {
+  font-size: 17px;
+  font-weight: 600;
+}
+
+.m-islem em {
+  margin-left: auto;
+  font-style: normal;
+  font-size: 14px;
+  color: var(--soluk);
+}
+
+.m-kalem-alt,
+.m-not-govde {
+  display: flex;
+  flex-direction: column;
+  gap: 12px;
+  padding: 14px 16px;
+  padding-bottom: calc(14px + env(safe-area-inset-bottom));
+}
+
+.m-not-govde .m-arama {
+  height: 52px;
+  font-size: 16px;
+}
+
+/* Sepet sayfasında adet düğmeleri satırın sağında, kalem işlemleri dokunuşu
+   engellemeden. */
+.m-adet button {
+  width: 32px;
+  height: 32px;
+}

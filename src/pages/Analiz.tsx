@@ -24,6 +24,8 @@ import AnalizFiltre from "../components/AnalizFiltre";
 import AramaKutusu from "../components/AramaKutusu";
 import AdisyonDetay from "../components/AdisyonDetay";
 import { yolaGirebilir } from "../rotaYetkileri";
+import { yetkiVar } from "../oturum";
+import OnayModal from "../components/OnayModal";
 import { paraGoster } from "../para";
 import { ayarlar } from "../isletmeAyarlari";
 import {
@@ -66,6 +68,7 @@ export default function Analiz() {
   const [cariHareketler, setCariHareketler] = useState<CariHareketSatiri[]>([]);
   const [yukleniyor, setYukleniyor] = useState(true);
   const [secili, setSecili] = useState<number | null>(null);
+  const [uyari, setUyari] = useState<string | null>(null);
   // Adisyon yeniden açılınca liste eskiyor; sayaç değişince sorgu tekrarlanıyor.
   const [tazele, setTazele] = useState(0);
   // Özetteki eksik tahsilat satırından gelindiğinde liste o hesaplara daralıyor.
@@ -147,7 +150,16 @@ export default function Analiz() {
         ) : bolum === "adisyonlar" ? (
           <Adisyonlar
             adisyonlar={adisyonlar}
-            onSec={setSecili}
+            onSec={(id) => {
+              // Kapanmış adisyonun içini görmek ayrı bir yetki: geçmiş hesabın
+              // kalemleri, indirimi ve tahsilatı orada duruyor.
+              const a = adisyonlar.find((x) => x.id === id);
+              if (a && a.durum !== "acik" && !yetkiVar("siparis.kapali_gor")) {
+                setUyari("Kapanmış adisyonu görüntüleme yetkiniz yok.");
+                return;
+              }
+              setSecili(id);
+            }}
             sadeceEksik={sadeceEksik}
             onEksigiBirak={() => setSadeceEksik(false)}
           />
@@ -167,6 +179,8 @@ export default function Analiz() {
           <Yapiliyor bolum={bolum} />
         )}
       </div>
+
+      {uyari && <OnayModal tekTus mesaj={uyari} onKapat={() => setUyari(null)} />}
 
       {secili && (
         <AdisyonDetay

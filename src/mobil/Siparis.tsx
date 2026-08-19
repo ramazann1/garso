@@ -1,26 +1,54 @@
 import { useEffect, useMemo, useRef, useState } from "react";
 import { useNavigate, useParams } from "react-router-dom";
-import { ArrowLeft, ChevronUp, CloudOff, Minus, Plus, Search, Send, X } from "lucide-react";
+import {
+  ArrowLeft,
+  ArrowRightLeft,
+  Ban,
+  ChevronRight,
+  ChevronUp,
+  CloudOff,
+  EllipsisVertical,
+  Merge,
+  Minus,
+  Printer,
+  Plus,
+  ReceiptText,
+  Search,
+  Send,
+  Users,
+  Wallet,
+  X,
+} from "lucide-react";
 import UrunSecim from "../components/UrunSecim";
+import KalemIslemleri, { kalemiUygula } from "./KalemIslemleri";
 import OnayModal from "../components/OnayModal";
 import { agacUrunleri, menuGetir, porsiyonFiyat, urunKdv } from "../menu";
-import { masaGetir } from "../masalar";
+import { bolgeleriGetir, masaGetir } from "../masalar";
 import {
   adisyonGetir,
+  adisyonIptal,
   adisyonKaydet,
   adisyonOzeti,
+  kalemTasi,
   kalemTutari,
+  masaBirlestir,
+  masaTasi,
   servisGirdisi,
+  tumAdisyonlar,
   yeniKalemId,
 } from "../adisyonlar";
 import type { AdisyonVerisi } from "../adisyonlar";
 import { servisSatirlari } from "../servis";
+import { adisyonFisiYaz } from "../yazicilar";
 import { bekleyenKayit, kuyrugaEkle } from "../kuyruk";
 import { baglantiHatasi, baglantiVar } from "../baglanti";
 import { kilitKaldir, kilitKur } from "../cikisKilidi";
 import { ayarlar } from "../isletmeAyarlari";
+import { yetkiVar } from "../oturum";
 import { paraGoster } from "../para";
+import { yaziRengi } from "../renk";
 import type {
+  Bolge,
   MenuKategori,
   MenuKdv,
   MenuSecenekGrubu,
@@ -28,6 +56,14 @@ import type {
   SepetKalemi,
   Tahsilat,
 } from "../types";
+
+// Adisyonun tamamının iptal sebepleri; kasadaki listeyle aynı.
+const ADISYON_IPTAL_SEBEPLERI = [
+  "Müşteri vazgeçti",
+  "Yanlış masaya girildi",
+  "Sipariş verilmedi",
+  "Deneme kaydı",
+];
 
 function anaPorsiyon(u: MenuUrun) {
   return u.porsiyonlar.find((p) => p.varsayilan) ?? u.porsiyonlar[0];
@@ -77,6 +113,10 @@ export default function MobilSiparis() {
 
   const [secimUrunu, setSecimUrunu] = useState<MenuUrun | null>(null);
   const [sepetAcik, setSepetAcik] = useState(false);
+  const [islemlerAcik, setIslemlerAcik] = useState(false);
+  const [kalemIslem, setKalemIslem] = useState<SepetKalemi | null>(null);
+  const [hedefSecim, setHedefSecim] = useState<"tasi" | "birlestir" | null>(null);
+  const [iptalSorusu, setIptalSorusu] = useState(false);
   const [kisiSorusu, setKisiSorusu] = useState(false);
   const [uyari, setUyari] = useState<string | null>(null);
   const [gonderiliyor, setGonderiliyor] = useState(false);
@@ -236,6 +276,43 @@ export default function MobilSiparis() {
     return liste;
   }, [sepet]);
 
+  const fisYazdir = async () => {
+    setIslemlerAcik(false);
+    try {
+      const okunan = await adisyonGetir(masaId);
+      const adet = await adisyonFisiYaz({ ...okunan, ad: okunan.ad || masaAdi });
+      setUyari(
+        adet > 0 ? "Fiş yazdırmaya gönderildi." : "Hesap fişi basacak açık bir yazıcı tanımlı değil."
+      );
+    } catch {
+      setUyari("Fiş yazdırmaya gönderilemedi.");
+    }
+  };
+
+  // Taşıma ve birleştirmede ekranda bekleyen sipariş varsa önce o yazılıyor:
+  // yoksa kaydedilmemiş kalemler eski masada kalırdı.
+  const masaIslemi = (tip: "tasi" | "birlestir") => {
+    setIslemlerAcik(false);
+    if (kirli) {
+      setUyari("Önce siparişi gönder, sonra masayı taşı.");
+      return;
+    }
+    setHedefSecim(tip);
+  };
+
+  const hedefeUygula = async (hedefMasaId: number) => {
+    const tip = hedefSecim;
+    setHedefSecim(null);
+    try {
+      if (tip === "tasi") await masaTasi(masaId, hedefMasaId);
+      else await masaBirlestir(masaId, hedefMasaId);
+      kilitKaldir();
+      git("/mobil/masalar");
+    } catch (e) {
+      setUyari(e instanceof Error ? e.message : "İşlem yapılamadı.");
+    }
+  };
+
   const gonder = async () => {
     if (ayarlar().kisiSayisiZorunlu && !kisiSayisi) {
       setKisiSorusu(true);
@@ -305,19 +382,26 @@ export default function MobilSiparis() {
         >
           {aramaAcik ? <X size={20} /> : <Search size={20} />}
         </button>
+        <button
+          className="m-ikon-dugme"
+          onClick={() => setIslemlerAcik(true)}
+          aria-label="Sipariş işlemleri"
+        >
+          <EllipsisVertical size={20} />
+        </button>
       </header>
 
+      {/* Kategoriler kendi renkleriyle kart: garson adı okumadan renkten
+          tanıyor, yoğun saatte aradığı grubu tek bakışta buluyor. */}
       {!aramaAcik && (
-        <div className="m-bolgeler">
+        <div className="m-kategoriler">
           {kategoriler
             .filter((k) => !k.ustId)
             .map((k) => (
               <button
                 key={k.id}
-                className={k.id === seciliKategori ? "m-cip secili" : "m-cip"}
-                style={
-                  k.id === seciliKategori ? { background: k.renk, borderColor: k.renk } : undefined
-                }
+                className={k.id === seciliKategori ? "m-kategori secili" : "m-kategori"}
+                style={{ background: k.renk, color: yaziRengi(k.renk) }}
                 onClick={() => setSeciliKategori(k.id)}
               >
                 {k.ad}
@@ -392,30 +476,39 @@ export default function MobilSiparis() {
                 <div key={i} className="m-tur">
                   <div className="m-tur-baslik">{tur.baslik}</div>
                   {tur.kalemler.map((k) => (
-                    <div key={k.id} className="m-kalem">
-                      <div className="m-kalem-ad">
+                    // Kaleme dokunmak işlem sayfasını açıyor: adet, not, ikram,
+                    // indirim, iptal ve taşıma orada. Yanındaki artı/eksi yeni
+                    // girilen satırın adedini hızlı değiştirmek için duruyor.
+                    <div
+                      key={k.id}
+                      className={
+                        (k.durum ?? "normal") === "normal" ? "m-kalem" : `m-kalem ${k.durum}`
+                      }
+                      onClick={() => setKalemIslem(k)}
+                    >
+                      <span className="m-kalem-adet">{k.adet}</span>
+                      <span className="m-kalem-ad">
                         {k.ad}
-                        {!!(k.porsiyon || k.secimler?.length) && (
+                        {!!(k.porsiyon || k.secimler?.length || k.not) && (
                           <small>
-                            {[k.porsiyon, ...(k.secimler ?? [])].filter(Boolean).join(" · ")}
+                            {[k.porsiyon, ...(k.secimler ?? []), k.not].filter(Boolean).join(" · ")}
                           </small>
                         )}
-                      </div>
-                      <div className="m-kalem-tutar">{paraGoster(kalemTutari(k))}</div>
-                      {/* Kaydedilmiş turun kalemi burada değişmiyor: geri alma,
-                          ikram ve iptal yetkiye bağlı işlemler, kasa ekranında. */}
-                      {k.turSira == null ? (
-                        <div className="m-adet">
+                      </span>
+                      <span className="m-kalem-tutar">
+                        {(k.durum ?? "normal") !== "normal"
+                          ? k.durum === "ikram" ? "İkram" : "İptal"
+                          : paraGoster(kalemTutari(k))}
+                      </span>
+                      {k.turSira == null && (
+                        <div className="m-adet" onClick={(e) => e.stopPropagation()}>
                           <button onClick={() => adetDegistir(k, -1)} aria-label="Azalt">
                             <Minus size={16} />
                           </button>
-                          <span>{k.adet}</span>
                           <button onClick={() => adetDegistir(k, 1)} aria-label="Artır">
                             <Plus size={16} />
                           </button>
                         </div>
-                      ) : (
-                        <div className="m-adet sabit">{k.adet}</div>
                       )}
                     </div>
                   ))}
@@ -457,9 +550,171 @@ export default function MobilSiparis() {
             <div className="m-sayfa-alt">
               <span>Toplam</span>
               <strong>{paraGoster(ozet.toplam)}</strong>
+              {/* Ödeme burada yapılmıyor, hesabın kendi ekranına geçiliyor.
+                  Gönderilmemiş kalem varken geçilmiyor: kaydedilmemiş sipariş
+                  ödeme ekranında hiç görünmez, garson eksik tutar tahsil eder. */}
+              {sepet.length > 0 && (
+                <button
+                  className="m-dugme"
+                  onClick={() => {
+                    if (kirli) {
+                      setUyari("Önce siparişi gönder, sonra hesabı kapat.");
+                      return;
+                    }
+                    git(`/mobil/adisyon/${masaId}`);
+                  }}
+                >
+                  <Wallet size={18} />
+                  {yetkiVar("odeme.al") ? "Öde" : "Hesap"}
+                </button>
+              )}
             </div>
           </div>
         </div>
+      )}
+
+      {/* Siparişin kendi işlemleri: masaya girdikten sonra da misafir sayısı
+          değişebiliyor, hesap fişi istenebiliyor. */}
+      {islemlerAcik && (
+        <div className="m-perde" onClick={() => setIslemlerAcik(false)}>
+          <div className="m-sayfa kisa" onClick={(e) => e.stopPropagation()}>
+            <header className="m-sayfa-ust">
+              <h2>{masaAdi}</h2>
+              <button
+                className="m-ikon-dugme"
+                onClick={() => setIslemlerAcik(false)}
+                aria-label="Kapat"
+              >
+                <X size={20} />
+              </button>
+            </header>
+            <div className="m-islemler">
+              <button
+                className="m-islem"
+                onClick={() => {
+                  setIslemlerAcik(false);
+                  setKisiSorusu(true);
+                }}
+              >
+                <Users size={19} />
+                Misafir sayısı{kisiSayisi ? ` · ${kisiSayisi}` : ""}
+              </button>
+              <button
+                className="m-islem"
+                onClick={() => {
+                  setIslemlerAcik(false);
+                  setSepetAcik(true);
+                }}
+              >
+                <ReceiptText size={19} />
+                Adisyonu gör
+              </button>
+              <button
+                className="m-islem"
+                onClick={() => {
+                  if (kirli) {
+                    setIslemlerAcik(false);
+                    setUyari("Önce siparişi gönder, sonra hesabı kapat.");
+                    return;
+                  }
+                  git(`/mobil/adisyon/${masaId}`);
+                }}
+              >
+                <Wallet size={19} />
+                {yetkiVar("odeme.al") ? "Öde" : "Hesap"}
+              </button>
+
+              <button className="m-islem" onClick={fisYazdir}>
+                <Printer size={19} />
+                Hesap fişi yazdır
+              </button>
+
+              {/* Taşıma ve birleştirme sunucu işi: ekranda bekleyen sipariş
+                  varsa önce o gitmeli, yoksa taşınan masada görünmez. */}
+              {yetkiVar("siparis.tasi") && (
+                <>
+                  <button className="m-islem" onClick={() => masaIslemi("tasi")}>
+                    <ArrowRightLeft size={19} />
+                    Masayı taşı
+                  </button>
+                  <button className="m-islem" onClick={() => masaIslemi("birlestir")}>
+                    <Merge size={19} />
+                    Masaları birleştir
+                  </button>
+                </>
+              )}
+
+              {yetkiVar("siparis.iptal") && sepet.some((k) => k.turSira != null) && (
+                <button className="m-islem tehlikeli" onClick={() => setIptalSorusu(true)}>
+                  <Ban size={19} />
+                  Adisyonu iptal et
+                </button>
+              )}
+            </div>
+          </div>
+        </div>
+      )}
+
+      {hedefSecim && (
+        <MasaHedefi
+          tip={hedefSecim}
+          masaId={masaId}
+          onKapat={() => setHedefSecim(null)}
+          onSec={hedefeUygula}
+        />
+      )}
+
+      {iptalSorusu && (
+        <OnayModal
+          baslik="Adisyonu iptal et"
+          ikon={<Ban size={20} />}
+          mesaj={`${masaAdi} masasının hesabı iptal edilecek. Ciroya yazılmaz; kayıt silinmez, iptal olarak durur. Sebebi nedir?`}
+          tehlikeli
+          sebepler={ADISYON_IPTAL_SEBEPLERI}
+          onayMetni="Evet, iptal et"
+          onOnay={async (sebep) => {
+            setIptalSorusu(false);
+            try {
+              const acik = await adisyonGetir(masaId);
+              if (!acik.id) throw new Error("Bu masada açık adisyon yok.");
+              await adisyonIptal(acik.id, sebep ?? "");
+              kilitKaldir();
+              git("/mobil/masalar");
+            } catch (e) {
+              setUyari(e instanceof Error ? e.message : "Adisyon iptal edilemedi.");
+            }
+          }}
+          onKapat={() => setIptalSorusu(false)}
+        />
+      )}
+
+      {/* Sepetteki kalemin işlemleri. Değişiklik ekrandaki sepete uygulanıyor,
+          diske Gönder ile gidiyor — bu ekranın kuralı bu. */}
+      {kalemIslem && (
+        <KalemIslemleri
+          kalem={kalemIslem}
+          tasinabilir={!!kalemIslem.id && kalemIslem.id > 0}
+          onKapat={() => setKalemIslem(null)}
+          onUygula={(yeni) => {
+            setKalemIslem(null);
+            setSepet((s) => kalemiUygula(s, kalemIslem, yeni));
+          }}
+          onTasi={async (hedefMasaId, adet) => {
+            const kalemId = kalemIslem.id!;
+            setKalemIslem(null);
+            try {
+              // Taşıma sunucu işi: önce ekrandaki sipariş yazılıyor, sonra
+              // kalem gidiyor, sonra masa yeniden okunuyor.
+              await adisyonKaydet(masaId, adisyon);
+              await kalemTasi(masaId, hedefMasaId, kalemId, adet);
+              const guncel = await adisyonGetir(masaId);
+              setSepet(guncel.sepet);
+              baslangicImza.current = JSON.stringify(guncel.sepet);
+            } catch (e) {
+              setUyari(e instanceof Error ? e.message : "Kalem taşınamadı.");
+            }
+          }}
+        />
       )}
 
       {secimUrunu && (
@@ -514,6 +769,74 @@ function MisafirSorusu({ deger, onKaydet }: { deger: number; onKaydet: (sayi: nu
           <button className="m-dugme genis" onClick={() => onKaydet(sayi)}>
             Tamam
           </button>
+        </div>
+      </div>
+    </div>
+  );
+}
+
+/**
+ * Taşıma ve birleştirme için hedef masa seçimi. Taşımada boş, birleştirmede
+ * dolu masalar listeleniyor — yanlış hedefi baştan eliyor.
+ */
+function MasaHedefi({
+  tip,
+  masaId,
+  onKapat,
+  onSec,
+}: {
+  tip: "tasi" | "birlestir";
+  masaId: number;
+  onKapat: () => void;
+  onSec: (hedefMasaId: number) => void;
+}) {
+  const [bolgeler, setBolgeler] = useState<Bolge[]>([]);
+  const [dolular, setDolular] = useState<Set<number>>(new Set());
+  const [yukleniyor, setYukleniyor] = useState(true);
+
+  useEffect(() => {
+    Promise.all([bolgeleriGetir(), tumAdisyonlar()]).then(([b, a]) => {
+      setBolgeler(b);
+      setDolular(new Set(Object.keys(a).map(Number)));
+      setYukleniyor(false);
+    });
+  }, []);
+
+  const secilebilirler = bolgeler.flatMap((b) =>
+    b.masalar
+      .filter((m) => m.aktif && m.id !== masaId && (tip === "tasi" ? !dolular.has(m.id) : dolular.has(m.id)))
+      .map((m) => ({ masa: m, bolge: b.ad }))
+  );
+
+  return (
+    <div className="m-perde" onClick={onKapat}>
+      <div className="m-sayfa" onClick={(e) => e.stopPropagation()}>
+        <header className="m-sayfa-ust">
+          <h2>{tip === "tasi" ? "Hangi masaya taşınsın?" : "Hangi masayla birleşsin?"}</h2>
+          <button className="m-ikon-dugme" onClick={onKapat} aria-label="Kapat">
+            <X size={20} />
+          </button>
+        </header>
+        <div className="m-sayfa-icerik">
+          {yukleniyor ? (
+            <div className="yukleniyor"><div className="cember" /></div>
+          ) : secilebilirler.length === 0 ? (
+            <div className="m-bos">
+              <p>{tip === "tasi" ? "Boş masa yok." : "Birleştirilecek dolu masa yok."}</p>
+            </div>
+          ) : (
+            <div className="m-liste">
+              {secilebilirler.map(({ masa, bolge }) => (
+                <button key={masa.id} className="m-satir" onClick={() => onSec(masa.id)}>
+                  <span>
+                    {masa.ad}
+                    <small>{bolge}</small>
+                  </span>
+                  <ChevronRight size={18} className="m-satir-ok" />
+                </button>
+              ))}
+            </div>
+          )}
         </div>
       </div>
     </div>

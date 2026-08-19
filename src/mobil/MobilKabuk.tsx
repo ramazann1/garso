@@ -1,5 +1,5 @@
 import { NavLink, useLocation } from "react-router-dom";
-import { ChefHat, LayoutGrid, UserRound } from "lucide-react";
+import { ChartColumn, ChefHat, LayoutGrid, UserRound } from "lucide-react";
 import { yolaGirebilir } from "../rotaYetkileri";
 
 /**
@@ -14,7 +14,8 @@ type Sekme = { yol: string; ad: string; ikon: typeof LayoutGrid; yetkiYolu: stri
 
 const SEKMELER: Sekme[] = [
   { yol: "/mobil/masalar", ad: "Masalar", ikon: LayoutGrid, yetkiYolu: "/siparis" },
-  { yol: "/mobil/mutfak", ad: "Mutfak", ikon: ChefHat, yetkiYolu: "/istasyon" },
+  { yol: "/mobil/mutfak", ad: "İstasyon", ikon: ChefHat, yetkiYolu: "/istasyon" },
+  { yol: "/mobil/satis", ad: "Satış", ikon: ChartColumn, yetkiYolu: "/mobil/satis" },
   { yol: "/mobil/ben", ad: "Ben", ikon: UserRound, yetkiYolu: "/mobil/ben" },
 ];
 

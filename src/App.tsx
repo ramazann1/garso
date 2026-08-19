@@ -22,6 +22,9 @@ import Giris from "./pages/Giris";
 import MobilKabuk, { acikSekmeler } from "./mobil/MobilKabuk";
 import MobilMasalar from "./mobil/Masalar";
 import MobilSiparis from "./mobil/Siparis";
+import MobilAdisyon from "./mobil/Adisyon";
+import MobilSatis from "./mobil/Satis";
+import MobilIstasyon from "./mobil/Istasyon";
 import Ben from "./mobil/Ben";
 import { useGorunum } from "./mobil/mobilTercih";
 import KilitEkrani from "./components/KilitEkrani";
@@ -119,7 +122,10 @@ function App() {
         <Route path="/mobil/masalar" element={<MobilKabuk><MobilMasalar /></MobilKabuk>} />
         {/* Sipariş ekranı kabuksuz: sepet şeridi altta, sekme çubuğu onun yerini almasın. */}
         <Route path="/mobil/siparis/:masaId" element={<MobilSiparis />} />
-        <Route path="/mobil/mutfak" element={<MobilKabuk><Istasyon /></MobilKabuk>} />
+        {/* Hesabın kendi ekranı: ödeme sipariş almaktan ayrı bir an. */}
+        <Route path="/mobil/adisyon/:masaId" element={<MobilAdisyon />} />
+        <Route path="/mobil/mutfak" element={<MobilKabuk><MobilIstasyon /></MobilKabuk>} />
+        <Route path="/mobil/satis" element={<MobilKabuk><MobilSatis /></MobilKabuk>} />
         <Route path="/mobil/ben" element={<MobilKabuk><Ben /></MobilKabuk>} />
         <Route path="/siparis/:masaId" element={<Siparis />} />
         <Route path="/adisyon/:adisyonId" element={<Siparis />} />

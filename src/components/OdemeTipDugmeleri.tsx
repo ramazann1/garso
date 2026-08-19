@@ -1,5 +1,6 @@
 import { OdemeIkon } from "../odemeIkon";
 import { yaziRengi } from "../renk";
+import { yetkiVar } from "../oturum";
 import type { OdemeTipi } from "../odemeTipleri";
 
 /**
@@ -16,8 +17,13 @@ export default function OdemeTipDugmeleri({
   pasif?: boolean;
   onSec: (ad: string) => void;
 }) {
-  const okc = tipler.filter((t) => t.sinif === "okc");
-  const klasik = tipler.filter((t) => t.sinif !== "okc");
+  // Açık hesaba yazmak parayı kasaya sokmadan hesabı kapatıyor; yetkisi
+  // olmayan kişi bu tipleri hiç görmüyor. Denetim tek yerde: düğmeleri çizen
+  // bileşen burası, tahsilat ekranlarının hepsi buradan geçiyor.
+  const acik = yetkiVar("odeme.acik_hesap");
+  const gorunen = acik ? tipler : tipler.filter((t) => !t.acikHesap);
+  const okc = gorunen.filter((t) => t.sinif === "okc");
+  const klasik = gorunen.filter((t) => t.sinif !== "okc");
   const gruplu = okc.length > 0 && klasik.length > 0;
 
   const izgara = (liste: OdemeTipi[]) => (
@@ -37,7 +43,7 @@ export default function OdemeTipDugmeleri({
     </div>
   );
 
-  if (!gruplu) return izgara(tipler);
+  if (!gruplu) return izgara(gorunen);
 
   return (
     <>

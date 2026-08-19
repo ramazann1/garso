@@ -19,7 +19,9 @@ const ROTA_YETKILERI: [string, string][] = [
   // hangi sekmenin çıkacağına karar veriyor.
   ["/mobil/masalar", "siparis.al"],
   ["/mobil/siparis", "siparis.al"],
+  ["/mobil/adisyon", "siparis.al"],
   ["/mobil/mutfak", "mutfak.ekran"],
+  ["/mobil/satis", "rapor.gun_sonu"],
   ["/adisyon", "siparis.al"],
   ["/menu", "tanim.menu"],
   ["/istasyon", "mutfak.ekran"],

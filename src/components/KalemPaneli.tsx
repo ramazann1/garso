@@ -113,6 +113,7 @@ export default function KalemPaneli({
   // mutfağa da hesaba da gitmedi, herkes geri alabilir. Kaydedilmiş kalemi
   // çıkarmak ise satışa müdahale — yetki istiyor.
   const cikarabilir = !kalem.id || kalem.id < 0 || yetkiVar("siparis.urun_cikar");
+  const miktarDegistirebilir = !kalem.id || kalem.id < 0 || yetkiVar("siparis.miktar");
 
   // Panelde tek açıklama satırı duruyor, o da duruma göre değişiyor: üst üste
   // dizilmiş bilgi kutuları paneli ders kitabına çeviriyordu.
@@ -154,24 +155,30 @@ export default function KalemPaneli({
         <div className="panel-govde kp-govde">
           <div className="kp-satir">
             <label>Adet</label>
-            <div className="kp-adet">
-              <button
-                aria-label="Azalt"
-                disabled={adet <= 1}
-                onClick={() => setAdet((a) => Math.max(1, a - 1))}
-              >
-                <Minus size={17} />
-              </button>
-              <input
-                type="number"
-                min={1}
-                value={adet}
-                onChange={(e) => setAdet(Math.max(1, Number(e.target.value) || 1))}
-              />
-              <button aria-label="Artır" onClick={() => setAdet((a) => a + 1)}>
-                <Plus size={17} />
-              </button>
-            </div>
+            {/* Kaydedilmiş kalemin adedini değiştirmek yetki istiyor; kişi henüz
+                kaydetmediği kendi satırını serbestçe düzeltiyor. */}
+            {miktarDegistirebilir ? (
+              <div className="kp-adet">
+                <button
+                  aria-label="Azalt"
+                  disabled={adet <= 1}
+                  onClick={() => setAdet((a) => Math.max(1, a - 1))}
+                >
+                  <Minus size={17} />
+                </button>
+                <input
+                  type="number"
+                  min={1}
+                  value={adet}
+                  onChange={(e) => setAdet(Math.max(1, Number(e.target.value) || 1))}
+                />
+                <button aria-label="Artır" onClick={() => setAdet((a) => a + 1)}>
+                  <Plus size={17} />
+                </button>
+              </div>
+            ) : (
+              <span className="kp-sabit">{kalem.adet}</span>
+            )}
           </div>
 
           {/* Fiyat yetkisi olmayan kişi rakamı görür ama değiştiremez; kutuyu

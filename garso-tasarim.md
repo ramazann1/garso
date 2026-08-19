@@ -3,14 +3,23 @@
 
 ## 0. SIRADAKİ İŞ (19 Ağu 2026'da güncellendi)
 
-> **Sonraki seansın ilk işi:** **mobil arayüz (PWA) — aşama 3: ödeme.**
-> Adisyonun kendi ekranı: kalemler, döküm, ödeme tipi kartlarıyla tek dokunuşla
-> kapatma ve tutar girmeli tahsilat. Sipariş ekranında ödeme yok — bilinçli.
+> **Sonraki seansın ilk işi:** **mobil arayüz tasarımı — ikinci tur.**
+> Ramazan mobili beğenmedi ve 20 Ağustos seansında baştan yazıldı; yine de
+> "daha fazla kafa patlatmak" istediğini söyledi. Seansa mevcut ekranları
+> birlikte gözden geçirerek başla: masa kartı, sipariş ekranı (kategori/ürün
+> ızgarası, sepet şeridi), adisyon + ödeme ekranı, tahsilat sayfası.
+> Adisyo Garson kayıtlarından çıkan notlar aşağıda; kopyalamıyoruz, hangi
+> kararın neden alındığına bakıyoruz.
 >
-> Mobilin sonraki parçaları (aşama 3'ten sonra): **Paket / Gel Al sekmesi**
-> (masasız adisyon mobilde hiç yok), **Satış sekmesi** (günün cirosu, açık
-> masalar, ödeme tipi dökümü), **Mutfak sekmesinin kendi mobil düzeni**
-> (şimdilik masaüstü İstasyon ekranı kabuğun içinde açılıyor).
+> Bekleyen küçük işler: **İstasyon ve Satış sekmeleri yeni tasarım diline
+> geçmedi** (masa/sipariş/ödeme geçti), **ürün kartı ve sepet şeridi** son
+> hâllerini almadı, **sipariş ekranında adisyon notu ve müşteri seçme** yok
+> (Adisyo'nun ⋮ menüsünde var).
+>
+> **Paket / Gel Al mobile alınmayacak (19 Ağu 2026 kararı).** Masasız sipariş
+> telefonla ayakta girilen bir iş değil: müşteri tezgâhta ya da telefonda,
+> siparişi kasadaki kişi oturarak alıyor — ad, telefon, adres yazmak dar ekranda
+> yavaşlatıyor. Mobil garsonun masa işi için; masasız akış kasada kalıyor.
 >
 > Sırada bekleyenler: **kurye atama ve teslimat takibi** → **KDS'in kalan
 > parçaları** (pişirme/paketleme aşamaları, mutfak fişi, hazırlık süresi
@@ -72,6 +81,48 @@ durunca kalabalık oluyordu. Adisyonlar listesi Adisyo'nun sütunlarıyla gerçe
 bir tablo; **"Eksik tahsilat" durumu bizim eklememiz** (kapanmış ama parası
 eksik kalan hesap Adisyo'da ayrı işaretlenmiyor). Yeni yetki:
 `siparis.aktif_et` (kapanmış adisyonu yeniden açma).
+
+**20 Ağu 2026: Mobil aşama 3 (ödeme), Satış ve İstasyon sekmeleri, yetki
+denetimi ve mobil arayüzün yeniden yazımı.**
+
+Yapılanlar:
+- **Adisyon/ödeme ekranı** (`mobil/Adisyon.tsx`): kalemler + döküm + alınan
+  ödemeler yukarıda, ödeme alanı altta sabit. Sıradan iş iki dokunuş —
+  "₺X öde" → tip. Tuş takımı ekranda durmuyor, "Tutar gir" kendi sayfasında
+  açıyor. Hesabın parası tamamlanınca adisyon kendiliğinden kapanıyor;
+  "öde ve kapat" gibi seçenek sorulmuyor (denendi, kaldırıldı).
+- **Tahsilat sayfası** (`mobil/OdemeTipleri.tsx`) — Hızlı Öde ve adisyon ekranı
+  aynı bileşeni kullanıyor. Üç düzen denendi (renkli ızgara → dolu renkli
+  düğmeler → sade liste); **sade liste kaldı**: tam genişlikte satır, renk
+  yalnız ikonda, üstte tahsil edilecek tutar iri.
+- **Kalem işlemleri** (`mobil/KalemIslemleri.tsx`) — masaüstü `KalemPaneli`nin
+  mobil karşılığı; adisyon ve sipariş ekranı ikisi de kullanıyor: adet, not,
+  ürün indirimi, ikram, iptal (sebepli), başka masaya taşıma.
+  **Kural: kaydedilmiş kalemin adedi artarsa fark yeni satır olur** — eski tur
+  bozulmuyor, mutfak farkı yeni sipariş olarak görüyor (`kalemiUygula`).
+- **Masa kartı ⋮ menüsü**: Öde · Hızlı Öde · Yazdır · Masayı taşı · Masaları
+  birleştir · Adisyonu iptal et. Taşıma/birleştirme **ızgaranın kendi üstünde**
+  seçiliyor (uygun olmayan masa soluyor, altta Vazgeç/Uygula şeridi).
+  Sipariş ekranının ⋮ menüsünde de aynı işlemler + misafir sayısı.
+- **Satış sekmesi** (`mobil/Satis.tsx`): bugünün cirosu, açık masalar, ödeme
+  tipi dökümü (oran çubuklu), kasaya giren / eksik tahsilat. Gider ve kâr yok.
+- **İstasyon sekmesi** (`mobil/Istasyon.tsx`): tek sütun kartlar, Bekleyen /
+  Hazırlanan sekmeleri, kalem düğmeleri, 10 sn geri alma şeridi. Alt çubuktaki
+  ad "Mutfak" değil **İstasyon**.
+- **Yetki denetimi tamamlandı.** Tarama sonucu yedi yetki hiç sorulmuyordu:
+  `odeme.al`, `odeme.acik_hesap`, `odeme.iade`, `siparis.miktar`,
+  `siparis.gelal`, `siparis.paket`, `siparis.kapali_gor`. Hepsi arayüze
+  bağlandı ve **veritabanı tarafına tetikleyiciler yazıldı**
+  (`sql/2026-08-28-yetki-denetimi.sql`): tahsilat, kalem ve adisyon yazmaları
+  `oturum_yetkisi()` sorguluyor. `auth.uid()` boşken denetim yapılmıyor (SQL
+  düzenleyicisi ve kurulum betikleri kilitlenmesin).
+
+Kararlar:
+- **Paket / Gel Al mobile alınmayacak** — masasız sipariş kasada oturarak
+  alınıyor, telefonda ayakta değil.
+- **Ödeme sırasında açık hesap seçilirse müşteri sorulur** (Hızlı Öde'de
+  sorulmuyordu, düzeltildi: borcun kime yazıldığı bilinmeden hesap kapanmaz).
+- **Çevrimdışı tahsilat yok**, bağlantı gelmeden ödeme alınmıyor.
 
 **19 Ağu 2026 (5. seans): Mobil arayüz — aşama 1 (kabuk + Masalar) ve
 aşama 2 (sipariş ekranı) bitti.** Kapsam kararı yukarıda; burada yapılanlar.

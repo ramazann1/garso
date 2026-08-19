@@ -237,7 +237,10 @@ export default function Salon() {
 
   // Çalışma tipleri: kapatılan tür arayüzde hiç durmuyor. İkisi de kapalıysa
   // sekmenin kendisi kalkıyor, tek tür açıksa sekme adını o tür alıyor.
-  const { gelalAcik, paketAcik } = ayarlar();
+  // Tür işletmede açık olsa bile kişinin o siparişi alma yetkisi olmayabilir:
+  // ayar "bu işletme yapıyor mu", yetki "bu kişi yapabilir mi" sorusu.
+  const gelalAcik = ayarlar().gelalAcik && yetkiVar("siparis.gelal");
+  const paketAcik = ayarlar().paketAcik && yetkiVar("siparis.paket");
   const masasizVar = gelalAcik || paketAcik;
   const tekTip: "gelal" | "paket" | null =
     gelalAcik && paketAcik ? null : paketAcik ? "paket" : "gelal";
@@ -358,17 +361,24 @@ export default function Salon() {
     const acik = adisyonlar[masa.id];
     const odendi = !!acik && acik.tutar > 0 && acik.odenen > 0 && acik.kalan <= 0;
     return [
-      odendi
-        ? {
-            ad: "Adisyonu kapat",
-            ikon: <CircleCheckBig size={16} />,
-            onSec: () => kapatmaSor(masa),
-          }
-        : {
-            ad: "Hızlı Öde",
-            ikon: <Zap size={16} />,
-            onSec: () => hizliOdeAc(masa),
-          },
+      // Parayı alma işi yetkiye bağlı; hesabı ödenmiş masayı kapatmak değil.
+      ...(odendi
+        ? [
+            {
+              ad: "Adisyonu kapat",
+              ikon: <CircleCheckBig size={16} />,
+              onSec: () => kapatmaSor(masa),
+            },
+          ]
+        : yetkiVar("odeme.al")
+          ? [
+              {
+                ad: "Hızlı Öde",
+                ikon: <Zap size={16} />,
+                onSec: () => hizliOdeAc(masa),
+              },
+            ]
+          : []),
       // Taşıma ve birleştirme yetkiye bağlı; yetkisi olmayan bu satırları hiç
       // görmüyor, üç nokta menüsü onun için kısalıyor.
       ...(yetkiVar("siparis.tasi")

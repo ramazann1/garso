@@ -415,6 +415,7 @@ export default function Siparis() {
   const servisListesi = servisSatirlari(servisGirdi);
   // Servis bedelini kaldırmak parayı azaltıyor; her garsona açık değil.
   const servisYetkisi = yetkiVar("siparis.servis");
+  const odemeAlabilir = yetkiVar("odeme.al");
   const toplam = matrah + servisTutar.toplam + eklenenKdv;
   const odenen = kayitliTahsilatlar.reduce((t, o) => t + o.tutar, 0);
   const kalan = Math.max(0, toplam - odenen);
@@ -810,22 +811,28 @@ export default function Siparis() {
                   İndirim
                 </button>
               )}
-              <button
-                className="ode"
-                disabled={sepet.length === 0}
-                onClick={() => setTahsilatAcik(true)}
-              >
-                <Wallet size={15} />
-                Öde
-              </button>
-              <button
-                className="hizli-ode-btn"
-                disabled={sepet.length === 0 || kalan <= 0}
-                onClick={() => setHizliAcik(true)}
-              >
-                <Zap size={15} />
-                Hızlı Öde
-              </button>
+              {/* Ödeme alma yetkisi olmayan kişi siparişi girer, hesabı görür
+                  ama parayı almaz: iki düğme de ona hiç çıkmıyor. */}
+              {odemeAlabilir && (
+                <>
+                  <button
+                    className="ode"
+                    disabled={sepet.length === 0}
+                    onClick={() => setTahsilatAcik(true)}
+                  >
+                    <Wallet size={15} />
+                    Öde
+                  </button>
+                  <button
+                    className="hizli-ode-btn"
+                    disabled={sepet.length === 0 || kalan <= 0}
+                    onClick={() => setHizliAcik(true)}
+                  >
+                    <Zap size={15} />
+                    Hızlı Öde
+                  </button>
+                </>
+              )}
             </div>
             <button className="kaydet" onClick={kaydet}>
               <Check size={16} />

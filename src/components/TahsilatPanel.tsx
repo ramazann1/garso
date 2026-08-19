@@ -319,18 +319,20 @@ export default function TahsilatPanel({ kalemler, toplam, araToplam, indirim, se
                       ₺{o.tutar}
                       {o.bahsis ? <em className="bahsis-rozet">+₺{o.bahsis} bahşiş</em> : null}
                     </span>
-                    <button
-                      className="gecmis-sil"
-                      aria-label="Tahsilatı sil"
-                      onClick={(e) => {
-                        e.stopPropagation();
-                        // Henüz kaydedilmemiş ödeme yanlış dokunuşun kendisi,
-                        // doğrudan kalkar. Kaydedilmiş para hareketini geri
-                        // almak ise sebep isteyen bir iş.
-                        if (o.id) setSilmeSorusu(i);
-                        else tahsilatiCikar(i);
-                      }}
-                    ><X size={15} /></button>
+                    {/* Kaydedilmiş para hareketini geri almak iade yetkisi
+                        istiyor; kaydedilmemiş satır yanlış dokunuşun kendisi,
+                        onu herkes kaldırabiliyor. */}
+                    {(!o.id || yetkiVar("odeme.iade")) && (
+                      <button
+                        className="gecmis-sil"
+                        aria-label="Tahsilatı sil"
+                        onClick={(e) => {
+                          e.stopPropagation();
+                          if (o.id) setSilmeSorusu(i);
+                          else tahsilatiCikar(i);
+                        }}
+                      ><X size={15} /></button>
+                    )}
                   </div>
                 ))}
               </div>
