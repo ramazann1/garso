@@ -1,23 +1,23 @@
 ﻿# GARSO — Teknik Tasarım: Veri Modeli & Ekran Haritası
 *Restoran ve cafe'ler için bulut tabanlı satış ve işletme yönetim sistemi.*
 
-## 0. SIRADAKİ İŞ (20 Ağu 2026'da güncellendi)
+## 0. SIRADAKİ İŞ (21 Ağu 2026'da güncellendi)
 
-> **Sonraki seansın ilk işi:** **offline dayanıklılık — aşama 2: yerel okuma
-> önbelleği.** Menü, masalar ve işletme ayarları cihazda dursun; çevrimdışıyken
-> de masa açılıp ürün seçilebilsin, oturum cihazda hatırlansın (şu an bağlantı
-> yokken giriş ekranına düşülüyor). Aşama 1 bitti, aşağıda.
+> **Sonraki seansın ilk işi:** **garson mobil sipariş ekranı (PWA).** Garson
+> telefondan/tabletten masaya sipariş girsin; kabuk ve offline altyapı hazır,
+> eksik olan mobil ölçüde çalışan sipariş akışı.
 >
-> Sonra **aşama 3: yazma kuyruğu** — sipariş cihazda kuyruğa girsin, bağlantı
-> gelince sunucuya aksın. Orada bir mimari karar var: kayıt numaralarını sunucu
-> mu cihaz mı üretecek.
+> Sırada bekleyenler: **kurye atama ve teslimat takibi** → **KDS'in kalan
+> parçaları** (pişirme/paketleme aşamaları, mutfak fişi, hazırlık süresi
+> raporu, çoklu istasyon).
 >
-> Sırada bekleyenler: **garson mobil sipariş ekranı (PWA)** → **kurye atama ve
-> teslimat takibi** → **KDS'in kalan parçaları** (pişirme/paketleme aşamaları,
-> mutfak fişi, hazırlık süresi raporu, çoklu istasyon).
+> Offline'ın açık kalan uçları (acil değil, sıraya girmeyi bekliyor):
+> **çevrimdışı giriş ve PIN ile kişi değiştirme** (ikisi de sunucuya soruyor),
+> **çevrimdışı tahsilat** (bilinçli kapsam dışı, para işlemi bekletilmiyor),
+> **masasız (gel al / paket) adisyonun çevrimdışı açılması** (kuyruk mevcut
+> adisyona ürün ekleyebiliyor, yenisini açamıyor).
 >
-> Küçük iş: **Analiz'in diğer tablolarına da kendi kutusunda kaydırma**
-> (19 Ağu'da yazılmıştı, 20 Ağu'da atlandı — acil değil).
+> Küçük iş: **Analiz'in diğer tablolarına da kendi kutusunda kaydırma**.
 > Küçük iş: **PWA simgesi** — `public/favicon.svg` hâlâ Vite'ın mor varsayılan
 > logosu; kısayol eklenince o görünüyor, Garso'nun kendi simgesi gerekiyor.
 
@@ -122,6 +122,49 @@ kutusu + Yeniden dene düğmesi; eskiden halka sonsuza kadar dönüyordu.
 
 **Aşama 1'in bilinen sınırı:** çevrimdışıyken giriş yapılamıyor (şifre sunucuda
 doğrulanıyor) ve veri görünmüyor. İkisi de aşama 2'nin işi.
+
+**21 Ağu 2026: Offline dayanıklılık bitti — aşama 2 (okuma önbelleği) ve
+aşama 3 (yazma kuyruğu).** Kasa artık internetsiz de satış alıyor.
+
+Aşama 2 — `onbellek.ts`. Kural **önce sunucu, olmazsa cihazdaki kopya**:
+bağlıyken her okuma sunucudan gelir ve kopyayı tazeler, kopya bir hızlandırma
+değil kopukluk sigortasıdır. Menü, bölge/masa, işletme ayarları, işletme
+kimliği ve ödeme tipleri bu sarmaldan geçiyor. Canlı veriler (adisyon, sipariş,
+tahsilat) bilerek **girmiyor** — bir dakika öncesinin masa durumu yanlış
+bilgidir, yokluğu yanlış bilgiden iyidir. Kopya işletme kimliğiyle saklanıyor,
+çıkışta siliniyor. Oturum da (ad, rol, yetkiler) cihazda: kasa internetsiz
+açılınca artık giriş ekranına düşmüyor.
+
+Turda çıkan üç kural, üçü de "bekleme" üzerine:
+- Supabase okumaları hatayı fırlatmıyor, sonucun içinde döndürüyor. Kontrol
+  edilmezse kopukluk **boş liste** gibi görünüyor ve menü bomboş açılıyordu
+  (`hataysaFirlat`).
+- Oturum açılmadan yapılan okuma satır güvenliği yüzünden boş dönüyor; o boşluk
+  kopyanın üstüne yazılırsa çevrimdışı açılışta ayarlar kayboluyordu. Oturum
+  yokken kopyaya **yazılmıyor**.
+- **Bağlantının olmadığı biliniyorsa sunucu hiç denenmiyor.** Çevrimdışı istek
+  hata vermek yerine asılı kalıyor; denemenin bedeli her sayfada saniyelerce
+  dönen yükleniyor halkasıydı.
+
+Aşama 3 — `kuyruk.ts`. **Mimari karar: numaraları sunucu üretmeye devam ediyor**
+(adisyon no, sipariş no, kalem kimlikleri); kuyruk kaydın kendisini değil "ne
+yapılacağını" saklıyor ve sırası gelince aynı kaydetme çağrısını yapıyor.
+Cihazın kendi numarasını üretmesi her tabloda kimlik tipi değişimi ve iki
+kasada aynı numara riski demekti.
+
+- **Bir hedefin yalnız son kaydı duruyor.** Sepet her kaydetmede bütün hâliyle
+  gidiyor; aynı masanın iki kaydı arka arkaya gönderilseydi ilk kaydın ürünleri
+  ikinci kayıtta yeniden eklenir, masaya iki katı yazılırdı.
+- Kuyruk **sırayla** boşalıyor. Bağlantı hatası kaydı yerinde bırakıyor; sunucu
+  reddederse (silinmiş masa, yetki) kayıt kuyruktan çıkıp sebebi şeritte
+  yazıyor — yoksa kuyruk aynı kaydı sonsuza kadar deneyip tıkanırdı.
+- Salon kuyruktaki masaları dolu gösteriyor, masa kartında **"Gönderilmedi"**
+  işareti var (süre çipinin yerinde, beyaz zeminli — mercan kartta okunuyor).
+- **Tahsilat ve hesap kapatma kuyruğa girmiyor.** Para işlemi bekletilmez;
+  çevrimdışıyken kapatma yine engelleniyor, sipariş almak devam ediyor.
+- Şerit ekranın **altına** taşındı: üstte başlıkların ve düğmelerin üstüne
+  biniyordu. Üç hâli var — bağlantı yok (kaç sipariş beklediği + kopyanın
+  tarihi), gönderiliyor, gönderilemedi.
 
 **19 Ağu 2026 (2. seans): İstasyon ekranı (KDS) çekirdeği bitti.** Önce Adisyo'nun
 mutfak ekranı canlı turlandı (yol haritası bölüm "KDS (Mutfak) Ekranı"). Turda

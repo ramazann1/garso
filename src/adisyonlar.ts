@@ -378,6 +378,8 @@ export type MasaOzeti = {
   garson?: string;
   ad?: string;
   kisiSayisi?: number;
+  /** Kayıt henüz cihazda, sunucuya gönderilmedi (bkz. kuyruk.ts). */
+  bekliyor?: boolean;
 };
 
 // Salon ekranı için: açık adisyonların masa bazlı özeti. Tahsilatlar da geliyor —

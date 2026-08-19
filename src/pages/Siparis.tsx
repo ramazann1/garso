@@ -42,7 +42,9 @@ import AdisyonBilgi from "../components/AdisyonBilgi";
 import MisafirSayisi from "../components/MisafirSayisi";
 import type { AdisyonBilgisi } from "../components/AdisyonBilgi";
 import { kilitKaldir, kilitKur } from "../cikisKilidi";
-import { hataMesaji } from "../baglanti";
+import { baglantiHatasi, baglantiVar, hataMesaji } from "../baglanti";
+import { bekleyenKayit, kuyrugaEkle } from "../kuyruk";
+import type { KuyrukIsi } from "../kuyruk";
 import { kdvDokumu } from "../kdv";
 import { paraGoster } from "../para";
 import { ayarlar } from "../isletmeAyarlari";
@@ -147,7 +149,22 @@ export default function Siparis() {
       : "gelal"
     : "masa";
 
-  const adisyonuOku = () => (masasiz ? masasizGetir(adisyonId) : adisyonGetir(masaId));
+  // Kuyrukta bekleyen kayıt varsa ekran onu gösteriyor: o sepet sunucudakinden
+  // yeni, sunucu henüz görmedi bile. Gönderilince kuyruktan düşüyor ve okuma
+  // yeniden sunucuya dönüyor.
+  const hedef = masasiz
+    ? ({ tip: "masasiz", adisyonId } as const)
+    : ({ tip: "masa", masaId } as const);
+
+  const adisyonuOku = async (): Promise<AdisyonVerisi> => {
+    const bekleyen = bekleyenKayit(hedef);
+    if (bekleyen) return bekleyen;
+    // Bağlantı yoksa istek atılmıyor: adisyon sunucuda kalıyor ama cevapsız
+    // isteği beklemek ekranı saniyelerce halkada tutuyordu. Masa çevrimdışı
+    // boş sayfa gibi açılıyor, girilen sipariş kuyruğa yazılıyor.
+    if (!baglantiVar()) return { sepet: [], indirim: 0, tahsilatlar: [] };
+    return masasiz ? masasizGetir(adisyonId) : adisyonGetir(masaId);
+  };
   const navigate = useNavigate();
   const [kategoriler, setKategoriler] = useState<MenuKategori[]>([]);
   const [urunler, setUrunler] = useState<MenuUrun[]>([]);
@@ -191,10 +208,14 @@ export default function Siparis() {
   const [kisiSorusu, setKisiSorusu] = useState(false);
   const [adisyonNo, setAdisyonNo] = useState<number | undefined>();
 
-  // Kaydetme çağrılarının hepsi buradan geçiyor ki adisyon bilgisi hiçbir
-  // yoldan düşmesin.
-  const adisyonuYaz = (veri: AdisyonVerisi, kapat = false) => {
-    const tam: AdisyonVerisi = {
+  // Kayıt bağlantı yüzünden düşerse kuyruğa ekrandaki sepetin değil, kayda
+  // gidecek tamamlanmış hâlin kopyası giriyor.
+  const sonYazilan = useRef<AdisyonVerisi | null>(null);
+
+  // Kayda gidecek tam hâl: ekrandaki sepetin üstüne adisyonun kendi
+  // bilgileri ve servis kuralları biniyor. Kuyruğa da bu hâl giriyor.
+  const tamVeri = (veri: AdisyonVerisi): AdisyonVerisi => {
+    return {
       ...veri,
       // Silinen tahsilatların sebebi kayıtla birlikte deftere geçiyor;
       // yazıldıktan sonra liste boşalıyor ki ikinci kayıtta tekrarlanmasın.
@@ -209,6 +230,17 @@ export default function Siparis() {
       kuverUygula: servis.kuver ?? null,
       garsoniyeUygula: servis.garsoniye ?? null,
     };
+  };
+
+  /** Kuyruğa girecek işin künyesi: masalı ve masasız adisyon aynı kuyrukta. */
+  const kuyrukIsi = (tam: AdisyonVerisi): KuyrukIsi =>
+    masasiz ? { tip: "masasiz", adisyonId, veri: tam } : { tip: "masa", masaId, masaAdi, veri: tam };
+
+  // Kaydetme çağrılarının hepsi buradan geçiyor ki adisyon bilgisi hiçbir
+  // yoldan düşmesin.
+  const adisyonuYaz = (veri: AdisyonVerisi, kapat = false) => {
+    const tam = tamVeri(veri);
+    sonYazilan.current = tam;
     const yazma = masasiz ? masasizKaydet(adisyonId, tam, kapat) : adisyonKaydet(masaId, tam, kapat);
     // Yeni alınan ödemeler kayıtta kimlik kazanıyor; ekran bu kimlikleri geri
     // almazsa aynı sayfada yapılan ikinci kayıt onları bir daha yazardı.
@@ -446,11 +478,29 @@ export default function Siparis() {
     }
     // Kayıt düşerse salona dönülmüyor: ekrandaki sipariş garsonun elinde
     // kalsın, bağlantı gelince aynı tuşla yeniden gönderebilsin.
-    try {
-      await adisyonuYaz({ sepet, indirim, indirimTanim, tahsilatlar: kayitliTahsilatlar });
-    } catch (e) {
-      setUyari(hataMesaji(e, "Adisyon kaydedilemedi."));
+    const veri = { sepet, indirim, indirimTanim, tahsilatlar: kayitliTahsilatlar };
+
+    // Bağlantının olmadığı biliniyorsa sunucu hiç denenmiyor: kayıt doğrudan
+    // kuyruğa giriyor ve garson beklemeden salona dönüyor. Yoğun saatte her
+    // siparişte cevapsız isteği beklemek kasayı kilitliyordu.
+    if (!baglantiVar()) {
+      kuyrugaEkle(kuyrukIsi(tamVeri(veri)));
+      kilitKaldir();
+      navigate("/");
       return;
+    }
+
+    try {
+      await adisyonuYaz(veri);
+    } catch (e) {
+      // Sebep bağlantıysa sipariş kaybolmuyor: cihazda kuyruğa giriyor,
+      // bağlantı gelince kendiliğinden sunucuya yazılıyor. Garson masayı
+      // bırakıp diğerine gidebilsin — kasa internetsiz diye satış durmasın.
+      if (!baglantiHatasi(e) && baglantiVar()) {
+        setUyari(hataMesaji(e, "Adisyon kaydedilemedi."));
+        return;
+      }
+      kuyrugaEkle(kuyrukIsi(sonYazilan.current ?? veri));
     }
     kilitKaldir();
     navigate("/");

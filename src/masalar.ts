@@ -1,4 +1,5 @@
 import { supabase } from "./supabase";
+import { hataysaFirlat, onbellekliGetir } from "./onbellek";
 import type { Bolge, Masa } from "./types";
 
 const MASA_ALANLARI =
@@ -20,11 +21,19 @@ function masayaCevir(m: any): Masa {
   };
 }
 
-export async function bolgeleriGetir(): Promise<Bolge[]> {
+// Bölge ve masa tanımları da kopukluğa dayanıklı: Salon açılabilsin, garson
+// masayı seçebilsin. Masaların üstündeki adisyon durumu ayrı okunuyor ve
+// önbelleğe girmiyor — dolu/boş bilgisi bayatlarsa yanlış olur.
+export function bolgeleriGetir(): Promise<Bolge[]> {
+  return onbellekliGetir("bolgeler", bolgeleriOku);
+}
+
+async function bolgeleriOku(): Promise<Bolge[]> {
   const [blg, msa] = await Promise.all([
     supabase.from("bolgeler").select("id, ad, sira, plan_modu").order("sira"),
     supabase.from("masalar").select(MASA_ALANLARI).order("sira"),
   ]);
+  hataysaFirlat(blg, msa);
 
   const masalar = ((msa.data ?? []) as any[]).map(masayaCevir);
   return ((blg.data ?? []) as any[]).map((b) => ({

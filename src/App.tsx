@@ -22,6 +22,7 @@ import Giris from "./pages/Giris";
 import KilitEkrani from "./components/KilitEkrani";
 import CevrimdisiSerit from "./components/CevrimdisiSerit";
 import { baglantiyiIzle, sureSinirli, useBaglanti } from "./baglanti";
+import { kuyruguIzle } from "./kuyruk";
 import { girisKuruldu, kilitle, oturumuYukle, useOturum } from "./oturum";
 
 function App() {
@@ -34,6 +35,10 @@ function App() {
   // Bağlantı izlemesi program açılır açılmaz başlıyor: giriş ekranındayken de
   // kopukluk görünsün, garson "şifremi mi yanlış girdim" diye uğraşmasın.
   useEffect(baglantiyiIzle, []);
+
+  // Bekleyen siparişler bağlantı gelir gelmez gönderiliyor. Program yeniden
+  // açılsa da kuyruk cihazda durduğu için kayıp yok.
+  useEffect(kuyruguIzle, []);
 
   useEffect(() => {
     // Her okuma kendi hatasını yutuyor ve süreyle sınırlı: bağlantı yokken

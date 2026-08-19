@@ -1,4 +1,5 @@
 import { supabase } from "./supabase";
+import { hataysaFirlat, onbellekliGetir } from "./onbellek";
 import type {
   MenuBirim,
   MenuKategori,
@@ -115,7 +116,13 @@ export function agacUrunleri(urunler: MenuUrun[], kategoriler: MenuKategori[], k
 
 const say = (v: any) => (v == null ? undefined : Number(v));
 
-export async function menuGetir() {
+// Menü kasadaki en kritik okuma: yüklenemezse garson ürün bile seçemiyor.
+// Bağlantı koptuğunda cihazdaki son kopya devreye giriyor (bkz. onbellek.ts).
+export function menuGetir() {
+  return onbellekliGetir("menu", menuOku);
+}
+
+async function menuOku() {
   const [kat, urn, grp, brm, kdv] = await Promise.all([
     supabase
       .from("kategoriler")
@@ -133,6 +140,7 @@ export async function menuGetir() {
     supabase.from("birimler").select("id, ad, sira, varsayilan").order("sira"),
     supabase.from("kdv_gruplari").select("id, ad, oran, varsayilan, sira").order("sira"),
   ]);
+  hataysaFirlat(kat, urn, grp, brm, kdv);
 
   const kategoriler: MenuKategori[] = kategoriAgaci(
     (kat.data ?? []).map((k: any) => ({

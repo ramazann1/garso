@@ -1,4 +1,4 @@
-import { useEffect, useState } from "react";
+import { useEffect, useRef, useState } from "react";
 import { useNavigate } from "react-router-dom";
 import {
   ArrowRightLeft,
@@ -19,6 +19,7 @@ import {
   Trash2,
   Zap,
 } from "lucide-react";
+import { bekleyenMasalar, useKuyruk } from "../kuyruk";
 import MasaKarti from "../components/MasaKarti";
 import MasaSecim from "../components/MasaSecim";
 import MasaPlani, { yerlesimiVar } from "../components/MasaPlani";
@@ -30,7 +31,7 @@ import MasasizSiparis from "../components/MasasizSiparis";
 import Kasa from "../components/Kasa";
 import { yetkiVar } from "../oturum";
 import { ayarlar } from "../isletmeAyarlari";
-import { sureSinirli, useBaglanti } from "../baglanti";
+import { baglantiVar, sureSinirli, useBaglanti } from "../baglanti";
 import {
   adisyonGetir,
   adisyonIkram,
@@ -176,22 +177,33 @@ export default function Salon() {
     // Okuma düşerse ya da cevapsız kalırsa halka sonsuza kadar dönüyordu:
     // ekran boş, sebep yok. Salon kasanın açılış ekranı; hiçbir şey söylemeden
     // dönmesi en kötüsü. Süre dolduğunda da okunamadı sayılıyor.
-    const sonuc = await sureSinirli(
-      Promise.all([bolgeleriGetir(), tumAdisyonlar(), masasizAdisyonlar()]).catch(
-        () => undefined
-      )
-    );
+    // Üç okuma birbirinden ayrı bekleniyor. Masa tanımları çevrimdışıyken
+    // cihazdaki kopyadan gelebiliyor; adisyonlar gelemiyor (dolu/boş bilgisi
+    // bayatlarsa yanlış olur). Tek pakette beklenirse adisyonun düşmesi masa
+    // planını da götürüyordu — salon bomboş kalıyordu.
+    const dene = <T,>(is: Promise<T>) => sureSinirli(is.catch(() => undefined));
+    // Bağlantı yokken adisyonlar zaten okunamıyor; istek atılırsa ekran
+    // boşuna saniyelerce bekliyor. Masa tanımları cihazdaki kopyadan anında
+    // geliyor, salon hemen çiziliyor.
+    const bos = Promise.resolve(undefined);
+    const [b, a, m] = await Promise.all([
+      dene(bolgeleriGetir()),
+      baglantiVar() ? dene(tumAdisyonlar()) : bos,
+      baglantiVar() ? dene(masasizAdisyonlar()) : bos,
+    ]);
     setYukleniyor(false);
 
-    if (!sonuc) {
+    if (!b) {
       setOkunamadi(true);
       return;
     }
 
-    const [b, a, m] = sonuc;
     setBolgeler(b);
-    setAdisyonlar(a);
-    setMasasizlar(m);
+    // Cihazda bekleyen siparişler sunucudakilerin üstüne biniyor: masa dolu
+    // görünsün, garson aynı masaya ikinci hesap açmasın. Gönderilmiş kayıt
+    // kuyruktan düştüğü için burada kendiliğinden sunucununki geçerli oluyor.
+    setAdisyonlar({ ...(a ?? {}), ...bekleyenMasalar() });
+    setMasasizlar(m ?? []);
     // Kayıtlı bölge silinmiş olabilir; öyleyse ilk bölgeye dönülüyor.
     setSeciliId((s) =>
       s === "tumu" || s === "masasiz" || b.some((x) => x.id === s) ? s : b[0]?.id ?? "tumu"
@@ -203,10 +215,24 @@ export default function Salon() {
   }, []);
 
   // Bağlantı geri gelince salon kendiliğinden doluyor: garson "Yeniden dene"ye
-  // basmayı beklemesin, ekran zaten düzelmiş olsun.
-  const cevrimici = useBaglanti();
+  // basmayı beklemesin, ekran zaten düzelmiş olsun. Kopukken ekranda masa
+  // tanımları cihazdaki kopyadan duruyor ama adisyonlar yok — masalar boş
+  // görünüyor. O yüzden yalnız okuma düştüğünde değil, kopukluktan çıkan her
+  // seferde yeniden okunuyor.
+  // Kuyruk boşaldıkça salon tazeleniyor: bekleyen sipariş sunucuya yazılınca
+  // masa kartı artık gerçek adisyonu göstersin, "bekliyor" işareti kalksın.
+  const { bekleyen } = useKuyruk();
+  const oncekiBekleyen = useRef(bekleyen);
   useEffect(() => {
-    if (cevrimici && okunamadi) salonuOku();
+    if (bekleyen !== oncekiBekleyen.current) salonuOku();
+    oncekiBekleyen.current = bekleyen;
+  }, [bekleyen]);
+
+  const cevrimici = useBaglanti();
+  const oncekiDurum = useRef(cevrimici);
+  useEffect(() => {
+    if (cevrimici && (okunamadi || !oncekiDurum.current)) salonuOku();
+    oncekiDurum.current = cevrimici;
   }, [cevrimici]);
 
   // Çalışma tipleri: kapatılan tür arayüzde hiç durmuyor. İkisi de kapalıysa
@@ -406,6 +432,7 @@ export default function Salon() {
             gecikti: dakika(acik.acilis) >= UZUN_SURE_DK,
             ad: acik.ad,
             kisiSayisi: acik.kisiSayisi,
+            bekliyor: acik.bekliyor,
           }
         }
         aksiyonlar={aksiyonlar(masa)}

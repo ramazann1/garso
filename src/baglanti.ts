@@ -82,6 +82,14 @@ export function ulasildiBildir() {
 
 export const baglantiVar = () => cevrimici;
 
+/** Ekran dışından izleme — yazma kuyruğu bağlantı gelince kendini boşaltıyor. */
+export function baglantiDinle(f: (durum: boolean) => void) {
+  dinleyiciler.add(f);
+  return () => {
+    dinleyiciler.delete(f);
+  };
+}
+
 /**
  * Hatanın sebebi bağlantı mı. Supabase ağ hatasında "Failed to fetch" atıyor;
  * tarayıcıya göre metin değişiyor, o yüzden birkaç kalıba birden bakılıyor.

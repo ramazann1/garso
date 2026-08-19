@@ -1,4 +1,5 @@
 import { acikOturum } from "./oturum";
+import { hataysaFirlat, onbellekliGetir } from "./onbellek";
 import { supabase } from "./supabase";
 
 export type ServisTipi = "tutar" | "yuzde";
@@ -91,9 +92,15 @@ const servisTanimi = (s: any, on: string, varsayilan: ServisTanimi): ServisTanim
 // Tablo artık işletme başına tek satır tutuyor; hangi satırın okunacağını
 // satır güvenliği belirliyor, sorguda ayrıca süzmeye gerek yok.
 export async function ayarlariGetir(): Promise<IsletmeAyarlari> {
-  const { data } = await supabase.from("isletme_ayarlari").select("*").maybeSingle();
-  const s = data as any;
-  onbellek = {
+  onbellek = await onbellekliGetir("ayarlar", ayarlariOku);
+  return onbellek;
+}
+
+async function ayarlariOku(): Promise<IsletmeAyarlari> {
+  const sonuc = await supabase.from("isletme_ayarlari").select("*").maybeSingle();
+  hataysaFirlat(sonuc);
+  const s = sonuc.data as any;
+  return {
     kdvDahil: s?.kdv_dahil ?? VARSAYILAN.kdvDahil,
     kasaGunuBaslangic: saat(s?.kasa_gunu_baslangic, VARSAYILAN.kasaGunuBaslangic),
     kasaGunuBitis: saat(s?.kasa_gunu_bitis, VARSAYILAN.kasaGunuBitis),
@@ -112,7 +119,6 @@ export async function ayarlariGetir(): Promise<IsletmeAyarlari> {
     kuver: servisTanimi(s, "kuver", VARSAYILAN.kuver),
     garsoniye: servisTanimi(s, "garsoniye", VARSAYILAN.garsoniye),
   };
-  return onbellek;
 }
 
 // Çağıran yalnızca değiştirdiği alanı veriyor; gerisi önbellekten tamamlanıyor.
@@ -173,8 +179,11 @@ export function isletmeKodu() {
 }
 
 export async function isletmeKimliginiGetir() {
-  const { data } = await supabase.from("isletmeler").select("ad, kod").maybeSingle();
-  const s = data as any;
-  kimlik = { ad: s?.ad ?? "", kod: s?.kod ?? 0 };
+  kimlik = await onbellekliGetir("isletme", async () => {
+    const sonuc = await supabase.from("isletmeler").select("ad, kod").maybeSingle();
+    hataysaFirlat(sonuc);
+    const s = sonuc.data as any;
+    return { ad: (s?.ad ?? "") as string, kod: (s?.kod ?? 0) as number };
+  });
   return kimlik;
 }

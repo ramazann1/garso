@@ -1,4 +1,6 @@
 import { useEffect, useState } from "react";
+import { baglantiHatasi, baglantiVar } from "./baglanti";
+import { onbellegiTemizle, onbellekOku, onbellekYaz } from "./onbellek";
 import { supabase } from "./supabase";
 import { telefonSade } from "./personel";
 import { etkinYetkiler, kisiYetkileriniGetir, rolYetkileriniGetir, yetkileriGetir } from "./yetkiler";
@@ -30,6 +32,22 @@ function duyur() {
 export function acikOturum() {
   return acik;
 }
+
+const OTURUM_ANAHTARI = "oturum";
+
+// Kişi bilgisi cihazda da duruyor. Kimlik bileti zaten tarayıcıda kalıcı; eksik
+// olan ad, rol ve yetkilerdi — onlar sunucudan okunduğu için internetsiz açılan
+// kasa giriş ekranına düşüyordu. Kopya yalnız okuma bağlantı yüzünden
+// düştüğünde kullanılıyor.
+// Kimlik bileti kime aitse kopya da ona: aynı cihazda başka hesapla girilmişse
+// eski kişinin yetkileriyle içeri girilmesin.
+function oturumuHatirla(authId?: string) {
+  if (!acik) return;
+  const eski = onbellekOku<HatirlananOturum>(OTURUM_ANAHTARI)?.veri;
+  onbellekYaz(OTURUM_ANAHTARI, { authId: authId ?? eski?.authId ?? "", kisi: acik });
+}
+
+type HatirlananOturum = { authId: string; kisi: AcikOturum };
 
 // Telefon numarasından hesap adresi: veritabanındaki hesap_epostasi ile aynı
 // kural. Kullanıcı bu adresi hiç görmüyor.
@@ -82,14 +100,51 @@ export async function oturumuYukle() {
     return;
   }
 
-  const { data } = await supabase.auth.getSession();
-  if (!data.session) return;
+  // Kimlik biletinin geçerliliği sunucuya sorulurken (bilet süresi dolmuşsa
+  // tazeleme isteği bağlantı yokken saniyelerce asılı kalıyor) ekran giriş
+  // ekranında bekliyordu. Cihazdaki kopya varsa oturum hemen kuruluyor,
+  // doğrulama arkada sürüyor: yanlışsa aşağıda düzeltiliyor.
+  const hatirlanan = onbellekOku<HatirlananOturum>(OTURUM_ANAHTARI);
+  if (hatirlanan) {
+    acik = hatirlanan.veri.kisi;
+    kilitli = localStorage.getItem(KILIT_ANAHTARI) === "1";
+    duyur();
+  }
 
-  acik = await kisiyiYukle("auth_id", data.session.user.id);
+  const { data } = await supabase.auth.getSession();
+  // Bağlantı yokken bilet tazelenemediği için de "oturum yok" dönebiliyor;
+  // o durumda kopya duruyor, oturum düşürülmüyor.
+  if (!data.session) {
+    if (acik && baglantiVar()) {
+      acik = null;
+      onbellegiTemizle();
+      duyur();
+    }
+    return;
+  }
+
+  try {
+    acik = await kisiyiYukle("auth_id", data.session.user.id);
+  } catch (hata) {
+    // Bağlantı yoksa kişi bilgisi cihazdaki kopyadan kuruluyor; kasa
+    // internetsiz açılınca da açık oturumla geliyor. Başka bir hataysa
+    // (yetki gibi) eski bilgiyle devam etmek yanlış olur.
+    const paket =
+      !baglantiVar() || baglantiHatasi(hata)
+        ? onbellekOku<HatirlananOturum>(OTURUM_ANAHTARI)
+        : null;
+    if (!paket || paket.veri.authId !== data.session.user.id) {
+      acik = null;
+      throw hata;
+    }
+    acik = paket.veri.kisi;
+  }
+
   if (!acik) {
     await supabase.auth.signOut();
     return;
   }
+  oturumuHatirla(data.session.user.id);
   kilitli = localStorage.getItem(KILIT_ANAHTARI) === "1";
   duyur();
 }
@@ -125,6 +180,7 @@ export async function girisYap(kimlik: string, sifre: string, kalici: boolean) {
   }
 
   acik = kisi;
+  oturumuHatirla(data.user.id);
   kilidiKaldir();
   duyur();
   return kisi;
@@ -157,6 +213,9 @@ export async function oturumuKapat() {
   kilidiKaldir();
   localStorage.removeItem(GECICI_ANAHTARI);
   acik = null;
+  // Çıkışta cihazdaki kopyalar da gidiyor: kasayı devreden kişi kendi
+  // işletmesinin menüsünü ve yetkilerini geride bırakmasın.
+  onbellegiTemizle();
   duyur();
   await supabase.auth.signOut();
 }
@@ -203,6 +262,7 @@ export async function pinIleAc(pin: string) {
   if (!kisi) throw new Error("PIN doğru değil.");
 
   acik = kisi;
+  oturumuHatirla();
   kilidiKaldir();
   duyur();
   return kisi;

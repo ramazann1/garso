@@ -11398,11 +11398,13 @@ body {
 
 .istasyon-geri-baglanti svg { width: 16px; height: 16px; }
 
-/* Bağlantı kopunca ekranın üstünde beliren şerit. Sayfanın üstüne biniyor,
-   yer kaplamıyor: kopukluk anında bütün düzen aşağı kaymasın. */
+/* Bağlantı kopunca ekranın altında beliren şerit. Sayfanın üstüne biniyor,
+   yer kaplamıyor: kopukluk anında bütün düzen kaymasın. */
 .cevrimdisi-serit {
+  /* Altta duruyor: üstte başlıkların ve düğmelerin üstüne biniyordu.
+     Sayfa kaydırılsa da yerinde kalıyor, düzeni de kaydırmıyor. */
   position: fixed;
-  top: 0;
+  bottom: 18px;
   left: 50%;
   transform: translateX(-50%);
   z-index: 900;
@@ -11411,7 +11413,7 @@ body {
   gap: 10px;
   max-width: min(720px, calc(100% - 24px));
   padding: 11px 20px;
-  border-radius: 0 0 14px 14px;
+  border-radius: 14px;
   background: var(--mercan);
   color: #fff;
   box-shadow: 0 6px 18px rgba(45, 52, 54, 0.18);
@@ -11430,4 +11432,19 @@ body {
 
 @media (max-width: 700px) {
   .cevrimdisi-serit { flex-wrap: wrap; row-gap: 3px; }
+}
+
+/* Cihazda bekleyen sipariş: masa dolu ama kayıt sunucuya gitmedi. Dolu masa
+   zaten mercan zeminli, işaret onun üstünde beyaz çerçeveyle duruyor. */
+.masa-bekliyor {
+  display: inline-flex;
+  align-items: center;
+  gap: 5px;
+  flex-shrink: 0;
+  padding: 3px 10px;
+  border-radius: 999px;
+  background: #fff;
+  font-size: 13px;
+  font-weight: 600;
+  color: var(--mercan);
 }

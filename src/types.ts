@@ -32,6 +32,8 @@ export type MasaDurumu = {
   gecikti?: boolean;
   ad?: string; // adisyona verilen serbest ad
   kisiSayisi?: number;
+  /** Sipariş cihazda kuyrukta, sunucuya henüz yazılmadı. */
+  bekliyor?: boolean;
 };
 export type SepetKalemi = {
   id?: number; // kalem kimliği; negatifse henüz kaydedilmemiş

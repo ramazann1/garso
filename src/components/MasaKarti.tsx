@@ -1,6 +1,6 @@
 import { useEffect, useRef, useState } from "react";
 import type { ReactNode } from "react";
-import { CircleCheckBig, Clock, MoreVertical, Plus, Users } from "lucide-react";
+import { CircleCheckBig, Clock, CloudUpload, MoreVertical, Plus, Users } from "lucide-react";
 import { paraGoster } from "../para";
 import type { Masa, MasaDurumu } from "../types";
 
@@ -78,10 +78,19 @@ export default function MasaKarti({ masa, durum, aksiyonlar, onClick }: Props) {
               düğmeyle aynı hizaya düşüp sıkışmıyor. */}
           <span className="masa-baslik">
             <span className="masa-ad">{masa.ad}</span>
-            <span className="masa-sure">
-              <Clock size={12} />
-              {durum.sure}
-            </span>
+            {/* Sipariş cihazda bekliyor, sunucuya gitmedi. Süre yerine bu
+                yazıyor: masanın kaç dakikadır açık olduğundan önemli. */}
+            {durum.bekliyor ? (
+              <span className="masa-bekliyor">
+                <CloudUpload size={13} />
+                Gönderilmedi
+              </span>
+            ) : (
+              <span className="masa-sure">
+                <Clock size={12} />
+                {durum.sure}
+              </span>
+            )}
           </span>
 
           {/* Kişi sayısı üç nokta düğmesinin solunda, onunla aynı hizada:
