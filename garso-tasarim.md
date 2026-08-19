@@ -1,7 +1,7 @@
 ﻿# GARSO — Teknik Tasarım: Veri Modeli & Ekran Haritası
 *Restoran ve cafe'ler için bulut tabanlı satış ve işletme yönetim sistemi.*
 
-## 0. SIRADAKİ İŞ (21 Ağu 2026'da güncellendi)
+## 0. SIRADAKİ İŞ (19 Ağu 2026'da güncellendi)
 
 > **Sonraki seansın ilk işi:** **garson mobil sipariş ekranı (PWA).** Garson
 > telefondan/tabletten masaya sipariş girsin; kabuk ve offline altyapı hazır,
@@ -123,7 +123,7 @@ kutusu + Yeniden dene düğmesi; eskiden halka sonsuza kadar dönüyordu.
 **Aşama 1'in bilinen sınırı:** çevrimdışıyken giriş yapılamıyor (şifre sunucuda
 doğrulanıyor) ve veri görünmüyor. İkisi de aşama 2'nin işi.
 
-**21 Ağu 2026: Offline dayanıklılık bitti — aşama 2 (okuma önbelleği) ve
+**19 Ağu 2026 (3. seans): Offline dayanıklılık bitti — aşama 2 (okuma önbelleği) ve
 aşama 3 (yazma kuyruğu).** Kasa artık internetsiz de satış alıyor.
 
 Aşama 2 — `onbellek.ts`. Kural **önce sunucu, olmazsa cihazdaki kopya**:
