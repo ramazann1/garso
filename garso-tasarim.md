@@ -3,7 +3,13 @@
 
 ## 0. SIRADAKİ İŞ (20 Ağu 2026'da güncellendi)
 
-> **Sonraki seansın ilk işi:** **mobil arayüz tasarımı — ikinci tur.**
+> **Seansın ilk işi (kısa):** **dal adını düzeltmek.** Yerel dal `master`,
+> GitHub'daki `main`; her push'ta uyarı çıkıyor ve elle `git push origin
+> HEAD:main` demek gerekiyor. Yerel dal `main` olarak yeniden adlandırılıp
+> uzakla eşlenecek, sonra push tek komuta dönecek. Beş dakikalık iş, asıl işten
+> önce halledilecek.
+>
+> **Sonraki seansın asıl işi:** **mobil arayüz tasarımı — ikinci tur.**
 > Ramazan mobili beğenmedi ve 20 Ağustos seansında baştan yazıldı; yine de
 > "daha fazla kafa patlatmak" istediğini söyledi. Seansa mevcut ekranları
 > birlikte gözden geçirerek başla: masa kartı, sipariş ekranı (kategori/ürün
