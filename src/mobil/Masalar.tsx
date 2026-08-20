@@ -6,6 +6,7 @@ import {
   Check,
   CloudOff,
   EllipsisVertical,
+  LockKeyhole,
   Merge,
   Plus,
   Printer,
@@ -35,6 +36,8 @@ import MusteriSecici from "../components/MusteriSecici";
 import { odemeTipleriniGetir, type OdemeTipi } from "../odemeTipleri";
 import { bekleyenMasalar, useKuyruk } from "../kuyruk";
 import { baglantiVar, sureSinirli, useBaglanti } from "../baglanti";
+import { useCanli } from "../canli";
+import { devralabilir, masayiDevral, useMesguliyetler } from "../mesguliyet";
 import { paraGoster } from "../para";
 import type { Bolge, Masa } from "../types";
 
@@ -63,11 +66,22 @@ function sure(acilis?: string) {
  * ızgaranın kendi üstünde seçiliyor: garson hedefi masaların yerleşiminden
  * tanıyor, listedeki adından değil.
  */
+// Seçili bölge cihazda kalıyor: garson bahçeden sipariş gönderdiğinde masalara
+// dönerken yine bahçeyi buluyor, her seferinde ilk bölgeden aramıyor.
+const BOLGE_ANAHTAR = "mobil.bolge";
+
+function bolgeOku(): number | null {
+  const id = Number(localStorage.getItem(BOLGE_ANAHTAR));
+  return Number.isFinite(id) && id > 0 ? id : null;
+}
+
 export default function MobilMasalar() {
   const git = useNavigate();
   const [bolgeler, setBolgeler] = useState<Bolge[]>([]);
   const [adisyonlar, setAdisyonlar] = useState<Record<number, MasaOzeti>>({});
-  const [seciliBolge, setSeciliBolge] = useState<number | null>(null);
+  const [seciliBolge, setSeciliBolge] = useState<number | null>(bolgeOku);
+  const [mesgulSorusu, setMesgulSorusu] = useState<{ masa: Masa; ad: string } | null>(null);
+  const mesguliyetler = useMesguliyetler();
   const [yukleniyor, setYukleniyor] = useState(true);
   const [okunamadi, setOkunamadi] = useState(false);
 
@@ -111,6 +125,10 @@ export default function MobilMasalar() {
   };
 
   useEffect(() => {
+    if (seciliBolge !== null) localStorage.setItem(BOLGE_ANAHTAR, String(seciliBolge));
+  }, [seciliBolge]);
+
+  useEffect(() => {
     odemeTipleriniGetir().then(setOdemeTipleri);
   }, []);
 
@@ -119,6 +137,10 @@ export default function MobilMasalar() {
     const zaman = setInterval(() => setTik((t) => t + 1), 60000);
     return () => clearInterval(zaman);
   }, []);
+
+  // Başka bir cihaz masaya sipariş girdiğinde ekran kendini tazeliyor: garson
+  // telefonda, kasiyer bilgisayarda aynı masayı görüyor.
+  useCanli(["adisyonlar", "adisyon_kalemleri", "tahsilatlar"], oku);
 
   // Kuyruk boşaldıkça ve bağlantı geri geldikçe ekran kendini tazeliyor.
   const { bekleyen } = useKuyruk();
@@ -164,7 +186,23 @@ export default function MobilMasalar() {
       if (secilebilir(m)) setSecimModu({ ...secimModu, hedef: m.id });
       return;
     }
+    // Masada başkası varsa doğrudan girilmiyor; kim olduğu söylenip karar
+    // kişiye bırakılıyor. Engel değil uyarı: garson ekranı açık unutmuş
+    // olabilir, kasiyer müşteriyi kapıda bekletmesin.
+    const mesgul = mesguliyetler[m.id];
+    if (mesgul) {
+      setMesgulSorusu({ masa: m, ad: mesgul.ad });
+      return;
+    }
     git(`/mobil/siparis/${m.id}`);
+  };
+
+  const devral = async () => {
+    const soru = mesgulSorusu;
+    if (!soru) return;
+    setMesgulSorusu(null);
+    await masayiDevral(soru.masa.id).catch(() => {});
+    git(`/mobil/siparis/${soru.masa.id}`);
   };
 
   const secimiUygula = async () => {
@@ -262,9 +300,11 @@ export default function MobilMasalar() {
         <div className={secimModu ? "m-masalar secim" : "m-masalar"}>
           {masalar.map((m) => {
             const acik = adisyonlar[m.id];
+            const mesgul = secimModu ? undefined : mesguliyetler[m.id];
             const sinif = [
               "m-masa",
               acik ? "dolu" : "",
+              mesgul ? "mesgul" : "",
               secimModu ? (secilebilir(m) ? "secilebilir" : "kapali") : "",
               secimModu?.hedef === m.id ? "secili" : "",
               secimModu?.kaynak.id === m.id ? "kaynak" : "",
@@ -291,6 +331,13 @@ export default function MobilMasalar() {
                   )}
                   {secimModu?.hedef === m.id && <Check size={18} />}
                 </span>
+
+                {mesgul && (
+                  <span className="m-masa-mesgul">
+                    <LockKeyhole size={12} />
+                    {mesgul.ad}
+                  </span>
+                )}
 
                 {acik ? (
                   <>
@@ -399,6 +446,23 @@ export default function MobilMasalar() {
             }
           }}
           onKapat={() => setIptalSorusu(null)}
+        />
+      )}
+
+      {mesgulSorusu && (
+        <OnayModal
+          baslik="Masada biri var"
+          ikon={<LockKeyhole size={20} />}
+          tekTus={!devralabilir()}
+          mesaj={
+            devralabilir()
+              ? `${mesgulSorusu.masa.ad} masasında şu an ${mesgulSorusu.ad} işlem yapıyor. Devralırsan ${mesgulSorusu.ad} masadan çıkarılır.`
+              : `${mesgulSorusu.masa.ad} masasında şu an ${mesgulSorusu.ad} işlem yapıyor. İşi bitince masa serbest kalacak.`
+          }
+          onayMetni="Devral"
+          iptalMetni="Vazgeç"
+          onOnay={devral}
+          onKapat={() => setMesgulSorusu(null)}
         />
       )}
 

@@ -1,5 +1,5 @@
 import { useEffect, useState } from "react";
-import { adisyonKaydet, adisyonOzeti, masasizKaydet } from "./adisyonlar";
+import { adisyonKaydet, adisyonOzeti, gecKalanSiparis, masasizKaydet } from "./adisyonlar";
 import type { AdisyonVerisi, MasaOzeti } from "./adisyonlar";
 import { baglantiDinle, baglantiHatasi, baglantiVar } from "./baglanti";
 
@@ -97,10 +97,18 @@ export function bekleyenMasalar(): Record<number, MasaOzeti> {
 
 /** Kuyruk boşaltılırken çıkan hata; şerit bunu gösteriyor. */
 let sonHata: string | null = null;
+// Hata değil ama sessiz kalmaması gereken durum: sipariş cihazda beklerken
+// masanın hesabı kapanmış. Şerit bunu ayrı bir uyarı olarak gösteriyor.
+let sonUyari: string | null = null;
 let gonderiliyor = false;
 
 export function kuyrukHatasi() {
   return sonHata;
+}
+
+export function kuyrukUyarisiniKapat() {
+  sonUyari = null;
+  for (const f of dinleyiciler) f();
 }
 
 /**
@@ -117,8 +125,15 @@ export async function kuyruguGonder() {
     while (kuyruk.length) {
       const kayit = kuyruk[0];
       try {
-        if (kayit.tip === "masa") await adisyonKaydet(kayit.masaId, kayit.veri);
-        else await masasizKaydet(kayit.adisyonId, kayit.veri);
+        if (kayit.tip === "masa") {
+          await adisyonKaydet(kayit.masaId, kayit.veri);
+          // Sipariş cihazda beklerken hesap kapandıysa ürün yeni bir hesaba
+          // düştü ve parası alınmadı; işletmeci görsün.
+          const no = await gecKalanSiparis(kayit.masaId, kayit.zaman).catch(() => null);
+          if (no) {
+            sonUyari = `${kayit.masaAdi ?? "Masa"} için bekleyen sipariş, hesap (#${no}) kapandıktan sonra yazıldı. Ürünler yeni bir hesapta duruyor, parası alınmadı.`;
+          }
+        } else await masasizKaydet(kayit.adisyonId, kayit.veri);
       } catch (hata) {
         // Bağlantı yine gitmişse kayıt kuyrukta kalıyor ve sessizce bekliyor.
         if (baglantiHatasi(hata) || !baglantiVar()) return;
@@ -152,7 +167,7 @@ export function useKuyruk() {
       dinleyiciler.delete(f);
     };
   }, []);
-  return { bekleyen: kuyruk.length, hata: sonHata };
+  return { bekleyen: kuyruk.length, hata: sonHata, uyari: sonUyari };
 }
 
 /** Kuyruğun kendi kendine boşalması: bağlantı gelir gelmez gönderiliyor. */

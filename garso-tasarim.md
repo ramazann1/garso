@@ -1,7 +1,7 @@
 ﻿# GARSO — Teknik Tasarım: Veri Modeli & Ekran Haritası
 *Restoran ve cafe'ler için bulut tabanlı satış ve işletme yönetim sistemi.*
 
-## 0. SIRADAKİ İŞ (19 Ağu 2026'da güncellendi)
+## 0. SIRADAKİ İŞ (20 Ağu 2026'da güncellendi)
 
 > **Sonraki seansın ilk işi:** **mobil arayüz tasarımı — ikinci tur.**
 > Ramazan mobili beğenmedi ve 20 Ağustos seansında baştan yazıldı; yine de
@@ -21,6 +21,13 @@
 > siparişi kasadaki kişi oturarak alıyor — ad, telefon, adres yazmak dar ekranda
 > yavaşlatıyor. Mobil garsonun masa işi için; masasız akış kasada kalıyor.
 >
+> **"Kim yaptı" imzasını sunucuya taşımak.** PIN geçişi 20 Ağu'da sunucuya
+> alındı ve yetki denetimi düzeldi, ama `adisyonlar.acan_id` ile
+> `turlar.garson_id` hâlâ tarayıcının gönderdiği değerle yazılıyor. Kurcalanmış
+> bir tarayıcı işi başkasının üstüne yazabilir. Dayanak artık hazır:
+> `oturum_personeli()`. Aynı işin küçük kardeşi: **PIN belirleme** de hâlâ
+> tarayıcıda özetleniyor (`personel.ts:43`), o da sunucuya alınmalı.
+>
 > Sırada bekleyenler: **kurye atama ve teslimat takibi** → **KDS'in kalan
 > parçaları** (pişirme/paketleme aşamaları, mutfak fişi, hazırlık süresi
 > raporu, çoklu istasyon).
@@ -31,6 +38,9 @@
 > **masasız (gel al / paket) adisyonun çevrimdışı açılması** (kuyruk mevcut
 > adisyona ürün ekleyebiliyor, yenisini açamıyor).
 >
+> Küçük iş: **Analiz ve Kasa ekranlarına canlı tazeleme** — 20 Ağu'da bilinçli
+> dışarıda bırakıldı (açılışta zaten taze okuyorlar, sorguları ağır, rapora
+> bakarken sayının kayması rahatsız ediyor). Katman hazır: `useCanli(..., SAKIN)`.
 > Küçük iş: **Analiz'in diğer tablolarına da kendi kutusunda kaydırma**.
 > Küçük iş: **PWA simgesi** — `public/favicon.svg` hâlâ Vite'ın mor varsayılan
 > logosu; kısayol eklenince o görünüyor, Garso'nun kendi simgesi gerekiyor.
@@ -81,6 +91,53 @@ durunca kalabalık oluyordu. Adisyonlar listesi Adisyo'nun sütunlarıyla gerçe
 bir tablo; **"Eksik tahsilat" durumu bizim eklememiz** (kapanmış ama parası
 eksik kalan hesap Adisyo'da ayrı işaretlenmiyor). Yeni yetki:
 `siparis.aktif_et` (kapanmış adisyonu yeniden açma).
+
+**20 Ağu 2026 (2. seans): Canlı tazeleme, masa meşguliyeti, aynı hesapta iki
+kişi, PIN'in sunucuya taşınması.** Seans "telefonda görmek istiyorum" diye
+başladı; dev server ağa açıldı (`server: { host: true }`) ve **HTTPS'e alındı**
+(`@vitejs/plugin-basic-ssl`). Sebep sertifika hevesi değil: tarayıcı `crypto.subtle`
+ve service worker'ı yalnız güvenli bağlantıda açıyor, telefon ağ adresiyle
+girdiğinde PIN girişi hata veriyor ve PWA/çevrimdışı hiç çalışmıyordu.
+
+- **Canlı tazeleme** (`canli.ts`). Ekranlar veriyi bir kez okuyup öylece
+  kalıyordu. Ortak katman: tabloya tek kanal, art arda gelen haberler tek
+  tazelemede birleşiyor, ekran arkadayken hiç sorgu yapılmıyor. İki tempo —
+  `HIZLI` iş ekranları, `SAKIN` bakma ekranları. Bağlı ekranlar: Salon, mobil
+  Masalar, iki sipariş ekranı, mobil Adisyon, mobil Satış. **Analiz ve Kasa
+  bilinçli dışarıda.** Tablolar `supabase_realtime` yayınına eklendi.
+- **Aynı hesapta iki kişi — kalem kaybı kapatıldı.** `adisyonKaydet` "sepette
+  olmayanı sil" diyordu; başka cihazın eklediği ürün sessizce siliniyordu.
+  **Kural: silme yalnız ekranın gördüğü kalemler üzerinden yürüyor.** Liste
+  ekranların taşımasına bırakılmadı (parçalayıp yeniden kuruyorlar, ilk denemede
+  düştü) — veri katmanının kendi defterinde duruyor (`gorulenler`), `adisyonGetir`
+  yazıyor, `kalemleriYaz` okuyor. Aynı koruma tahsilatlarda da var.
+- **Masa meşguliyeti** (`mesguliyet.ts`, `masa_mesguliyet`). Masa ekranı açıkken
+  masa "Ahmet'te" görünüyor; 20 sn kalp atışı, 60 sn sessizlikte işaret ölüyor
+  (ekranı açık unutan garson işletmeyi durdurmasın). **Kilit değil işaret:**
+  yetkisi olan devralıyor (`masa.devral`, varsayılan Yönetici/Müdür), devralınan
+  kişi masadan çıkarılıyor. Yetkisiz yalnız bilgi penceresi görüyor.
+  **Kural: kalp atışı yalnız kendi satırını tazeliyor** — körü körüne yazınca
+  masayı geri çalıyordu ve devralma yirmi saniyede geri alınıyordu.
+- **Sipariş ekranı tazelenirken kimsenin yazdığı silinmiyor** (`sepetiTazele`):
+  ekranda kaydedilmemiş bir şey yoksa sunucudaki hesap aynen geçerli, varsa
+  yereldeki hâl korunup sunucudan yalnız yeni kalemler biniyor.
+- **PIN ile kişi değiştirme sunucuya taşındı** (`sql/2026-08-30-pin-sunucuda.sql`).
+  İki açık vardı: PIN'i tarayıcı doğruluyordu ve veritabanı "kim bu" sorusunu
+  giriş biletinden soruyordu — yani 28 Ağu'da yazdığımız yetki tetikleyicileri
+  PIN'le geçen kişiyi değil kasayı açanı denetliyordu. Artık `pin_ile_gec()`
+  doğruluyor, `oturum_kisileri` kaydı tutuyor, `oturum_yetkisi()` dayanağını
+  `oturum_personeli()`den alıyor. Yan fayda: `crypto.subtle` ihtiyacı kalktı.
+- **Çevrimdışı siparişin masayı silmesi kapatıldı.** Çevrimdışı ekran boş
+  sepetle açılıyor; o kayıt kuyruktan yazılınca masadaki her şeyi siliyordu.
+  `CEVRIMDISI_ADISYON` "hiçbir kalem görmedim" diyor, kaydetme hiçbir şey
+  silmiyor. **Kapanmış hesaba geç gelen sipariş** artık sessiz değil: kuyruk
+  bunu görüp çevrimdışı şeridinde uyarıyor (kapatılana kadar duruyor).
+- Küçük: mobil Masalar'da **seçili bölge cihazda kalıyor** (Bahçe'den gönderip
+  dönünce yine Bahçe).
+
+Çevrimdışının sınırı konuşuldu ve kabul edildi: **kopuk cihaz meşguliyet rozetini
+göremez** — bilgi sunucuda yaşıyor, ulaştıracak kanal yok. Kalan risk (kapanmış
+hesaba geç sipariş) görünür yapıldı, kapatılmaya çalışılmadı.
 
 **20 Ağu 2026: Mobil aşama 3 (ödeme), Satış ve İstasyon sekmeleri, yetki
 denetimi ve mobil arayüzün yeniden yazımı.**

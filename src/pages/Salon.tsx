@@ -11,6 +11,7 @@ import {
   Combine,
   Gift,
   LayoutGrid,
+  LockKeyhole,
   Pencil,
   Plus,
   Printer,
@@ -32,6 +33,8 @@ import Kasa from "../components/Kasa";
 import { yetkiVar } from "../oturum";
 import { ayarlar } from "../isletmeAyarlari";
 import { baglantiVar, sureSinirli, useBaglanti } from "../baglanti";
+import { useCanli } from "../canli";
+import { devralabilir, masayiDevral, useMesguliyetler } from "../mesguliyet";
 import {
   adisyonGetir,
   adisyonIkram,
@@ -165,6 +168,19 @@ export default function Salon() {
   >(null);
   // Hızlı Öde masadan açılıyor; adisyonun tamamı okunup panele veriliyor.
   const [hizli, setHizli] = useState<{ masa: Masa; veri: AdisyonVerisi } | null>(null);
+  // Masada başkası varsa girişten önce sorulan pencere.
+  const [mesgulSorusu, setMesgulSorusu] = useState<{ masa: Masa; ad: string } | null>(null);
+  const mesguliyetler = useMesguliyetler();
+
+  const masayaGir = (masa: Masa) => {
+    // Engel değil uyarı: kim olduğu söyleniyor, karar kişide kalıyor.
+    const mesgul = mesguliyetler[masa.id];
+    if (mesgul) {
+      setMesgulSorusu({ masa, ad: mesgul.ad });
+      return;
+    }
+    navigate(`/siparis/${masa.id}`);
+  };
 
   useEffect(() => {
     odenmezleriGetir().then(setOdenmezler);
@@ -213,6 +229,10 @@ export default function Salon() {
   useEffect(() => {
     salonuOku();
   }, []);
+
+  // Garson telefondan sipariş girdiğinde kasadaki salon kendiliğinden
+  // tazeleniyor; kasiyerin ekranı yenilemesi gerekmiyor.
+  useCanli(["adisyonlar", "adisyon_kalemleri", "tahsilatlar"], salonuOku);
 
   // Bağlantı geri gelince salon kendiliğinden doluyor: garson "Yeniden dene"ye
   // basmayı beklemesin, ekran zaten düzelmiş olsun. Kopukken ekranda masa
@@ -446,7 +466,8 @@ export default function Salon() {
           }
         }
         aksiyonlar={aksiyonlar(masa)}
-        onClick={() => navigate(`/siparis/${masa.id}`)}
+        mesgul={mesguliyetler[masa.id]?.ad}
+        onClick={() => masayaGir(masa)}
       />
     );
   };
@@ -749,6 +770,28 @@ export default function Salon() {
               }
             }}
             onKapat={() => setAdisyonIslem(null)}
+          />
+        )}
+
+        {mesgulSorusu && (
+          <OnayModal
+            baslik="Masada biri var"
+            ikon={<LockKeyhole size={20} />}
+            tekTus={!devralabilir()}
+            mesaj={
+              devralabilir()
+                ? `${mesgulSorusu.masa.ad} masasında şu an ${mesgulSorusu.ad} işlem yapıyor. Devralırsan ${mesgulSorusu.ad} masadan çıkarılır.`
+                : `${mesgulSorusu.masa.ad} masasında şu an ${mesgulSorusu.ad} işlem yapıyor. İşi bitince masa serbest kalacak.`
+            }
+            onayMetni="Devral"
+            iptalMetni="Vazgeç"
+            onOnay={async () => {
+              const { masa } = mesgulSorusu;
+              setMesgulSorusu(null);
+              await masayiDevral(masa.id).catch(() => {});
+              navigate(`/siparis/${masa.id}`);
+            }}
+            onKapat={() => setMesgulSorusu(null)}
           />
         )}
 

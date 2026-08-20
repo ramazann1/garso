@@ -13433,3 +13433,55 @@ body {
   width: 32px;
   height: 32px;
 }
+
+/* Masa meşguliyeti — "burada biri var" işareti. Kilit görüntüsü değil bilgi:
+   kart tıklanabilir kalıyor, sadece kimin içeride olduğu yazıyor. */
+.masa-sarmal .masa-mesgul,
+.m-masa-mesgul {
+  display: inline-flex;
+  align-items: center;
+  gap: 4px;
+  font-size: 12px;
+  font-weight: 600;
+  color: #fff;
+  background: #3f4a4d;
+  border-radius: 999px;
+  padding: 3px 9px;
+  white-space: nowrap;
+}
+
+.masa-sarmal .masa-mesgul {
+  position: absolute;
+  left: 10px;
+  bottom: 10px;
+  z-index: 2;
+  pointer-events: none;
+}
+
+/* Meşgul masa biraz geri çekiliyor: gözü kendine çekmesin, ama okunur kalsın. */
+.masa-kart.mesgul {
+  opacity: 0.82;
+}
+
+.m-masa.mesgul {
+  opacity: 0.82;
+}
+
+/* Şeritteki kapat düğmesi — yalnız kendiliğinden kalkmayan uyarılarda var. */
+.cevrimdisi-serit .serit-kapat {
+  margin-left: auto;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  width: 26px;
+  height: 26px;
+  border: 0;
+  border-radius: 8px;
+  background: rgba(255, 255, 255, 0.18);
+  color: inherit;
+  cursor: pointer;
+}
+
+.cevrimdisi-serit .serit-kapat:hover {
+  background: rgba(255, 255, 255, 0.3);
+}

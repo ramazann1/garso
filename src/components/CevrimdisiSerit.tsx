@@ -1,6 +1,6 @@
-import { CloudOff, CloudUpload, TriangleAlert } from "lucide-react";
+import { CloudOff, CloudUpload, TriangleAlert, X } from "lucide-react";
 import { useBaglanti } from "../baglanti";
-import { useKuyruk } from "../kuyruk";
+import { kuyrukUyarisiniKapat, useKuyruk } from "../kuyruk";
 import { useYerelVeriZamani, zamanMetni } from "../onbellek";
 
 /**
@@ -15,7 +15,22 @@ import { useYerelVeriZamani, zamanMetni } from "../onbellek";
 export default function CevrimdisiSerit() {
   const cevrimici = useBaglanti();
   const yerelZaman = useYerelVeriZamani();
-  const { bekleyen, hata } = useKuyruk();
+  const { bekleyen, hata, uyari } = useKuyruk();
+
+  // Geç kalan sipariş uyarısı hata değil ama kaybolmamalı: kendiliğinden
+  // kalkmıyor, işletmeci okuyup kapatana kadar duruyor.
+  if (uyari) {
+    return (
+      <div className="cevrimdisi-serit" role="status">
+        <TriangleAlert size={17} />
+        <strong>Hesap kapandıktan sonra gelen sipariş</strong>
+        <span>{uyari}</span>
+        <button className="serit-kapat" onClick={kuyrukUyarisiniKapat} aria-label="Kapat">
+          <X size={16} />
+        </button>
+      </div>
+    );
+  }
 
   if (cevrimici && !bekleyen && !hata) return null;
 

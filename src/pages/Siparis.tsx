@@ -5,6 +5,7 @@ import {
   Bike,
   Check,
   ChevronDown,
+  LockKeyhole,
   Percent,
   Pencil,
   ShoppingBag,
@@ -18,12 +19,14 @@ import {
 } from "lucide-react";
 import { menuGetir, agacUrunleri, altKategoriler, porsiyonFiyat, urunKdv } from "../menu";
 import {
+  CEVRIMDISI_ADISYON,
   adisyonGetir,
   adisyonKaydet,
   kalemTasi,
   kalemTutari,
   masasizGetir,
   masasizKaydet,
+  sepetiTazele,
   yeniKalemId,
 } from "../adisyonlar";
 import type { AdisyonVerisi } from "../adisyonlar";
@@ -47,6 +50,8 @@ import { bekleyenKayit, kuyrugaEkle } from "../kuyruk";
 import type { KuyrukIsi } from "../kuyruk";
 import { kdvDokumu } from "../kdv";
 import { paraGoster } from "../para";
+import { useMasayiTut } from "../mesguliyet";
+import { useCanli } from "../canli";
 import { ayarlar } from "../isletmeAyarlari";
 import type { IndirimKaynagi } from "../indirimler";
 import type {
@@ -162,7 +167,7 @@ export default function Siparis() {
     // Bağlantı yoksa istek atılmıyor: adisyon sunucuda kalıyor ama cevapsız
     // isteği beklemek ekranı saniyelerce halkada tutuyordu. Masa çevrimdışı
     // boş sayfa gibi açılıyor, girilen sipariş kuyruğa yazılıyor.
-    if (!baglantiVar()) return { sepet: [], indirim: 0, tahsilatlar: [] };
+    if (!baglantiVar()) return CEVRIMDISI_ADISYON;
     return masasiz ? masasizGetir(adisyonId) : adisyonGetir(masaId);
   };
   const navigate = useNavigate();
@@ -198,6 +203,15 @@ export default function Siparis() {
   const [cikisSorusu, setCikisSorusu] = useState(false);
   const [seciliKalem, setSeciliKalem] = useState<SepetKalemi | null>(null);
   const [uyari, setUyari] = useState<string | null>(null);
+
+  // Masalı hesapta ekran açık kaldığı sürece masa bu kişide görünüyor. Masasız
+  // (gel al / paket) siparişte meşguliyet yok: o hesap zaten kasada, tek yerde.
+  // Başkası devraldıysa ekranda kalmanın anlamı yok, salona dönülüyor.
+  const devralan = useMasayiTut(masasiz ? null : masaId);
+  const [devralindi, setDevralindi] = useState<string | null>(null);
+  useEffect(() => {
+    if (devralan) setDevralindi(devralan);
+  }, [devralan]);
   // Adisyonun kendi bilgileri: ad, kişi sayısı, not ve müşteri. Sepetle birlikte
   // kaydediliyor — masalı adisyon ilk ürün girilene kadar diskte yok.
   const [bilgi, setBilgi] = useState<AdisyonBilgisi>({});
@@ -295,6 +309,38 @@ export default function Siparis() {
       setYukleniyor(false);
     });
   }, [masaId, adisyonId, masasiz]);
+
+  // Hesabın içi de salon gibi canlı: garson telefondan aynı masaya ürün
+  // eklerse kasiyer görüyor, eksik tutar tahsil etmiyor. Ekranda kaydedilmemiş
+  // değişiklik varsa yereldeki hâl korunuyor, sunucudan yalnız yeni kalemler
+  // biniyor. Kuyrukta bekleyen kayıt varsa hiç dokunulmuyor: o sepet
+  // sunucudakinden yeni.
+  useCanli(["adisyonlar", "adisyon_kalemleri", "tahsilatlar"], () => {
+    if (!baglantiVar() || bekleyenKayit(hedef)) return;
+    (masasiz ? masasizGetir(adisyonId) : adisyonGetir(masaId)).then((veri) => {
+      setSepet((s) => {
+        const yerelDegisiklik =
+          adisyonImzasi(s, indirim, kayitliTahsilatlar, bilgi, servis) !== kayitliImza;
+        if (!yerelDegisiklik) {
+          setKayitliTahsilatlar(veri.tahsilatlar);
+          setKayitliImza(
+            adisyonImzasi(
+              veri.sepet,
+              veri.indirim,
+              veri.tahsilatlar,
+              adisyondanBilgi(veri),
+              adisyondanServis(veri)
+            )
+          );
+          setIndirim(veri.indirim);
+          setIndirimTanim(veri.indirimTanim);
+          setBilgi(adisyondanBilgi(veri));
+          setServis(adisyondanServis(veri));
+        }
+        return sepetiTazele(veri.sepet, s, yerelDegisiklik);
+      });
+    });
+  });
 
   // Şeritte ana kategoriler durur; alt kategoriler satırdaki okla açılır.
   // Üstü satışta gizliyse alt kategori şeride ana kategori gibi girer.
@@ -978,6 +1024,24 @@ export default function Siparis() {
           bilgi={bilgi}
           onKapat={() => setBilgiAcik(false)}
           onKaydet={(yeni) => { setBilgi(yeni); setBilgiAcik(false); }}
+        />
+      )}
+
+      {devralindi && (
+        <OnayModal
+          tekTus
+          baslik="Masa devralındı"
+          ikon={<LockKeyhole size={20} />}
+          mesaj={`${devralindi} bu masayı devraldı, masadan çıkılıyor.${
+            kirli ? " Kaydedilmemiş değişikliklerin yazılmadı." : ""
+          }`}
+          onayMetni="Tamam"
+          onKapat={() => {
+            // Çıkış kilidi kaydedilmemiş kalem için soru soruyor; karar zaten
+            // verilmiş, ikinci pencere gereksiz.
+            kilitKaldir();
+            navigate("/salon");
+          }}
         />
       )}
 

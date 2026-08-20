@@ -1,6 +1,6 @@
 import { useEffect, useRef, useState } from "react";
 import type { ReactNode } from "react";
-import { CircleCheckBig, Clock, CloudUpload, MoreVertical, Plus, Users } from "lucide-react";
+import { CircleCheckBig, Clock, CloudUpload, LockKeyhole, MoreVertical, Plus, Users } from "lucide-react";
 import { paraGoster } from "../para";
 import type { Masa, MasaDurumu } from "../types";
 
@@ -14,6 +14,8 @@ type Props = {
   masa: Masa;
   durum?: MasaDurumu;
   aksiyonlar?: MasaAksiyon[];
+  /** Masada şu an işlem yapan başka kişi varsa adı; kart rozet gösteriyor. */
+  mesgul?: string;
   onClick?: () => void;
 };
 
@@ -22,7 +24,7 @@ type Props = {
  * dolu masada garson → masa adı → süre ve tutar. Dolu masa mercan zemin ve beyaz
  * yazı alıyor; salonun neresi çalışıyor uzaktan görünsün.
  */
-export default function MasaKarti({ masa, durum, aksiyonlar, onClick }: Props) {
+export default function MasaKarti({ masa, durum, aksiyonlar, mesgul, onClick }: Props) {
   const [menuAcik, setMenuAcik] = useState(false);
   const sarmal = useRef<HTMLDivElement>(null);
 
@@ -55,6 +57,7 @@ export default function MasaKarti({ masa, durum, aksiyonlar, onClick }: Props) {
     masa.sekil === "daire" ? "daire" : "",
     durum?.gecikti ? "gecikti" : "",
     odendi ? "odendi" : odenen > 0 ? "kismi" : "",
+    mesgul ? "mesgul" : "",
   ]
     .filter(Boolean)
     .join(" ");
@@ -63,6 +66,14 @@ export default function MasaKarti({ masa, durum, aksiyonlar, onClick }: Props) {
 
   return (
     <div className="masa-sarmal" ref={sarmal}>
+      {/* Masada biri varsa kartın altına adı düşüyor: garson ızgaraya bakınca
+          hangi masaya girmemesi gerektiğini görüyor. */}
+      {mesgul && (
+        <span className="masa-mesgul">
+          <LockKeyhole size={12} />
+          {mesgul}
+        </span>
+      )}
       {!durum ? (
         <button className={sinif} onClick={onClick}>
           <span className="masa-ad">{masa.ad}</span>

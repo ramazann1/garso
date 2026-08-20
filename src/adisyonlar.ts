@@ -31,6 +31,16 @@ export type AdisyonVerisi = {
    * Cari hesap modülü gelene kadar borç bilgisi adisyonun kendi üstünde duruyor.
    */
   eksik?: { kisi: string; sebep: string; tutar: number };
+  /**
+   * Ekran bu adisyonu okuduğunda sunucuda duran kalem kimlikleri. Kaydetme
+   * "sepette olmayanı sil" derse başka bir cihazın araya eklediği kalem
+   * silinir — garson telefondan gönderince kasadan girilen ürün kaybolur.
+   * Silme bu listeye bakıyor: yalnız görülüp sonra çıkarılan kalem siliniyor,
+   * ekranın hiç bilmediği kaleme dokunulmuyor.
+   */
+  bilinenIdler?: number[];
+  /** Aynı kural tahsilatlar için: başka kasada alınan ödeme silinmesin. */
+  bilinenTahsilatIdler?: number[];
   acilis?: string;
   garson?: string;
   tip?: AdisyonTipi;
@@ -166,7 +176,7 @@ export async function adisyonGetir(masaId: number): Promise<AdisyonVerisi> {
     .eq("durum", "acik")
     .maybeSingle();
 
-  return adisyonaCevir(data);
+  return okundu(adisyonaCevir(data));
 }
 
 /** Masasız adisyon kimliğiyle okunuyor; masalıda anahtar masa, burada adisyon. */
@@ -178,7 +188,7 @@ export async function masasizGetir(adisyonId: number): Promise<AdisyonVerisi> {
     .eq("durum", "acik")
     .maybeSingle();
 
-  return adisyonaCevir(data);
+  return okundu(adisyonaCevir(data));
 }
 
 /**
@@ -196,6 +206,93 @@ export async function sonAdisyonlar(adet = 5): Promise<AdisyonVerisi[]> {
     ...adisyonaCevir(a),
     ad: a.ad ?? a.masa?.ad ?? undefined,
   }));
+}
+
+/**
+ * Açık duran sipariş ekranı tazelenirken sunucudaki hesapla ekrandaki hâli
+ * birleştiriyor. Başka bir cihaz aynı masaya ürün eklediğinde ekranın bunu
+ * görmesi gerekiyor — yoksa kasiyer eksik tutar tahsil ediyor. Ama tazeleme
+ * kişinin kendi girdiklerini de silmemeli.
+ *
+ * Kural: ekranda kaydedilmemiş bir şey yoksa sunucudaki hesap aynen geçerli.
+ * Varsa yereldeki hâl korunuyor, sunucudan yalnız yeni kalemler ekleniyor —
+ * kimsenin yazdığı kaybolmuyor. Sunucudan silinmiş kalem ekrandan da düşüyor.
+ */
+/**
+ * Çevrimdışı açılan sipariş ekranının başlangıç hâli. Boş sepetle açılıyor —
+ * bir dakika öncesinin hesabını göstermek yanlış bilgi olurdu. Ama "sepetim
+ * boş" ile "masada hiçbir şey yok" aynı şey değil: kaydetme aradaki farkı
+ * bilmezse, bağlantı gelince bu kayıt masadaki her şeyi silerdi. Boş liste
+ * "hiçbir kalem görmedim" demek — kaydetme hiçbir şey silmiyor, yalnız
+ * çevrimdışı girilenleri ekliyor.
+ */
+export const CEVRIMDISI_ADISYON: AdisyonVerisi = {
+  sepet: [],
+  indirim: 0,
+  tahsilatlar: [],
+  bilinenIdler: [],
+  bilinenTahsilatIdler: [],
+};
+
+/**
+ * Kuyrukta bekleyen sipariş sunucuya yazıldıktan sonra soruluyor: bu masanın
+ * hesabı, sipariş cihazda beklerken kapandı mı?
+ *
+ * Çevrimdışı garson masaya ürün yazarken kasa aynı hesabı kapatıp parayı almış
+ * olabiliyor. Sipariş kaybolmuyor — masaya yeni bir hesap olarak düşüyor — ama
+ * parası alınmamış oluyor. Bu sessiz kalırsa kimse fark etmiyor; işletmecinin
+ * görüp karar vermesi gerekiyor.
+ */
+export async function gecKalanSiparis(masaId: number, zaman: number) {
+  const { data } = await supabase
+    .from("adisyonlar")
+    .select("adisyon_no")
+    .eq("masa_id", masaId)
+    .eq("durum", "kapali")
+    .gte("kapanis", new Date(zaman).toISOString())
+    .limit(1)
+    .maybeSingle();
+  return data ? ((data as any).adisyon_no as number) : null;
+}
+
+export function sepetiTazele(
+  sunucu: SepetKalemi[],
+  yerel: SepetKalemi[],
+  kirli: boolean
+): SepetKalemi[] {
+  if (!kirli) return sunucu;
+
+  const uzerindeCalisilan = new Map(
+    yerel.filter((k) => !!k.id && k.id > 0).map((k) => [k.id as number, k])
+  );
+  const gonderilmemis = yerel.filter((k) => !k.id || k.id < 0);
+
+  return [
+    ...sunucu.map((k) => (k.id && uzerindeCalisilan.has(k.id) ? uzerindeCalisilan.get(k.id)! : k)),
+    ...gonderilmemis,
+  ];
+}
+
+/**
+ * "Bu ekran o adisyonu en son şu kalemlerle gördü" defteri. Ekranlar okunan
+ * adisyonu sepet/indirim/tahsilat diye parçalayıp tutuyor ve kaydederken yeni
+ * bir nesne kuruyor; listeyi ekranların taşımasına bırakmak her yeni ekranda
+ * unutulmaya açık. Defter veri katmanında duruyor, kimse taşımıyor.
+ */
+const gorulenler = new Map<number, { kalemler: number[]; tahsilatlar: number[] }>();
+
+function goruldu(adisyonId: number, kalemler: number[], tahsilatlar: number[]) {
+  gorulenler.set(adisyonId, { kalemler, tahsilatlar });
+}
+
+/**
+ * Deftere yalnız "ekran bu adisyonu açtı" anlamına gelen okumalar yazılıyor.
+ * Fiş önizlemesi gibi listeleyen okumalar yazsaydı, ekranın hiç görmediği bir
+ * kalem görülmüş sayılır ve ilk kayıtta silinirdi.
+ */
+function okundu(veri: AdisyonVerisi): AdisyonVerisi {
+  if (veri.id) goruldu(veri.id, veri.bilinenIdler ?? [], veri.bilinenTahsilatIdler ?? []);
+  return veri;
 }
 
 function adisyonaCevir(data: any): AdisyonVerisi {
@@ -224,10 +321,15 @@ function adisyonaCevir(data: any): AdisyonVerisi {
     kalemler: t.kalem_adetleri ?? undefined,
   }));
 
+  const kalemIdler = sepet.map((k) => k.id).filter((id): id is number => !!id && id > 0);
+  const tahsilatIdler = tahsilatlar.map((t) => t.id).filter((id): id is number => !!id);
+
   return {
     id: (data as any).id,
     no: (data as any).adisyon_no,
     sepet,
+    bilinenIdler: kalemIdler,
+    bilinenTahsilatIdler: tahsilatIdler,
     indirim: Number((data as any).indirim ?? 0),
     indirimTanim: {
       id: (data as any).indirim_tanim_id ?? undefined,
@@ -796,7 +898,13 @@ async function kalemleriYaz(
   const denetimler: DenetimKaydi[] = [];
 
   const kalanIdler = new Set(veri.sepet.map((k) => k.id).filter((id): id is number => !!id && id > 0));
-  const silinecek = [...mevcutIdler].filter((id) => !kalanIdler.has(id));
+  // Silme yalnız ekranın gördüğü kalemler üzerinden yürüyor: iki kişi aynı
+  // masada çalışırken biri ötekinin ürününü düşürmesin. Liste kaydın kendisinde
+  // yoksa defterden okunuyor; ikisi de yoksa (ilk kayıt) eski davranış geçerli.
+  const defter = gorulenler.get(adisyonId);
+  const bilinen = veri.bilinenIdler ?? defter?.kalemler;
+  const gorulen = bilinen ? new Set(bilinen) : mevcutIdler;
+  const silinecek = [...mevcutIdler].filter((id) => gorulen.has(id) && !kalanIdler.has(id));
   if (silinecek.length) await supabase.from("adisyon_kalemleri").delete().in("id", silinecek);
 
   // Duran kalemler her kaydetmede tek tek güncelleniyordu: on kalemlik masada
@@ -913,7 +1021,13 @@ async function kalemleriYaz(
   const kalanTahsilatIdler = new Set(
     veri.tahsilatlar.map((t) => t.id).filter((id): id is number => !!id)
   );
-  const gidenler = ((eskiTahsilatlar as any[]) ?? []).filter((t) => !kalanTahsilatIdler.has(t.id));
+  // Kalemdeki kuralın aynısı: başka bir kasada alınmış ödeme, bu ekran onu hiç
+  // görmediği için silinmiyor.
+  const bilinenTahsilatlar = veri.bilinenTahsilatIdler ?? defter?.tahsilatlar;
+  const gorulenTahsilatlar = bilinenTahsilatlar ? new Set(bilinenTahsilatlar) : null;
+  const gidenler = ((eskiTahsilatlar as any[]) ?? []).filter(
+    (t) => !kalanTahsilatIdler.has(t.id) && (!gorulenTahsilatlar || gorulenTahsilatlar.has(t.id))
+  );
 
   if (gidenler.length) {
     await supabase
@@ -1003,7 +1117,29 @@ async function kalemleriYaz(
     await denetimYaz(denetimler.map((d) => ({ ...d, adisyonId, yer })));
   }
 
-  return { ...veri, id: adisyonId, tahsilatlar: yazilanTahsilatlar, silinenTahsilatlar: undefined };
+  // Ekran aynı sayfada ikinci kez kaydedebiliyor; "gördüklerim" listesi yeni
+  // kimliklerle tazeleniyor, yoksa az önce eklenen kalem bir sonraki kayıtta
+  // yabancı sayılıp silinemez hâle geliyordu.
+  const yeniKalemIdler = veri.sepet
+    .map((k) => k.id)
+    .filter((id): id is number => !!id && id > 0);
+  const yeniTahsilatIdler = yazilanTahsilatlar
+    .map((t) => t.id)
+    .filter((id): id is number => !!id);
+  // Kapanan adisyonun defterde yeri kalmıyor; açık olanın listesi tazeleniyor
+  // ki aynı ekrandan yapılan ikinci kayıt az önce eklediği kalemi yabancı
+  // sanmasın.
+  if (kapat) gorulenler.delete(adisyonId);
+  else goruldu(adisyonId, yeniKalemIdler, yeniTahsilatIdler);
+
+  return {
+    ...veri,
+    id: adisyonId,
+    tahsilatlar: yazilanTahsilatlar,
+    silinenTahsilatlar: undefined,
+    bilinenIdler: yeniKalemIdler,
+    bilinenTahsilatIdler: yeniTahsilatIdler,
+  };
 }
 
 /**

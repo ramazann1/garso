@@ -179,6 +179,10 @@ export async function girisYap(kimlik: string, sifre: string, kalici: boolean) {
     sessionStorage.setItem(SEKME_ANAHTARI, "1");
   }
 
+  // Yeni giriş her zaman kişinin kendisiyle başlıyor: aynı cihazda önceki
+  // vardiyadan kalmış bir PIN geçişi devralınmasın.
+  await supabase.rpc("oturum_kisisini_birak");
+
   acik = kisi;
   oturumuHatirla(data.user.id);
   kilidiKaldir();
@@ -210,6 +214,9 @@ export async function isletmeKur(
 }
 
 export async function oturumuKapat() {
+  // PIN'le geçilen kişi bilette kayıtlı duruyor; bilet devredilirken silinmezse
+  // sonraki kişi onun yetkileriyle çalışırdı.
+  await supabase.rpc("oturum_kisisini_birak");
   kilidiKaldir();
   localStorage.removeItem(GECICI_ANAHTARI);
   acik = null;
@@ -247,18 +254,14 @@ export function kilitliMi() {
 export async function pinIleAc(pin: string) {
   if (!kilitliMi()) throw new Error("Ekran kilitli değil.");
 
-  const { data } = await supabase
-    .from("personel")
-    .select("id")
-    .eq("pin_hash", await ozetPin(pin))
-    .eq("isletme_id", acik!.isletmeId)
-    .eq("aktif", true)
-    .eq("giris_engelli", false);
+  // PIN'i sunucu doğruluyor. Tarayıcı karşılaştırsaydı "ben şu kişiyim" demek
+  // kurcalayana kalırdı; üstelik veritabanı tarafı kimin çalıştığını hiç
+  // öğrenmiyordu ve yetki denetimleri kasayı açan kişiye göre işliyordu.
+  // Fonksiyon kişiyi hem doğruluyor hem oturumun üstüne yazıyor.
+  const { data, error } = await supabase.rpc("pin_ile_gec", { pin });
+  if (error || !data) throw new Error("PIN doğru değil.");
 
-  const bulunan = ((data as any[]) ?? [])[0];
-  if (!bulunan) throw new Error("PIN doğru değil.");
-
-  const kisi = await kisiyiYukle("id", bulunan.id);
+  const kisi = await kisiyiYukle("id", data as number);
   if (!kisi) throw new Error("PIN doğru değil.");
 
   acik = kisi;
@@ -266,13 +269,6 @@ export async function pinIleAc(pin: string) {
   kilidiKaldir();
   duyur();
   return kisi;
-}
-
-async function ozetPin(pin: string) {
-  const tampon = await crypto.subtle.digest("SHA-256", new TextEncoder().encode(pin));
-  return Array.from(new Uint8Array(tampon))
-    .map((b) => b.toString(16).padStart(2, "0"))
-    .join("");
 }
 
 /** Ekranların oturuma abone olma yolu; giriş/çıkış/kilitte hepsi birlikte yenileniyor. */

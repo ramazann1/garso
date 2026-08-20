@@ -1,11 +1,21 @@
 import { defineConfig } from 'vite'
 import react from '@vitejs/plugin-react'
+import basicSsl from '@vitejs/plugin-basic-ssl'
 import { VitePWA } from 'vite-plugin-pwa'
 
 // https://vite.dev/config/
 export default defineConfig({
+  // Telefonla denemek için sunucu yerel ağa açılıyor: bilgisayarın wifi
+  // adresine (örn. https://192.168.1.69:5173) aynı ağdaki cihazdan girilebiliyor.
+  server: { host: true },
   plugins: [
     react(),
+    // Geliştirme sunucusu HTTPS. Tarayıcılar bazı özellikleri yalnız güvenli
+    // bağlantıda açıyor: PIN'i şifreleyen crypto.subtle ve çevrimdışı çalışmayı
+    // sağlayan service worker. Bilgisayarda localhost güvenli sayıldığı için
+    // sorun çıkmıyordu; telefon ağ adresiyle girdiğinde ikisi de kapanıyordu.
+    // Sertifika kendi ürettiğimiz için tarayıcı ilk girişte uyarı veriyor.
+    basicSsl(),
     // Kasa internetsiz kalınca uygulamanın kendisi de açılmıyordu: tarayıcı
     // sayfayı her açılışta sunucudan istediği için ekran bomboş geliyordu.
     // Service worker uygulamanın kabuğunu (HTML, JS, CSS, yazı tipi) cihazda

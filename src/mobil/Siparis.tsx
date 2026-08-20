@@ -8,6 +8,7 @@ import {
   ChevronUp,
   CloudOff,
   EllipsisVertical,
+  LockKeyhole,
   Merge,
   Minus,
   Printer,
@@ -25,6 +26,7 @@ import OnayModal from "../components/OnayModal";
 import { agacUrunleri, menuGetir, porsiyonFiyat, urunKdv } from "../menu";
 import { bolgeleriGetir, masaGetir } from "../masalar";
 import {
+  CEVRIMDISI_ADISYON,
   adisyonGetir,
   adisyonIptal,
   adisyonKaydet,
@@ -33,6 +35,7 @@ import {
   kalemTutari,
   masaBirlestir,
   masaTasi,
+  sepetiTazele,
   servisGirdisi,
   tumAdisyonlar,
   yeniKalemId,
@@ -41,6 +44,8 @@ import type { AdisyonVerisi } from "../adisyonlar";
 import { servisSatirlari } from "../servis";
 import { adisyonFisiYaz } from "../yazicilar";
 import { bekleyenKayit, kuyrugaEkle } from "../kuyruk";
+import { useMasayiTut } from "../mesguliyet";
+import { useCanli } from "../canli";
 import { baglantiHatasi, baglantiVar } from "../baglanti";
 import { kilitKaldir, kilitKur } from "../cikisKilidi";
 import { ayarlar } from "../isletmeAyarlari";
@@ -121,6 +126,14 @@ export default function MobilSiparis() {
   const [uyari, setUyari] = useState<string | null>(null);
   const [gonderiliyor, setGonderiliyor] = useState(false);
 
+  // Ekran açık kaldığı sürece masa bu kişide görünüyor. Başkası devraldıysa
+  // masada kalmanın anlamı yok: pencere kapanınca masalara dönülüyor.
+  const devralan = useMasayiTut(masaId);
+  const [devralindi, setDevralindi] = useState<string | null>(null);
+  useEffect(() => {
+    if (devralan) setDevralindi(devralan);
+  }, [devralan]);
+
   // Sunucuya yazılmamış kalem var mı — Gönder düğmesi ve çıkış uyarısı buna bakıyor.
   const baslangicImza = useRef("");
   const kirli = JSON.stringify(sepet) !== baslangicImza.current;
@@ -153,7 +166,7 @@ export default function MobilSiparis() {
       if (bekleyen) return bekleyen;
       // Bağlantı yoksa istek atılmıyor; masa boş sayfa gibi açılıyor, girilen
       // sipariş kuyruğa yazılıyor.
-      if (!baglantiVar()) return { sepet: [], indirim: 0, tahsilatlar: [] };
+      if (!baglantiVar()) return CEVRIMDISI_ADISYON;
       return adisyonGetir(masaId);
     };
 
@@ -168,6 +181,27 @@ export default function MobilSiparis() {
       setYukleniyor(false);
     });
   }, [masaId]);
+
+  // Masanın içi de ızgarası gibi canlı: kasadan aynı hesaba ürün eklenirse
+  // garson görüyor. Kaydedilmemiş kalemler korunuyor (sepetiTazele), çevrimdışı
+  // ya da kuyrukta bekleyen kayıt varsa hiç dokunulmuyor — o sepet sunucununkinden
+  // yeni, üstüne bayat veri binmemeli.
+  useCanli(["adisyonlar", "adisyon_kalemleri", "tahsilatlar"], () => {
+    if (!baglantiVar() || bekleyenKayit({ tip: "masa", masaId })) return;
+    adisyonGetir(masaId).then((veri) => {
+      setSepet((s) => {
+        const yerelDegisiklik = JSON.stringify(s) !== baslangicImza.current;
+        // Ekranda bekleyen bir şey yoksa sunucudaki hesap aynen geçerli; imza
+        // da onunla güncelleniyor, yoksa dışarıdan gelen kalem "gönderilmemiş"
+        // sanılıp Gönder düğmesi boşuna yanıyordu.
+        if (!yerelDegisiklik) baslangicImza.current = JSON.stringify(veri.sepet);
+        return sepetiTazele(veri.sepet, s, yerelDegisiklik);
+      });
+      setTahsilatlar(veri.tahsilatlar);
+      setIndirim(veri.indirim);
+      setServis({ kuverUygula: veri.kuverUygula, garsoniyeUygula: veri.garsoniyeUygula });
+    });
+  });
 
   // KDV oranı satış anında kaleme yazılıyor: ürünün grubu sonradan değişse bile
   // kesilmiş adisyonun dökümü oynamasın.
@@ -735,6 +769,24 @@ export default function MobilSiparis() {
           onKaydet={(sayi) => {
             setKisiSayisi(sayi);
             setKisiSorusu(false);
+          }}
+        />
+      )}
+
+      {devralindi && (
+        <OnayModal
+          tekTus
+          baslik="Masa devralındı"
+          ikon={<LockKeyhole size={20} />}
+          mesaj={`${devralindi} bu masayı devraldı, masadan çıkılıyor.${
+            kirli ? " Gönderilmemiş ürünlerin kaydedilmedi." : ""
+          }`}
+          onayMetni="Tamam"
+          onKapat={() => {
+            // Çıkış kilidi kaydedilmemiş kalem için soru soruyor; burada karar
+            // zaten verilmiş, ikinci pencere gereksiz.
+            kilitKaldir();
+            git("/mobil/masalar");
           }}
         />
       )}

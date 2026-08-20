@@ -4,6 +4,7 @@ import { OdemeIkon } from "../odemeIkon";
 import { analizAdisyonlari, analizOzeti, BOS_FILTRE } from "../analiz";
 import type { AnalizOzeti } from "../analiz";
 import { baglantiVar, useBaglanti } from "../baglanti";
+import { SAKIN, useCanli } from "../canli";
 import { paraGoster } from "../para";
 
 /**
@@ -20,13 +21,15 @@ export default function MobilSatis() {
   const [yukleniyor, setYukleniyor] = useState(true);
   const [okunamadi, setOkunamadi] = useState(false);
 
-  const oku = async () => {
+  // Sessiz okuma canlı tazeleme için: halka her seferinde dönerse ekran
+  // işletmecinin gözünün önünde titrer, oysa sayılar sadece güncelleniyor.
+  const oku = async (sessiz = false) => {
     if (!baglantiVar()) {
       setOkunamadi(true);
       setYukleniyor(false);
       return;
     }
-    setYukleniyor(true);
+    if (!sessiz) setYukleniyor(true);
     setOkunamadi(false);
     try {
       // Gider listesi boş geçiliyor: bu ekranda kâr yazmıyoruz, giderler kasada.
@@ -41,6 +44,11 @@ export default function MobilSatis() {
   useEffect(() => {
     oku();
   }, []);
+
+  // Gün içinde satış oldukça sayılar kendiliğinden ilerliyor. Sakin tempoda:
+  // bakma ekranı, hesap ağır ve rakamın gözün önünde zıplaması rahatsız eder.
+  // Ekran arkadayken (telefon cepte) hiç sorgu yapılmıyor.
+  useCanli(["adisyonlar", "tahsilatlar", "adisyon_kalemleri"], () => oku(true), SAKIN);
 
   // Bağlantı geri gelince ekran kendini tazeliyor; işletmeci "yenile"ye
   // basmayı beklemesin.
@@ -63,7 +71,7 @@ export default function MobilSatis() {
           <h1>Satış</h1>
           <p className="m-baslik-alt">{bugun}</p>
         </div>
-        <button className="m-ikon-dugme" onClick={oku} aria-label="Yenile">
+        <button className="m-ikon-dugme" onClick={() => oku()} aria-label="Yenile">
           <RotateCw size={20} />
         </button>
       </header>
@@ -74,7 +82,7 @@ export default function MobilSatis() {
         <div className="m-bos">
           {/* Bayat ciro yanlış bilgidir: rakam gösterilmiyor, durum söyleniyor. */}
           <p>{cevrimici ? "Satışlar okunamadı." : "Bağlantı yok, satışlar okunamıyor."}</p>
-          <button className="m-dugme" onClick={oku}>
+          <button className="m-dugme" onClick={() => oku()}>
             {cevrimici ? <RotateCw size={18} /> : <CloudOff size={18} />}
             Yeniden dene
           </button>

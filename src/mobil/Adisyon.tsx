@@ -22,6 +22,7 @@ import KalemIslemleri, { kalemiUygula } from "./KalemIslemleri";
 import { OdemeIkon } from "../odemeIkon";
 import { masaGetir } from "../masalar";
 import {
+  CEVRIMDISI_ADISYON,
   adisyonGetir,
   adisyonKaydet,
   adisyonOzeti,
@@ -33,6 +34,7 @@ import type { AdisyonVerisi } from "../adisyonlar";
 import { servisSatirlari } from "../servis";
 import { odemeTipleriniGetir } from "../odemeTipleri";
 import type { OdemeTipi } from "../odemeTipleri";
+import { useCanli } from "../canli";
 import { baglantiVar, useBaglanti } from "../baglanti";
 import { indirimYapabilir, yetkiVar } from "../oturum";
 import { paraGoster } from "../para";
@@ -81,11 +83,20 @@ export default function MobilAdisyon() {
   useEffect(() => {
     // Bağlantı yoksa istek atılmıyor; tahsilat zaten çevrimdışı alınmıyor.
     if (!baglantiVar()) {
-      setVeri({ sepet: [], indirim: 0, tahsilatlar: [] });
+      setVeri(CEVRIMDISI_ADISYON);
       return;
     }
     adisyonGetir(masaId).then(setVeri);
   }, [masaId, cevrimici]);
+
+  // Hesap ödenirken başka bir cihaz aynı masaya ürün ekleyebiliyor; tutar
+  // güncellenmezse eksik tahsil edilir. Alttan açılan bir sayfa varken
+  // tazelenmiyor: kişi tutar girerken hesabın altından değişmesi daha kötü.
+  const sayfaAcik = tipSecim || tutarAcik || indirimAcik || !!kalemIslem;
+  useCanli(["adisyonlar", "adisyon_kalemleri", "tahsilatlar"], () => {
+    if (!baglantiVar() || sayfaAcik) return;
+    adisyonGetir(masaId).then(setVeri);
+  });
 
   if (!veri) {
     return (
