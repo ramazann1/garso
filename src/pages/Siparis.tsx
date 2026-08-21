@@ -49,7 +49,7 @@ import { baglantiHatasi, baglantiVar, hataMesaji } from "../baglanti";
 import { bekleyenKayit, kuyrugaEkle } from "../kuyruk";
 import type { KuyrukIsi } from "../kuyruk";
 import { kdvDokumu } from "../kdv";
-import { paraGoster } from "../para";
+import { adetGoster, paraGoster } from "../para";
 import { useMasayiTut } from "../mesguliyet";
 import { useCanli } from "../canli";
 import { ayarlar } from "../isletmeAyarlari";
@@ -739,7 +739,7 @@ export default function Siparis() {
                 className={k.durum && k.durum !== "normal" ? `sepet-satir ${k.durum}` : "sepet-satir"}
                 onClick={() => setSeciliKalem(k)}
               >
-                <span className="adet">{k.adet}</span>
+                <span className="adet">{adetGoster(k.adet)}</span>
                 <span className="ad">
                   {k.ad}
                   {detay.length > 0 && (

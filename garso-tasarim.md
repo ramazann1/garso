@@ -1,69 +1,47 @@
 ﻿# GARSO — Teknik Tasarım: Veri Modeli & Ekran Haritası
 *Restoran ve cafe'ler için bulut tabanlı satış ve işletme yönetim sistemi.*
 
-## 0. SIRADAKİ İŞ (21 Ağu 2026'da güncellendi)
+## 0. SIRADAKİ İŞ (22 Ağu 2026'da güncellendi)
 
-> **Sıradaki iş: mobil sipariş ekranı turunun kalanı.**
+> **Sıradaki iş: İstasyon ve Satış sekmeleri yeni tasarım diline geçmedi.**
+> Mobilin kalan iki sekmesi; sipariş ve hesap ekranı bu seansta oturdu.
 >
-> 1. **Uzun basma gizli bir hareket** — porsiyonlu üründe normal dokunuş ana
->    porsiyonu sessizce ekliyor, garson diğer porsiyonların varlığını bilmiyor.
-> 2. **Ürün kartında renk yok** — kategori rengi karta yansımıyor.
-> 3. **Adisyon notu ve müşteri seçme** hiç yok (Adisyo'nun ⋮ menüsünde var).
->
-> **Mercan kullanımı 21 Ağu'da yeterli bulundu, ayrı bir iş açılmadı.**
->
-> Sonra: **İstasyon ve Satış sekmeleri** yeni tasarım diline geçmedi.
+> Küçük iş: **sipariş ekranının sepet dökümünde KDV** — hesap ekranı 22 Ağu'da
+> düzeldi (KDV dahil modda da yazıyor), sipariş ekranı eski davranışta kaldı.
+> Küçük iş: **kuver/garsoniyeyi o hesaba özel açma-kapama** — veri katmanı
+> hazır (kuverUygula/garsoniyeUygula), arayüzü ne kasada ne mobilde var.
 >
 > **Paket / Gel Al mobile alınmayacak (19 Ağu 2026 kararı).** Masasız sipariş
-> telefonla ayakta girilen bir iş değil: müşteri tezgâhta ya da telefonda,
-> siparişi kasadaki kişi oturarak alıyor — ad, telefon, adres yazmak dar ekranda
-> yavaşlatıyor. Mobil garsonun masa işi için; masasız akış kasada kalıyor.
+> telefonla ayakta girilen bir iş değil; mobil garsonun masa işi için.
 >
-> **"Kim yaptı" imzasını sunucuya taşımak.** PIN geçişi 20 Ağu'da sunucuya
-> alındı ve yetki denetimi düzeldi, ama `adisyonlar.acan_id` ile
-> `turlar.garson_id` hâlâ tarayıcının gönderdiği değerle yazılıyor. Kurcalanmış
-> bir tarayıcı işi başkasının üstüne yazabilir. Dayanak artık hazır:
-> `oturum_personeli()`. Aynı işin küçük kardeşi: **PIN belirleme** de hâlâ
-> tarayıcıda özetleniyor (`personel.ts:43`), o da sunucuya alınmalı.
+> **"Kim yaptı" imzasını sunucuya taşımak.** `adisyonlar.acan_id` ile
+> `turlar.garson_id` hâlâ tarayıcının gönderdiği değerle yazılıyor; dayanak
+> hazır: `oturum_personeli()`. Küçük kardeşi: **PIN belirleme** de hâlâ
+> tarayıcıda özetleniyor (`personel.ts:43`).
 >
 > Sırada bekleyenler: **kurye atama ve teslimat takibi** → **KDS'in kalan
 > parçaları** (pişirme/paketleme aşamaları, mutfak fişi, hazırlık süresi
 > raporu, çoklu istasyon).
 >
-> Offline'ın açık kalan uçları (acil değil, sıraya girmeyi bekliyor):
-> **çevrimdışı giriş ve PIN ile kişi değiştirme** (ikisi de sunucuya soruyor),
-> **çevrimdışı tahsilat** (bilinçli kapsam dışı, para işlemi bekletilmiyor),
-> **masasız (gel al / paket) adisyonun çevrimdışı açılması** (kuyruk mevcut
-> adisyona ürün ekleyebiliyor, yenisini açamıyor).
+> Offline'ın açık kalan uçları (acil değil): **çevrimdışı giriş ve PIN ile kişi
+> değiştirme**, **çevrimdışı tahsilat** (bilinçli kapsam dışı), **masasız
+> adisyonun çevrimdışı açılması**.
 >
-> Küçük iş: **Analiz ve Kasa ekranlarına canlı tazeleme** — 20 Ağu'da bilinçli
-> dışarıda bırakıldı (açılışta zaten taze okuyorlar, sorguları ağır, rapora
-> bakarken sayının kayması rahatsız ediyor). Katman hazır: `useCanli(..., SAKIN)`.
-> Küçük iş: **Analiz'in diğer tablolarına da kendi kutusunda kaydırma**.
-> Küçük iş: **PWA simgesi** — `public/favicon.svg` hâlâ Vite'ın mor varsayılan
-> logosu; kısayol eklenince o görünüyor, Garso'nun kendi simgesi gerekiyor.
+> Küçük iş: **Analiz ve Kasa ekranlarına canlı tazeleme** (katman hazır:
+> `useCanli(..., SAKIN)`). Küçük iş: **Analiz'in diğer tablolarına kendi
+> kutusunda kaydırma**. Küçük iş: **PWA simgesi** — `public/favicon.svg` hâlâ
+> Vite'ın mor varsayılan logosu.
 >
-> **Ara sıra çıkan, henüz yakalanamamış sorun:** yeni bir cihazda **ilk giriş**
-> yapılırken düğme "Kontrol ediliyor…" hâlinde takılı kalıyor; sayfa elle
-> yenilenince oturum açılmış oluyor. Yani kimlik bileti alınıyor, sonraki bir
-> adım cevap vermiyor. 31 Ağu 2026'da düğmenin ölü kalmaması düzeltildi
-> (`Giris.tsx`, `finally` ile) ama **asıl sebep bulunamadı** — o an tekrar
-> üretilemedi. Şüpheli: girişten hemen sonra kişinin yetkileri okunuyor
-> (`kisiyiYukle` içindeki üç sorgu) ve bunlar yeni biletle gidiyor; bilet
-> yerleşmeden giden sorgu boş dönüyor ya da asılı kalıyor olabilir. Tekrar
-> olursa **15 saniye beklenip** (12 sn'lik kesici devreye girmeli) konsoldaki
-> hata kaydedilecek; teşhis ona bağlı.
+> **Ara sıra çıkan, henüz yakalanamamış sorun:** yeni cihazda **ilk giriş**
+> yapılırken düğme "Kontrol ediliyor…" hâlinde takılıyor; sayfa yenilenince
+> oturum açılmış oluyor. 31 Ağu 2026'da düğmenin ölü kalmaması düzeltildi
+> (`Giris.tsx`) ama **asıl sebep bulunamadı**. Şüpheli: girişten hemen sonra
+> yetkilerin okunması (`kisiyiYukle`). Tekrar olursa 15 saniye beklenip
+> konsoldaki hata kaydedilecek.
 >
 > **Proje sonuna doğru Ramazan'a hatırlatılacak:** mobil masa kartındaki
-> **"Hesap çıktı" şeridi**. 31 Ağu'da kartın en üstüne beyaz rozet olarak
-> kondu; köşelerin üçü doluydu (sağ üstte üç nokta, sağ altta kişi sayısı,
-> sol altta süre), tutarın yanına da sığmıyordu. Bedeli şu: ızgara satır
-> yüksekliği sabit olduğu için **bütün** kartlar 152px'e çıktı, ekranda daha
-> az masa görünüyor. Ramazan "şimdilik kalsın, sona doğru bana hatırlat" dedi.
-> O zaman değerlendirilecek seçenekler: şeridi inceltmek, yalnız ikon
-> bırakmak, ya da tamamen kaldırmak (fiş çıkarılmış masa zaten kırmızı —
-> bilgi renkte de var, şerit onu ikinci kez söylüyor).
-
+> **"Hesap çıktı" şeridi** — bütün kartları 152px'e çıkarıyor, ekranda daha az
+> masa görünüyor. Seçenekler: inceltmek, yalnız ikon bırakmak, kaldırmak.
 
 *Ramazan seansa "devam edelim" diye giriyor — sıradaki iş bu listenin en üstündeki
 maddedir. Seans sonunda bu liste güncellenir: biten madde silinir, kalanlar
@@ -2456,3 +2434,66 @@ işi açılmadı.
 
 **Sipariş ekranı turunun kalanı** (bölüm 0): uzun basmanın gizli kalması, ürün
 kartında kategori rengi, adisyon notu ve müşteri seçme.
+
+---
+
+## 22 Ağu 2026: Mobil sipariş turunun kapanışı ve hesap ekranı
+
+**Sipariş ekranı turu bitti.**
+
+- **Uzun basma kaldırıldı.** Ürün kartı düz `onClick`. Gerekçe Ramazan'dan:
+  seçimi olan üründe kısa dokunuş zaten pencereyi açıyor, ikinci bir gizli
+  hareket tutmanın anlamı yok.
+- **Ürün kartında renk şeridi**: sol kenarda 4px, ürünün kendi rengi yoksa
+  kategorisininki, ikisi de yoksa şerit çıkmıyor. Kartın tamamını boyamak
+  ızgarayı alacalı yapıyordu.
+- **Adisyon bilgileri** ⋮ menüsüne girdi (ad, hesap notu, müşteri adı,
+  telefon). Ekranda duruyor, **Gönder** ile sepetle aynı kayıtta yazılıyor;
+  bilgi değişince de Gönder yanıyor (`bilgiImza`).
+- **Şerit düğmesi duruma göre**: gönderilmemiş kalem varsa Gönder, hepsi
+  gönderilmişse Hesap/Öde (yetkiye göre) ve adisyon ekranına gidiyor, adisyon
+  boşsa düğme yok.
+
+**Buçuklu adet.** Veritabanı zaten `numeric(10,3)`ti, engel arayüzdeydi.
+Mobil kalem penceresinde rakam artık yazı kutusu: −/+ birer birer, rakama
+dokununca ondalık tuş takımı açılıyor (`inputMode="decimal"`, virgül kabul).
+Yeni ortak yardımcı **`adetGoster`** (`para.ts`): tamsayıda "1", buçukluda
+"0,5". Adedin yazıldığı her yer buradan geçiyor — kasa adisyonu, mobil adisyon,
+sepet şeridi, istasyon kartları, tahsilat paneli, fiş.
+
+### Hesap ekranı — bozuk düzen ve eksikler
+
+Ramazan'ın ekran görüntüsü işi çözdü: sorun tasarım değil, **bozuk sütun
+tanımıydı**. `.m-adisyon .m-kalem` iki sütun tanımlıydı ama satırda üç öğe var;
+adet bütün genişliği kaplıyor, tutar alt satıra düşüyordu. Üç sütuna çevrildi
+(adet · ad · tutar). Kalemler **tek kartın içinde**, aralarında ince çizgi —
+her satırın kendi çerçevesi ekranı kutu yığınına çeviriyordu.
+
+- **Kalan satırı** alınan ödemelerin altına eklendi (mercan).
+- **Ödeme satırları üç sütunlu ızgara**: tip · tutar (sağa yaslı) · geri alma.
+  Esnek dizilimde rakamlar alt alta tutmuyordu.
+- **Ödemeyi geri alma** mobile geldi: satırın ×'i sebep soran onaya düşüyor,
+  kaydedilmiş tahsilatın kimliği denetime gidiyor. Yalnız `odeme.iade`.
+- **Alt çubuk sadeleşti**: "Kaydet" kalktı (ödemeler zaten anında yazılıyor),
+  küçük "Tutar gir" + geniş "₺X öde".
+- **İndirim** başlıktaki "%" kutusundan çıkıp dökümün içine girdi: kesikli
+  mercan çerçeveli, "İndirim uygula ›" yazan satır. Yeri toplamın **üstü** —
+  toplam ondan sonra çıkıyor.
+
+### Kusur: fiş kısmi ödemeyi göstermiyordu
+
+Kısmen ödenmiş hesabın fişinde alınan para ne satırda görünüyor ne toplamdan
+düşülüyordu; müşteri ikinci kez tamamını ödemeye kalkıyordu. `fis.ts` artık
+TOPLAM'ın altına her tahsilatı (`Ödendi · Nakit  -₺100,00`) ve kalın **KALAN**
+satırını basıyor. Hesap tamamen ödendiyse bu satırlar çıkmıyor.
+
+### Kusur: mobilde KDV hiç görünmüyordu
+
+Satır `ozet.kdv > 0` şartına bağlıydı; **KDV dahil** çalışan işletmede bu değer
+sıfır olduğu için satır büsbütün kayboluyordu. Vergi artık kasadaki gibi
+`kdvDokumu` ile ayrıca hesaplanıp iki modda da yazılıyor — dahilse
+"KDV (fiyata dahil)" etiketiyle, toplamı değiştirmeden.
+
+**Açık kalan:** sipariş ekranının sepet dökümü hâlâ eski davranışta (KDV dahil
+modda satır çıkmıyor). Kuver/garsoniyeyi **o hesaba özel açma-kapama** ne
+kasada ne mobilde var — okunup geri yazılıyor ama elle değiştirilemiyor.

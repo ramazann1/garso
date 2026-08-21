@@ -3,7 +3,7 @@ import { servisSatirlari } from "./servis";
 import type { AdisyonVerisi } from "./adisyonlar";
 import { ayarlar, isletmeAdi } from "./isletmeAyarlari";
 import { kdvDokumu } from "./kdv";
-import { paraGoster } from "./para";
+import { adetGoster, paraGoster } from "./para";
 import type { SepetKalemi } from "./types";
 import { VARSAYILAN_PUNTOLAR } from "./yazicilar";
 import type { FisSablonu } from "./yazicilar";
@@ -177,7 +177,7 @@ export function fisIcerigi(
     !mutfak && p.urun_birlestir !== false ? kalemleriTopla(satilanlar, secenekliYaz) : satilanlar;
 
   for (const k of listelenecek) {
-    const ad = `${k.adet} x ${k.ad}${!mutfak && p.urun_birimleri && k.porsiyon ? ` (${k.porsiyon})` : ""}`;
+    const ad = `${adetGoster(k.adet)} x ${k.ad}${!mutfak && p.urun_birimleri && k.porsiyon ? ` (${k.porsiyon})` : ""}`;
     const fiyatli = !mutfak || p.urun_fiyatlari;
     s.push(
       fiyatli
@@ -233,6 +233,26 @@ export function fisIcerigi(
       ? satilanlar.reduce((t, k) => t + kalemTutari(k), 0)
       : ozet.toplam;
     s.push({ t: "ikiUc", sol: "TOPLAM", sag: paraGoster(toplam), alan: "toplam", kalin: true });
+
+    // Kısmen ödenmiş hesabın fişi borcu olduğundan fazla gösteriyordu: alınan
+    // para ne satırda görünüyor ne toplamdan düşüyordu. Müşteri ikinci kez
+    // tamamını ödemeye kalkıyor.
+    if (!mutfak && adisyon.tahsilatlar.length > 0 && ozet.kalan > 0.005) {
+      for (const o of adisyon.tahsilatlar)
+        s.push({
+          t: "ikiUc",
+          sol: `Ödendi · ${o.tip}`,
+          sag: `-${paraGoster(o.tutar)}`,
+          alan: "odeme",
+        });
+      s.push({
+        t: "ikiUc",
+        sol: "KALAN",
+        sag: paraGoster(ozet.kalan),
+        alan: "toplam",
+        kalin: true,
+      });
+    }
   }
 
   if (!mutfak && p.hesabi_paylas && adisyon.kisiSayisi)

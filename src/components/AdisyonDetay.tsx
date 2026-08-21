@@ -16,7 +16,7 @@ import {
 } from "lucide-react";
 import OnayModal from "./OnayModal";
 import OdemeTipDuzelt from "./OdemeTipDuzelt";
-import { paraGoster } from "../para";
+import { adetGoster, paraGoster } from "../para";
 import { yetkiVar } from "../oturum";
 import { adisyonIkram, adisyonIptal } from "../adisyonlar";
 import { odenmezleriGetir, type Odenmez } from "../odenmezler";
@@ -400,7 +400,7 @@ function Kalem({
 
   return (
     <li className={durum === "iptal" ? "iptal" : ""}>
-      <span className="kalem-adet">{kalem.adet}</span>
+      <span className="kalem-adet">{adetGoster(kalem.adet)}</span>
       <span className="kalem-ad">
         <strong>{kalem.ad}</strong>
         {altSatir && <small>{altSatir}</small>}
@@ -447,7 +447,7 @@ function ZamanCizelgesi({ detay }: { detay: Detay }) {
       ikon: <Plus size={15} />,
       kisi: tur.garson,
       baslik: "Yeni ürün eklendi",
-      alt: tur.kalemler.map((k) => `${k.adet} × ${k.ad}`).join(" · "),
+      alt: tur.kalemler.map((k) => `${adetGoster(k.adet)} × ${k.ad}`).join(" · "),
     })),
     ...detay.tahsilatlar.map((t) => ({
       zaman: t.olusturma,

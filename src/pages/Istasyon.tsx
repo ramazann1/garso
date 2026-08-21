@@ -19,6 +19,7 @@ import { istasyonlariGetir } from "../yazicilar";
 import { hazirGeriAl, hazirYap, kartlariGetir, mutfagiDinle } from "../mutfak";
 import type { Istasyon } from "../yazicilar";
 import type { MutfakKarti } from "../mutfak";
+import { adetGoster } from "../para";
 import type { AdisyonTipi } from "../adisyonlar";
 
 // Yazı boyutu tezgâhın kendi tercihi: aynı işletmede mutfak tabletle, bar
@@ -282,7 +283,7 @@ function Ekran({ istasyon, onCik }: { istasyon: Istasyon; onCik: () => void }) {
                     <div className="istasyon-panel-satir" key={k.id}>
                       <Check />
                       <span>
-                        {k.adet > 1 && `${k.adet} × `}
+                        {k.adet !== 1 && `${adetGoster(k.adet)} × `}
                         {k.ad}
                         {k.porsiyon && ` · ${k.porsiyon}`}
                       </span>
@@ -357,7 +358,7 @@ function Kart({
       <ul>
         {kart.kalemler.map((k) => (
           <li key={k.id}>
-            <span className="istasyon-adet">{k.adet}</span>
+            <span className="istasyon-adet">{adetGoster(k.adet)}</span>
             <div className="istasyon-urun">
               <strong>{k.ad}</strong>
               {(k.porsiyon || k.secimler.length > 0) && (

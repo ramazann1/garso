@@ -12490,12 +12490,46 @@ body {
   padding-bottom: 10px;
 }
 
+/* Kalemler tek kartın içinde alt alta: her satırın kendi çerçevesi olunca
+   ekran kutu yığınına dönüyordu, hesabın nerede başlayıp bittiği okunmuyordu.
+   Satırlar arasında yalnız ince çizgi var. */
 .m-adisyon-kalemler {
   margin-bottom: 12px;
+  border: 1px solid #eee6dc;
+  border-radius: 14px;
+  background: var(--kart);
+  overflow: hidden;
 }
 
+/* Adet solda sabit, ad ortada esner, tutar sağda sabit. Üç sütun yerine iki
+   tanımlıysa adet bütün genişliği kaplıyor, tutar alt satıra düşüyordu. */
 .m-adisyon .m-kalem {
-  grid-template-columns: 1fr auto;
+  grid-template-columns: auto 1fr auto;
+  width: 100%;
+  margin: 0;
+  padding: 12px 14px;
+  border: none;
+  border-radius: 0;
+  border-top: 1px solid #f2ebe1;
+  text-align: left;
+}
+
+.m-adisyon .m-kalem:first-child {
+  border-top: none;
+}
+
+.m-adisyon .m-kalem-tutar {
+  display: flex;
+  flex-direction: column;
+  align-items: flex-end;
+  gap: 1px;
+  white-space: nowrap;
+}
+
+.m-adisyon .m-kalem-tutar s {
+  font-size: 13px;
+  font-weight: 500;
+  color: var(--soluk);
 }
 
 /* Ekranın kendi dökümü kart içinde duruyor; sepet sayfasındakinden farklı
@@ -12532,12 +12566,22 @@ body {
   color: var(--soluk);
 }
 
+/* Üç sütun: tip solda esner, tutar kendi sütununda sağa yaslı, geri alma
+   düğmesi en sağda sabit. Esnek dizilimde tutarlar satırdan satıra kayıyor,
+   rakamlar alt alta tutmuyordu. */
 .m-odeme-satir {
-  display: flex;
+  display: grid;
+  grid-template-columns: 1fr max-content 30px;
   align-items: center;
-  justify-content: space-between;
+  gap: 10px;
   padding: 5px 0;
   font-size: 15px;
+}
+
+.m-odeme-satir > span:nth-child(2),
+.m-odeme-satir > strong {
+  justify-content: flex-end;
+  text-align: right;
 }
 
 .m-odeme-satir span {
@@ -13784,20 +13828,21 @@ body {
 }
 
 /* Alt şeritteki ikincil düğmeler yan yana, ana düğme altlarında tam genişlikte. */
+/* Alt çubukta iki düğme yan yana: küçük "Tutar gir", geri kalan yeri
+   kaplayan mercan ödeme düğmesi. Ana eylem hangisi, bakışta belli. */
 .m-odeme-dugmeler {
-  flex-direction: column;
+  align-items: stretch;
   gap: 9px;
 }
 
-.m-odeme-ikincil {
-  display: flex;
-  gap: 9px;
-}
-
-.m-odeme-ikincil .m-tutar-btn {
-  flex: 1;
-  padding: 13px;
+.m-odeme-dugmeler .m-tutar-btn {
+  flex: 0 0 auto;
+  padding: 16px 15px;
   font-size: 15px;
+}
+
+.m-odeme-dugmeler .m-ode-btn {
+  flex: 1;
 }
 
 /* Ödeme tipi satırı: sade liste. Renk yalnız ikonda, gerisi sakin. */
@@ -14084,4 +14129,141 @@ body {
 
 .cevrimdisi-serit .serit-kapat:hover {
   background: rgba(255, 255, 255, 0.3);
+}
+
+/* Adet rakamı artık yazılabiliyor: yarım porsiyon gibi ara değerler için
+   rakama dokunulup telefonun tuş takımından giriliyor. Kutu düz yazı gibi
+   duruyor, dokunulunca çerçevesi beliriyor. */
+.m-sayac-giris {
+  width: 76px;
+  padding: 4px 0;
+  border: 1px solid transparent;
+  border-radius: 10px;
+  background: none;
+  color: var(--metin);
+  font: inherit;
+  font-size: 22px;
+  font-weight: 600;
+  text-align: center;
+}
+
+.m-sayac-giris:focus {
+  outline: none;
+  border-color: var(--mercan);
+  background: var(--kart);
+}
+
+/* Ürün kartının sol kenarındaki renk şeridi: kategori (ya da ürünün kendi)
+   rengi. Kartın tamamını boyamak yerine ince şerit — ad ve fiyat krem zeminde
+   okunur kalıyor, ızgara alacalı görünmüyor. */
+.m-urun::before {
+  content: "";
+  position: absolute;
+  left: 0;
+  top: 10px;
+  bottom: 10px;
+  width: 4px;
+  border-radius: 0 4px 4px 0;
+  background: var(--urun-renk, transparent);
+}
+
+/* Adisyon bilgileri sayfasının alanları. Etiket üstte, kutu altında: dar
+   ekranda yan yana dizilen etiket-kutu ikilisi hem kutuyu daraltıyor hem
+   etiketi kırpıyordu. */
+.m-bilgi-form {
+  display: flex;
+  flex-direction: column;
+  gap: 16px;
+  padding: 16px;
+}
+
+.m-alan {
+  display: flex;
+  flex-direction: column;
+  gap: 7px;
+}
+
+.m-alan > span {
+  font-size: 14px;
+  font-weight: 600;
+  color: var(--soluk);
+}
+
+.m-alan input,
+.m-alan textarea {
+  padding: 13px 14px;
+  border: 1px solid #eee6dc;
+  border-radius: 13px;
+  background: var(--kart);
+  color: var(--metin);
+  font: inherit;
+  font-size: 16px;
+  resize: none;
+}
+
+.m-alan input:focus,
+.m-alan textarea:focus {
+  outline: none;
+  border-color: var(--mercan);
+}
+
+/* Hesabın kalanı dökümün son satırı: alınan ödemelerin altında, mercan. */
+.m-odeme-satir.kalan {
+  margin-top: 6px;
+  padding-top: 9px;
+  border-top: 1px solid #f2ebe1;
+  color: var(--metin);
+  font-weight: 600;
+}
+
+.m-odeme-satir.kalan strong {
+  font-size: 17px;
+  color: var(--mercan);
+}
+
+/* Ödeme satırındaki geri alma düğmesi: tutarın sağında, sakin. Renk yok —
+   yanlışlıkla dokunulacak bir yer değil, arayan bulsun diye duruyor. */
+.m-odeme-sil {
+  display: grid;
+  place-items: center;
+  width: 30px;
+  height: 30px;
+  border: none;
+  border-radius: 9px;
+  background: var(--zemin);
+  color: var(--soluk);
+  cursor: pointer;
+}
+
+/* Dökümdeki indirim satırı dokunulabilir: yazısı da rakamı da satırın kendi
+   hizasında duruyor, ayrı bir düğme gibi göze batmıyor. */
+/* İndirim satırı dökümün içinde ama dokunulabilir olduğu belli: mercan
+   yazı, ok ve hafif mercan zemin. Düz satır gibi durunca kimse denemiyordu. */
+.m-indirim-satir {
+  width: 100%;
+  margin: 6px 0;
+  padding: 11px 12px;
+  border: 1px dashed rgba(244, 106, 76, 0.45);
+  border-radius: 11px;
+  background: rgba(244, 106, 76, 0.06);
+  font: inherit;
+  font-size: 15px;
+  font-weight: 500;
+  line-height: 1.5;
+  color: var(--mercan);
+  cursor: pointer;
+}
+
+.m-indirim-satir > span:first-child {
+  display: flex;
+  align-items: center;
+  gap: 6px;
+}
+
+.m-indirim-satir > span:last-child {
+  display: flex;
+  align-items: center;
+  gap: 3px;
+  color: var(--mercan);
+  font-weight: 600;
 }

@@ -15,3 +15,8 @@ export const paraYaz = (s: string) => s.replace(/[^0-9.,]/g, "");
 // "₺1.110,00". Toplam ile döküm arasında biçim farkı kalmıyor.
 export const paraGoster = (v: number) =>
   "₺" + v.toLocaleString("tr-TR", { minimumFractionDigits: 2, maximumFractionDigits: 2 });
+
+// Adet buçuklu olabiliyor (yarım porsiyon, tartılan ürün). Tam sayıda ondalık
+// gösterilmiyor: "1" yazması gerekirken "1,0" yazması rakamı ağırlaştırıyor.
+export const adetGoster = (v: number) =>
+  Number.isInteger(v) ? String(v) : v.toLocaleString("tr-TR", { maximumFractionDigits: 3 });

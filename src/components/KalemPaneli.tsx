@@ -6,7 +6,7 @@ import Bilgi from "./Bilgi";
 import { porsiyonFiyat } from "../menu";
 import { tumAdisyonlar, yeniKalemId } from "../adisyonlar";
 import { bolgeleriGetir } from "../masalar";
-import { paraMetin, paraSayi, paraYaz } from "../para";
+import { adetGoster, paraMetin, paraSayi, paraYaz } from "../para";
 import { yetkiVar } from "../oturum";
 import { odenmezleriGetir, type Odenmez } from "../odenmezler";
 import type { Bolge, MenuUrun, SepetKalemi } from "../types";
@@ -177,7 +177,7 @@ export default function KalemPaneli({
                 </button>
               </div>
             ) : (
-              <span className="kp-sabit">{kalem.adet}</span>
+              <span className="kp-sabit">{adetGoster(kalem.adet)}</span>
             )}
           </div>
 

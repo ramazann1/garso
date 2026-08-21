@@ -15,6 +15,7 @@ import type { Istasyon } from "../yazicilar";
 import { hazirGeriAl, hazirYap, kartlariGetir, mutfagiDinle } from "../mutfak";
 import type { MutfakKarti } from "../mutfak";
 import { ayarlar } from "../isletmeAyarlari";
+import { adetGoster } from "../para";
 import type { AdisyonTipi } from "../adisyonlar";
 
 // Hangi tezgâhın ekranı olduğu cihazda duruyor: mutfaktaki telefon her
@@ -257,7 +258,7 @@ function Ekran({
                 <div key={k.id} className="m-hazir-satir">
                   <Check size={17} />
                   <span>
-                    {k.adet > 1 && `${k.adet} × `}
+                    {k.adet !== 1 && `${adetGoster(k.adet)} × `}
                     {k.ad}
                     {k.porsiyon && ` · ${k.porsiyon}`}
                   </span>
@@ -322,7 +323,7 @@ function Kart({
       <div className="m-kart-kalemler">
         {kart.kalemler.map((k) => (
           <button key={k.id} className="m-kart-kalem" onClick={() => onKalem(k.id)}>
-            <span className="m-kart-adet">{k.adet}</span>
+            <span className="m-kart-adet">{adetGoster(k.adet)}</span>
             <span className="m-kart-urun">
               {k.ad}
               {(k.porsiyon || k.secimler.length > 0) && (

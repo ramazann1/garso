@@ -15,7 +15,7 @@ import OnayModal from "../components/OnayModal";
 import { bolgeleriGetir } from "../masalar";
 import { kalemTutari, tumAdisyonlar, yeniKalemId } from "../adisyonlar";
 import { indirimYapabilir, yetkiVar } from "../oturum";
-import { paraGoster } from "../para";
+import { adetGoster, paraGoster, paraSayi, paraYaz } from "../para";
 import type { Bolge, SepetKalemi } from "../types";
 
 // İptal sebebi denetim defterine yazılıyor; seçenekler kasadakiyle aynı.
@@ -79,6 +79,13 @@ export default function KalemIslemleri({
 }) {
   const yeniKalem = !kalem.id || kalem.id < 0;
   const [adet, setAdet] = useState(kalem.adet);
+  // Rakam kutusu yazılırken metin olarak duruyor: "0," yazılırken virgülün
+  // silinmemesi için her tuşta sayıya çevirip geri yazmıyoruz.
+  const [adetYazi, setAdetYazi] = useState(adetGoster(kalem.adet));
+  const adetAyarla = (v: number) => {
+    setAdet(v);
+    setAdetYazi(adetGoster(v));
+  };
   const [notAcik, setNotAcik] = useState(false);
   const [notMetni, setNotMetni] = useState(kalem.not ?? "");
   const [indirimAcik, setIndirimAcik] = useState(false);
@@ -125,16 +132,34 @@ export default function KalemIslemleri({
           <div className="m-kalem-sayac">
             {miktarDegisir ? (
               <div className="m-sayac kucuk">
-                <button onClick={() => setAdet((a) => Math.max(1, a - 1))} aria-label="Azalt">
+                <button onClick={() => adetAyarla(Math.max(1, adet - 1))} aria-label="Azalt">
                   <Minus size={20} />
                 </button>
-                <span>{adet}</span>
-                <button onClick={() => setAdet((a) => a + 1)} aria-label="Artır">
+                {/* Düğmeler birer birer gidiyor; yarım porsiyon gibi ara
+                    değerler rakama dokunup tuş takımından yazılıyor. */}
+                <input
+                  className="m-sayac-giris"
+                  inputMode="decimal"
+                  value={adetYazi}
+                  onFocus={(e) => e.currentTarget.select()}
+                  onChange={(e) => {
+                    const y = paraYaz(e.target.value);
+                    setAdetYazi(y);
+                    const s = paraSayi(y);
+                    if (s && s > 0) setAdet(s);
+                  }}
+                  onBlur={() => {
+                    const s = paraSayi(adetYazi);
+                    adetAyarla(s && s > 0 ? s : kalem.adet);
+                  }}
+                  aria-label="Adet"
+                />
+                <button onClick={() => adetAyarla(adet + 1)} aria-label="Artır">
                   <Plus size={20} />
                 </button>
               </div>
             ) : (
-              <span className="m-sayac-sabit">{adet} adet</span>
+              <span className="m-sayac-sabit">{adetGoster(adet)} adet</span>
             )}
             <strong>{paraGoster(Math.max(0, satirTutari))}</strong>
           </div>
@@ -192,7 +217,7 @@ export default function KalemIslemleri({
           {adet !== kalem.adet && (
             <div className="m-kalem-alt">
               <button className="m-ode-btn" onClick={() => uygula({})}>
-                {adet} adet olarak kaydet
+                {adetGoster(adet)} adet olarak kaydet
               </button>
             </div>
           )}

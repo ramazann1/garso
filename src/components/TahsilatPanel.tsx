@@ -8,6 +8,7 @@ import EksikKapat from "./EksikKapat";
 import KdvDokum from "./KdvDokum";
 import OdemeTipDugmeleri from "./OdemeTipDugmeleri";
 import MusteriSecici from "./MusteriSecici";
+import { adetGoster } from "../para";
 import { kalemTutari } from "../adisyonlar";
 import { indirimYapabilir, yetkiVar } from "../oturum";
 import { odemeTipleriniGetir } from "../odemeTipleri";
@@ -287,7 +288,7 @@ export default function TahsilatPanel({ kalemler, toplam, araToplam, indirim, se
                     onClick={() => kalemSec(k)}
                   >
                     <span>
-                      {k.adet}× {k.ad}
+                      {adetGoster(k.adet)}× {k.ad}
                       {odenmisAdet > 0 && !bitti && !pasif && (
                         <em className="odendi-rozet">{payYazi(odenmisAdet)} ödendi</em>
                       )}

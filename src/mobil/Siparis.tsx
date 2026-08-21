@@ -1,4 +1,5 @@
 import { useEffect, useMemo, useRef, useState } from "react";
+import type { CSSProperties } from "react";
 import { useNavigate, useParams } from "react-router-dom";
 import {
   ArrowLeft,
@@ -18,6 +19,7 @@ import {
   ReceiptText,
   Search,
   Send,
+  StickyNote,
   Users,
   Wallet,
   X,
@@ -53,7 +55,7 @@ import { baglantiHatasi, baglantiVar } from "../baglanti";
 import { kilitKaldir, kilitKur } from "../cikisKilidi";
 import { ayarlar } from "../isletmeAyarlari";
 import { yetkiVar } from "../oturum";
-import { paraGoster } from "../para";
+import { adetGoster, paraGoster } from "../para";
 import { yaziRengi } from "../renk";
 import type {
   Bolge,
@@ -110,6 +112,10 @@ export default function MobilSiparis() {
   const [indirim, setIndirim] = useState(0);
   const [tahsilatlar, setTahsilatlar] = useState<Tahsilat[]>([]);
   const [kisiSayisi, setKisiSayisi] = useState<number | undefined>();
+  // Adisyonun kendi bilgileri: adı, notu ve müşterisi. Ürünlerden bağımsız,
+  // hesabın kime ait olduğunu anlatıyor; hepsi isteğe bağlı.
+  const [bilgi, setBilgi] = useState({ ad: "", not: "", musteriAd: "", musteriTelefon: "" });
+  const [bilgiAcik, setBilgiAcik] = useState(false);
   // Kuver ve garsoniye bu hesapta elle eklenmiş ya da kaldırılmış olabilir.
   // Okunup geri yazılmazsa her kayıt kararı siliyor: kasiyerin kaldırdığı kuver
   // garson mobilden ürün ekleyince geri geliyordu.
@@ -154,7 +160,10 @@ export default function MobilSiparis() {
 
   // Sunucuya yazılmamış kalem var mı — Gönder düğmesi ve çıkış uyarısı buna bakıyor.
   const baslangicImza = useRef("");
-  const kirli = JSON.stringify(sepet) !== baslangicImza.current;
+  const bilgiImza = useRef("");
+  const kirli =
+    JSON.stringify(sepet) !== baslangicImza.current ||
+    JSON.stringify(bilgi) !== bilgiImza.current;
 
   useEffect(() => {
     kilitKur(() => kirli);
@@ -193,6 +202,14 @@ export default function MobilSiparis() {
       setIndirim(veri.indirim);
       setTahsilatlar(veri.tahsilatlar);
       setKisiSayisi(veri.kisiSayisi);
+      const okunan = {
+        ad: veri.ad ?? "",
+        not: veri.not ?? "",
+        musteriAd: veri.musteri?.ad ?? "",
+        musteriTelefon: veri.musteri?.telefon ?? "",
+      };
+      setBilgi(okunan);
+      bilgiImza.current = JSON.stringify(okunan);
       setServis({ kuverUygula: veri.kuverUygula, garsoniyeUygula: veri.garsoniyeUygula });
       baslangicImza.current = JSON.stringify(veri.sepet);
       if (ayarlar().kisiSayisiZorunlu && !veri.kisiSayisi) setKisiSorusu(true);
@@ -267,26 +284,18 @@ export default function MobilSiparis() {
     );
   };
 
-  // Uzun basış porsiyon ve seçenek penceresini açıyor; adet için ayrı pencere
-  // yok, kısa dokunuş zaten birer birer ekliyor.
-  const basisZamani = useRef<ReturnType<typeof setTimeout> | undefined>(undefined);
-  const uzunBasildi = useRef(false);
-  const basisBasla = (u: MenuUrun) => {
-    uzunBasildi.current = false;
-    basisZamani.current = setTimeout(() => {
-      uzunBasildi.current = true;
-      setSecimUrunu(u);
-    }, 450);
-  };
-  const basisBitir = (u: MenuUrun) => {
-    clearTimeout(basisZamani.current);
-    if (!uzunBasildi.current) urunEkle(u);
-  };
-
   // Masa adı yalnız sayıysa başlıkta tek başına duruyordu — "5" yazan bir
   // ekranda garson nerede olduğunu okumuyor. Adı zaten yazılı olan masalar
   // ("Bahçe 3", "Teras A") olduğu gibi kalıyor.
   const masaBasligi = /^\d+$/.test(masaAdi.trim()) ? `Masa ${masaAdi.trim()}` : masaAdi;
+
+  // Kartın sol kenarındaki şerit: ürünün kendi rengi varsa o, yoksa bağlı
+  // olduğu kategorininki. İkisi de yoksa şerit çıkmıyor — boş renk, rastgele
+  // renk atamaktan iyi.
+  const urunRengi = (u: MenuUrun) =>
+    u.renk ??
+    kategoriler.find((k) => u.kategoriIdler.includes(k.id) && k.renk)?.renk ??
+    "transparent";
 
   // Şeritte ana kategoriler durur. Üstü satışta gizliyse alt kategori şeride
   // ana kategori gibi girer — kasadaki kural aynen geçerli.
@@ -325,7 +334,17 @@ export default function MobilSiparis() {
     return m;
   }, [sepet]);
 
-  const adisyon: AdisyonVerisi = { sepet, indirim, tahsilatlar, kisiSayisi, tip: "masa", ...servis };
+  const adisyon: AdisyonVerisi = {
+    sepet,
+    indirim,
+    tahsilatlar,
+    kisiSayisi,
+    tip: "masa",
+    ad: bilgi.ad,
+    not: bilgi.not,
+    musteri: { ad: bilgi.musteriAd, telefon: bilgi.musteriTelefon },
+    ...servis,
+  };
   const ozet = adisyonOzeti(adisyon);
   // Kuver ve garsoniye ürün değil, hesabın kendi bedeli; toplamda görünüp
   // dökümde görünmezse garson farkı nereden çıktı diye kalıyor.
@@ -516,10 +535,8 @@ export default function MobilSiparis() {
             <button
               key={u.id}
               className="m-urun"
-              onPointerDown={() => basisBasla(u)}
-              onPointerUp={() => basisBitir(u)}
-              onPointerLeave={() => clearTimeout(basisZamani.current)}
-              onContextMenu={(e) => e.preventDefault()}
+              style={{ "--urun-renk": urunRengi(u) } as CSSProperties}
+              onClick={() => urunEkle(u)}
             >
               <span className="m-urun-ad">{u.ad}</span>
               <span className="m-urun-fiyat">{paraGoster(p ? porsiyonFiyat(p, "masa") : 0)}</span>
@@ -543,7 +560,7 @@ export default function MobilSiparis() {
           <div className="m-serit-bekleyen">
             {bekleyenler.map((k) => (
               <span key={k.id} className="m-bekleyen-cip">
-                <b>{k.adet}×</b> {k.ad}
+                <b>{adetGoster(k.adet)}×</b> {k.ad}
               </span>
             ))}
           </div>
@@ -558,10 +575,22 @@ export default function MobilSiparis() {
             <span className="m-serit-tutar">{paraGoster(ozet.toplam)}</span>
             <ChevronUp size={16} />
           </button>
-          <button className="m-gonder" disabled={!kirli || gonderiliyor} onClick={gonder}>
-            {baglantiVar() ? <Send size={18} /> : <CloudOff size={18} />}
-            Gönder
-          </button>
+          {/* Gönderilecek bir şey yokken düğme sönük durup yer kaplıyordu.
+              O hâlde garsonun sıradaki işi hesap: düğme adisyon ekranına
+              geçiyor, yeni ürün girilince tekrar Gönder oluyor. */}
+          {kirli ? (
+            <button className="m-gonder" disabled={gonderiliyor} onClick={gonder}>
+              {baglantiVar() ? <Send size={18} /> : <CloudOff size={18} />}
+              Gönder
+            </button>
+          ) : (
+            sepet.length > 0 && (
+              <button className="m-gonder" onClick={() => git(`/mobil/adisyon/${masaId}`)}>
+                <Wallet size={18} />
+                {yetkiVar("odeme.al") ? "Öde" : "Hesap"}
+              </button>
+            )
+          )}
         </div>
       </div>
 
@@ -600,7 +629,7 @@ export default function MobilSiparis() {
                         }
                         onClick={() => setKalemIslem(k)}
                       >
-                        <span className="m-kalem-adet">{k.adet}</span>
+                        <span className="m-kalem-adet">{adetGoster(k.adet)}</span>
                         <span className="m-kalem-ad">
                           {k.ad}
                           {!!(k.porsiyon || k.secimler?.length || k.not) && (
@@ -737,6 +766,19 @@ export default function MobilSiparis() {
                   className="m-islem m-islem-not"
                   onClick={() => {
                     setIslemlerAcik(false);
+                    setBilgiAcik(true);
+                  }}
+                >
+                  <span className="m-islem-ikon">
+                    <StickyNote size={19} />
+                  </span>
+                  Adisyon bilgileri
+                  {bilgi.ad || bilgi.musteriAd ? <em>{bilgi.ad || bilgi.musteriAd}</em> : null}
+                </button>
+                <button
+                  className="m-islem m-islem-not"
+                  onClick={() => {
+                    setIslemlerAcik(false);
                     setSepetAcik(true);
                   }}
                 >
@@ -812,6 +854,20 @@ export default function MobilSiparis() {
             </>
           )}
         </AltSayfa>
+      )}
+
+      {/* Adisyonun kendi bilgileri. Kaydedilen değer ekranda duruyor, diske
+          Gönder ile gidiyor — bu ekranda sepet de öyle çalışıyor. */}
+      {bilgiAcik && (
+        <AdisyonBilgiSayfasi
+          bilgi={bilgi}
+          masaBasligi={masaBasligi}
+          onKapat={() => setBilgiAcik(false)}
+          onKaydet={(yeni) => {
+            setBilgi(yeni);
+            setBilgiAcik(false);
+          }}
+        />
       )}
 
       {hedefSecim && (
@@ -1045,6 +1101,90 @@ function MasaHedefi({
               ))}
             </div>
           )}
+        </div>
+      </div>
+    </div>
+  );
+}
+
+type AdisyonBilgisi = { ad: string; not: string; musteriAd: string; musteriTelefon: string };
+
+/**
+ * Adisyonun kendi bilgileri — kasadaki AdisyonBilgi panelinin mobil karşılığı.
+ * Ürünlerden bağımsız: hesabın adı, mutfağa değil hesaba yazılan notu ve
+ * müşterisi. Hepsi isteğe bağlı, sade satışta hiçbiri doldurulmuyor.
+ */
+function AdisyonBilgiSayfasi({
+  bilgi,
+  masaBasligi,
+  onKapat,
+  onKaydet,
+}: {
+  bilgi: AdisyonBilgisi;
+  masaBasligi: string;
+  onKapat: () => void;
+  onKaydet: (bilgi: AdisyonBilgisi) => void;
+}) {
+  const [ad, setAd] = useState(bilgi.ad);
+  const [not, setNot] = useState(bilgi.not);
+  const [musteriAd, setMusteriAd] = useState(bilgi.musteriAd);
+  const [musteriTelefon, setMusteriTelefon] = useState(bilgi.musteriTelefon);
+
+  return (
+    <div className="m-perde" onClick={onKapat}>
+      <div className="m-sayfa" onClick={(e) => e.stopPropagation()}>
+        <header className="m-sayfa-ust">
+          <h2>
+            <StickyNote size={18} /> {masaBasligi}
+          </h2>
+          <button className="m-ikon-dugme" onClick={onKapat} aria-label="Kapat">
+            <X size={20} />
+          </button>
+        </header>
+
+        <div className="m-sayfa-icerik m-bilgi-form">
+          <label className="m-alan">
+            <span>Adisyon adı</span>
+            <input
+              value={ad}
+              onChange={(e) => setAd(e.target.value)}
+              placeholder="Örn. Doğum günü"
+            />
+          </label>
+
+          <label className="m-alan">
+            <span>Hesap notu</span>
+            <textarea
+              rows={3}
+              value={not}
+              onChange={(e) => setNot(e.target.value)}
+              placeholder="Fişe ve rapora yazılır"
+            />
+          </label>
+
+          <label className="m-alan">
+            <span>Müşteri adı</span>
+            <input value={musteriAd} onChange={(e) => setMusteriAd(e.target.value)} />
+          </label>
+
+          <label className="m-alan">
+            <span>Telefon</span>
+            <input
+              inputMode="tel"
+              value={musteriTelefon}
+              onChange={(e) => setMusteriTelefon(e.target.value)}
+            />
+          </label>
+        </div>
+
+        <div className="m-sayfa-alt">
+          <button
+            className="m-ode-btn"
+            onClick={() => onKaydet({ ad, not, musteriAd, musteriTelefon })}
+          >
+            <Check size={18} />
+            Tamam
+          </button>
         </div>
       </div>
     </div>

@@ -3,13 +3,13 @@ import { useNavigate, useParams } from "react-router-dom";
 import {
   ArrowLeft,
   Calculator,
+  ChevronRight,
   CircleCheckBig,
   CloudOff,
   Delete,
   HandCoins,
   Lock,
   Percent,
-  Save,
   Wallet,
   X,
 } from "lucide-react";
@@ -32,14 +32,24 @@ import {
 } from "../adisyonlar";
 import type { AdisyonVerisi } from "../adisyonlar";
 import { servisSatirlari } from "../servis";
+import { kdvDokumu } from "../kdv";
+import { ayarlar } from "../isletmeAyarlari";
 import { odemeTipleriniGetir } from "../odemeTipleri";
 import type { OdemeTipi } from "../odemeTipleri";
 import { useCanli } from "../canli";
 import { useMasayiTut } from "../mesguliyet";
 import { baglantiVar, useBaglanti } from "../baglanti";
 import { indirimYapabilir, yetkiVar } from "../oturum";
-import { paraGoster } from "../para";
+import { adetGoster, paraGoster } from "../para";
 import type { SepetKalemi, Tahsilat } from "../types";
+
+// Tahsilatın geri alınma sebepleri; kasadaki listeyle aynı.
+const ODEME_SILME_SEBEPLERI = [
+  "Yanlış tutar girildi",
+  "Yanlış ödeme tipi",
+  "Müşteri başka türlü ödedi",
+  "Ödeme iptal edildi",
+];
 
 /**
  * Mobil adisyon ekranı — hesabın kendi sayfası.
@@ -75,6 +85,8 @@ export default function MobilAdisyon() {
   const [tutarAcik, setTutarAcik] = useState(false);
   const [kalemIslem, setKalemIslem] = useState<SepetKalemi | null>(null);
   const [indirimAcik, setIndirimAcik] = useState(false);
+  // Kaydedilmiş tahsilatın geri alınması sebep soruyor; sıradaki satırın yeri.
+  const [silmeSorusu, setSilmeSorusu] = useState<number | null>(null);
 
   // Hesap ekranı da masayı üstüne alıyor. Eskiden yalnız sipariş ekranı
   // alıyordu; tahsilat alan kişi masayı hiç meşgul göstermiyordu, iki kişi
@@ -120,6 +132,12 @@ export default function MobilAdisyon() {
   const servisler = servisSatirlari(servisGirdisi(veri, Math.max(0, ozet.araToplam - veri.indirim)));
   const kurus = (t: number) => Math.round(t * 100) / 100;
   const kalan = kurus(ozet.kalan);
+
+  const kdvDahil = ayarlar().kdvDahil;
+  const kdvToplam = kdvDokumu(
+    veri.sepet.filter((k) => (k.durum ?? "normal") === "normal"),
+    veri.indirim
+  ).reduce((t, g) => t + g.kdv, 0);
 
   // İkram ve iptal edilen kalemler listede durur ama hesaba girmez.
   const odenebilir = (k: SepetKalemi) => (k.durum ?? "normal") === "normal";
@@ -175,6 +193,21 @@ export default function MobilAdisyon() {
     if (oldu && kapat) git("/mobil/masalar");
   };
 
+  /**
+   * Alınmış tahsilatı hesaptan çıkarır. Kaydedilmiş satırın kimliği denetim
+   * defterine sebebiyle birlikte gidiyor — para hareketi sessizce silinmiyor.
+   */
+  const tahsilatiCikar = async (i: number, sebep?: string) => {
+    const silinen = veri.tahsilatlar[i];
+    const kalanlar = veri.tahsilatlar.filter((_, j) => j !== i);
+    await yaz(
+      kalanlar,
+      false,
+      undefined,
+      silinen.id ? { silinenTahsilatlar: [{ id: silinen.id, sebep }] } : undefined
+    );
+  };
+
   const odemeAl = (tip: string) => {
     const tutar = girilen ? girilenTutar : kalan;
     if (!tutar || tutar <= 0) return;
@@ -201,15 +234,7 @@ export default function MobilAdisyon() {
           <ArrowLeft size={20} />
         </button>
         <h1>{masaBasligi}</h1>
-        {indirimYapabilir() && veri.sepet.length > 0 && (
-          <button
-            className="m-ikon-dugme"
-            onClick={() => setIndirimAcik(true)}
-            aria-label="Hesaba indirim"
-          >
-            <Percent size={19} />
-          </button>
-        )}
+
       </header>
 
       <div className="m-adisyon-icerik">
@@ -227,7 +252,7 @@ export default function MobilAdisyon() {
                   className={odenebilir(k) ? "m-kalem" : `m-kalem ${k.durum}`}
                   onClick={() => setKalemIslem(k)}
                 >
-                  <span className="m-kalem-adet">{k.adet}</span>
+                  <span className="m-kalem-adet">{adetGoster(k.adet)}</span>
                   <span className="m-kalem-ad">
                     {k.ad}
                     {!!(k.porsiyon || k.secimler?.length || k.not) && (
@@ -257,11 +282,26 @@ export default function MobilAdisyon() {
                 <span>Ara toplam</span>
                 <span>{paraGoster(ozet.araToplam)}</span>
               </div>
-              {veri.indirim > 0 && (
-                <div className="m-dokum-satir">
-                  <span>İndirim</span>
-                  <span>-{paraGoster(veri.indirim)}</span>
-                </div>
+              {/* İndirim dökümün kendi satırı: başlıktaki yalnız "%" yazan
+                  kutu ne yaptığını söylemiyordu, indirimin yeri de burası. */}
+              {indirimYapabilir() && veri.sepet.length > 0 ? (
+                <button className="m-dokum-satir m-indirim-satir" onClick={() => setIndirimAcik(true)}>
+                  <span>
+                    <Percent size={15} />
+                    İndirim
+                  </span>
+                  <span>
+                    {veri.indirim > 0 ? `-${paraGoster(veri.indirim)}` : "İndirim uygula"}
+                    <ChevronRight size={16} />
+                  </span>
+                </button>
+              ) : (
+                veri.indirim > 0 && (
+                  <div className="m-dokum-satir">
+                    <span>İndirim</span>
+                    <span>-{paraGoster(veri.indirim)}</span>
+                  </div>
+                )
               )}
               {servisler.map((s) => (
                 <div key={s.ad} className="m-dokum-satir">
@@ -269,10 +309,13 @@ export default function MobilAdisyon() {
                   <span>{paraGoster(s.tutar)}</span>
                 </div>
               ))}
-              {ozet.kdv > 0 && (
+              {/* KDV dahil çalışan işletmede vergi toplama eklenmiyor ama hesabın
+                  içinde duruyor; "ozet.kdv > 0" şartı o modda satırı büsbütün
+                  gizliyordu. Kasadaki döküm de vergiyi her iki modda gösteriyor. */}
+              {kdvToplam > 0 && (
                 <div className="m-dokum-satir">
-                  <span>KDV</span>
-                  <span>{paraGoster(ozet.kdv)}</span>
+                  <span>{kdvDahil ? "KDV (fiyata dahil)" : "KDV"}</span>
+                  <span>{paraGoster(kdvToplam)}</span>
                 </div>
               )}
               <div className="m-dokum-satir toplam">
@@ -294,8 +337,25 @@ export default function MobilAdisyon() {
                       {paraGoster(o.tutar)}
                       {o.bahsis ? <em> +{paraGoster(o.bahsis)} bahşiş</em> : null}
                     </span>
+                    {/* Alınmış parayı geri almak iade yetkisi istiyor; yanlış
+                        tipe ya da tutara basmak masada sık oluyor. */}
+                    {yetkiVar("odeme.iade") && (
+                      <button
+                        className="m-odeme-sil"
+                        aria-label="Ödemeyi geri al"
+                        onClick={() => setSilmeSorusu(i)}
+                      >
+                        <X size={16} />
+                      </button>
+                    )}
                   </div>
                 ))}
+                {/* Kalan yalnız ödeme düğmesinin üstünde yazıyordu; hesabın ne
+                    kadarı durduğu dökümün kendisinde de görünmeli. */}
+                <div className="m-odeme-satir kalan">
+                  <span>Kalan</span>
+                  <strong>{paraGoster(Math.max(0, kalan))}</strong>
+                </div>
               </div>
             )}
           </>
@@ -328,23 +388,18 @@ export default function MobilAdisyon() {
               Adisyonu kapat
             </button>
           ) : (
+            // Tek ana eylem hesabın tamamını almak; parçalı ödeme yanındaki
+            // küçük düğmeden tutar girerek yapılıyor. "Kaydet" kalktı —
+            // ödemeler zaten anında yazılıyor, geri oku aynı işi görüyor.
             <div className="m-odeme-dugmeler">
-              <div className="m-odeme-ikincil">
-                <button className="m-tutar-btn" disabled={calisiyor} onClick={() => setTutarAcik(true)}>
-                  <Calculator size={18} />
-                  Tutar gir
-                </button>
-                {/* Ödemeler zaten anında kaydediliyor; bu düğme hesabı yarım
-                    bırakıp başka masaya geçen garsona net bir çıkış veriyor. */}
-                <button
-                  className="m-tutar-btn"
-                  disabled={calisiyor}
-                  onClick={() => git("/mobil/masalar")}
-                >
-                  <Save size={18} />
-                  Kaydet
-                </button>
-              </div>
+              <button
+                className="m-tutar-btn"
+                disabled={calisiyor}
+                onClick={() => setTutarAcik(true)}
+              >
+                <Calculator size={18} />
+                Tutar gir
+              </button>
               <button
                 className="m-ode-btn"
                 disabled={calisiyor}
@@ -463,6 +518,25 @@ export default function MobilAdisyon() {
           pasif={calisiyor}
           onSec={odemeAl}
           onKapat={() => setTipSecim(false)}
+        />
+      )}
+
+      {silmeSorusu !== null && veri.tahsilatlar[silmeSorusu] && (
+        <OnayModal
+          baslik="Ödemeyi geri al"
+          ikon={<X size={20} />}
+          mesaj={`${veri.tahsilatlar[silmeSorusu].tip} ${paraGoster(
+            veri.tahsilatlar[silmeSorusu].tutar
+          )} tahsilatı hesaptan çıkarılacak. Sebebi nedir?`}
+          tehlikeli
+          sebepler={ODEME_SILME_SEBEPLERI}
+          onayMetni="Evet, geri al"
+          onOnay={(sebep) => {
+            const sira = silmeSorusu;
+            setSilmeSorusu(null);
+            tahsilatiCikar(sira, sebep);
+          }}
+          onKapat={() => setSilmeSorusu(null)}
         />
       )}
 
