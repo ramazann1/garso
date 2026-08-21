@@ -3,19 +3,14 @@
 
 ## 0. SIRADAKİ İŞ (21 Ağu 2026'da güncellendi)
 
-> **Sıradaki iş: mobil sipariş ekranı turunun kalanı — üç madde.**
+> **Sıradaki iş: mobil sipariş ekranı turunun kalanı.**
 >
-> 1. **Şerit önizlemesi satır atlasın.** Gönderilmeyi bekleyen kalem çipleri şu
->    an tek satırda yana kayıyor; sığmayınca alt satıra geçmeli. Çipler beyaz
->    zemin siyah yazı olacak — mercan çip göz yoruyor.
-> 2. **Ürün notu penceresi** (`KalemIslemleri.tsx`): yazı alanı dar, pencere şık
->    değil. Genişletilip düzenlenecek.
-> 3. **Genel mercan azaltma.** Vurgu rengi arayüzde fazla yerde kullanılıyor;
->    nerede gerçekten gerektiği gözden geçirilecek.
+> 1. **Uzun basma gizli bir hareket** — porsiyonlu üründe normal dokunuş ana
+>    porsiyonu sessizce ekliyor, garson diğer porsiyonların varlığını bilmiyor.
+> 2. **Ürün kartında renk yok** — kategori rengi karta yansımıyor.
+> 3. **Adisyon notu ve müşteri seçme** hiç yok (Adisyo'nun ⋮ menüsünde var).
 >
-> Sonra sipariş ekranında kalanlar: **uzun basma gizli bir hareket** (porsiyonlu
-> üründe normal dokunuş ana porsiyonu sessizce ekliyor), **ürün kartında renk
-> yok**, **adisyon notu ve müşteri seçme** hiç yok (Adisyo'nun ⋮ menüsünde var).
+> **Mercan kullanımı 21 Ağu'da yeterli bulundu, ayrı bir iş açılmadı.**
 >
 > Sonra: **İstasyon ve Satış sekmeleri** yeni tasarım diline geçmedi.
 >
@@ -2442,7 +2437,22 @@ görünmüyordu — **iki kişi aynı hesaptan habersiz ödeme alabiliyordu.**
 dönüyor. Ders: masa üzerinde iş yapan **her** ekran işareti tutmalı; kural ekran
 başına değil, masaya dokunan iş başına.
 
+### Şerit çipleri ve ürün notu
+
+Şeritteki bekleyen kalem çipleri **mercandan beyaza** döndü (siyah yazı, ince
+çerçeve) ve **yana kaymak yerine alt satıra geçiyor**. Mercan çip kalabalık
+turda göz yoruyordu. Şeridin boyu artık değişken olduğu için ürün ızgarasının
+alt boşluğu sabit sayıdan değil, şeridin ölçülen yüksekliğinden geliyor
+(`--serit-boy`).
+
+**Ürün notu penceresi** genişledi: dört satırlık alan, ikonlu başlık, 200
+karakter sayacı. Tek satırlık kutuda uzun tarif yazılırken başı kayboluyordu.
+
+**Mercan kullanımı gözden geçirildi ve yeterli bulundu** — Gönder düğmesi,
+seçili alt kategori, "Yeni" tur rozeti, pencere başlıkları. Ayrı bir azaltma
+işi açılmadı.
+
 ### Sonraki seansın ilk işi
 
-**Sipariş ekranı turunun kalan üç maddesi** (bölüm 0): şerit çiplerinin satır
-atlaması ve beyaza dönmesi, ürün notu penceresi, genel mercan azaltma.
+**Sipariş ekranı turunun kalanı** (bölüm 0): uzun basmanın gizli kalması, ürün
+kartında kategori rengi, adisyon notu ve müşteri seçme.
