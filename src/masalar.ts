@@ -1,5 +1,6 @@
 import { supabase } from "./supabase";
 import { hataysaFirlat, onbellekliGetir } from "./onbellek";
+import { ayarlar } from "./isletmeAyarlari";
 import type { Bolge, Masa } from "./types";
 
 const MASA_ALANLARI =
@@ -149,4 +150,18 @@ export async function acikAdisyonluMasalar(masaIdler: number[]): Promise<Set<num
     .eq("durum", "acik")
     .in("masa_id", masaIdler);
   return new Set(((data as any[]) ?? []).map((a) => a.masa_id));
+}
+
+/**
+ * Masa üzerinden ne kadardır yeni sipariş geçmediği. Masa kartı bu süreyi
+ * işletmenin belirlediği eşikle karşılaştırıp "durgun" rengine geçiyor.
+ * Hiç sipariş girilmemiş masada ölçü adisyonun açılışı: masa açıldı ama
+ * ürün gelmediyse de bekleyen bir masa var demektir.
+ */
+export function durgunMu(ozet?: { sonSiparis?: string; acilis?: string }) {
+  const esik = ayarlar().masaDurgunlukDk;
+  if (!esik || !ozet) return false;
+  const an = ozet.sonSiparis ?? ozet.acilis;
+  if (!an) return false;
+  return (Date.now() - new Date(an).getTime()) / 60000 >= esik;
 }

@@ -30,6 +30,8 @@ export type IsletmeAyarlari = {
   paraUstu: boolean;
   /** İstasyon ekranında kart bu kadar dakika beklerse geciken sayılır; 0 = kapalı. */
   mutfakGecikmeDk: number;
+  /** Masa bu kadar dakika yeni sipariş vermezse kartı renk değiştirir; 0 = kapalı. */
+  masaDurgunlukDk: number;
   /** Kullanılmayan sipariş türü arayüzde hiç durmasın. */
   gelalAcik: boolean;
   paketAcik: boolean;
@@ -56,6 +58,7 @@ const VARSAYILAN: IsletmeAyarlari = {
   kilitSuresi: 0,
   paraUstu: true,
   mutfakGecikmeDk: 15,
+  masaDurgunlukDk: 45,
   gelalAcik: true,
   paketAcik: true,
   kasaTakibi: false,
@@ -108,6 +111,7 @@ async function ayarlariOku(): Promise<IsletmeAyarlari> {
     kilitSuresi: s?.kilit_suresi ?? VARSAYILAN.kilitSuresi,
     paraUstu: s?.para_ustu ?? VARSAYILAN.paraUstu,
     mutfakGecikmeDk: s?.mutfak_gecikme_dk ?? VARSAYILAN.mutfakGecikmeDk,
+    masaDurgunlukDk: s?.masa_durgunluk_dk ?? VARSAYILAN.masaDurgunlukDk,
     gelalAcik: s?.gelal_acik ?? VARSAYILAN.gelalAcik,
     paketAcik: s?.paket_acik ?? VARSAYILAN.paketAcik,
     kasaTakibi: s?.kasa_takibi ?? VARSAYILAN.kasaTakibi,
@@ -138,6 +142,7 @@ export async function ayarlariKaydet(degisen: Partial<IsletmeAyarlari>) {
       kilit_suresi: yeni.kilitSuresi,
       para_ustu: yeni.paraUstu,
       mutfak_gecikme_dk: yeni.mutfakGecikmeDk,
+      masa_durgunluk_dk: yeni.masaDurgunlukDk,
       gelal_acik: yeni.gelalAcik,
       paket_acik: yeni.paketAcik,
       kasa_takibi: yeni.kasaTakibi,

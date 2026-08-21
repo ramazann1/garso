@@ -38,16 +38,19 @@ function durumYaz(yeni: boolean) {
 }
 
 /**
- * Sunucuya ulaşılıyor mu — REST kapısına en ucuz istek. Cevabın içeriği
- * ilgilendirmiyor, hata kodu bile olsa cevap dönmesi yeterli: sunucu
- * konuşuyor demektir.
+ * Sunucuya ulaşılıyor mu — en ucuz istek. Cevabın içeriği ilgilendirmiyor,
+ * cevap dönmesi yeterli: sunucu konuşuyor demektir.
+ *
+ * Adres olarak sağlık kapısı seçildi. REST kapısı kimlik bileti istiyor,
+ * yoklamada bilet göndermediğimiz için her otuz saniyede bir 401 dönüyordu.
+ * Yoklama açısından fark yoktu ama tarayıcı her 401'i konsola kırmızı hata
+ * olarak basıyor ve gerçek hatalar bunların arasında kayboluyordu.
  */
 async function yokla() {
   if (!navigator.onLine) return false;
   try {
     const durdur = AbortSignal.timeout(BEKLEME_SINIRI);
-    await fetch(`${ADRES}/rest/v1/`, {
-      method: "HEAD",
+    await fetch(`${ADRES}/auth/v1/health`, {
       headers: { apikey: ANAHTAR },
       cache: "no-store",
       signal: durdur,

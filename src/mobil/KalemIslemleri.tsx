@@ -141,46 +141,46 @@ export default function KalemIslemleri({
 
           <div className="m-islemler">
             {!normal ? (
-              <button className="m-islem" onClick={() => uygula({ durum: "normal" })}>
-                <RotateCcw size={19} />
+              <button className="m-islem m-islem-ode" onClick={() => uygula({ durum: "normal" })}>
+                <span className="m-islem-ikon"><RotateCcw size={19} /></span>
                 {kalem.durum === "ikram" ? "İkramı geri al" : "İptali geri al"}
               </button>
             ) : (
               <>
-                <button className="m-islem" onClick={() => setNotAcik(true)}>
-                  <StickyNote size={19} />
+                <button className="m-islem m-islem-not" onClick={() => setNotAcik(true)}>
+                  <span className="m-islem-ikon"><StickyNote size={19} /></span>
                   {kalem.not ? "Notu değiştir" : "Not ekle"}
                   {kalem.not ? <em>{kalem.not}</em> : null}
                 </button>
 
                 {indirimYapabilir() && (
-                  <button className="m-islem" onClick={() => setIndirimAcik(true)}>
-                    <Percent size={19} />
+                  <button className="m-islem m-islem-hizli" onClick={() => setIndirimAcik(true)}>
+                    <span className="m-islem-ikon"><Percent size={19} /></span>
                     Ürüne indirim
                     {kalem.indirim ? <em>{paraGoster(kalem.indirim)}</em> : null}
                   </button>
                 )}
 
                 {yetkiVar("siparis.ikram") && (
-                  <button className="m-islem" onClick={() => uygula({ durum: "ikram" })}>
-                    <Gift size={19} />
+                  <button className="m-islem m-islem-ikram" onClick={() => uygula({ durum: "ikram" })}>
+                    <span className="m-islem-ikon"><Gift size={19} /></span>
                     İkram et
                   </button>
                 )}
 
                 {tasinabilir && !yeniKalem && yetkiVar("siparis.kalem_tasi") && (
-                  <button className="m-islem" onClick={() => setTasimaAcik(true)}>
-                    <Send size={19} />
+                  <button className="m-islem m-islem-tasi" onClick={() => setTasimaAcik(true)}>
+                    <span className="m-islem-ikon"><Send size={19} /></span>
                     Başka masaya taşı
                   </button>
                 )}
 
                 {cikarabilir && (
                   <button
-                    className="m-islem tehlikeli"
+                    className="m-islem m-islem-iptal"
                     onClick={() => (yeniKalem ? uygula({ adet: 0 }) : setIptalSorusu(true))}
                   >
-                    <Ban size={19} />
+                    <span className="m-islem-ikon"><Ban size={19} /></span>
                     {yeniKalem ? "Kalemi çıkar" : "Kalemi iptal et"}
                   </button>
                 )}

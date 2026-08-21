@@ -1,26 +1,16 @@
 ﻿# GARSO — Teknik Tasarım: Veri Modeli & Ekran Haritası
 *Restoran ve cafe'ler için bulut tabanlı satış ve işletme yönetim sistemi.*
 
-## 0. SIRADAKİ İŞ (20 Ağu 2026'da güncellendi)
+## 0. SIRADAKİ İŞ (31 Ağu 2026'da güncellendi)
 
-> **Seansın ilk işi (kısa):** **dal adını düzeltmek.** Yerel dal `master`,
-> GitHub'daki `main`; her push'ta uyarı çıkıyor ve elle `git push origin
-> HEAD:main` demek gerekiyor. Yerel dal `main` olarak yeniden adlandırılıp
-> uzakla eşlenecek, sonra push tek komuta dönecek. Beş dakikalık iş, asıl işten
-> önce halledilecek.
+> **Sıradaki iş: mobil arayüz turunun devamı — sipariş ekranı.** Tur 31
+> Ağustos'ta masa kartıyla başladı ve orada kaldı; sıradaki ekran sipariş.
+> Bakılacaklar: **ürün kartı ve sepet şeridi** son hâlini almadı, **uzun basma
+> gizli bir hareket** (porsiyonlu üründe normal dokunuş ana porsiyonu sessizce
+> ekliyor), **şeritte yalnız son kalem görünüyor**, ürün kartında renk yok.
+> Ayrıca **adisyon notu ve müşteri seçme** hiç yok (Adisyo'nun ⋮ menüsünde var).
 >
-> **Sonraki seansın asıl işi:** **mobil arayüz tasarımı — ikinci tur.**
-> Ramazan mobili beğenmedi ve 20 Ağustos seansında baştan yazıldı; yine de
-> "daha fazla kafa patlatmak" istediğini söyledi. Seansa mevcut ekranları
-> birlikte gözden geçirerek başla: masa kartı, sipariş ekranı (kategori/ürün
-> ızgarası, sepet şeridi), adisyon + ödeme ekranı, tahsilat sayfası.
-> Adisyo Garson kayıtlarından çıkan notlar aşağıda; kopyalamıyoruz, hangi
-> kararın neden alındığına bakıyoruz.
->
-> Bekleyen küçük işler: **İstasyon ve Satış sekmeleri yeni tasarım diline
-> geçmedi** (masa/sipariş/ödeme geçti), **ürün kartı ve sepet şeridi** son
-> hâllerini almadı, **sipariş ekranında adisyon notu ve müşteri seçme** yok
-> (Adisyo'nun ⋮ menüsünde var).
+> Sonra: **İstasyon ve Satış sekmeleri** yeni tasarım diline geçmedi.
 >
 > **Paket / Gel Al mobile alınmayacak (19 Ağu 2026 kararı).** Masasız sipariş
 > telefonla ayakta girilen bir iş değil: müşteri tezgâhta ya da telefonda,
@@ -50,6 +40,27 @@
 > Küçük iş: **Analiz'in diğer tablolarına da kendi kutusunda kaydırma**.
 > Küçük iş: **PWA simgesi** — `public/favicon.svg` hâlâ Vite'ın mor varsayılan
 > logosu; kısayol eklenince o görünüyor, Garso'nun kendi simgesi gerekiyor.
+>
+> **Ara sıra çıkan, henüz yakalanamamış sorun:** yeni bir cihazda **ilk giriş**
+> yapılırken düğme "Kontrol ediliyor…" hâlinde takılı kalıyor; sayfa elle
+> yenilenince oturum açılmış oluyor. Yani kimlik bileti alınıyor, sonraki bir
+> adım cevap vermiyor. 31 Ağu 2026'da düğmenin ölü kalmaması düzeltildi
+> (`Giris.tsx`, `finally` ile) ama **asıl sebep bulunamadı** — o an tekrar
+> üretilemedi. Şüpheli: girişten hemen sonra kişinin yetkileri okunuyor
+> (`kisiyiYukle` içindeki üç sorgu) ve bunlar yeni biletle gidiyor; bilet
+> yerleşmeden giden sorgu boş dönüyor ya da asılı kalıyor olabilir. Tekrar
+> olursa **15 saniye beklenip** (12 sn'lik kesici devreye girmeli) konsoldaki
+> hata kaydedilecek; teşhis ona bağlı.
+>
+> **Proje sonuna doğru Ramazan'a hatırlatılacak:** mobil masa kartındaki
+> **"Hesap çıktı" şeridi**. 31 Ağu'da kartın en üstüne beyaz rozet olarak
+> kondu; köşelerin üçü doluydu (sağ üstte üç nokta, sağ altta kişi sayısı,
+> sol altta süre), tutarın yanına da sığmıyordu. Bedeli şu: ızgara satır
+> yüksekliği sabit olduğu için **bütün** kartlar 152px'e çıktı, ekranda daha
+> az masa görünüyor. Ramazan "şimdilik kalsın, sona doğru bana hatırlat" dedi.
+> O zaman değerlendirilecek seçenekler: şeridi inceltmek, yalnız ikon
+> bırakmak, ya da tamamen kaldırmak (fiş çıkarılmış masa zaten kırmızı —
+> bilgi renkte de var, şerit onu ikinci kez söylüyor).
 
 
 *Ramazan seansa "devam edelim" diye giriyor — sıradaki iş bu listenin en üstündeki
@@ -2208,3 +2219,132 @@ Bölüm 6'ya **97-103** numaralarıyla işlendi.
 filtre, özette günün cirosu. Turun ayrıntısı `pos-yol-haritasi.md` bölüm 11'de;
 oradan okunmadan başlanmamalı.
 
+
+---
+
+## 18. SEANS GÜNLÜĞÜ — 31 AĞU 2026
+
+Mobil arayüz turunun ilk durağı: masa kartı. Tur ekran ekran ilerliyor, bu
+seansta masa kartı bitti; sipariş ekranı sıradaki durak.
+
+### Masa kartı — durum renkleri
+
+Kart artık masanın durumunu renkle anlatıyor, hem masaüstünde hem mobilde aynı
+dille. Sıra en acilden en sakine:
+
+| Renk | Anlamı |
+|---|---|
+| Gri | Hesabı tamamen ödendi, masa henüz kalkmadı |
+| Kırmızı | Hesap fişi çıkarıldı, ödeme bekleniyor |
+| Mor | Bir süredir sipariş vermiyor |
+| Sarı | Kısmi tahsilat alındı |
+| Yeşil | Olağan dolu masa |
+
+**Durgunluk süresi işletme ayarı** (`masa_durgunluk_dk`, varsayılan 45 dk;
+Ayarlar → Genel). Ölçü açılış değil **son sipariş**: yeni ürün girilince sayaç
+sıfırlanıyor. Kural `masalar.ts:durgunMu()` içinde, iki arayüz de oradan
+soruyor. Masaüstündeki ölü `gecikti` (2 saat) kuralı silindi — Gel Al / Paket
+kartındaki çalışan hâli duruyor.
+
+**Hesap fişi işareti.** Fiş *gerçekten basıldıysa* (kuyruğa girmesi yetmiyor)
+ve sonrasında yeni sipariş girilmediyse kartta duruyor. Veri zaten vardı,
+`yazdirma_kuyrugu` masa özetine bağlandı. Mobilde masa adının altında beyaz
+şerit; **yeri her kartta ayrılıyor**, fişi olmayan masada görünmüyor ama yerini
+tutuyor ki ızgaradaki bütün kartların satırları aynı hizada kalsın.
+
+### İptal fişi
+
+Masadan ürün düşünce tezgâha "bunu yapma" kâğıdı gidiyor. Üç yoldan tetikleniyor:
+kalem iptali, kalemin sepetten silinmesi, adedin azaltılması (fişte azalan
+miktar yazıyor). Ayrıca adisyon iptalinde masanın tamamı.
+
+- **Yazıcı eşlemesi mutfak fişiyle aynı** — sipariş hangi yazıcıdan çıktıysa
+  iptali de oradan. Ortak gövde `yazicilar.ts:istasyonlaraYaz()`.
+- **Gönderilmemiş ürünün fişi basılmıyor**: tezgâh o siparişi hiç görmedi.
+- Fişte **İPTAL** başlığı en büyük punto ve Fiş Tasarımı'ndan ayarlanmıyor —
+  her işletmede aynı. Kâğıda göre uyarlanıyor: 80 mm'de 40, 58 mm'de 26 punto.
+- **İptal eden kişinin adı** fişte yazıyor (masayı açan garson değil).
+- İçerik artık **yazıcı başına** üretiliyor; aynı istasyona iki farklı kâğıt
+  bağlıysa her biri kendine sığanı alıyor.
+
+**Fiş Tasarımı'na 58/80 mm anahtarı eklendi.** Önizleme sabit 80 mm çiziyordu;
+dar kâğıt kullanan işletme neyin sığdığını göremiyordu.
+
+### Güvenlik: PIN'le geçen kişi sayfa yenilenince kayboluyordu
+
+Ramazan yakaladı. PIN'le Mert'e geçiliyor, sayfa yenilenince ekranda yönetici
+Ramazan çıkıyor ve yönetici arayüzü açılıyordu. Sunucu tarafı doğruydu
+(`oturum_kisileri` tablosu), tarayıcı sormuyordu: doğrudan kimlik biletinin
+sahibini yüklüyordu. Artık `oturum_personeli()` RPC'siyle "şu an kim çalışıyor"
+sunucuya soruluyor. Bağlantı yoksa eski davranış sürüyor (cihazdaki kopya).
+
+### Görünüm kuralları — bu seansta oturanlar
+
+- **İkon asla ezilmez:** `svg { flex-shrink: 0 }` tek yerde. Önceden 30+ ayrı
+  yerde tek tek yazılıyordu, unutulan yerde ikon dar ekranda yok oluyordu.
+- **İkonun yanındaki metin kırpılır, ikon kırpılmaz.** Ama kırpma son çare:
+  önce ikonu bol yerin olduğu satıra taşı.
+- **Kart içinde mutlak konum yalnız gerçekten üste binmesi gereken şey için.**
+  Bilgi taşıyan öğe akışta durur ya da hepsi aynı ölçüyle köşeye oturur —
+  ikisi karışınca çakışıyorlar.
+- **Yazı rengi kart zemininden gelir**, sabit beyaz yazılmaz: zemin duruma göre
+  değişiyor, sabit beyaz açık zeminlerde okunmuyor.
+
+### iOS'ta katman tuzağı — iki kez ısırdı
+
+`-webkit-overflow-scrolling: touch` iPhone'da kendi katman bağlamını açıyor.
+İçerik kutusunda durduğu için alttan açılan pencereler o kutunun içinde kalıyor,
+`z-index` dışarıdaki sekme çubuğuna karşı işe yaramıyordu: menünün son satırı
+("Adisyonu iptal et") çubuğun arkasında kayboluyordu. Bilgisayarın telefon
+görünümünde bu davranış yok — hata orada hiç görünmüyordu.
+
+Satır iOS 13'ten beri gereksiz; altı yerden birden kaldırıldı, `.m-icerik`e
+sebebini anlatan not bırakıldı. Aynı seansta `vh` de `dvh` ile değiştirildi:
+telefon tarayıcısında `vh` adres çubuğunu saymıyor.
+
+**Sekme çubuğuna açık katman verildi** (`z-index: 30`) — yazılmadığında sıralama
+tarayıcının insafına kalıyordu.
+
+### Alttan açılan pencereler
+
+Yeni ortak bileşen: `mobil/AltSayfa.tsx`. Açılış animasyonunu CSS yapabiliyor
+ama kapanışı yapamıyor — React pencereyi anında kaldırıyor. Bileşen kapatma
+isteğini bekletiyor, ters animasyon oynuyor, sonra pencere kalkıyor. Şimdilik
+iki işlem menüsünde; diğer pencerelere yayılabilir.
+
+İşlem menüsü yeniden tasarlandı: tutamak, büyük masa adı + hesap özeti, sade
+yuvarlak kapatma düğmesi, çizgisiz satırlar, **ikonlar kendi renginde daire
+içinde** (para yeşil, yazdırma mavi, taşıma mor, ikram pembe, iptal kırmızı).
+Geri alınamayan işler ayırıcının altında ayrı bölümde. Menü sekme çubuğunun
+üstünde bitiyor, onu örtmüyor.
+
+### Denenip vazgeçilenler
+
+- **Yazıcı ikonu tutar satırında** — dar telefonda tutarı taşırıp kartın dışına
+  çıkıyordu. Metni kırpmak denendi, o da yanlıştı: bilgi kaybı hatayı gizliyor.
+  Çözüm ikonu bol yerin olduğu yere taşımak oldu.
+- **Kişi sayısını alt satırın akışına almak** — çakışmayı çözüyordu ama Ramazan
+  beğenmedi, geri alındı. Şimdi süre ve kişi ikisi de köşelere aynı ölçüyle
+  oturuyor.
+
+### Küçük düzeltmeler
+
+- Konsoldaki 401 yığını: bağlantı yoklaması REST kapısına kimliksiz gidiyordu,
+  sağlık adresine çevrildi.
+- Telefon simgesi her ekranda görünüyor (önce yalnız dar ekranda) ve **hangi
+  sayfada olursa olsun** mobile geçiriyor (önce yalnız kök adreste çalışıyordu).
+- Mobil menüye **"Adisyonu ikram et"** eklendi (masaüstünde vardı).
+- Yazdırma kuyruğu ve `adisyon_kalemleri` canlı yayına eklendi.
+
+### Bu seansta yapılan hata
+
+CSS'te bir bloğu değiştirirken arama dizesi daha önce geçen benzer bir seçiciye
+takıldı ve **17 bin karakterlik kural silindi** — sepet sayfası, adisyon
+kalemleri, tur başlıkları, sayfa çubukları. Ramazan ekranda fark etti, `git`ten
+geri alındı. Ders: metin kesip biçerken sınır dizeleri **eşsiz** olmalı; olacak
+gibi değilse önce silinecek aralık ekrana yazdırılıp bakılmalı.
+
+### Sonraki seansın ilk işi
+
+**Mobil turun devamı: sipariş ekranı** (bölüm 0). Ürün kartı, sepet şeridi,
+uzun basmanın gizli kalması, adisyon notu ve müşteri seçme.

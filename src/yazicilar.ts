@@ -151,6 +151,10 @@ export const VARSAYILAN_PARAMETRELER: Record<string, boolean> = {
 export const VARSAYILAN_PUNTOLAR: Record<string, number> = {
   isletme_adi: 28,
   siparis_no: 30,
+  // İptal başlığı her işletmede aynı: en büyük punto. Fiş Tasarımı'ndan
+  // ayarlanmıyor — tezgâhtaki kişi kâğıda bakmadan, yazıcıdan çıkarken bile
+  // bunun iptal olduğunu görmeli, bu küçültülebilecek bir şey değil.
+  iptal_basligi: 40,
   genel: 20,
   urun_listesi: 20,
   secenek: 16,
@@ -505,17 +509,37 @@ export async function adisyonFisiYaz(adisyon: AdisyonVerisi) {
   return hedefler.length;
 }
 
-/**
- * Mutfak fişi: kalemler istasyona göre ayrılır, her istasyonun fişi yalnız o
- * istasyonun yazıcılarına gider. Barın fişinde mutfağın ürünü olmaz.
- */
+/** Mutfak fişi: o turda gönderilen ürünler tezgâhlara dağıtılıyor. */
 export async function mutfakFisiYaz(
   adisyon: AdisyonVerisi,
   kalemler: SepetKalemi[],
   siparisNo?: number
 ) {
   const basilacaklar = kalemler.filter((k) => (k.durum ?? "normal") === "normal");
-  if (!basilacaklar.length) return 0;
+  return istasyonlaraYaz(adisyon, basilacaklar, siparisNo, false);
+}
+
+/**
+ * İptal fişi: masadan çıkarılan ürünler için tezgâha "bunları yapma" kâğıdı.
+ * Sipariş fişi hangi yazıcıdan çıktıysa iptali de oradan çıkıyor — eşleme aynı
+ * ürün/istasyon haritasından geliyor, bardaki ürünün iptali mutfağa düşmüyor.
+ */
+export async function iptalFisiYaz(adisyon: AdisyonVerisi, kalemler: SepetKalemi[]) {
+  return istasyonlaraYaz(adisyon, kalemler, undefined, true);
+}
+
+/**
+ * Mutfak ve iptal fişinin ortak gövdesi: kalemler istasyona göre ayrılır, her
+ * istasyonun fişi yalnız o istasyonun yazıcılarına gider. Barın fişinde
+ * mutfağın ürünü olmaz.
+ */
+async function istasyonlaraYaz(
+  adisyon: AdisyonVerisi,
+  kalemler: SepetKalemi[],
+  siparisNo: number | undefined,
+  iptal: boolean
+) {
+  if (!kalemler.length) return 0;
 
   const [yazicilar, sablon, harita] = await Promise.all([
     yazicilariOku(),
@@ -526,7 +550,7 @@ export async function mutfakFisiYaz(
   if (!hedefler.length) return 0;
 
   const gruplar = new Map<number, SepetKalemi[]>();
-  for (const k of basilacaklar) {
+  for (const k of kalemler) {
     const istasyon = k.urunId ? harita.get(k.urunId) : undefined;
     if (!istasyon) continue; // istasyonu olmayan ürün mutfağa düşmüyor
     const liste = gruplar.get(istasyon) ?? [];
@@ -536,8 +560,12 @@ export async function mutfakFisiYaz(
 
   let sayi = 0;
   for (const [istasyonId, liste] of gruplar) {
-    const icerik = fisPaketi(fisIcerigi(sablon, adisyon, liste, siparisNo));
     for (const y of hedefler.filter((h) => h.istasyonlar.includes(istasyonId))) {
+      // İçerik yazıcı başına üretiliyor: aynı istasyona 58 mm ve 80 mm yazıcı
+      // birlikte bağlıysa her biri kendi kâğıdına sığan fişi alıyor.
+      const icerik = fisPaketi(
+        fisIcerigi(sablon, adisyon, liste, siparisNo, iptal, y.kagitGenislik)
+      );
       await kuyrugaEkle("mutfak", adisyon.id, y.id, icerik);
       sayi++;
     }

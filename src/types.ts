@@ -29,7 +29,10 @@ export type MasaDurumu = {
   kalan?: number;
   sure?: string;
   garson?: string;
-  gecikti?: boolean;
+  /** Masa bir süredir yeni sipariş vermiyor; kart rengi değişiyor. */
+  durgun?: boolean;
+  /** Hesap fişi basıldı, sonrasında yeni sipariş girilmedi. */
+  fisBasildi?: boolean;
   ad?: string; // adisyona verilen serbest ad
   kisiSayisi?: number;
   /** Sipariş cihazda kuyrukta, sunucuya henüz yazılmadı. */

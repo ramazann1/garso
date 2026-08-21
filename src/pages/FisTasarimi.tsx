@@ -78,6 +78,9 @@ const ORNEK: AdisyonVerisi = {
  */
 const EKRAN_OLCEK = 0.72;
 
+/** 80 mm kâğıdın ekrandaki genişliği; dar kâğıt bundan oranlanıyor. */
+const KAGIT_EN = 330;
+
 /**
  * Karekodun ekrandaki hâli. Köprü kâğıda kare kare çiziyor; burada aynı kareler
  * tek bir çizim olarak basılıyor, telefondan okunabiliyor — adresin doğru
@@ -116,12 +119,20 @@ function Karekod({ icerik }: { icerik: string }) {
   );
 }
 
-function FisOnizleme({ sablon, adisyon }: { sablon: FisSablonu; adisyon: AdisyonVerisi }) {
+function FisOnizleme({
+  sablon,
+  adisyon,
+  kagit,
+}: {
+  sablon: FisSablonu;
+  adisyon: AdisyonVerisi;
+  kagit: number;
+}) {
   // Önizlemede örnek bir sipariş numarası veriliyor: gerçek numarayı sipariş
   // kaydedilirken veritabanı üretiyor, burada kâğıtta nasıl duracağı görünsün.
   const icerik = useMemo(
-    () => fisIcerigi(sablon, adisyon, undefined, 50124),
-    [sablon, adisyon]
+    () => fisIcerigi(sablon, adisyon, undefined, 50124, false, kagit),
+    [sablon, adisyon, kagit]
   );
 
   const boy = (s: FisSatiri) => {
@@ -131,7 +142,9 @@ function FisOnizleme({ sablon, adisyon }: { sablon: FisSablonu; adisyon: Adisyon
   };
 
   return (
-    <div className="fis-kagit">
+    // Kâğıdın ekrandaki genişliği gerçek oranıyla: 58 mm kâğıt 80 mm'nin
+    // dörtte üçü kadar, sığmayan satır önizlemede de sığmıyor.
+    <div className="fis-kagit" style={{ maxWidth: KAGIT_EN * (kagit / 80) }}>
       {icerik.satirlar.map((s, i) => {
         if (s.t === "cizgi") return <div key={i} className="fis-cizgi" />;
         if (s.t === "bosluk") return <div key={i} className="fis-bosluk" />;
@@ -287,6 +300,9 @@ export default function FisTasarimi() {
   const [kayitli, setKayitli] = useState("");
   const [adisyonlar, setAdisyonlar] = useState<AdisyonVerisi[]>([]);
   const [secilenAdisyon, setSecilenAdisyon] = useState(0);
+  // Önizlemenin kâğıdı: işletme kendi yazıcısının kâğıdını seçip neyin sığdığını
+  // görüyor. Dar kâğıtta satırların sarması ancak burada fark ediliyor.
+  const [kagit, setKagit] = useState(80);
   const [bildirim, setBildirim] = useState("");
   const [hata, setHata] = useState("");
 
@@ -486,8 +502,25 @@ export default function FisTasarimi() {
             </section>
 
             <section className="fis-onizleme-alan">
+              {/* Kâğıt seçimi başlıkla sipariş seçiminin arasında: önizlemeye
+                  bakan kişi önce hangi kâğıda baktığını görüyor. */}
               <div className="fis-onizleme-ust">
                 <h2>Önizleme</h2>
+                <div className="mod-sec kompakt dar">
+                  {[58, 80].map((mm) => (
+                    <button
+                      key={mm}
+                      className={kagit === mm ? "aktif" : ""}
+                      onClick={() => setKagit(mm)}
+                    >
+                      {mm} mm
+                    </button>
+                  ))}
+                </div>
+              </div>
+
+              <div className="fis-onizleme-ust">
+                <span className="fis-onizleme-etiket">Sipariş</span>
                 {adisyonlar.length > 0 ? (
                   <select
                     value={secilenAdisyon}
@@ -504,7 +537,7 @@ export default function FisTasarimi() {
                 )}
               </div>
 
-              <FisOnizleme sablon={sablon} adisyon={onizlenen} />
+              <FisOnizleme sablon={sablon} adisyon={onizlenen} kagit={kagit} />
             </section>
           </div>
         )}

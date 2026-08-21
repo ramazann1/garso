@@ -187,9 +187,9 @@ function MobilAcilis() {
 
 /**
  * Cihaza göre doğru arayüzü açıyor: telefon mobile, kasa bilgisayarı masaüstüne.
- * Yönlendirme yalnız iki uç adreste yapılıyor (masaüstünün ana ekranı ve mobil
- * kök) — kişi elle bir adrese gittiyse orada bırakılıyor, ekran altından
- * kaydırılmıyor.
+ * Görünüm elle değiştirildiğinde ekran da onunla birlikte geçiyor — hangi
+ * sayfada olunursa olunsun. Seçim iki arayüz arasında bir anahtar; yalnız ana
+ * ekranda çalışan bir anahtar bozuk sayılır.
  */
 function GorunumKapisi() {
   const gorunum = useGorunum();
@@ -197,7 +197,10 @@ function GorunumKapisi() {
   const git = useNavigate();
 
   useEffect(() => {
-    if (gorunum === "mobil" && pathname === "/") git("/mobil", { replace: true });
+    // Mobile geçiş yalnız kök adreste çalışıyordu: kasada Salon'dayken telefon
+    // simgesine basınca görünüm değişiyor ama adres masaüstü ekranında kalıyor,
+    // ekran da öyle. Artık nerede olunursa olunsun mobil kabuğa geçiliyor.
+    if (gorunum === "mobil" && !pathname.startsWith("/mobil")) git("/mobil", { replace: true });
     if (gorunum === "masaustu" && pathname.startsWith("/mobil")) git("/", { replace: true });
   }, [gorunum, pathname]);
 

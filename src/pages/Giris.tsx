@@ -22,6 +22,10 @@ export default function Giris() {
       await girisYap(telefon, sifre, hatirla);
     } catch (err: any) {
       setHata(err.message);
+    } finally {
+      // Başarılı girişte ekran zaten değişiyor ama düğme yine de eski hâline
+      // dönüyor: bir aksilikte kişi "Kontrol ediliyor…" yazan ölü bir düğmeye
+      // bakıp kalmasın, yeniden deneyebilsin.
       setBekliyor(false);
     }
   };

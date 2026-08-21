@@ -1136,6 +1136,31 @@ export default function IsletmeAyarlari() {
             </AyarSatiri>
 
             <AyarSatiri
+              ad="Masa durgunluğu"
+              ara={ara}
+              ipucu="Açık bir masa bu süre boyunca yeni sipariş vermezse masa kartı renk değiştirir; salonda unutulmuş masa uzaktan bakınca görülür. Masa kapanmaz, yalnız işaretlenir. Kapalı seçilirse kart durgunluğa göre renk değiştirmez."
+            >
+              <div className="mod-sec kompakt dar">
+                {[0, 30, 45, 60, 90].map((d) => (
+                  <button
+                    key={d}
+                    className={genel.masaDurgunlukDk === d ? "aktif" : ""}
+                    onClick={() =>
+                      genelDegistir(
+                        { masaDurgunlukDk: d },
+                        d === 0
+                          ? "Durgunluk işareti kapalı"
+                          : `Masa ${d} dakika sipariş vermezse işaretlenecek`
+                      )
+                    }
+                  >
+                    {d === 0 ? "Kapalı" : `${d} dk`}
+                  </button>
+                ))}
+              </div>
+            </AyarSatiri>
+
+            <AyarSatiri
               ad="Çalışma tipleri"
               ara={ara}
               ipucu="Yapmadığınız iş arayüzde durmasın. Masa servisi kapatılamaz — kapanırsa satış yapacak ekran kalmaz."

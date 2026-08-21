@@ -1,6 +1,6 @@
 import { useEffect, useRef, useState } from "react";
 import type { ReactNode } from "react";
-import { CircleCheckBig, Clock, CloudUpload, LockKeyhole, MoreVertical, Plus, Users } from "lucide-react";
+import { CircleCheckBig, Clock, CloudUpload, LockKeyhole, MoreVertical, Plus, Printer, Users } from "lucide-react";
 import { paraGoster } from "../para";
 import type { Masa, MasaDurumu } from "../types";
 
@@ -55,7 +55,8 @@ export default function MasaKarti({ masa, durum, aksiyonlar, mesgul, onClick }: 
     "masa-kart",
     durum ? "dolu" : "bos",
     masa.sekil === "daire" ? "daire" : "",
-    durum?.gecikti ? "gecikti" : "",
+    durum?.durgun ? "durgun" : "",
+    durum?.fisBasildi ? "fisli" : "",
     odendi ? "odendi" : odenen > 0 ? "kismi" : "",
     mesgul ? "mesgul" : "",
   ]
@@ -70,7 +71,7 @@ export default function MasaKarti({ masa, durum, aksiyonlar, mesgul, onClick }: 
           hangi masaya girmemesi gerektiğini görüyor. */}
       {mesgul && (
         <span className="masa-mesgul">
-          <LockKeyhole size={12} />
+          <LockKeyhole size={15} />
           {mesgul}
         </span>
       )}
@@ -83,6 +84,13 @@ export default function MasaKarti({ masa, durum, aksiyonlar, mesgul, onClick }: 
         <button className={sinif} onClick={onClick}>
           <span className="masa-ust">
             {durum.garson && <span className="masa-garson">{durum.garson}</span>}
+            {/* Hesap fişi basılmışsa kartta yazıcı işareti duruyor; masaya yeni
+                ürün girilince işaret kalkıyor, kâğıttaki tutar artık tutmuyor. */}
+            {durum.fisBasildi && (
+              <span className="masa-fis" title="Hesap fişi basıldı">
+                <Printer size={13} />
+              </span>
+            )}
           </span>
 
           {/* Süre masa adının sağında: üç nokta düğmesinin tam altındaki satır,

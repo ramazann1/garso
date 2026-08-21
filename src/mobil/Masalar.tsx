@@ -4,8 +4,10 @@ import {
   ArrowRightLeft,
   Ban,
   Check,
+  CircleCheckBig,
   CloudOff,
   EllipsisVertical,
+  Gift,
   LockKeyhole,
   Merge,
   Plus,
@@ -16,9 +18,10 @@ import {
   X,
   Zap,
 } from "lucide-react";
-import { bolgeleriGetir } from "../masalar";
+import { bolgeleriGetir, durgunMu } from "../masalar";
 import {
   adisyonGetir,
+  adisyonIkram,
   adisyonIptal,
   adisyonKaydet,
   adisyonOzeti,
@@ -31,6 +34,7 @@ import type { AdisyonVerisi } from "../adisyonlar";
 import { adisyonFisiYaz } from "../yazicilar";
 import { yetkiVar } from "../oturum";
 import OnayModal from "../components/OnayModal";
+import AltSayfa from "./AltSayfa";
 import OdemeTipleri from "./OdemeTipleri";
 import MusteriSecici from "../components/MusteriSecici";
 import { odemeTipleriniGetir, type OdemeTipi } from "../odemeTipleri";
@@ -38,10 +42,14 @@ import { bekleyenMasalar, useKuyruk } from "../kuyruk";
 import { baglantiVar, sureSinirli, useBaglanti } from "../baglanti";
 import { useCanli } from "../canli";
 import { devralabilir, masayiDevral, useMesguliyetler } from "../mesguliyet";
+import { odenmezleriGetir, type Odenmez } from "../odenmezler";
 import { paraGoster } from "../para";
 import type { Bolge, Masa } from "../types";
 
-// İptal sebebi denetim defterine yazılıyor; hazır seçenekler kasadakiyle aynı.
+// İkram ve iptal sebepleri denetim defterine yazılıyor; hazır seçenekler
+// kasadakiyle aynı ki iki ekranın defteri aynı dille dolsun.
+const IKRAM_SEBEPLERI = ["İşletme ikramı", "Müşteri şikâyeti", "Tanıtım"];
+
 const IPTAL_SEBEPLERI = [
   "Müşteri vazgeçti",
   "Yanlış masaya girildi",
@@ -94,6 +102,9 @@ export default function MobilMasalar() {
   } | null>(null);
   const [hizliMasa, setHizliMasa] = useState<{ masa: Masa; veri: AdisyonVerisi } | null>(null);
   const [iptalSorusu, setIptalSorusu] = useState<{ masa: Masa; adisyonId: number } | null>(null);
+  const [ikramSorusu, setIkramSorusu] = useState<{ masa: Masa; adisyonId: number } | null>(null);
+  // İkramın kime yazıldığı soruluyor; liste ekran açılırken bir kez okunuyor.
+  const [odenmezler, setOdenmezler] = useState<Odenmez[]>([]);
   const [cariSorusu, setCariSorusu] = useState<string | null>(null);
   const [odemeTipleri, setOdemeTipleri] = useState<OdemeTipi[]>([]);
   const [uyari, setUyari] = useState<string | null>(null);
@@ -130,6 +141,7 @@ export default function MobilMasalar() {
 
   useEffect(() => {
     odemeTipleriniGetir().then(setOdemeTipleri);
+    odenmezleriGetir().then(setOdenmezler);
   }, []);
 
   useEffect(() => {
@@ -140,7 +152,7 @@ export default function MobilMasalar() {
 
   // Başka bir cihaz masaya sipariş girdiğinde ekran kendini tazeliyor: garson
   // telefonda, kasiyer bilgisayarda aynı masayı görüyor.
-  useCanli(["adisyonlar", "adisyon_kalemleri", "tahsilatlar"], oku);
+  useCanli(["adisyonlar", "adisyon_kalemleri", "tahsilatlar", "yazdirma_kuyrugu"], oku);
 
   // Kuyruk boşaldıkça ve bağlantı geri geldikçe ekran kendini tazeliyor.
   const { bekleyen } = useKuyruk();
@@ -301,9 +313,28 @@ export default function MobilMasalar() {
           {masalar.map((m) => {
             const acik = adisyonlar[m.id];
             const mesgul = secimModu ? undefined : mesguliyetler[m.id];
+            // Kart rengi masanın durumunu anlatıyor; sıra en acilden en sakine:
+            // hesabı ödenmiş ama kalkmamış masa gri (iş bitti), hesap fişi
+            // çıkarılmış masa kırmızı (müşteri ödemeyi bekliyor), bir süredir
+            // sipariş vermeyen masa mor, tahsilatı başlamış masa sarı, olağan
+            // dolu masa yeşil. Masaüstüyle aynı dil.
+            const odenen = acik?.odenen ?? 0;
+            const kalan = acik ? acik.kalan || acik.tutar : 0;
+            const odendi = !!acik && acik.tutar > 0 && odenen > 0 && kalan <= 0;
             const sinif = [
               "m-masa",
               acik ? "dolu" : "",
+              acik
+                ? odendi
+                  ? "odendi"
+                  : acik.fisBasildi
+                    ? "fisli"
+                    : durgunMu(acik)
+                      ? "durgun"
+                      : odenen > 0
+                        ? "kismi"
+                        : ""
+                : "",
               mesgul ? "mesgul" : "",
               secimModu ? (secilebilir(m) ? "secilebilir" : "kapali") : "",
               secimModu?.hedef === m.id ? "secili" : "",
@@ -332,6 +363,18 @@ export default function MobilMasalar() {
                   {secimModu?.hedef === m.id && <Check size={18} />}
                 </span>
 
+                {/* Hesap fişi şeridi masa adının altında ve yeri her kartta
+                    ayrılıyor — fiş basılmamış masada görünmüyor ama yerini
+                    koruyor. Yoksa şerit çıkan kartta garson adı ve tutar bir
+                    satır aşağı kayıyor, ızgaradaki masalar birbirini tutmuyor.
+                    Masaya yeni ürün girilirse şerit kendiliğinden kalkıyor. */}
+                {acik && (
+                  <span className={acik.fisBasildi ? "m-masa-fis" : "m-masa-fis gizli"}>
+                    <Printer size={13} />
+                    Hesap çıktı
+                  </span>
+                )}
+
                 {mesgul && (
                   <span className="m-masa-mesgul">
                     <LockKeyhole size={12} />
@@ -341,24 +384,44 @@ export default function MobilMasalar() {
 
                 {acik ? (
                   <>
-                    <span className="m-masa-tutar">{paraGoster(acik.kalan || acik.tutar)}</span>
+                    {/* Masayı açan kişi masa adının altında: kartı uzatmadan
+                        tek satır, garson ızgaraya bakınca kendi masalarını
+                        seçebiliyor. */}
+                    {acik.garson && <span className="m-masa-garson">{acik.garson}</span>}
+
+                    {/* Hesabı kapanan masada rakam yerine durum yazıyor: kalan
+                        sıfır olduğu için tutar göstermek yanıltıyordu. Hesap
+                        fişi basılmışsa yazıcı işareti tutarın sağına düşüyor;
+                        masaya yeni ürün girilirse işaret kendiliğinden kalkıyor. */}
+                    <span className="m-masa-tutar">
+                      {odendi ? (
+                        <>
+                          <CircleCheckBig size={17} />
+                          Ödendi
+                        </>
+                      ) : (
+                        paraGoster(kalan)
+                      )}
+                    </span>
+
                     <span className="m-masa-alt">
                       {acik.bekliyor ? (
                         <>
                           <CloudOff size={13} /> Gönderilmedi
                         </>
                       ) : (
-                        <>
-                          {sure(acik.acilis)}
-                          {acik.kisiSayisi ? (
-                            <em>
-                              <Users size={12} />
-                              {acik.kisiSayisi}
-                            </em>
-                          ) : null}
-                        </>
+                        sure(acik.acilis)
                       )}
                     </span>
+
+                    {/* Kişi sayısı kartın sağ alt köşesinde sabit duruyor:
+                        satır akışına girmediği için masadan masaya kaymıyor. */}
+                    {!!acik.kisiSayisi && (
+                      <span className="m-masa-kisi">
+                        <Users size={12} />
+                        {acik.kisiSayisi}
+                      </span>
+                    )}
                   </>
                 ) : (
                   <span className="m-masa-bos">
@@ -400,6 +463,10 @@ export default function MobilMasalar() {
           onYazdir={() => fisYazdir(islemMasasi)}
           onTasi={(tip) => {
             setSecimModu({ tip, kaynak: islemMasasi });
+            setIslemMasasi(null);
+          }}
+          onIkram={(adisyonId) => {
+            setIkramSorusu({ masa: islemMasasi, adisyonId });
             setIslemMasasi(null);
           }}
           onIptal={(adisyonId) => {
@@ -449,6 +516,28 @@ export default function MobilMasalar() {
         />
       )}
 
+      {ikramSorusu && (
+        <OnayModal
+          baslik="Adisyonu ikram et"
+          ikon={<Gift size={20} />}
+          mesaj={`${ikramSorusu.masa.ad} masasındaki ürünlerin tamamı ikrama çevrilecek, hesap sıfırlanıp kapanacak. Sebebi nedir?`}
+          sebepler={IKRAM_SEBEPLERI}
+          odenmezler={odenmezler}
+          onayMetni="Evet, ikram et"
+          onOnay={async (sebep, odenmezId) => {
+            const { adisyonId } = ikramSorusu;
+            setIkramSorusu(null);
+            try {
+              await adisyonIkram(adisyonId, sebep, odenmezId);
+              await oku();
+            } catch (e) {
+              setUyari(e instanceof Error ? e.message : "Adisyon ikram edilemedi.");
+            }
+          }}
+          onKapat={() => setIkramSorusu(null)}
+        />
+      )}
+
       {mesgulSorusu && (
         <OnayModal
           baslik="Masada biri var"
@@ -471,7 +560,12 @@ export default function MobilMasalar() {
   );
 }
 
-/** Masanın işlemleri; ikon + ad, açıklama yok. Yetkisi olmayan satırı görmüyor. */
+/**
+ * Masanın işlemleri. Başlıkta masa adı ve hesabın o anki özeti; altında
+ * yapılacak işler. Her satırın ikonu kendi renginde: para yeşil, yazdırma
+ * mavi, geri alınamayan iş kırmızı — garson satırı okumadan da tanıyor.
+ * Yetkisi olmayan satırı hiç görmüyor.
+ */
 function MasaIslemleri({
   masa,
   ozet,
@@ -480,6 +574,7 @@ function MasaIslemleri({
   onHizli,
   onYazdir,
   onTasi,
+  onIkram,
   onIptal,
 }: {
   masa: Masa;
@@ -489,25 +584,52 @@ function MasaIslemleri({
   onHizli: () => void;
   onYazdir: () => void;
   onTasi: (tip: "tasi" | "birlestir") => void;
+  onIkram: (adisyonId: number) => void;
   onIptal: (adisyonId: number) => void;
 }) {
   const odeyebilir = yetkiVar("odeme.al");
   const satirlar = [
     ...(odeyebilir
       ? [
-          { ad: "Öde", ikon: <Wallet size={19} />, sec: onOde },
+          { ad: "Öde", ikon: <Wallet size={19} />, renk: "ode", sec: onOde },
           {
             ad: `Hızlı Öde · ${paraGoster(ozet?.kalan ?? 0)}`,
             ikon: <Zap size={19} />,
+            renk: "hizli",
             sec: onHizli,
           },
         ]
-      : [{ ad: "Hesabı gör", ikon: <Wallet size={19} />, sec: onOde }]),
-    { ad: "Yazdır", ikon: <Printer size={19} />, sec: onYazdir },
+      : [{ ad: "Hesabı gör", ikon: <Wallet size={19} />, renk: "ode", sec: onOde }]),
+    { ad: "Yazdır", ikon: <Printer size={19} />, renk: "yazdir", sec: onYazdir },
     ...(yetkiVar("siparis.tasi")
       ? [
-          { ad: "Masayı taşı", ikon: <ArrowRightLeft size={19} />, sec: () => onTasi("tasi") },
-          { ad: "Masaları birleştir", ikon: <Merge size={19} />, sec: () => onTasi("birlestir") },
+          {
+            ad: "Masayı taşı",
+            ikon: <ArrowRightLeft size={19} />,
+            renk: "tasi",
+            sec: () => onTasi("tasi"),
+          },
+          {
+            ad: "Masaları birleştir",
+            ikon: <Merge size={19} />,
+            renk: "tasi",
+            sec: () => onTasi("birlestir"),
+          },
+        ]
+      : []),
+  ];
+
+  // Geri alınamayan işler kendi bölümünde: parmak listeyi kaydırırken
+  // yanlışlıkla iptale düşmesin.
+  const agirlar = [
+    ...(yetkiVar("siparis.adisyon_ikram") && ozet
+      ? [
+          {
+            ad: "Adisyonu ikram et",
+            ikon: <Gift size={19} />,
+            renk: "ikram",
+            sec: () => onIkram(ozet.id),
+          },
         ]
       : []),
     ...(yetkiVar("siparis.iptal") && ozet
@@ -515,35 +637,55 @@ function MasaIslemleri({
           {
             ad: "Adisyonu iptal et",
             ikon: <Ban size={19} />,
+            renk: "iptal",
             sec: () => onIptal(ozet.id),
-            tehlikeli: true,
           },
         ]
       : []),
   ];
 
+  const satir = (s: (typeof satirlar)[number]) => (
+    <button key={s.ad} className={`m-islem m-islem-${s.renk}`} onClick={s.sec}>
+      <span className="m-islem-ikon">{s.ikon}</span>
+      {s.ad}
+    </button>
+  );
+
   return (
-    <div className="m-perde" onClick={onKapat}>
-      <div className="m-sayfa kisa" onClick={(e) => e.stopPropagation()}>
-        <header className="m-sayfa-ust">
-          <h2>{masa.ad}</h2>
-          <button className="m-ikon-dugme" onClick={onKapat} aria-label="Kapat">
-            <X size={20} />
-          </button>
-        </header>
-        <div className="m-islemler">
-          {satirlar.map((s) => (
-            <button
-              key={s.ad}
-              className={s.tehlikeli ? "m-islem tehlikeli" : "m-islem"}
-              onClick={s.sec}
-            >
-              {s.ikon}
-              {s.ad}
+    <AltSayfa kisa onKapat={onKapat}>
+      {(kapat) => (
+        <>
+          <span className="m-tutamak" />
+
+          <header className="m-islem-ust">
+            <span>
+              <strong className="m-islem-masa">{masa.ad}</strong>
+              {ozet && (
+                <span className="m-islem-ozet">
+                  <strong>{paraGoster(ozet.kalan || ozet.tutar)}</strong>
+                  {!!ozet.kisiSayisi && (
+                    <>
+                      ·
+                      <Users size={13} />
+                      {ozet.kisiSayisi}
+                    </>
+                  )}
+                  {ozet.garson && <>· {ozet.garson}</>}
+                </span>
+              )}
+            </span>
+            <button className="m-islem-kapat" onClick={kapat} aria-label="Kapat">
+              <X size={19} />
             </button>
-          ))}
-        </div>
-      </div>
-    </div>
+          </header>
+
+          <div className="m-islemler">
+            {satirlar.map(satir)}
+            {agirlar.length > 0 && <span className="m-islem-ayirici" />}
+            {agirlar.map(satir)}
+          </div>
+        </>
+      )}
+    </AltSayfa>
   );
 }

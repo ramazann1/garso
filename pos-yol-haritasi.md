@@ -141,6 +141,14 @@ Amaç: Yoğun bir restoranın mutfak-servis akışını taşıyabilmeli.
 - [ ] Cari müşteri / veresiye modülü
 - [ ] Sadakat programı (puan, kampanya)
 - [ ] Çoklu şube: merkezi menü yönetimi, şube karşılaştırma raporları
+- [ ] **İkon boyut standardı** — ikon boyutları bugün 12'den 22'ye kadar
+      rastgele dağılmış durumda (13, 14, 15, 16, 17, 18, 19...). Dört basamağa
+      oturtulacak: **14** satır içi küçük işaret, **16** düğme ve liste satırı,
+      **20** başlık ikonu ve ikon düğmesi (⋮, ×, geri), **24** sekme çubuğu ve
+      boş ekran resmi. Bütün ekranlar tek tek gezilecek, o yüzden faza sona
+      kondu. Standardın diğer iki kuralı 31 Ağu 2026'da zaten uygulandı:
+      ikon asla ezilmez (`svg { flex-shrink: 0 }` tek yerde) ve ikonun yanındaki
+      metin daralınca ikon değil metin yer verir. *(31 Ağu 2026)*
 
 ### FAZ 4 — Entegrasyonlar & Ticarileşme (sürekli)
 - [ ] Yemeksepeti / Getir / Trendyol Go entegrasyonları

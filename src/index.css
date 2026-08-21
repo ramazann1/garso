@@ -17,6 +17,14 @@
   box-sizing: border-box;
 }
 
+/* İkonlar hiçbir yerde ezilmiyor. Esnek bir satırda yer daralınca tarayıcı önce
+   sabit genişliği olmayan öğeyi küçültüyor; ikon sıfır genişliğe inip yok
+   oluyordu. Dar telefonlarda ikonların kaybolmasının sebebi buydu. Kural tek
+   yerde: ayrı ayrı yazmayı unutmak diye bir şey kalmasın. */
+svg {
+  flex-shrink: 0;
+}
+
 /* Form öğeleri yazı tipini kendiliğinden miras almıyor; tek yerden veriliyor ki
    hiçbir ekranda sistem fontuna düşmesin. */
 input,
@@ -153,6 +161,15 @@ body {
   gap: 8px;
   min-height: 17px;
   padding-right: 34px;
+}
+
+/* Hesap fişi basıldı işareti, garson adının yanında: kartın üst bandı zaten
+   ikincil bilgilerin yeri, rakamların düzenine karışmıyor. */
+.masa-fis {
+  display: inline-flex;
+  align-items: center;
+  color: var(--kart-yazi);
+  opacity: 0.85;
 }
 
 .masa-garson {
@@ -6488,6 +6505,18 @@ body {
 
 .fis-onizleme-ust h2 { font-size: 17px; }
 
+/* Kâğıt seçimi başlıkta, sipariş seçimi altındaki satırda: ikisi yan yana
+   sıkışmasın, hangisinin ne olduğu okunsun. */
+.fis-onizleme-ust + .fis-onizleme-ust {
+  margin-top: -4px;
+}
+
+.fis-onizleme-etiket {
+  font-size: 14px;
+  font-weight: 500;
+  color: var(--metin);
+}
+
 .fis-onizleme-ust select {
   max-width: 170px;
   padding: 7px 9px;
@@ -6723,12 +6752,12 @@ body {
    kalanı gösterir, altında ne kadar ödendiği yazar. */
 
 .masa-kart.dolu.odendi {
-  background: linear-gradient(150deg, #ef2028 0%, #e30a17 60%, #c70813 100%);
-  box-shadow: 0 3px 12px rgba(199, 8, 19, 0.26);
+  background: linear-gradient(150deg, #9aa3a6 0%, #8b9497 60%, #77807f 100%);
+  box-shadow: 0 3px 12px rgba(119, 128, 127, 0.26);
 }
 
 .masa-kart.dolu.odendi:hover {
-  box-shadow: 0 10px 24px rgba(199, 8, 19, 0.4);
+  box-shadow: 0 10px 24px rgba(119, 128, 127, 0.4);
 }
 
 /* Kısmi ödemede hesap sürüyor ama tahsilat başladı: mercanın koyu, mat tonu.
@@ -6740,6 +6769,41 @@ body {
 
 .masa-kart.dolu.kismi:hover {
   box-shadow: 0 10px 24px rgba(238, 170, 20, 0.4);
+}
+
+/* Bir süredir sipariş vermeyen masa: hesap sürüyor ama masa duruyor. Süreyi
+   işletme belirliyor (Ayarlar → masa durgunluğu). Bu renk tahsilat renklerinin
+   önüne geçiyor — masanın ne kadardır beklediği daha acil bir bilgi, tahsilat
+   durumu kartta zaten rakamla yazıyor. Kural bu yüzden en sonda duruyor. */
+.masa-kart.dolu.durgun {
+  background: linear-gradient(150deg, #b58ae0 0%, #a274d4 60%, #8e5fc4 100%);
+  box-shadow: 0 3px 12px rgba(142, 95, 196, 0.26);
+}
+
+.masa-kart.dolu.durgun:hover {
+  box-shadow: 0 10px 24px rgba(142, 95, 196, 0.4);
+}
+
+/* Hesap fişi basılmış masa: müşteri hesabı istedi, ödeme bekleniyor. Bu bilgi
+   durgunluğun da önünde — masa duruyor olabilir ama beklediği şey belli. */
+.masa-kart.dolu.fisli {
+  background: linear-gradient(150deg, #ef2028 0%, #e30a17 60%, #c70813 100%);
+  box-shadow: 0 3px 12px rgba(199, 8, 19, 0.26);
+  color: #fff;
+}
+
+.masa-kart.dolu.fisli:hover {
+  box-shadow: 0 10px 24px rgba(199, 8, 19, 0.4);
+}
+
+/* Hesabı tamamen ödenmiş ama henüz kalkmamış masa en sonda: iş bitti, kart
+   gözü kendine çekmesin. */
+.masa-kart.dolu.odendi,
+.masa-kart.dolu.odendi.durgun,
+.masa-kart.dolu.odendi.fisli {
+  background: linear-gradient(150deg, #9aa3a6 0%, #8b9497 60%, #77807f 100%);
+  box-shadow: 0 3px 12px rgba(119, 128, 127, 0.26);
+  color: var(--kart-yazi);
 }
 
 /* Masa adı solda, süre sağda; üç nokta düğmesi bu satırın üstünde kalıyor. */
@@ -11470,14 +11534,22 @@ body {
   /* Alt sekme çubuğu içeriğin üstüne biniyor; son satır çubuğun altında kalmasın. */
   padding-bottom: calc(78px + env(safe-area-inset-bottom));
   overflow-y: auto;
-  -webkit-overflow-scrolling: touch;
+  /* Buraya `-webkit-overflow-scrolling: touch` KONMAYACAK. iPhone'da o satır
+     kendi katman bağlamını açıyor; alttan çıkan pencereler bu kutunun içinde
+     kaldığı için sekme çubuğunun altına düşüyor, son satırları çubuğun arkasında
+     kayboluyordu. Bilgisayarın telefon görünümünde bu davranış yok, hata orada
+     görünmüyor. iOS 13'ten beri akıcı kaydırma zaten varsayılan. */
 }
 
+/* Sekme çubuğunun katı açıkça yazılıyor. Yazılmadığında tarayıcı sıralamayı
+   kendi seçiyordu ve çubuk, alttan açılan pencerelerin (masa işlemleri, ödeme)
+   üstüne binip son satırlarını örtüyordu. Perdeler 60'ta, çubuk onların altında. */
 .m-sekmeler {
   position: fixed;
   left: 0;
   right: 0;
   bottom: 0;
+  z-index: 30;
   display: flex;
   background: var(--kart);
   border-top: 1px solid #eee6dc;
@@ -11590,10 +11662,97 @@ body {
   cursor: pointer;
 }
 
+/* Masa kartının rengi durumu anlatıyor — masaüstündeki dille aynı: dolu yeşil,
+   tahsilat başlamışsa sarı, hesabı kapanmışsa kırmızı. Telefonda gölge yerine
+   düz zemin kullanılıyor, küçük kartta gölge kirli görünüyor. */
 .m-masa.dolu {
-  background: var(--mercan);
-  border-color: var(--mercan);
+  background: linear-gradient(150deg, #45d9ac 0%, #2ecc9a 60%, #23b98a 100%);
+  border-color: #23b98a;
+  /* Yazı rengi tek yerden: açık zeminlerin hepsinde siyah, yalnız kırmızı
+     kartta beyaz. Alt satır ve garson adı bunu miras alıyor. */
+  color: #1a1a1a;
+}
+
+/* Bir süredir sipariş vermeyen masa. Trafik ışığı üçlüsüne katılmayan ayrı bir
+   renk seçildi: sarı ve kırmızıyla karışmıyor, "burada hareket durdu" diyor. */
+.m-masa.dolu.durgun {
+  background: linear-gradient(150deg, #b58ae0 0%, #a274d4 60%, #8e5fc4 100%);
+  border-color: #8e5fc4;
+}
+
+.m-masa.dolu.kismi {
+  background: linear-gradient(150deg, #ffd24d 0%, #fbc02d 60%, #eeaa14 100%);
+  border-color: #eeaa14;
+}
+
+/* Hesap fişi basılmış masa: müşteri hesabı istedi, ödeme bekleniyor. */
+.m-masa.dolu.fisli {
+  background: linear-gradient(150deg, #ef2028 0%, #e30a17 60%, #c70813 100%);
+  border-color: #c70813;
   color: #fff;
+}
+
+.m-masa.dolu.odendi {
+  background: linear-gradient(150deg, #9aa3a6 0%, #8b9497 60%, #77807f 100%);
+  border-color: #77807f;
+}
+
+.m-masa-tutar {
+  display: flex;
+  align-items: center;
+  gap: 5px;
+}
+
+/* Hesap fişi basıldı şeridi: kartın en üstünde, masa adının üzerinde. Zemini
+   kart renginden bağımsız — beş ayrı durum renginin hepsinde aynı görünsün. */
+.m-masa-fis {
+  align-self: flex-start;
+  display: inline-flex;
+  align-items: center;
+  gap: 4px;
+  margin-bottom: 1px;
+  padding: 2px 8px;
+  border-radius: 999px;
+  background: rgba(255, 255, 255, 0.9);
+  color: #1a1a1a;
+  font-size: 12.5px;
+  font-weight: 600;
+  white-space: nowrap;
+}
+
+/* Fişi basılmamış masada şerit görünmüyor ama yerini tutuyor: iki kartın
+   satırları aynı hizada kalsın. */
+.m-masa-fis.gizli {
+  visibility: hidden;
+}
+
+/* Masayı açan kişi, masa adının hemen altında. Kartı uzatmamak için tek satır
+   ve büyük harf: dar telefon kartında ad değil "kimin masası" bilgisi okunuyor. */
+.m-masa-garson {
+  line-height: 1.4;
+  overflow: hidden;
+  white-space: nowrap;
+  text-overflow: ellipsis;
+  font-size: 12.5px;
+  font-weight: 600;
+  letter-spacing: 0.05em;
+  text-transform: uppercase;
+  opacity: 0.9;
+}
+
+/* Kişi sayısı kartın sağ alt köşesinde: akışa girmediği için masadan masaya
+   kaymıyor, tutarın altındaki satırı da daraltmıyor. */
+.m-masa-kisi {
+  position: absolute;
+  right: 12px;
+  bottom: 9px;
+  display: inline-flex;
+  align-items: center;
+  gap: 3px;
+  font-size: 12.5px;
+  font-weight: 600;
+  color: inherit;
+  opacity: 0.92;
 }
 
 .m-masa-ad {
@@ -11608,7 +11767,6 @@ body {
 
 .m-masa-alt {
   font-size: 13px;
-  color: rgba(255, 255, 255, 0.9);
 }
 
 .m-masa-arti {
@@ -11769,7 +11927,6 @@ body {
   grid-auto-rows: min-content;
   gap: 10px;
   overflow-y: auto;
-  -webkit-overflow-scrolling: touch;
   /* Sepet şeridi içeriğin üstüne biniyor; son satır altında kalmasın. */
   padding-bottom: calc(84px + env(safe-area-inset-bottom));
 }
@@ -11895,11 +12052,61 @@ body {
   display: flex;
   align-items: flex-end;
   background: rgba(0, 0, 0, 0.35);
+  animation: m-perde-ac 0.18s ease-out;
+}
+
+/* Alttan açılan sayfa yukarı doğru kayarak geliyor: nereden çıktığı görünsün,
+   ekran birden değişmiş gibi olmasın. */
+@keyframes m-perde-ac {
+  from {
+    background: rgba(0, 0, 0, 0);
+  }
+}
+
+@keyframes m-sayfa-ac {
+  from {
+    transform: translateY(14%);
+  }
+}
+
+/* Kapanış: pencere aşağı iniyor, perde açılıyor. Süre AltSayfa.tsx'teki
+   bekleme süresiyle aynı olmalı — orası biterken burası da bitiyor. */
+.m-perde.kapaniyor {
+  animation: m-perde-kapa 0.2s ease-in forwards;
+}
+
+.m-perde.kapaniyor .m-sayfa {
+  animation: m-sayfa-kapa 0.2s ease-in forwards;
+}
+
+@keyframes m-perde-kapa {
+  to {
+    background: rgba(0, 0, 0, 0);
+  }
+}
+
+@keyframes m-sayfa-kapa {
+  to {
+    transform: translateY(102%);
+  }
+}
+
+/* Hareketi rahatsız edici bulan kişide açılış anlık: işletim sisteminin
+   ayarına uyuluyor, ayrıca bir seçenek koymaya gerek yok. */
+@media (prefers-reduced-motion: reduce) {
+  .m-perde,
+  .m-perde .m-sayfa,
+  .m-perde.kapaniyor,
+  .m-perde.kapaniyor .m-sayfa {
+    animation: none;
+  }
 }
 
 .m-sayfa {
   width: 100%;
   max-height: 82vh;
+  max-height: 82dvh;
+  animation: m-sayfa-ac 0.24s cubic-bezier(0.22, 0.9, 0.3, 1);
   display: flex;
   flex-direction: column;
   border-radius: 18px 18px 0 0;
@@ -11907,8 +12114,28 @@ body {
   padding-bottom: env(safe-area-inset-bottom);
 }
 
+/* İşlem menüsü sekme çubuğunun üstünde duruyor, onu örtmüyor: garson menü
+   açıkken de hangi sekmede olduğunu görüyor, kapatmak için menüden çıkması
+   gerekmiyor. */
 .m-sayfa.kisa {
-  max-height: none;
+  margin-bottom: calc(74px + env(safe-area-inset-bottom));
+  border-radius: 20px;
+  width: calc(100% - 20px);
+  margin-left: 10px;
+  margin-right: 10px;
+  box-shadow: 0 12px 34px rgba(45, 52, 54, 0.28);
+}
+
+/* Kısa pencere içeriği kadar yer kaplıyor ama ekranı aşmıyor: satır sayısı
+   kişinin yetkisine göre değiştiği için taşma ihtimali her zaman var, taşarsa
+   son satır sessizce kesiliyordu.
+
+   Ölçü dvh: telefon tarayıcısında vh, adres çubuğunun kapladığı yeri saymıyor.
+   Bilgisayarın telefon görünümünde sorun çıkmayıp gerçek telefonda son satırın
+   kaybolmasının sebebi buydu. */
+.m-sayfa.kisa {
+  max-height: 88vh;
+  max-height: 88dvh;
 }
 
 .m-sayfa-ust {
@@ -12785,14 +13012,17 @@ body {
 /* --- Mobil arayüz: yenilenen düzen ---------------------------------------- */
 
 /* Masa kartı: ad üstte, tutar ortada büyük, süre ve kişi altta. */
+/* Masa kartı: içerik yukarıdan başlıyor, alt satır dibe yapışıyor. Dikey
+   yayılma denendi ve bırakıldı — "Hesap çıktı" şeridi olan kartla olmayan
+   kartın satırları birbirini tutmuyordu. */
 .m-masa {
   position: relative;
-  min-height: 104px;
+  min-height: 152px;
   display: flex;
   flex-direction: column;
-  justify-content: space-between;
+  justify-content: flex-start;
   align-items: stretch;
-  gap: 4px;
+  gap: 3px;
   padding: 11px 12px;
   text-align: left;
 }
@@ -12829,12 +13059,26 @@ body {
   letter-spacing: -0.4px;
 }
 
+/* Süre kartın sol alt köşesinde, kişi sayısı sağ altta: ikisi de aynı ölçüyle
+   köşeye oturuyor, aynı çizgide duruyorlar. Akışta bıraksaydık süre kartın iç
+   boşluğuna, kişi sayısı köşeye hizalanıyor ve birbirlerini tutmuyorlardı.
+   Renk karttan miras: zemin duruma göre değişiyor, sabit beyaz açık zeminlerde
+   okunmuyordu. */
 .m-masa-alt {
+  position: absolute;
+  left: 12px;
+  bottom: 9px;
+  /* Uzun yazı kişi sayısının altına girmiyor. */
+  max-width: calc(100% - 60px);
   display: flex;
   align-items: center;
   gap: 6px;
-  font-size: 13px;
-  color: rgba(255, 255, 255, 0.92);
+  overflow: hidden;
+  white-space: nowrap;
+  font-size: 12.5px;
+  font-weight: 500;
+  color: inherit;
+  opacity: 0.92;
 }
 
 .m-masa-alt em {
@@ -12917,19 +13161,87 @@ body {
 }
 
 /* İşlem listesi: ikon + ad, açıklama yok. */
+
+/* Sayfanın tepesindeki tutamak: alttan gelen pencerenin bittiği yeri gösteren
+   küçük çizgi. Süs değil — parmağın nereden tutacağını söylüyor. */
+.m-tutamak {
+  flex-shrink: 0;
+  width: 38px;
+  height: 4px;
+  margin: 9px auto 2px;
+  border-radius: 999px;
+  background: #ded3c6;
+}
+
+/* İşlem menüsünün başlığı: masa adı ekranın kahramanı, altında hesabın o anki
+   özeti. Çizgi yok — başlıkla işlemler arasındaki boşluk zaten ayırıyor. */
+.m-islem-ust {
+  display: flex;
+  align-items: flex-start;
+  justify-content: space-between;
+  gap: 12px;
+  padding: 6px 14px 10px;
+}
+
+.m-islem-masa {
+  display: block;
+  font-size: 23px;
+  font-weight: 600;
+  letter-spacing: -0.4px;
+  line-height: 1.25;
+}
+
+.m-islem-ozet {
+  display: flex;
+  align-items: center;
+  gap: 7px;
+  margin-top: 3px;
+  font-size: 14px;
+  font-weight: 500;
+  color: var(--soluk);
+}
+
+.m-islem-ozet strong {
+  font-weight: 600;
+  color: var(--mercan);
+}
+
+/* Kapatma düğmesi başlıkla yarışmıyor: masa adı büyük, bu sade ve yuvarlak. */
+.m-islem-kapat {
+  flex-shrink: 0;
+  width: 36px;
+  height: 36px;
+  display: grid;
+  place-items: center;
+  border: none;
+  border-radius: 50%;
+  background: #f4ede4;
+  color: var(--metin);
+  cursor: pointer;
+}
+
+/* Menü uzarsa kaydırılıyor: satır sayısı kişinin yetkisine göre değişiyor. */
+.m-sayfa.kisa .m-islemler {
+  overflow-y: auto;
+}
+
 .m-islemler {
   display: flex;
   flex-direction: column;
-  padding: 4px 8px 8px;
+  gap: 2px;
+  padding: 8px 10px 12px;
 }
 
+/* Eylem satırı: ikon kendi renginde, dairesinin içinde. Ayarlar listesi gibi
+   çizgiyle bölmek yerine satırlar boşlukla ayrılıyor — bu bir liste değil,
+   dokunulacak işler kümesi. */
 .m-islem {
   display: flex;
   align-items: center;
   gap: 13px;
-  padding: 15px 12px;
+  padding: 11px 10px;
   border: none;
-  border-bottom: 1px solid #f2ece4;
+  border-radius: 14px;
   background: none;
   color: var(--metin);
   font-size: 16px;
@@ -12938,17 +13250,41 @@ body {
   cursor: pointer;
 }
 
-.m-islem:last-child {
-  border-bottom: none;
+.m-islem:active {
+  background: #f6f0e8;
 }
 
 .m-islem svg {
-  color: var(--soluk);
+  color: inherit;
 }
 
-.m-islem.tehlikeli,
-.m-islem.tehlikeli svg {
-  color: #d64545;
+/* İkonun dairesi, ikonun kendi renginin soluk hâli. Renk satırın anlamını
+   taşıyor: para yeşil, yazdırma mavi, geri alınamayan iş kırmızı. */
+.m-islem-ikon {
+  flex-shrink: 0;
+  width: 40px;
+  height: 40px;
+  display: grid;
+  place-items: center;
+  border-radius: 13px;
+  background: color-mix(in srgb, currentColor 14%, #fff);
+}
+
+.m-islem-ode { color: #23a06f; }
+.m-islem-hizli { color: #e08a1e; }
+.m-islem-yazdir { color: #3b7fc4; }
+.m-islem-tasi { color: #7b5fc0; }
+.m-islem-ikram { color: #c0567f; }
+.m-islem-iptal { color: #d64545; }
+.m-islem-not { color: #5a8f8a; }
+.m-islem-kisi { color: #4a7bb5; }
+
+/* Geri alınamayan işler ayrı bölümde: parmağın yanlışlıkla düşmemesi için
+   üstlerinde ince bir ayırıcı var. */
+.m-islem-ayirici {
+  height: 1px;
+  margin: 6px 12px;
+  background: #eee6dc;
 }
 
 /* Ödeme tipi kartı: ikon kendi renginde daire içinde, ad altında. */
@@ -13014,7 +13350,6 @@ body {
   margin-bottom: 12px;
   max-height: 132px;
   overflow-y: auto;
-  -webkit-overflow-scrolling: touch;
 }
 
 .m-kategori {
@@ -13056,7 +13391,9 @@ body {
    satır yüksekliğini sabitliyor. */
 .m-masalar {
   grid-template-columns: repeat(3, 1fr);
-  grid-auto-rows: 104px;
+  /* Garson adı satırı eklendiğinde yükseklik büyüdü. Kart taşanı kırptığı için
+     yeni satır buradan yer bulmazsa yazının altı üstü kesiliyor. */
+  grid-auto-rows: 152px;
 }
 
 .m-masa {
@@ -13450,12 +13787,19 @@ body {
   white-space: nowrap;
 }
 
+/* Meşgul rozeti kartın ortasında duruyor: köşede küçük kalıp gözden kaçıyordu,
+   oysa "bu masaya girme" kartın en önemli bilgisi. */
 .masa-sarmal .masa-mesgul {
   position: absolute;
-  left: 10px;
-  bottom: 10px;
+  left: 50%;
+  top: 50%;
+  transform: translate(-50%, -50%);
   z-index: 2;
   pointer-events: none;
+  font-size: 14px;
+  gap: 6px;
+  padding: 7px 13px;
+  box-shadow: 0 2px 10px rgba(0, 0, 0, 0.28);
 }
 
 /* Meşgul masa biraz geri çekiliyor: gözü kendine çekmesin, ama okunur kalsın. */

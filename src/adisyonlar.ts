@@ -5,7 +5,7 @@ import type { IndirimKaynagi } from "./indirimler";
 import { acikOturum } from "./oturum";
 import { kisaAd } from "./personel";
 import { denetimYaz } from "./denetim";
-import { cekmeceyiAc, mutfakFisiYaz } from "./yazicilar";
+import { cekmeceyiAc, iptalFisiYaz, mutfakFisiYaz } from "./yazicilar";
 import { kasayaGirerMi } from "./odemeTipleri";
 import { adisyonuCariyeYaz } from "./cari";
 import { servisTutarlari } from "./servis";
@@ -477,6 +477,10 @@ export type MasaOzeti = {
   kalan: number;
   adet: number;
   acilis?: string;
+  /** Masaya en son ne zaman sipariş girildi; masa kartı durgunluğu buradan biliyor. */
+  sonSiparis?: string;
+  /** Hesap fişi basıldı ve sonrasında masaya yeni sipariş girilmedi. */
+  fisBasildi?: boolean;
   garson?: string;
   ad?: string;
   kisiSayisi?: number;
@@ -501,7 +505,8 @@ export async function tumAdisyonlar(): Promise<Record<number, MasaOzeti>> {
     .select(
       `id, masa_id, acilis, indirim, ad, kisi_sayisi, kuver_tutar, garsoniye_tutar,
        acan:personel!adisyonlar_acan_id_fkey (ad),
-       turlar (adisyon_kalemleri (adet, fiyat, durum, indirim)),
+       turlar (olusturma, adisyon_kalemleri (adet, fiyat, durum, indirim)),
+       yazdirma_kuyrugu (tip, durum, basilma),
        tahsilatlar (tutar)`
     )
     .eq("durum", "acik");
@@ -510,7 +515,13 @@ export async function tumAdisyonlar(): Promise<Record<number, MasaOzeti>> {
   for (const satir of (data as any[]) ?? []) {
     let tutar = 0;
     let adet = 0;
+    // Masanın en son ne zaman sipariş verdiği turların en yenisinden çıkıyor;
+    // masa kartı bunu "durgun masa" rengi için kullanıyor.
+    let sonSiparis: string | undefined;
     for (const tur of satir.turlar ?? []) {
+      if (tur.olusturma && (!sonSiparis || tur.olusturma > sonSiparis)) {
+        sonSiparis = tur.olusturma;
+      }
       for (const k of tur.adisyon_kalemleri ?? []) {
         if (k.durum === "iptal") continue;
         adet += Number(k.adet);
@@ -519,6 +530,15 @@ export async function tumAdisyonlar(): Promise<Record<number, MasaOzeti>> {
         }
       }
     }
+    // Hesap fişi basıldıktan sonra masaya yeni sipariş girilirse kâğıttaki
+    // tutar tutmuyor; kart işareti o an düşüyor, fiş yeniden istensin.
+    let fisBasilma: string | undefined;
+    for (const f of satir.yazdirma_kuyrugu ?? []) {
+      if (f.tip !== "adisyon" || f.durum !== "basildi" || !f.basilma) continue;
+      if (!fisBasilma || f.basilma > fisBasilma) fisBasilma = f.basilma;
+    }
+    const fisBasildi = !!fisBasilma && (!sonSiparis || fisBasilma > sonSiparis);
+
     const net = Math.max(0, tutar - Number(satir.indirim ?? 0)) + servisToplami(satir);
     const odenen = (satir.tahsilatlar ?? []).reduce(
       (t: number, o: any) => t + Number(o.tutar),
@@ -531,6 +551,8 @@ export async function tumAdisyonlar(): Promise<Record<number, MasaOzeti>> {
       kalan: Math.max(0, net - odenen),
       adet,
       acilis: satir.acilis,
+      sonSiparis,
+      fisBasildi,
       garson: satir.acan?.ad ? kisaAd(satir.acan.ad) : undefined,
       ad: satir.ad ?? undefined,
       kisiSayisi: satir.kisi_sayisi ?? undefined,
@@ -635,6 +657,9 @@ export async function adisyonIptal(adisyonId: number, sebep: string) {
 
   const tutar = await adisyonTutari(adisyonId);
   const yer = await adisyonYeri(adisyonId);
+  // Adisyonun kalemleri iptal yazılmadan önce okunuyor: tezgâha "bu masanın
+  // tamamını yapmayın" fişi bunlardan basılıyor.
+  const iptalEdilecekler = await adisyonKalemleri(adisyonId);
 
   const { error } = await supabase
     .from("adisyonlar")
@@ -648,6 +673,40 @@ export async function adisyonIptal(adisyonId: number, sebep: string) {
   if (error) throw new Error("Adisyon iptal edilemedi.");
 
   await denetimYaz([{ islem: "adisyon_iptal", adisyonId, yer, tutar, sebep }]);
+
+  // Fiş beklenmiyor: adisyon zaten iptal edildi, yazıcı sorunu bunu geri almaz.
+  if (iptalEdilecekler.length) {
+    fisKunyesi(adisyonId)
+      .then((kunye) =>
+        iptalFisiYaz(
+          {
+            sepet: [],
+            indirim: 0,
+            tahsilatlar: [],
+            ...kunye,
+            id: adisyonId,
+            ad: yer,
+            garson: kisaAd(acikOturum()?.ad ?? "") || undefined,
+          },
+          iptalEdilecekler
+        )
+      )
+      .catch((e) => console.error("İptal fişi kuyruğa yazılamadı:", e));
+  }
+}
+
+/** İptal fişi için adisyonun tezgâha gitmiş kalemleri. */
+async function adisyonKalemleri(adisyonId: number): Promise<SepetKalemi[]> {
+  const { data } = await supabase
+    .from("turlar")
+    .select(`adisyon_kalemleri (${KALEM_ALANLARI})`)
+    .eq("adisyon_id", adisyonId);
+
+  const kalemler: SepetKalemi[] = [];
+  for (const t of (data as any[]) ?? [])
+    for (const k of t.adisyon_kalemleri ?? [])
+      if ((k.durum ?? "normal") === "normal") kalemler.push(kalemeCevir(k));
+  return kalemler;
 }
 
 /**
@@ -915,11 +974,34 @@ async function kalemleriYaz(
     veri.sepet.map((k) => k.odenmezId).filter((id): id is number => !!id)
   );
 
+  // Tezgâhtan geri alınacak ürünler. Üç yoldan biriyle buraya düşüyorlar:
+  // kalem iptal edildi, kalem sepetten tamamen silindi, ya da adedi azaltıldı
+  // (üç çayın biri düştüyse mutfak bir çay eksik hazırlamalı).
+  //
+  // Ölçü kalemin sunucuda kayıtlı olması: garson ürünü ekleyip göndermeden
+  // vazgeçtiyse tezgâh o siparişi hiç görmedi, iptal fişi basmak kafa karıştırır.
+  const iptalEdilenler: SepetKalemi[] = [];
+
+  for (const id of silinecek) {
+    const eski = oncekiKalemler.get(id);
+    if (!eski || (eski.durum ?? "normal") !== "normal") continue;
+    iptalEdilenler.push(kalemeCevir(eski));
+  }
+
   const guncellemeler: Promise<unknown>[] = [];
   for (const k of veri.sepet) {
     if (!k.id || k.id < 0) continue;
+
+    const oncekiDurum = oncekiDurumlar.get(k.id) ?? "normal";
+    if (oncekiDurum === "normal" && (k.durum ?? "normal") === "iptal") {
+      iptalEdilenler.push(k);
+    } else if (oncekiDurum === "normal" && (k.durum ?? "normal") === "normal") {
+      const azalan = Number(oncekiKalemler.get(k.id)?.adet ?? k.adet) - k.adet;
+      if (azalan > 0) iptalEdilenler.push({ ...k, adet: azalan });
+    }
+
     const denetim = durumDegisimi(
-      oncekiDurumlar.get(k.id) ?? "normal",
+      oncekiDurum,
       k,
       k.odenmezId ? odenmezAdlari.get(k.odenmezId) : undefined
     );
@@ -1013,6 +1095,21 @@ async function kalemleriYaz(
         )
       )
       .catch((e) => console.error("Mutfak fişi kuyruğa yazılamadı:", e));
+  }
+
+  // İptal fişi de mutfak fişi gibi beklenmiyor: kayıt tamamlandıktan sonra
+  // kendi başına kuyruğa giriyor, yazıcı tarafındaki bir sorun garsonun
+  // ekranını kilitlemiyor.
+  if (iptalEdilenler.length) {
+    const kisi = kisaAd(acikOturum()?.ad ?? "") || veri.garson;
+    fisKunyesi(adisyonId)
+      .then((kunye) =>
+        iptalFisiYaz(
+          { ...veri, ...kunye, id: adisyonId, garson: kisi || undefined },
+          iptalEdilenler
+        )
+      )
+      .catch((e) => console.error("İptal fişi kuyruğa yazılamadı:", e));
   }
 
   // Tahsilatlar eskiden her kayıtta silinip yeniden yazılıyordu; kimlik

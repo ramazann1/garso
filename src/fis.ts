@@ -103,20 +103,33 @@ export function fisIcerigi(
   adisyon: AdisyonVerisi,
   kalemler?: SepetKalemi[],
   /** Mutfak fişinin numarası — turun kendi numarası, adisyonunki değil. */
-  siparisNo?: number
+  siparisNo?: number,
+  /**
+   * İptal fişi: tezgâha "bunları yapma" demek için basılıyor. Mutfak fişiyle
+   * aynı şablonu kullanıyor — aynı kâğıt, aynı düzen, tanıdık görünüyor — ama
+   * başında iptal başlığı var ve satılan değil iptal edilen kalemleri yazıyor.
+   */
+  iptal?: boolean,
+  /** Yazıcının kâğıt genişliği (mm). Dar kâğıtta iptal başlığı küçülüyor. */
+  kagitGenislik?: number
 ): FisIcerigi {
   const mutfak = sablon.tip === "mutfak";
   const p = sablon.parametreler;
   const ozet = adisyonOzeti(adisyon);
-  const satilanlar = (kalemler ?? adisyon.sepet).filter(
-    (k) => (k.durum ?? "normal") === "normal"
-  );
+  // İptal fişinde durum süzgeci çalışmıyor: yazılacak kalemler zaten iptal
+  // edilenler, çağıran onları seçip veriyor.
+  const satilanlar = iptal
+    ? (kalemler ?? [])
+    : (kalemler ?? adisyon.sepet).filter((k) => (k.durum ?? "normal") === "normal");
 
   const s: FisSatiri[] = [];
 
   if (!mutfak && p.logo && sablon.logo) s.push({ t: "logo", m: sablon.logo });
   if (!mutfak) s.push({ t: "orta", m: isletmeAdi() || "İşletmeniz", alan: "isletme_adi", kalin: true });
-  if (mutfak && p.siparis_no && siparisNo)
+  // İptal başlığı fişin en üstünde: tezgâhtaki kişi kâğıdı eline alır almaz
+  // bunun yeni sipariş olmadığını görmeli, ürün listesine bakmadan.
+  if (iptal) s.push({ t: "orta", m: "XXX İPTAL XXX", alan: "iptal_basligi", kalin: true });
+  if (mutfak && p.siparis_no && siparisNo && !iptal)
     s.push({ t: "orta", m: `Sipariş ${siparisNo}`, alan: "siparis_no", kalin: true });
   if (sablon.ustMetin) s.push({ t: "orta", m: sablon.ustMetin, alan: "alt_metin" });
 
@@ -129,8 +142,18 @@ export function fisIcerigi(
   });
   // Mutfak fişinde yalnız isim: tezgâha düşen fişteki adın garsona ait olduğunu
   // herkes biliyor, "Garson" yazısı yer kaplamaktan başka iş görmüyor.
+  // İptal fişinde isim tek başına yetmiyor: tezgâh siparişi kimin durdurduğunu
+  // bilmeli, sorusu olursa doğrudan ona gitsin.
   if (adisyon.garson)
-    s.push({ t: "sol", m: mutfak ? adisyon.garson : `Garson: ${adisyon.garson}`, alan: "genel" });
+    s.push({
+      t: "sol",
+      m: iptal
+        ? `İptal eden: ${adisyon.garson}`
+        : mutfak
+          ? adisyon.garson
+          : `Garson: ${adisyon.garson}`,
+      alan: "genel",
+    });
   if (!mutfak && p.siparis_no) s.push({ t: "sol", m: `Fiş No: ${adisyon.no ?? "—"}`, alan: "genel" });
   if (mutfak && p.musteri_sayisi && adisyon.kisiSayisi)
     s.push({ t: "sol", m: `Kişi: ${adisyon.kisiSayisi}`, alan: "genel" });
@@ -171,7 +194,7 @@ export function fisIcerigi(
 
   s.push({ t: "cizgi" });
 
-  if (!mutfak || p.siparis_toplami) {
+  if (!iptal && (!mutfak || p.siparis_toplami)) {
     if (!mutfak && adisyon.indirim > 0)
       s.push({ t: "ikiUc", sol: "İndirim", sag: `-${paraGoster(adisyon.indirim)}`, alan: "odeme" });
     // Kuver ve garsoniye toplamın içinde duruyor; müşteri neyi ödediğini fişte
@@ -249,7 +272,14 @@ export function fisIcerigi(
   // değil, kuyruktaki bu pakete bakıyor.
   return {
     tip: sablon.tip,
-    puntolar: { ...VARSAYILAN_PUNTOLAR, ...sablon.puntolar },
+    puntolar: {
+      ...VARSAYILAN_PUNTOLAR,
+      ...sablon.puntolar,
+      // İptal başlığı kâğıdın izin verdiği kadar büyük: 80 mm'de en büyük
+      // punto sığıyor, 58 mm'de "XXX İPTAL XXX" satırı taşıyor. İşletmenin
+      // ayarına bırakılmıyor, kâğıttan hesaplanıyor.
+      iptal_basligi: (kagitGenislik ?? 80) < 80 ? 26 : 40,
+    },
     satirlar: s,
   };
 }

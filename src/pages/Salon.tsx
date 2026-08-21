@@ -53,7 +53,7 @@ import {
 import { servisSatirlari } from "../servis";
 import type { AdisyonVerisi, MasaOzeti, MasasizAdisyon } from "../adisyonlar";
 import { adisyonFisiYaz } from "../yazicilar";
-import { bolgeleriGetir } from "../masalar";
+import { bolgeleriGetir, durgunMu } from "../masalar";
 import type { Bolge, Masa } from "../types";
 
 type Acik = MasaOzeti;
@@ -65,8 +65,9 @@ function sureFarki(acilis: string): string {
   return `${Math.floor(dk / 60)} sa ${dk % 60} dk`;
 }
 
-// Uzun süredir açık duran masa kartında saat işareti çıkıyor — garsonun gözü
-// unutulmuş hesaba takılsın.
+// Gel Al / Paket kartında bu süreyi aşan hesabın süresi renkleniyor — kapıda
+// bekleyen paket gözden kaçmasın. Masa kartı bu ölçüyü kullanmıyor: orada
+// masanın en son ne zaman sipariş verdiğine bakılıyor (bkz. masalar.ts).
 const UZUN_SURE_DK = 120;
 const dakika = (acilis?: string) =>
   acilis ? Math.floor((Date.now() - new Date(acilis).getTime()) / 60000) : 0;
@@ -232,7 +233,7 @@ export default function Salon() {
 
   // Garson telefondan sipariş girdiğinde kasadaki salon kendiliğinden
   // tazeleniyor; kasiyerin ekranı yenilemesi gerekmiyor.
-  useCanli(["adisyonlar", "adisyon_kalemleri", "tahsilatlar"], salonuOku);
+  useCanli(["adisyonlar", "adisyon_kalemleri", "tahsilatlar", "yazdirma_kuyrugu"], salonuOku);
 
   // Bağlantı geri gelince salon kendiliğinden doluyor: garson "Yeniden dene"ye
   // basmayı beklemesin, ekran zaten düzelmiş olsun. Kopukken ekranda masa
@@ -459,7 +460,8 @@ export default function Salon() {
             kalan: acik.kalan,
             sure: acik.acilis ? sureFarki(acik.acilis) : "şimdi",
             garson: acik.garson,
-            gecikti: dakika(acik.acilis) >= UZUN_SURE_DK,
+            durgun: durgunMu(acik),
+            fisBasildi: acik.fisBasildi,
             ad: acik.ad,
             kisiSayisi: acik.kisiSayisi,
             bekliyor: acik.bekliyor,

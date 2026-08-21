@@ -8,7 +8,7 @@ import { GARSO_SURUM } from "../surum";
 import { kilitle, oturumuKapat, useOturum } from "../oturum";
 import { yolaGirebilir } from "../rotaYetkileri";
 import { kisaAd } from "../personel";
-import { darEkran, gorunumSec } from "../mobil/mobilTercih";
+import { gorunumSec } from "../mobil/mobilTercih";
 
 // İşletme ayarları tek ekranda büyüdükçe kalabalıklaşıyor; başlıklar menüden
 // ayrı ayrı açılıyor, her biri kendi sayfası.
@@ -282,9 +282,10 @@ export default function Duzen({ children }: { children: React.ReactNode }) {
               </span>
               {acik && <Lock className="kisi-cik" size={16} />}
             </button>
-            {/* Telefondan masaüstü görünüme geçen kişinin dönüş yolu. Geniş
-                ekranda gösterilmiyor: kasada işe yaramaz, yer kaplar. */}
-            {acik && darEkran() && (
+            {/* Mobil arayüze geçiş. Ekran genişliğine bakılmıyor: işletmeci
+                kasadan da mobili görmek istiyor — ekranını denemek, garsonun
+                gördüğünü görmek için. Dönüş yolu mobildeki Ben sekmesinde. */}
+            {acik && (
               <button
                 className="kisi-cikis"
                 onClick={() => gorunumSec("mobil")}

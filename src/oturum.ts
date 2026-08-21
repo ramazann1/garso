@@ -124,7 +124,15 @@ export async function oturumuYukle() {
   }
 
   try {
-    acik = await kisiyiYukle("auth_id", data.session.user.id);
+    // Ekranda görünen kişi sunucunun bildiği kişiyle aynı olmalı. Bilet kasayı
+    // açanda kalıyor ama başındaki kişi PIN'le değişiyor; doğrudan bilete
+    // bakılsaydı sayfa yenilendiğinde kasayı açan geri gelirdi — PIN'le geçen
+    // garsonun yerine yöneticinin ekranı açılırdı. Kimin çalıştığını bilen tek
+    // yer veritabanı, oraya soruluyor.
+    const { data: kisiId } = await supabase.rpc("oturum_personeli");
+    acik = kisiId
+      ? await kisiyiYukle("id", kisiId as number)
+      : await kisiyiYukle("auth_id", data.session.user.id);
   } catch (hata) {
     // Bağlantı yoksa kişi bilgisi cihazdaki kopyadan kuruluyor; kasa
     // internetsiz açılınca da açık oturumla geliyor. Başka bir hataysa
