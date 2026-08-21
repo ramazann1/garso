@@ -4,6 +4,8 @@ import {
   ArrowLeft,
   ArrowRightLeft,
   Ban,
+  Check,
+  ChevronDown,
   ChevronRight,
   ChevronUp,
   CloudOff,
@@ -134,6 +136,21 @@ export default function MobilSiparis() {
   useEffect(() => {
     if (devralan) setDevralindi(devralan);
   }, [devralan]);
+
+  // Bekleyen kalemler alt alta sıralandığı için şeridin boyu değişken. Ürün
+  // ızgarası altında ne kadar boşluk bırakacağını sabit sayıdan bilemez;
+  // şeridin gerçek yüksekliği ölçülüp ekrana yazılıyor.
+  const ekran = useRef<HTMLDivElement>(null);
+  const serit = useRef<HTMLDivElement>(null);
+  useEffect(() => {
+    const el = serit.current;
+    if (!el) return;
+    const olc = () => ekran.current?.style.setProperty("--serit-boy", el.offsetHeight + "px");
+    olc();
+    const gozcu = new ResizeObserver(olc);
+    gozcu.observe(el);
+    return () => gozcu.disconnect();
+  });
 
   // Sunucuya yazılmamış kalem var mı — Gönder düğmesi ve çıkış uyarısı buna bakıyor.
   const baslangicImza = useRef("");
@@ -266,6 +283,25 @@ export default function MobilSiparis() {
     if (!uzunBasildi.current) urunEkle(u);
   };
 
+  // Masa adı yalnız sayıysa başlıkta tek başına duruyordu — "5" yazan bir
+  // ekranda garson nerede olduğunu okumuyor. Adı zaten yazılı olan masalar
+  // ("Bahçe 3", "Teras A") olduğu gibi kalıyor.
+  const masaBasligi = /^\d+$/.test(masaAdi.trim()) ? `Masa ${masaAdi.trim()}` : masaAdi;
+
+  // Şeritte ana kategoriler durur. Üstü satışta gizliyse alt kategori şeride
+  // ana kategori gibi girer — kasadaki kural aynen geçerli.
+  const anaKategoriler = kategoriler.filter(
+    (k) => !k.ustId || !kategoriler.some((x) => x.id === k.ustId)
+  );
+  const seciliKat = kategoriler.find((k) => k.id === seciliKategori);
+  // Alt kategori seçiliyken üst sıradaki vurgu babasında kalıyor: garson hangi
+  // ana gruptayım sorusunu kaybetmiyor.
+  const acikAna = seciliKat
+    ? (anaKategoriler.find((k) => k.id === seciliKat.id) ??
+      anaKategoriler.find((k) => k.id === seciliKat.ustId))
+    : undefined;
+  const altKategoriler = acikAna ? kategoriler.filter((k) => k.ustId === acikAna.id) : [];
+
   const aranan = arama.trim().toLocaleLowerCase("tr");
   const gosterilen = aranan
     ? urunler.filter(
@@ -277,11 +313,13 @@ export default function MobilSiparis() {
       ? agacUrunleri(urunler, kategoriler, seciliKategori).filter((u) => !u.menuGruplari.length)
       : [];
 
-  // Kart rozeti: o üründen adisyonda kaç adet var (porsiyonlar toplanıyor).
+  // Kart rozeti yalnız bu turda girilenleri sayıyor: garson kaç kez bastığını
+  // görüyor, gönderince sıfırlanıyor. Saat önce gönderilmiş çay buraya
+  // karışırsa rozet "şu an ne giriyorum" sorusuna cevap vermiyor.
   const kartAdetleri = useMemo(() => {
     const m: Record<string, number> = {};
     for (const k of sepet) {
-      if (k.durum === "iptal") continue;
+      if (k.turSira != null || k.durum === "iptal") continue;
       m[k.ad] = (m[k.ad] ?? 0) + k.adet;
     }
     return m;
@@ -292,7 +330,9 @@ export default function MobilSiparis() {
   // Kuver ve garsoniye ürün değil, hesabın kendi bedeli; toplamda görünüp
   // dökümde görünmezse garson farkı nereden çıktı diye kalıyor.
   const servisler = servisSatirlari(servisGirdisi(adisyon, Math.max(0, ozet.araToplam - indirim)));
-  const sonKalem = [...sepet].reverse().find((k) => k.turSira == null);
+  // Şeritte gönderilmemiş kalemlerin tamamı duruyor; garson o tura ne girdiğini
+  // pencere açmadan görüyor.
+  const bekleyenler = sepet.filter((k) => k.turSira == null && k.durum !== "iptal");
 
   // Kalemler turlara ayrılıyor: hangi ürünün ne zaman istendiği sepette
   // görünsün. Yeni girilenler henüz turu olmayanlar, en altta duruyor.
@@ -308,7 +348,9 @@ export default function MobilSiparis() {
       if (son && son.baslik === baslik) son.kalemler.push(k);
       else liste.push({ baslik, kalemler: [k] });
     }
-    return liste;
+    // Yeni tur en üstte: garson az önce girdiğini görmek için uzun adisyonu
+    // sonuna kadar kaydırmak zorunda kalmasın.
+    return liste.sort((a, b) => Number(b.baslik === "Yeni") - Number(a.baslik === "Yeni"));
   }, [sepet]);
 
   const fisYazdir = async () => {
@@ -391,7 +433,7 @@ export default function MobilSiparis() {
   }
 
   return (
-    <div className="m-siparis">
+    <div className="m-siparis" ref={ekran}>
       <header className="m-siparis-ust">
         <button className="m-ikon-dugme" onClick={() => git("/mobil/masalar")} aria-label="Geri">
           <ArrowLeft size={20} />
@@ -405,7 +447,7 @@ export default function MobilSiparis() {
             onChange={(e) => setArama(e.target.value)}
           />
         ) : (
-          <h1>{masaAdi}</h1>
+          <h1>{masaBasligi}</h1>
         )}
         <button
           className="m-ikon-dugme"
@@ -426,22 +468,43 @@ export default function MobilSiparis() {
         </button>
       </header>
 
-      {/* Kategoriler kendi renkleriyle kart: garson adı okumadan renkten
-          tanıyor, yoğun saatte aradığı grubu tek bakışta buluyor. */}
+      {/* Kategoriler kendi renkleriyle tek sırada, yana kayıyor: ızgara ekranın
+          üçte birini yiyordu, ürünlere yer kalmıyordu. Alt kategorisi olanın
+          yanında ok var; o kategori seçilince altında ikinci sıra açılıyor. */}
       {!aramaAcik && (
         <div className="m-kategoriler">
-          {kategoriler
-            .filter((k) => !k.ustId)
-            .map((k) => (
-              <button
-                key={k.id}
-                className={k.id === seciliKategori ? "m-kategori secili" : "m-kategori"}
-                style={{ background: k.renk, color: yaziRengi(k.renk) }}
-                onClick={() => setSeciliKategori(k.id)}
-              >
-                {k.ad}
-              </button>
-            ))}
+          {anaKategoriler.map((k) => (
+            <button
+              key={k.id}
+              className={k.id === acikAna?.id ? "m-kategori secili" : "m-kategori"}
+              style={{ background: k.renk, color: yaziRengi(k.renk) }}
+              onClick={() => setSeciliKategori(k.id)}
+            >
+              {k.ad}
+              {kategoriler.some((x) => x.ustId === k.id) && <ChevronDown size={14} />}
+            </button>
+          ))}
+        </div>
+      )}
+
+      {!aramaAcik && altKategoriler.length > 0 && (
+        <div className="m-alt-kategoriler">
+          {/* Ana kategoriye dönüş: altındakilerin hepsi tek listede görünüyor. */}
+          <button
+            className={acikAna?.id === seciliKategori ? "m-alt-kategori secili" : "m-alt-kategori"}
+            onClick={() => acikAna && setSeciliKategori(acikAna.id)}
+          >
+            Tümü
+          </button>
+          {altKategoriler.map((k) => (
+            <button
+              key={k.id}
+              className={k.id === seciliKategori ? "m-alt-kategori secili" : "m-alt-kategori"}
+              onClick={() => setSeciliKategori(k.id)}
+            >
+              {k.ad}
+            </button>
+          ))}
         </div>
       )}
 
@@ -473,139 +536,160 @@ export default function MobilSiparis() {
 
       {/* Sepet şeridi hep ekranda: garson ne girdiğini görmek için hiçbir yere
           dokunmak zorunda kalmıyor. Şeride dokunmak tam listeyi açıyor. */}
-      <div className="m-serit">
-        <button className="m-serit-ozet" onClick={() => setSepetAcik(true)}>
-          <ChevronUp size={18} />
-          <span className="m-serit-son">
-            {sonKalem ? sonKalem.adet + "× " + sonKalem.ad : sepet.length + " kalem"}
-          </span>
-          <span className="m-serit-tutar">{paraGoster(ozet.toplam)}</span>
-        </button>
-        <button className="m-gonder" disabled={!kirli || gonderiliyor} onClick={gonder}>
-          {baglantiVar() ? <Send size={18} /> : <CloudOff size={18} />}
-          Gönder
-        </button>
+      <div className="m-serit" ref={serit}>
+        {/* Gönderilmeyi bekleyen kalemler burada geziniyor: garson pencere
+            açmadan o tura ne girdiğini görüyor, sığmayanı parmakla kaydırıyor. */}
+        {bekleyenler.length > 0 && (
+          <div className="m-serit-bekleyen">
+            {bekleyenler.map((k) => (
+              <span key={k.id} className="m-bekleyen-cip">
+                <b>{k.adet}×</b> {k.ad}
+              </span>
+            ))}
+          </div>
+        )}
+
+        <div className="m-serit-alt">
+          <button className="m-serit-ozet" onClick={() => setSepetAcik(true)}>
+            <ReceiptText size={18} />
+            <span className="m-serit-son">
+              {sepet.length > 0 ? sepet.length + " kalem" : "Adisyon boş"}
+            </span>
+            <span className="m-serit-tutar">{paraGoster(ozet.toplam)}</span>
+            <ChevronUp size={16} />
+          </button>
+          <button className="m-gonder" disabled={!kirli || gonderiliyor} onClick={gonder}>
+            {baglantiVar() ? <Send size={18} /> : <CloudOff size={18} />}
+            Gönder
+          </button>
+        </div>
       </div>
 
       {sepetAcik && (
-        <div className="m-perde" onClick={() => setSepetAcik(false)}>
-          <div className="m-sayfa" onClick={(e) => e.stopPropagation()}>
-            <header className="m-sayfa-ust">
-              <h2>Adisyon</h2>
-              <button
-                className="m-ikon-dugme"
-                onClick={() => setSepetAcik(false)}
-                aria-label="Kapat"
-              >
-                <X size={20} />
-              </button>
-            </header>
-
-            <div className="m-sayfa-icerik">
-              {sepet.length === 0 && (
-                <div className="m-bos">
-                  <p>Sepet boş.</p>
-                </div>
-              )}
-              {turlar.map((tur, i) => (
-                <div key={i} className="m-tur">
-                  <div className="m-tur-baslik">{tur.baslik}</div>
-                  {tur.kalemler.map((k) => (
-                    // Kaleme dokunmak işlem sayfasını açıyor: adet, not, ikram,
-                    // indirim, iptal ve taşıma orada. Yanındaki artı/eksi yeni
-                    // girilen satırın adedini hızlı değiştirmek için duruyor.
-                    <div
-                      key={k.id}
-                      className={
-                        (k.durum ?? "normal") === "normal" ? "m-kalem" : `m-kalem ${k.durum}`
-                      }
-                      onClick={() => setKalemIslem(k)}
-                    >
-                      <span className="m-kalem-adet">{k.adet}</span>
-                      <span className="m-kalem-ad">
-                        {k.ad}
-                        {!!(k.porsiyon || k.secimler?.length || k.not) && (
-                          <small>
-                            {[k.porsiyon, ...(k.secimler ?? []), k.not].filter(Boolean).join(" · ")}
-                          </small>
-                        )}
-                      </span>
-                      <span className="m-kalem-tutar">
-                        {(k.durum ?? "normal") !== "normal"
-                          ? k.durum === "ikram" ? "İkram" : "İptal"
-                          : paraGoster(kalemTutari(k))}
-                      </span>
-                      {k.turSira == null && (
-                        <div className="m-adet" onClick={(e) => e.stopPropagation()}>
-                          <button onClick={() => adetDegistir(k, -1)} aria-label="Azalt">
-                            <Minus size={16} />
-                          </button>
-                          <button onClick={() => adetDegistir(k, 1)} aria-label="Artır">
-                            <Plus size={16} />
-                          </button>
-                        </div>
-                      )}
-                    </div>
-                  ))}
-                </div>
-              ))}
-            </div>
-
-            <div className="m-dokum">
-              {/* Ara toplam yalnız üstüne bir şey binmişse yazılıyor; hiçbiri
-                  yoksa tek satırlık toplam zaten yeterli. */}
-              {(servisler.length > 0 || indirim > 0 || ozet.kdv > 0) && (
-                <>
-                  <div className="m-dokum-satir">
-                    <span>Ara toplam</span>
-                    <span>{paraGoster(ozet.araToplam)}</span>
-                  </div>
-                  {indirim > 0 && (
-                    <div className="m-dokum-satir">
-                      <span>İndirim</span>
-                      <span>-{paraGoster(indirim)}</span>
-                    </div>
-                  )}
-                  {servisler.map((sat) => (
-                    <div key={sat.ad} className="m-dokum-satir">
-                      <span>{sat.ad}</span>
-                      <span>{paraGoster(sat.tutar)}</span>
-                    </div>
-                  ))}
-                  {ozet.kdv > 0 && (
-                    <div className="m-dokum-satir">
-                      <span>KDV</span>
-                      <span>{paraGoster(ozet.kdv)}</span>
-                    </div>
-                  )}
-                </>
-              )}
-            </div>
-
-            <div className="m-sayfa-alt">
-              <span>Toplam</span>
-              <strong>{paraGoster(ozet.toplam)}</strong>
-              {/* Ödeme burada yapılmıyor, hesabın kendi ekranına geçiliyor.
-                  Gönderilmemiş kalem varken geçilmiyor: kaydedilmemiş sipariş
-                  ödeme ekranında hiç görünmez, garson eksik tutar tahsil eder. */}
-              {sepet.length > 0 && (
-                <button
-                  className="m-dugme"
-                  onClick={() => {
-                    if (kirli) {
-                      setUyari("Önce siparişi gönder, sonra hesabı kapat.");
-                      return;
-                    }
-                    git(`/mobil/adisyon/${masaId}`);
-                  }}
-                >
-                  <Wallet size={18} />
-                  {yetkiVar("odeme.al") ? "Öde" : "Hesap"}
+        <AltSayfa ek="m-adisyon-sayfa" onKapat={() => setSepetAcik(false)}>
+          {(kapat) => (
+            <>
+              <header className="m-sayfa-ust">
+                <h2>
+                  <ReceiptText size={18} /> Adisyon
+                </h2>
+                <button className="m-ikon-dugme" onClick={kapat} aria-label="Kapat">
+                  <X size={20} />
                 </button>
-              )}
-            </div>
-          </div>
-        </div>
+              </header>
+
+              <div className="m-sayfa-icerik">
+                {sepet.length === 0 && (
+                  <div className="m-bos">
+                    <p>Sepet boş.</p>
+                  </div>
+                )}
+                {turlar.map((tur, i) => (
+                  <div key={i} className="m-tur">
+                    <div className={tur.baslik === "Yeni" ? "m-tur-baslik yeni" : "m-tur-baslik"}>
+                      <span>{tur.baslik}</span>
+                    </div>
+                    {tur.kalemler.map((k) => (
+                      // Kaleme dokunmak işlem sayfasını açıyor: adet, not, ikram,
+                      // indirim, iptal ve taşıma orada. Yanındaki artı/eksi yeni
+                      // girilen satırın adedini hızlı değiştirmek için duruyor.
+                      <div
+                        key={k.id}
+                        className={
+                          (k.durum ?? "normal") === "normal" ? "m-kalem" : `m-kalem ${k.durum}`
+                        }
+                        onClick={() => setKalemIslem(k)}
+                      >
+                        <span className="m-kalem-adet">{k.adet}</span>
+                        <span className="m-kalem-ad">
+                          {k.ad}
+                          {!!(k.porsiyon || k.secimler?.length || k.not) && (
+                            <small>
+                              {[k.porsiyon, ...(k.secimler ?? []), k.not].filter(Boolean).join(" · ")}
+                            </small>
+                          )}
+                        </span>
+                        <span className="m-kalem-tutar">
+                          {(k.durum ?? "normal") !== "normal"
+                            ? k.durum === "ikram" ? "İkram" : "İptal"
+                            : paraGoster(kalemTutari(k))}
+                        </span>
+                        {k.turSira == null && (
+                          <div className="m-adet" onClick={(e) => e.stopPropagation()}>
+                            <button onClick={() => adetDegistir(k, -1)} aria-label="Azalt">
+                              <Minus size={16} />
+                            </button>
+                            <button onClick={() => adetDegistir(k, 1)} aria-label="Artır">
+                              <Plus size={16} />
+                            </button>
+                          </div>
+                        )}
+                      </div>
+                    ))}
+                  </div>
+                ))}
+              </div>
+
+              <div className="m-dokum">
+                {/* Ara toplam yalnız üstüne bir şey binmişse yazılıyor; hiçbiri
+                    yoksa tek satırlık toplam zaten yeterli. */}
+                {(servisler.length > 0 || indirim > 0 || ozet.kdv > 0) && (
+                  <>
+                    <div className="m-dokum-satir">
+                      <span>Ara toplam</span>
+                      <span>{paraGoster(ozet.araToplam)}</span>
+                    </div>
+                    {indirim > 0 && (
+                      <div className="m-dokum-satir">
+                        <span>İndirim</span>
+                        <span>-{paraGoster(indirim)}</span>
+                      </div>
+                    )}
+                    {servisler.map((sat) => (
+                      <div key={sat.ad} className="m-dokum-satir">
+                        <span>{sat.ad}</span>
+                        <span>{paraGoster(sat.tutar)}</span>
+                      </div>
+                    ))}
+                    {ozet.kdv > 0 && (
+                      <div className="m-dokum-satir">
+                        <span>KDV</span>
+                        <span>{paraGoster(ozet.kdv)}</span>
+                      </div>
+                    )}
+                  </>
+                )}
+              </div>
+
+              <div className="m-sayfa-alt m-toplam-alt">
+                <div className="m-toplam">
+                  <span>Toplam</span>
+                  <strong>{paraGoster(ozet.toplam)}</strong>
+                </div>
+                {/* Gönderilmemiş kalem varken düğme Gönder: o hâlde ödemeye
+                    geçilemiyordu zaten, garsona uyarı verip geri çevirmek yerine
+                    yapması gereken işi doğrudan sunuyor. Kaydedilmemiş sipariş
+                    ödeme ekranında görünmez, eksik tutar tahsil edilirdi.
+
+                    Sepet boşken ikisi de yok: gönderilecek ya da ödenecek bir şey
+                    olmadan düğme yer kaplıyordu. */}
+                {kirli ? (
+                  <button className="m-dugme" disabled={gonderiliyor} onClick={gonder}>
+                    {baglantiVar() ? <Send size={18} /> : <CloudOff size={18} />}
+                    Gönder
+                  </button>
+                ) : (
+                  sepet.length > 0 && (
+                    <button className="m-dugme" onClick={() => git(`/mobil/adisyon/${masaId}`)}>
+                      <Wallet size={18} />
+                      {yetkiVar("odeme.al") ? "Öde" : "Hesap"}
+                    </button>
+                  )
+                )}
+              </div>
+            </>
+          )}
+        </AltSayfa>
       )}
 
       {/* Siparişin kendi işlemleri: masaya girdikten sonra da misafir sayısı
@@ -806,10 +890,13 @@ export default function MobilSiparis() {
 
       {kisiSorusu && (
         <MisafirSorusu
-          deger={kisiSayisi ?? 2}
           onKaydet={(sayi) => {
             setKisiSayisi(sayi);
             setKisiSorusu(false);
+          }}
+          onVazgec={() => {
+            kilitKaldir();
+            git("/mobil/masalar");
           }}
         />
       )}
@@ -840,27 +927,55 @@ export default function MobilSiparis() {
 /**
  * Misafir sayısı zorunluysa masaya girer girmez soruluyor. Kuver hesabı buna
  * bağlı; sonradan sorulursa tutar bir süre yanlış görünüyor.
+ *
+ * Kasadaki `MisafirSayisi` ile aynı desen: kalabalık masa nadir olduğu için
+ * hazır rakamlar tek dokunuşa yetiyor, daha fazlası alttaki kutuya yazılıyor.
+ * Sayaçtan vazgeçildi — altı kişilik masada altı kez bastırıyordu.
+ *
+ * Sağ üstteki çarpı salona döndürüyor: sayı verilmeden bu masada satış
+ * yapılamadığı için garsonun tek çıkışı buydu, yoksa pencerede kilitli kalıyor.
  */
-function MisafirSorusu({ deger, onKaydet }: { deger: number; onKaydet: (sayi: number) => void }) {
-  const [sayi, setSayi] = useState(deger);
+function MisafirSorusu({
+  onKaydet,
+  onVazgec,
+}: {
+  onKaydet: (sayi: number) => void;
+  onVazgec: () => void;
+}) {
+  const [digeri, setDigeri] = useState("");
+  const sayi = Number(digeri);
+
   return (
     <div className="m-perde">
-      <div className="m-sayfa kisa">
+      <div className="m-sayfa kisa m-misafir">
         <header className="m-sayfa-ust">
-          <h2>Kaç kişi?</h2>
+          <h2>
+            <Users size={18} /> Misafir Sayısı ?
+          </h2>
+          <button className="m-ikon-dugme" onClick={onVazgec} aria-label="Salona dön">
+            <X size={20} />
+          </button>
         </header>
-        <div className="m-sayac">
-          <button onClick={() => setSayi((s) => Math.max(1, s - 1))} aria-label="Azalt">
-            <Minus size={22} />
-          </button>
-          <span>{sayi}</span>
-          <button onClick={() => setSayi((s) => s + 1)} aria-label="Artır">
-            <Plus size={22} />
-          </button>
+
+        <div className="m-misafir-tuslar">
+          {[1, 2, 3, 4, 5, 6, 7, 8].map((n) => (
+            <button key={n} onClick={() => onKaydet(n)}>
+              {n}
+            </button>
+          ))}
         </div>
-        <div className="m-sayfa-alt">
-          <button className="m-dugme genis" onClick={() => onKaydet(sayi)}>
-            Tamam
+
+        <div className="m-misafir-diger">
+          <input
+            type="number"
+            inputMode="numeric"
+            min={1}
+            placeholder="Daha kalabalık"
+            value={digeri}
+            onChange={(e) => setDigeri(e.target.value)}
+          />
+          <button disabled={!(sayi >= 1)} onClick={() => onKaydet(sayi)} aria-label="Onayla">
+            <Check size={20} />
           </button>
         </div>
       </div>

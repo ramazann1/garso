@@ -343,6 +343,24 @@ export default function MobilMasalar() {
               .filter(Boolean)
               .join(" ");
 
+            // İçeride biri varken kart sadeleşiyor: masa adı ve kimin girdiği.
+            // Tutar, süre ve misafir sayısı o sırada zaten değişiyor, yanlış
+            // rakam göstermektense hiç göstermemek doğru. Bir yandan da rozet
+            // satır akışına girip diğer yazıları aşağı kaydırıyordu.
+            if (mesgul) {
+              return (
+                <button key={m.id} className={sinif} onClick={() => masayaDokun(m)}>
+                  <span className="m-masa-ust">
+                    <span className="m-masa-ad">{m.ad}</span>
+                  </span>
+                  <span className="m-masa-kilit">
+                    <LockKeyhole size={20} />
+                    {mesgul.ad}
+                  </span>
+                </button>
+              );
+            }
+
             return (
               <button key={m.id} className={sinif} onClick={() => masayaDokun(m)}>
                 <span className="m-masa-ust">
@@ -372,13 +390,6 @@ export default function MobilMasalar() {
                   <span className={acik.fisBasildi ? "m-masa-fis" : "m-masa-fis gizli"}>
                     <Printer size={13} />
                     Hesap çıktı
-                  </span>
-                )}
-
-                {mesgul && (
-                  <span className="m-masa-mesgul">
-                    <LockKeyhole size={12} />
-                    {mesgul.ad}
                   </span>
                 )}
 

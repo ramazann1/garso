@@ -129,7 +129,7 @@ export const ADISYON_PUNTOLARI: FisAyari[] = [
 
 export const MUTFAK_PUNTOLARI: FisAyari[] = [
   { kod: "siparis_no", ad: "Sipariş numarası" },
-  { kod: "genel", ad: "Künye satırları", ipucu: "Masa, saat, garson, kişi sayısı" },
+  { kod: "genel", ad: "Künye satırları", ipucu: "Masa, saat, garson, misafir sayısı" },
   { kod: "urun_listesi", ad: "Ürün listesi" },
   { kod: "secenek", ad: "Ürün altı satırlar", ipucu: "Seçenekler ve ürün notu" },
   { kod: "toplam", ad: "Sipariş toplamı" },

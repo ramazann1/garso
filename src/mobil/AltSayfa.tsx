@@ -12,11 +12,14 @@ const SURE = 200;
 
 export default function AltSayfa({
   kisa,
+  ek,
   onKapat,
   children,
 }: {
   /** İçeriği kadar yer kaplayan pencere: işlem menüleri böyle. */
   kisa?: boolean;
+  /** Pencereye özel sınıf — başlık rengi gibi kendi süsü olanlar için. */
+  ek?: string;
   onKapat: () => void;
   /**
    * İçerik. Fonksiyon verilirse kapatma işi de veriliyor — penceredeki kendi
@@ -39,7 +42,7 @@ export default function AltSayfa({
   return (
     <div className={kapaniyor ? "m-perde kapaniyor" : "m-perde"} onClick={kapat}>
       <div
-        className={kisa ? "m-sayfa kisa" : "m-sayfa"}
+        className={["m-sayfa", kisa && "kisa", ek].filter(Boolean).join(" ")}
         onClick={(e) => e.stopPropagation()}
       >
         {typeof children === "function" ? children(kapat) : children}

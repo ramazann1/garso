@@ -2,7 +2,7 @@ import { useState } from "react";
 import { Check, Users } from "lucide-react";
 
 /**
- * "Kaç kişi?" sorusu — misafir sayısı zorunlu tutulduğunda masaya girer girmez
+ * "Kaç misafir?" sorusu — misafir sayısı zorunlu tutulduğunda masaya girer girmez
  * çıkıyor. Kaydetme anında sormak geç: garson siparişi yazmış, gitmek üzere.
  *
  * Kalabalık masa nadir olduğu için hazır rakamlar tek dokunuşa yetiyor; daha
@@ -24,7 +24,7 @@ export default function MisafirSayisi({
       <div className="misafir-modal">
         <h3 className="modal-baslik">
           <Users size={18} />
-          Kaç misafir?
+          Misafir Sayısı ?
         </h3>
 
         <div className="misafir-tuslar">

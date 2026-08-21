@@ -810,7 +810,7 @@ export default function Siparis() {
                           <em className="servis-not">
                             {bilgi.kisiSayisi
                               ? ` · ${bilgi.kisiSayisi} kişi`
-                              : " · kişi sayısı girilmedi"}
+                              : " · misafir sayısı girilmedi"}
                           </em>
                         )}
                       </span>

@@ -5952,6 +5952,7 @@ body {
 .misafir-modal .modal-baslik {
   margin: 0;
   font-size: 18px;
+  color: var(--mercan);
 }
 
 .misafir-tuslar {
@@ -11927,8 +11928,10 @@ body {
   grid-auto-rows: min-content;
   gap: 10px;
   overflow-y: auto;
-  /* Sepet şeridi içeriğin üstüne biniyor; son satır altında kalmasın. */
-  padding-bottom: calc(84px + env(safe-area-inset-bottom));
+  /* Sepet şeridi içeriğin üstüne biniyor; son satır altında kalmasın. Şeridin
+     boyu bekleyen kalem satırlarıyla değiştiği için ölçülüp buraya yazılıyor
+     (--serit-boy); ölçü gelmeden önce tek satırlık hâli varsayılıyor. */
+  padding-bottom: calc(var(--serit-boy, 74px) + 10px);
 }
 
 .m-urun {
@@ -11986,24 +11989,60 @@ body {
   left: 0;
   right: 0;
   bottom: 0;
-  display: flex;
-  align-items: center;
-  gap: 10px;
   padding: 10px 14px;
   padding-bottom: calc(10px + env(safe-area-inset-bottom));
   background: var(--kart);
-  border-top: 1px solid #eee6dc;
+  border-top: 1px solid #e3d8ca;
+  /* Şerit ürün ızgarasıyla aynı tondaydı, ayrı bir katman olduğu
+     anlaşılmıyordu; gölge onu içeriğin üstüne kaldırıyor. */
+  box-shadow: 0 -6px 20px rgba(45, 52, 54, 0.1);
+}
+
+.m-serit-alt {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+}
+
+/* Gönderilmeyi bekleyen kalemler: son kalem yerine hepsi görünüyor. Sığmayan
+   yana kaymıyor, alt satıra geçiyor — kaydırılan listede garson kaçırdığını
+   bilmiyordu, oysa burada asıl soru "hepsi tamam mı". */
+.m-serit-bekleyen {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 6px;
+  margin-bottom: 9px;
+  /* Kalabalık turda şerit bütün ekranı kaplamasın diye üst sınır; olağan
+     kullanımda devreye girmiyor. */
+  max-height: 32vh;
+  overflow-y: auto;
+}
+
+.m-bekleyen-cip {
+  padding: 5px 11px;
+  border-radius: 999px;
+  background: var(--kart);
+  border: 1px solid #e3d8ca;
+  color: var(--metin);
+  font-size: 13.5px;
+  font-weight: 500;
+  white-space: nowrap;
+}
+
+.m-bekleyen-cip b {
+  font-weight: 700;
 }
 
 .m-serit-ozet {
   flex: 1;
   display: flex;
   align-items: center;
-  gap: 8px;
+  gap: 9px;
   min-width: 0;
-  padding: 10px 12px;
-  border: 1px solid #eee6dc;
-  border-radius: 12px;
+  height: 50px;
+  padding: 0 13px;
+  border: 1px solid #e3d8ca;
+  border-radius: 13px;
   background: var(--zemin);
   color: var(--metin);
   cursor: pointer;
@@ -12016,12 +12055,13 @@ body {
   text-overflow: ellipsis;
   white-space: nowrap;
   font-size: 14px;
+  font-weight: 500;
   text-align: left;
 }
 
 .m-serit-tutar {
-  font-size: 15px;
-  font-weight: 600;
+  font-size: 16px;
+  font-weight: 700;
 }
 
 .m-gonder {
@@ -12147,6 +12187,9 @@ body {
 }
 
 .m-sayfa-ust h2 {
+  display: flex;
+  align-items: center;
+  gap: 8px;
   font-size: 18px;
   font-weight: 600;
 }
@@ -12172,15 +12215,62 @@ body {
   font-size: 18px;
 }
 
+/* Toplam solda alt alta, hesap düğmesi sağda. Üçü yan yana dizilince hangisinin
+   önemli olduğu belli olmuyordu; rakam artık tek başına öne çıkıyor. */
+.m-toplam-alt {
+  padding: 12px 16px;
+}
+
+.m-toplam {
+  display: flex;
+  flex-direction: column;
+  gap: 1px;
+}
+
+.m-toplam span {
+  font-size: 13.5px;
+  font-weight: 500;
+  color: var(--metin);
+}
+
+.m-toplam strong {
+  font-size: 24px;
+  font-weight: 700;
+  line-height: 1.15;
+}
+
 .m-tur {
   margin-bottom: 14px;
 }
 
+/* Tur başlığı ayraç gibi: yazı solda, kalan yeri ince çizgi dolduruyor.
+   Eskiden 13px soluk griydi, gönderilmemiş kalemler seçilemiyordu. */
 .m-tur-baslik {
-  padding: 6px 0;
+  display: flex;
+  align-items: center;
+  gap: 9px;
+  padding: 8px 0 6px;
+  font-size: 14px;
+  font-weight: 600;
+  color: var(--metin);
+}
+
+.m-tur-baslik::after {
+  content: "";
+  flex: 1;
+  height: 1px;
+  background: #eee6dc;
+}
+
+/* Gönderilmemiş tur koyu rozette: garson hangi kalemlerin henüz mutfağa
+   gitmediğini listede tek bakışta ayırıyor. */
+.m-tur-baslik.yeni span {
+  padding: 3px 10px;
+  border-radius: 999px;
+  background: var(--metin);
+  color: #fff;
   font-size: 13px;
   font-weight: 600;
-  color: var(--soluk);
 }
 
 .m-kalem {
@@ -12272,6 +12362,79 @@ body {
   text-align: center;
   font-size: 30px;
   font-weight: 600;
+}
+
+/* Masaya girişteki ilk pencere bu; başlık ve çıkış mercan duruyor ki garson
+   ne sorulduğunu ve nereden çıkacağını bir bakışta görsün. */
+.m-misafir .m-sayfa-ust h2,
+.m-misafir .m-sayfa-ust .m-ikon-dugme,
+.m-adisyon-sayfa .m-sayfa-ust h2,
+.m-adisyon-sayfa .m-sayfa-ust .m-ikon-dugme {
+  color: var(--mercan);
+}
+
+/* Misafir sayısı soruluyor: dört sütun, parmak boyunda tuşlar. Tek dokunuşla
+   girilip geçiliyor, masaya girişte her saniye görünüyor. */
+.m-misafir-tuslar {
+  display: grid;
+  grid-template-columns: repeat(4, 1fr);
+  gap: 10px;
+  padding: 16px 16px 12px;
+}
+
+.m-misafir-tuslar button {
+  height: 62px;
+  border: 1px solid #eee6dc;
+  border-radius: 14px;
+  background: var(--kart);
+  color: var(--metin);
+  font-family: inherit;
+  font-size: 22px;
+  font-weight: 600;
+  cursor: pointer;
+}
+
+.m-misafir-tuslar button:active {
+  background: var(--mercan);
+  border-color: var(--mercan);
+  color: #fff;
+}
+
+.m-misafir-diger {
+  display: flex;
+  gap: 10px;
+  padding: 0 16px 18px;
+}
+
+.m-misafir-diger input {
+  flex: 1;
+  min-width: 0;
+  height: 52px;
+  padding: 0 14px;
+  border: 1px solid #eee6dc;
+  border-radius: 14px;
+  background: var(--kart);
+  color: var(--metin);
+  font-family: inherit;
+  font-size: 16px;
+}
+
+.m-misafir-diger button {
+  width: 52px;
+  height: 52px;
+  display: grid;
+  place-items: center;
+  border: none;
+  border-radius: 14px;
+  background: var(--mercan);
+  color: #fff;
+  cursor: pointer;
+}
+
+.m-misafir-diger button:disabled {
+  background: #e6ddd2;
+  color: var(--soluk);
+  cursor: default;
 }
 
 .m-dugme.genis {
@@ -13342,33 +13505,79 @@ body {
   gap: 6px;
 }
 
-/* Kategoriler kendi renginde kart; seçili olan çerçeveyle öne çıkıyor. */
+/* Kategoriler tek sırada, yana kayıyor: üç sütunlu ızgara ekranın üçte birini
+   yiyordu. Kaydırma çubuğu gizli — telefonda parmak zaten kaydırıyor. */
 .m-kategoriler {
-  display: grid;
-  grid-template-columns: repeat(3, 1fr);
+  display: flex;
   gap: 8px;
-  margin-bottom: 12px;
-  max-height: 132px;
-  overflow-y: auto;
+  margin-bottom: 10px;
+  padding-bottom: 2px;
+  overflow-x: auto;
+  scrollbar-width: none;
+  -webkit-overflow-scrolling: touch;
+}
+
+.m-kategoriler::-webkit-scrollbar,
+.m-alt-kategoriler::-webkit-scrollbar {
+  display: none;
 }
 
 .m-kategori {
-  min-height: 52px;
-  display: grid;
-  place-items: center;
-  padding: 8px 6px;
+  flex: 0 0 auto;
+  height: 46px;
+  display: flex;
+  align-items: center;
+  gap: 5px;
+  padding: 0 16px;
   border: none;
-  border-radius: 13px;
-  font-size: 13.5px;
+  border-radius: 14px;
+  font-family: inherit;
+  font-size: 14.5px;
   font-weight: 600;
   line-height: 1.2;
-  text-align: center;
+  white-space: nowrap;
   cursor: pointer;
 }
 
 .m-kategori.secili {
   outline: 2.5px solid var(--metin);
   outline-offset: -2.5px;
+}
+
+/* Alt kategoriler ana grubun altında ikinci sırada; renk taşımıyorlar, üstteki
+   renkli sıra hangi grupta olduğumuzu zaten söylüyor. */
+.m-alt-kategoriler {
+  display: flex;
+  gap: 8px;
+  margin-bottom: 10px;
+  padding-bottom: 2px;
+  overflow-x: auto;
+  scrollbar-width: none;
+  -webkit-overflow-scrolling: touch;
+}
+
+.m-alt-kategori {
+  flex: 0 0 auto;
+  height: 36px;
+  padding: 0 14px;
+  border: 1px solid #eee6dc;
+  border-radius: 12px;
+  background: var(--kart);
+  color: var(--metin);
+  font-family: inherit;
+  font-size: 14px;
+  font-weight: 500;
+  white-space: nowrap;
+  cursor: pointer;
+}
+
+/* Seçili alt kategori koyu tonda, mercanda değil: mercan ekranda Gönder'e ve
+   adisyondaki sayılara ayrılmış, her yerde kullanılınca hiçbiri öne çıkmıyor. */
+.m-alt-kategori.secili {
+  background: var(--metin);
+  border-color: var(--metin);
+  color: #fff;
+  font-weight: 600;
 }
 
 /* Ürün kartı: ad üstte, fiyat altta, adisyondaki adet mercan rozette. */
@@ -13759,9 +13968,42 @@ body {
   padding-bottom: calc(14px + env(safe-area-inset-bottom));
 }
 
-.m-not-govde .m-arama {
-  height: 52px;
+/* Ürün notu penceresi: başlık ikonlu, yazı alanı geniş. */
+.m-not-sayfa .m-sayfa-ust h2 {
+  color: var(--mercan);
+}
+
+.m-not-govde {
+  gap: 6px;
+}
+
+.m-not-alan {
+  width: 100%;
+  padding: 13px 14px;
+  border: 1px solid #e3d8ca;
+  border-radius: 14px;
+  background: var(--kart);
+  color: var(--metin);
+  font-family: inherit;
   font-size: 16px;
+  line-height: 1.45;
+  resize: none;
+}
+
+.m-not-alan:focus {
+  outline: none;
+  border-color: var(--mercan);
+}
+
+.m-not-alan::placeholder {
+  color: var(--soluk);
+}
+
+.m-not-kalan {
+  margin: 0 2px 6px;
+  text-align: right;
+  font-size: 13px;
+  color: var(--soluk);
 }
 
 /* Sepet sayfasında adet düğmeleri satırın sağında, kalem işlemleri dokunuşu
@@ -13773,8 +14015,7 @@ body {
 
 /* Masa meşguliyeti — "burada biri var" işareti. Kilit görüntüsü değil bilgi:
    kart tıklanabilir kalıyor, sadece kimin içeride olduğu yazıyor. */
-.masa-sarmal .masa-mesgul,
-.m-masa-mesgul {
+.masa-sarmal .masa-mesgul {
   display: inline-flex;
   align-items: center;
   gap: 4px;
@@ -13809,6 +14050,21 @@ body {
 
 .m-masa.mesgul {
   opacity: 0.82;
+}
+
+/* Meşgul masada kartın tek bilgisi bu: kilit ve içerideki kişi, ortada.
+   Renk masanın kendi durum renginde kalıyor — gri "ödendi"ye ayrılmış. */
+.m-masa-kilit {
+  flex: 1;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  gap: 6px;
+  font-size: 14px;
+  font-weight: 600;
+  text-align: center;
+  line-height: 1.25;
 }
 
 /* Şeritteki kapat düğmesi — yalnız kendiliğinden kalkmayan uyarılarda var. */

@@ -201,21 +201,29 @@ export default function KalemIslemleri({
 
       {notAcik && (
         <div className="m-perde" onClick={() => setNotAcik(false)}>
-          <div className="m-sayfa kisa" onClick={(e) => e.stopPropagation()}>
+          <div className="m-sayfa kisa m-not-sayfa" onClick={(e) => e.stopPropagation()}>
             <header className="m-sayfa-ust">
-              <h2>Ürün notu</h2>
+              <h2>
+                <StickyNote size={18} /> Ürün notu
+              </h2>
               <button className="m-ikon-dugme" onClick={() => setNotAcik(false)} aria-label="Kapat">
                 <X size={20} />
               </button>
             </header>
             <div className="m-not-govde">
-              <input
-                className="m-arama"
+              {/* Not mutfağa gidiyor; tek satırlık kutuda uzun tarif yazılırken
+                  başı kayboluyordu. Alan dört satırlık, yazdıkça büyümüyor —
+                  klavye açıkken pencere zıplamasın. */}
+              <textarea
+                className="m-not-alan"
                 autoFocus
+                rows={4}
+                maxLength={200}
                 value={notMetni}
-                placeholder="Az pişmiş, buzsuz…"
+                placeholder="Az pişmiş, buzsuz, soğansız…"
                 onChange={(e) => setNotMetni(e.target.value)}
               />
+              <p className="m-not-kalan">{notMetni.length}/200</p>
               <button
                 className="m-ode-btn"
                 onClick={() => {

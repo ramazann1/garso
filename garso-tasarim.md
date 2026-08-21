@@ -1,14 +1,21 @@
 ﻿# GARSO — Teknik Tasarım: Veri Modeli & Ekran Haritası
 *Restoran ve cafe'ler için bulut tabanlı satış ve işletme yönetim sistemi.*
 
-## 0. SIRADAKİ İŞ (31 Ağu 2026'da güncellendi)
+## 0. SIRADAKİ İŞ (21 Ağu 2026'da güncellendi)
 
-> **Sıradaki iş: mobil arayüz turunun devamı — sipariş ekranı.** Tur 31
-> Ağustos'ta masa kartıyla başladı ve orada kaldı; sıradaki ekran sipariş.
-> Bakılacaklar: **ürün kartı ve sepet şeridi** son hâlini almadı, **uzun basma
-> gizli bir hareket** (porsiyonlu üründe normal dokunuş ana porsiyonu sessizce
-> ekliyor), **şeritte yalnız son kalem görünüyor**, ürün kartında renk yok.
-> Ayrıca **adisyon notu ve müşteri seçme** hiç yok (Adisyo'nun ⋮ menüsünde var).
+> **Sıradaki iş: mobil sipariş ekranı turunun kalanı — üç madde.**
+>
+> 1. **Şerit önizlemesi satır atlasın.** Gönderilmeyi bekleyen kalem çipleri şu
+>    an tek satırda yana kayıyor; sığmayınca alt satıra geçmeli. Çipler beyaz
+>    zemin siyah yazı olacak — mercan çip göz yoruyor.
+> 2. **Ürün notu penceresi** (`KalemIslemleri.tsx`): yazı alanı dar, pencere şık
+>    değil. Genişletilip düzenlenecek.
+> 3. **Genel mercan azaltma.** Vurgu rengi arayüzde fazla yerde kullanılıyor;
+>    nerede gerçekten gerektiği gözden geçirilecek.
+>
+> Sonra sipariş ekranında kalanlar: **uzun basma gizli bir hareket** (porsiyonlu
+> üründe normal dokunuş ana porsiyonu sessizce ekliyor), **ürün kartında renk
+> yok**, **adisyon notu ve müşteri seçme** hiç yok (Adisyo'nun ⋮ menüsünde var).
 >
 > Sonra: **İstasyon ve Satış sekmeleri** yeni tasarım diline geçmedi.
 >
@@ -2348,3 +2355,94 @@ gibi değilse önce silinecek aralık ekrana yazdırılıp bakılmalı.
 
 **Mobil turun devamı: sipariş ekranı** (bölüm 0). Ürün kartı, sepet şeridi,
 uzun basmanın gizli kalması, adisyon notu ve müşteri seçme.
+
+## 19. SEANS GÜNLÜĞÜ — 21 AĞU 2026
+
+Mobil turun ikinci durağı: sipariş ekranı. Ekran baştan aşağı elden geçti,
+araya bir de gerçek bir kusur çıktı.
+
+### Mağazaya çıkış — teknoloji kararı
+
+**Capacitor.** React Native, Flutter ya da native yeniden yazım demek; tek
+kişilik ekiple sürdürülemez. Capacitor'la çıkan uygulama mağazada normal bir
+uygulama olarak duruyor, ekranlar sunucudan gelebildiği için düzeltmeler onay
+beklemeden yayınlanıyor. Kabuğa yazıcı/bildirim gibi gerçek telefon özellikleri
+konacak — yoksa Apple "boş kabuk" diye reddedebiliyor.
+
+Sıra: **önce PWA canlıya** → gerçek kullanımda pişir → sonra iki mağazaya. İlk
+ayların yoğun düzeltme trafiği web'de yaşanmalı.
+
+Baştan doğru kurulması gerekenler (sonradan düzeltilemiyor): **paket adı** ilk
+yayında konur ve asla değişmez, **geliştirici hesabı** işletmenin kendi adına
+açılır, **veritabanı uygulamadan ayrı kalır** (Supabase'de zaten öyle). Adisyo'nun
+eski uygulamasını emekliye ayırıp yenisine geçmesinin sebebi büyük ihtimalle bu
+üçünden biriydi.
+
+(Adisyo'nun mobili native yazılmış — uygulama boyutu 78 MB. Kararı değiştirmiyor:
+arkalarında üç ayrı kod tabanını taşıyan bir ekip var.)
+
+### Terim birliği: "misafir"
+
+Aynı bilgi üç ayrı isimle geçiyordu — ayarlarda "Misafir sayısı", kasada "Kaç
+kişi?", mobilde "Kaç kişi?". Hepsi **misafir**de birleşti. Sayı birimi olarak
+"4 kişi" doğal Türkçe olduğu için fişte ve kartta olduğu gibi kaldı; değişen
+kavramın adı.
+
+Pencere başlığı **"Misafir Sayısı ?"**, mercan renginde, kişi ikonlu.
+
+### Misafir sayısı penceresi
+
+Mobildeki pencere kasadakinin fakir kopyasıydı — artı/eksi sayaç, çıkış yolu
+yok. Kasadaki desene hizalandı: **1-8 hazır tuşları** (sayaç altı kişilik masada
+altı kez bastırıyordu), kalabalık masa için altta kutu, **sağ üstte çarpı**.
+Çarpı salona döndürüyor ve masa kilidini bırakıyor — sayı verilmeden o masada
+satış yapılamadığı için garsonun tek çıkışı buydu.
+
+### Sipariş ekranı
+
+- **Kategoriler tek sıra, yana kayıyor.** Üç sütunlu ızgara 132px yer kaplıyordu.
+  Alt kategorisi olanın yanında ok var; seçilince altında ikinci sıra açılıyor,
+  başında "Tümü" duruyor. Kasadaki desenin mobil hâli.
+- **Ürün kartı rozeti yalnız bu turu sayıyor.** Eskiden adisyondaki toplamı
+  gösteriyordu; saat önce gönderilmiş çay karışınca rozet "şu an ne giriyorum"
+  sorusuna cevap vermiyordu. Gönderince sıfırlanıyor.
+- **Şerit gönderilmeyi bekleyen kalemlerin hepsini gösteriyor**, yalnız sonuncuyu
+  değil. Şeride gölge geldi, ürün ızgarasıyla aynı tonda olduğu için ayrı bir
+  katman olduğu anlaşılmıyordu.
+- **Adisyon penceresi:** başlık fiş ikonlu ve mercan, tur başlıkları okunur tona
+  çıkıp ayraç çizgisi kazandı ("Yeni" mercan rozet), alttaki toplam solda alt
+  alta. **Yeni tur artık en üstte** — garson az önce girdiğini görmek için uzun
+  adisyonu sonuna kadar kaydırmıyor.
+- **Pencere `AltSayfa` kabuğuna alındı.** Kabuk projede zaten vardı, işlem
+  menüleri kullanıyordu; adisyon penceresi kullanmadığı için kapanışta animasyon
+  oynamadan yok oluyordu.
+- **Masa adı:** sayıdan ibaret masa başlıkta "5" diye duruyordu, artık "Masa 5".
+  Adı zaten yazılı olanlar ("Bahçe 3") olduğu gibi kalıyor. Hem sipariş hem
+  hesap ekranında.
+
+### Kilitli masa kartı
+
+Meşgul rozeti mobilde kartın **satır akışına giriyordu**: garson adı, tutar ve
+süre bir satır aşağı kayıyordu. Kilitli kart sadeleşti — **masa adı ve ortada
+kilit ikonu + içerideki kişi**, başka hiçbir şey. Gerekçe: içeride biri varken o
+rakamlar zaten değişiyor, yanlış rakam göstermektense hiç göstermemek doğru.
+
+Kart masanın **kendi durum rengini koruyor**; griye çekilmedi çünkü gri
+"ödendi"ye ayrılmış.
+
+### Kusur: hesap ekranı masayı üstüne almıyordu
+
+Ramazan fark etti: kilit yalnız yeşil masalarda geliyordu. Sebep — `useMasayiTut`
+yalnız sipariş ekranlarında çağrılıyordu (`mobil/Siparis.tsx`, `pages/Siparis.tsx`).
+Kasada ödeme sipariş ekranının içinde olduğu için orası sağlamdı; açıkta kalan
+tek yer **mobil hesap ekranıydı**. Biri tahsilat alırken masa kimseye meşgul
+görünmüyordu — **iki kişi aynı hesaptan habersiz ödeme alabiliyordu.**
+
+`mobil/Adisyon.tsx` artık masayı üstüne alıyor, devralınırsa uyarı verip masalara
+dönüyor. Ders: masa üzerinde iş yapan **her** ekran işareti tutmalı; kural ekran
+başına değil, masaya dokunan iş başına.
+
+### Sonraki seansın ilk işi
+
+**Sipariş ekranı turunun kalan üç maddesi** (bölüm 0): şerit çiplerinin satır
+atlaması ve beyaza dönmesi, ürün notu penceresi, genel mercan azaltma.

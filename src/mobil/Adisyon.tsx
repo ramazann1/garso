@@ -35,6 +35,7 @@ import { servisSatirlari } from "../servis";
 import { odemeTipleriniGetir } from "../odemeTipleri";
 import type { OdemeTipi } from "../odemeTipleri";
 import { useCanli } from "../canli";
+import { useMasayiTut } from "../mesguliyet";
 import { baglantiVar, useBaglanti } from "../baglanti";
 import { indirimYapabilir, yetkiVar } from "../oturum";
 import { paraGoster } from "../para";
@@ -74,6 +75,15 @@ export default function MobilAdisyon() {
   const [tutarAcik, setTutarAcik] = useState(false);
   const [kalemIslem, setKalemIslem] = useState<SepetKalemi | null>(null);
   const [indirimAcik, setIndirimAcik] = useState(false);
+
+  // Hesap ekranı da masayı üstüne alıyor. Eskiden yalnız sipariş ekranı
+  // alıyordu; tahsilat alan kişi masayı hiç meşgul göstermiyordu, iki kişi
+  // aynı hesaptan habersiz ödeme alabiliyordu.
+  const devralan = useMasayiTut(masaId);
+  const [devralindi, setDevralindi] = useState<string | null>(null);
+  useEffect(() => {
+    if (devralan) setDevralindi(devralan);
+  }, [devralan]);
 
   useEffect(() => {
     masaGetir(masaId).then((m) => setMasaAdi(m?.ad ?? ""));
@@ -176,6 +186,10 @@ export default function MobilAdisyon() {
     tahsilatIsle(tip, tutar);
   };
 
+  // Sayıdan ibaret masa adı başlıkta tek başına duruyordu; sipariş ekranıyla
+  // aynı kural.
+  const masaBasligi = /^\d+$/.test(masaAdi.trim()) ? `Masa ${masaAdi.trim()}` : masaAdi;
+
   const odemeBitti = kalan <= 0;
   const odemeAlabilir = yetkiVar("odeme.al");
   const musteriAdi = veri.musteri?.ad || veri.ad;
@@ -186,7 +200,7 @@ export default function MobilAdisyon() {
         <button className="m-ikon-dugme" onClick={() => git("/mobil/masalar")} aria-label="Geri">
           <ArrowLeft size={20} />
         </button>
-        <h1>{masaAdi}</h1>
+        <h1>{masaBasligi}</h1>
         {indirimYapabilir() && veri.sepet.length > 0 && (
           <button
             className="m-ikon-dugme"
@@ -484,6 +498,20 @@ export default function MobilAdisyon() {
             const oldu = await yaz(veri.tahsilatlar, true, { kisi, sebep, tutar: kalan });
             if (oldu) git("/mobil/masalar");
           }}
+        />
+      )}
+
+      {/* Masa elimizden alındıysa hesap ekranında kalmak tehlikeli: devralan
+          kişi tahsilat alıyor olabilir, buradan girilen ikinci ödeme hesabı
+          şişirir. Ekran kapanıyor, masalara dönülüyor. */}
+      {devralindi && (
+        <OnayModal
+          tekTus
+          baslik="Masa devralındı"
+          ikon={<Lock size={20} />}
+          mesaj={`${devralindi} bu masayı devraldı, hesap ekranından çıkılıyor.`}
+          onayMetni="Tamam"
+          onKapat={() => git("/mobil/masalar")}
         />
       )}
 

@@ -1206,7 +1206,7 @@ export default function IsletmeAyarlari() {
             <AyarSatiri
               ad="Misafir sayısı zorunlu"
               ara={ara}
-              ipucu="Açıkken masaya girer girmez kaç kişi olduğu sorulur ve boş geçilemez. Kapalıyken sorulur ama boş bırakılabilir. Kişi başı ciro raporu bu bilgiye dayandığı için boş kalan adisyonlar rapora girmez."
+              ipucu="Açıkken masaya girer girmez kaç misafir olduğu sorulur ve boş geçilemez. Kapalıyken sorulur ama boş bırakılabilir. Misafir başı ciro raporu bu bilgiye dayandığı için boş kalan adisyonlar rapora girmez."
             >
               <AyarAnahtari
                 acik={genel.kisiSayisiZorunlu}
