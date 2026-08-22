@@ -1,5 +1,4 @@
 import { supabase } from "./supabase";
-import { acikOturum } from "./oturum";
 
 /**
  * Denetim defteri: hassas işlemlerin "kim, ne zaman, ne yaptı" kaydı.
@@ -53,12 +52,8 @@ export function islemAdi(islem: string) {
  */
 export async function denetimYaz(kayitlar: DenetimKaydi[]) {
   if (!kayitlar.length) return;
-  const kisi = acikOturum();
-
   const { error } = await supabase.from("denetim_kayitlari").insert(
     kayitlar.map((k) => ({
-      kisi_id: kisi?.id ?? null,
-      kisi_ad: kisi?.ad ?? "",
       islem: k.islem,
       adisyon_id: k.adisyonId ?? null,
       yer: k.yer ?? null,

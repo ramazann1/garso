@@ -388,7 +388,6 @@ export async function masasizAc(
     .from("adisyonlar")
     .insert({
       tip,
-      acan_id: acikOturum()?.id ?? null,
       musteri_ad: musteri.ad?.trim() || null,
       musteri_telefon: musteri.telefon?.trim() || null,
       adres: musteri.adres?.trim() || null,
@@ -805,7 +804,6 @@ export async function adisyonKaydet(
         ...indirimAlanlari(veri),
         ...bilgiAlanlari(veri),
         ...servisAlanlari(veri),
-        acan_id: acikOturum()?.id ?? null,
       })
       .select("id, acilis, indirim")
       .single();
@@ -1038,7 +1036,7 @@ async function kalemleriYaz(
     const sira = turlar.reduce((e, t) => Math.max(e, t.sira), 0) + 1;
     const { data: tur } = await supabase
       .from("turlar")
-      .insert({ adisyon_id: adisyonId, sira, garson_id: acikOturum()?.id ?? null })
+      .insert({ adisyon_id: adisyonId, sira })
       .select("id, siparis_no")
       .single();
     const turId = (tur as any).id;

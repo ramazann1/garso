@@ -1,5 +1,4 @@
 import { supabase } from "./supabase";
-import { acikOturum } from "./oturum";
 
 /**
  * Cari hesap: müşteri kayıtları ve borç/alacak hareketleri.
@@ -234,7 +233,6 @@ export async function hareketEkle(hareket: {
       odeme_tipi: hareket.odemeTipi ?? null,
       adisyon_id: hareket.adisyonId ?? null,
       aciklama: hareket.aciklama ?? null,
-      personel_id: acikOturum()?.id ?? null,
     })
     .select("fis_no")
     .single();
@@ -353,7 +351,6 @@ export async function adisyonuCariyeYaz(
     adisyon_id: adisyonId,
     tahsilat_id: tahsilatId ?? null,
     odeme_tipi: odemeTipi || null,
-    personel_id: acikOturum()?.id ?? null,
   });
   if (error) throw new Error(`Açık hesap borcu yazılamadı: ${error.message}`);
 }

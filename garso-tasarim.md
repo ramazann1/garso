@@ -1,28 +1,39 @@
 ﻿# GARSO — Teknik Tasarım: Veri Modeli & Ekran Haritası
 *Restoran ve cafe'ler için bulut tabanlı satış ve işletme yönetim sistemi.*
 
-## 0. SIRADAKİ İŞ (22 Ağu 2026'da güncellendi)
+## 0. SIRADAKİ İŞ (5 Eyl 2026'da güncellendi)
 
-> **Sıradaki iş: yayın güvenlik başlıkları.** Karar bekliyor — Garso nereye
-> kurulacak? Ayar dosyası servise göre değişiyor: Vercel'de `vercel.json`,
-> Cloudflare Pages/Netlify'da `public/_headers`, kendi sunucuda nginx bloğu.
-> Ramazan bu kararı bir sonraki seansa bıraktı.
-> Yazılacak başlıklar: `Content-Security-Policy`, `Strict-Transport-Security`,
-> `X-Frame-Options`, `Referrer-Policy`. Envanter çıkarıldı: yazı tipi pakete
-> gömülü, dışarıdan script/stil çekilmiyor, `connect-src` yalnız Supabase
-> (realtime için `wss:` de gerekiyor), 27 satır içi stil olduğu için
-> `style-src` `'unsafe-inline'` istiyor.
+> **Sıradaki iş: yetki envanteri.** Yetki sayfasında (Ayarlar → Yetkiler)
+> gerçekten bütün yetkiler var mı, detaylı kontrol edilecek. Artık kurallar
+> veritabanında da bu kodlara bağlı; eksik bir yetki kodu, kimsenin
+> ayarlayamadığı bir kapı demek. Ramazan 5 Eyl'de istedi.
 >
-> **Güvenlik denetiminden kalan iki madde:**
-> - **Kayıt ekranına CAPTCHA** — Supabase panelinde açılıyor ama hCaptcha ya da
->   Cloudflare Turnstile'da hesap açmak gerekiyor; Ramazan'ın yapması lazım.
-> - **Köprü exe'sinin imzalanması** — `indir.garso.app`'ten imzasız exe iniyor,
->   özeti de doğrulanmıyor. Tedarik zinciri riski; mağazaya çıkış işleriyle
->   birlikte.
+> **Sonra: okuma tarafının yetkilendirilmesi.** 5 Eyl'de yazma tarafı kapandı
+> ama okuma açık kaldı: giriş yapmış biri doğrudan sorguyla ciroyu, gider
+> dökümünü, kasa hareketlerini, müşteri bilgilerini okuyabiliyor — ekran ona
+> kapalı olsa bile. İki parça:
+> - **Kolay parça** — bu tabloları okumak yetki istesin: `kasa_vardiyalari`
+>   (`kasa.ac_kapat`), `kasa_hareketleri` (`kasa.ac_kapat` veya `kasa.para`),
+>   `masraflar` (`kasa.gider`), `denetim_kayitlari` (`rapor.tumu`),
+>   `musteriler`/`musteri_adresleri`/`cari_hareketler` (`cari.gor`). Ayrıca
+>   `urunler.maliyet` sütunu (`tanim.menu`) — kâr marjı, `pin_hash` gibi sütun
+>   bazında kapanır.
+> - **Zor parça** — `adisyonlar`, `turlar`, `adisyon_kalemleri`, `tahsilatlar`.
+>   Kural satır bazında olmak zorunda: açık adisyon `siparis.al`, kapanmış
+>   adisyon `siparis.kapali_gor` / `rapor.gun_sonu`. Yanlış kurulursa garson
+>   kendi masasını göremez hale gelir; ayrı ve dikkatli yapılacak.
+>
+> **Kural role değil yetkiye bağlanır (5 Eyl 2026 kararı).** Erişim kuralı
+> tasarlarken "bizim işletmede garson bunu yapmıyor" varsayımı kullanılmaz.
+> Garso başka işletmelere satılıyor; oradaki rol dağılımı bambaşka olabilir.
+> Ölçüt her zaman "bu iş hangi yetki kodunun kapsamında". Yetki canlı okunuyor,
+> işletmeci ayarı değiştirince kural kendiliğinden uyar.
 >
 > **İstasyon ve Satış sekmeleri yeni tasarım diline geçmedi.**
 > Mobilin kalan iki sekmesi; sipariş ve hesap ekranı 22 Ağu'da oturdu.
 >
+> Küçük iş: **`yazdirma_kuyrugu` okuma/yazma yetkisiz** — işletmedeki herkes
+> fiş bastırabiliyor. Zararı kağıt israfı, düşük öncelik.
 > Küçük iş: **sipariş ekranının sepet dökümünde KDV** — hesap ekranı 22 Ağu'da
 > düzeldi (KDV dahil modda da yazıyor), sipariş ekranı eski davranışta kaldı.
 > Küçük iş: **kuver/garsoniyeyi o hesaba özel açma-kapama** — veri katmanı
@@ -31,10 +42,21 @@
 > **Paket / Gel Al mobile alınmayacak (19 Ağu 2026 kararı).** Masasız sipariş
 > telefonla ayakta girilen bir iş değil; mobil garsonun masa işi için.
 >
-> **"Kim yaptı" imzasını sunucuya taşımak.** `adisyonlar.acan_id` ile
-> `turlar.garson_id` hâlâ tarayıcının gönderdiği değerle yazılıyor; dayanak
-> hazır: `oturum_personeli()`. (Küçük kardeşi olan PIN özeti 22 Ağu'da
-> sunucuya taşındı.)
+> **Canlıya geçerken yapılacaklar (5 Eyl 2026'da ayrıldı).** Üçü de barındırma
+> servisi ya da dışarıdan hesap gerektiriyor; alan adı ve sunucu alınmadan
+> denenemiyorlar, o yüzden sıradan çıkarıldı:
+> - **Yayın güvenlik başlıkları** — `Content-Security-Policy`,
+>   `Strict-Transport-Security`, `X-Frame-Options`, `Referrer-Policy`. Ayar
+>   dosyası servise göre değişiyor: Vercel'de `vercel.json`, Cloudflare
+>   Pages/Netlify'da `public/_headers`, kendi sunucuda nginx bloğu. Envanter
+>   çıkarıldı: yazı tipi pakete gömülü, dışarıdan script/stil çekilmiyor,
+>   `connect-src` yalnız Supabase (realtime için `wss:` de gerekiyor), 27 satır
+>   içi stil olduğu için `style-src` `'unsafe-inline'` istiyor.
+> - **Kayıt ekranına CAPTCHA** — Supabase panelinde açılıyor ama hCaptcha ya da
+>   Cloudflare Turnstile'da hesap açmak gerekiyor; Ramazan'ın yapması lazım.
+> - **Köprü exe'sinin imzalanması** — `indir.garso.app`'ten imzasız exe iniyor,
+>   özeti de doğrulanmıyor. Tedarik zinciri riski; mağazaya çıkış işleriyle
+>   birlikte.
 >
 > Sırada bekleyenler: **kurye atama ve teslimat takibi** → **KDS'in kalan
 > parçaları** (pişirme/paketleme aşamaları, mutfak fişi, hazırlık süresi
@@ -73,6 +95,35 @@ ikisi de "kim yaptı" bilgisine dayandığı için personel sistemi olmadan yar�
 baştan yazılacaktı. Önce Ayarlar'ın eksik yarısı (personel/yetki), sonra kasa,
 en son raporlar. Adisyo'nun ayar ve kullanıcı ekranları `pos-yol-haritasi.md`
 bölüm 9'da (9 Ağu 2026 canlı turu) detaylı duruyor.
+
+**5 Eyl 2026: Yazma tarafı bütünüyle sunucuya bağlandı.** Dört SQL dosyası:
+
+- `2026-09-05-kim-yapti-sunucuda.sql` — "kim yaptı" imzası artık tetikleyiciyle
+  atılıyor: `adisyonlar.acan_id`, `turlar.garson_id`, `kasa_vardiyalari.acan_id`
+  ve `kapatan_id`, `kasa_hareketleri.kisi_id`. İmza bir kere konuyor, sonra
+  güncellemede eski değer geri yazılıyor — sonradan devredilemiyor.
+- `2026-09-05-tanim-yetkileri.sql` — 27 tanım tablosu yetki soruyor (menü,
+  masa, ayar, personel/roller, yazıcı, gider tipleri). Ortak `tanim_yetkisi()`
+  tetikleyicisi, yetki kodu tetikleyici tanımında. Personel tarafında ilk
+  kurulum istisnası var: hiç hesap açılmamışsa serbest, yoksa kurulum kendini
+  kilitler.
+- `2026-09-05-denetim-defteri.sql` — defter yalnız yazılıp okunuyor; güncelleme
+  ve silme kimseye açık değil. İmzası (`kisi_id` + `kisi_ad`) sunucuda.
+- `2026-09-05-kasa-cari-yetkileri.sql` — kasa, gider ve cari tabloları. Cari
+  hareketleri işine göre ayrıldı: `satis` (açık hesaba yazma) `odeme.acik_hesap`,
+  `acilis` `cari.duzenle`, `tahsilat`/`duzeltme` `cari.tahsilat`. Hepsi tek
+  yetkiye bağlansaydı garsonun açık hesap akışı kırılırdı.
+
+Tarayıcı tarafı bu alanları artık hiç göndermiyor (`adisyonlar.ts`, `kasa.ts`,
+`denetim.ts`, `cari.ts`, `masraflar.ts`). Köprü etkilenmiyor — o yalnız okuma
+yapıyor (`personel`, `yazicilar` select).
+
+Denetimde temiz çıkanlar: RLS istisnasız her tabloda, kodda gömülü sır yok,
+`.env.local` git'e girmiyor, `innerHTML`/`eval` hiç kullanılmamış, tarayıcı
+deposunda hassas veri yok, `pin_hash` okumaya kapalı (2 Eyl), Excel aktarımı
+tamamen yerel.
+
+Açık kalan: **okuma tarafı** (0. bölümde) ve canlıya geçiş üçlüsü.
 
 **14 Ağu 2026:** Kimlik ve yetki tarafı kapandı. Auth geçişi doğrulandı (giriş,
 telefon değişimi, şifre koruma çalışıyor; `personel.sifre_hash` kaldırıldı),

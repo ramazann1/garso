@@ -1,5 +1,4 @@
 import { nakitGiderToplami } from "./masraflar";
-import { acikOturum } from "./oturum";
 import { supabase } from "./supabase";
 
 export type Vardiya = {
@@ -253,9 +252,7 @@ export function kapanisGecikti(acilis: string, uyariSaati: string) {
 }
 
 export async function kasaAc(acilisTutar: number, not: string) {
-  const kisi = acikOturum();
   const { error } = await supabase.from("kasa_vardiyalari").insert({
-    acan_id: kisi?.id ?? null,
     acilis_tutar: acilisTutar,
     acilis_not: not.trim() || null,
   });
@@ -269,11 +266,9 @@ export async function kasaAc(acilisTutar: number, not: string) {
 }
 
 export async function kasaKapat(vardiyaId: number, sayilanTutar: number, not: string) {
-  const kisi = acikOturum();
   const { error } = await supabase
     .from("kasa_vardiyalari")
     .update({
-      kapatan_id: kisi?.id ?? null,
       kapanis: new Date().toISOString(),
       sayilan_tutar: sayilanTutar,
       kapanis_not: not.trim() || null,
@@ -289,13 +284,11 @@ export async function hareketEkle(
   tutar: number,
   aciklama: string
 ) {
-  const kisi = acikOturum();
   const { error } = await supabase.from("kasa_hareketleri").insert({
     vardiya_id: vardiyaId,
     tip,
     tutar,
     aciklama: aciklama.trim() || null,
-    kisi_id: kisi?.id ?? null,
   });
   if (error) throw new Error("İşlem kaydedilemedi.");
 }

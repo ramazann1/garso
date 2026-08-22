@@ -1,4 +1,3 @@
-import { acikOturum } from "./oturum";
 import { supabase } from "./supabase";
 
 export type MasrafTipi = {
@@ -135,7 +134,6 @@ export async function masraflariGetir(baslangic?: string, bitis?: string): Promi
 }
 
 export async function masrafEkle(alanlar: MasrafAlanlari) {
-  const kisi = acikOturum();
   const { error } = await supabase.from("masraflar").insert({
     tip_id: alanlar.tipId,
     tip_ad: alanlar.tipAd,
@@ -143,7 +141,6 @@ export async function masrafEkle(alanlar: MasrafAlanlari) {
     zaman: alanlar.zaman,
     tutar: alanlar.tutar,
     aciklama: alanlar.aciklama.trim() || null,
-    kisi_id: kisi?.id ?? null,
   });
   if (error) throw new Error("Gider kaydedilemedi.");
 }
