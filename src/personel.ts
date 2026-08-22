@@ -36,15 +36,10 @@ export type PersonelAlanlari = {
   pin?: string | null;
 };
 
-// PIN veritabanına düz metin gitmiyor; tarayıcının kendi kripto kütüphanesiyle
-// özeti alınıyor. Giriş şifresi burada değil, Supabase Auth'ta duruyor.
-export async function ozet(metin: string): Promise<string> {
-  const veri = new TextEncoder().encode(metin);
-  const tampon = await crypto.subtle.digest("SHA-256", veri);
-  return Array.from(new Uint8Array(tampon))
-    .map((b) => b.toString(16).padStart(2, "0"))
-    .join("");
-}
+// PIN'in özeti burada alınmıyor. Tarayıcının hesapladığı özet tuzsuz ve hızlı
+// bir yöntemdi; dört haneli bir PIN'in karşılığı saniyeler içinde çözülüyordu.
+// Artık düz PIN sunucuya gidiyor, özet orada alınıyor ve `pin_hash` sütunu
+// tarayıcıya hiç okutulmuyor.
 
 // En çok denenen şifreler. Uzun bir liste tutmanın anlamı yok; saldırgan zaten
 // ilk birkaç yüz denemede bu kalıpları geçiyor, gerisi uzunlukla korunuyor.
@@ -58,6 +53,11 @@ export type SifreKurali = { metin: string; tamam: boolean };
 
 // Şifre kuralları NIST kılavuzuna yakın: uzunluk esas, karmaşıklık dayatması
 // değil. Ekranda kullanıcıya madde madde gösterilsin diye liste dönüyor.
+//
+// Buradaki liste kullanıcıya yol gösteriyor; kuralı asıl uygulayan yer
+// veritabanındaki `sifre_gecerli`. İkisi aynı dört maddeyi ve aynı yaygın
+// şifre listesini taşıyor — biri değişirse diğeri de değişmeli, yoksa ekran
+// "hepsi tamam" derken kayıt hata verir.
 export function sifreKurallari(sifre: string): SifreKurali[] {
   return [
     { metin: "En az 6 karakter", tamam: sifre.length >= 6 },
@@ -97,12 +97,15 @@ export async function rolleriGetir(): Promise<Rol[]> {
 }
 
 const ALANLAR =
-  "id, ad, telefon, eposta, auth_id, pin_hash, rol_id, giris_engelli, aktif, sira, roller (ad)";
+  "id, ad, telefon, eposta, auth_id, pin_var, rol_id, giris_engelli, aktif, sira, roller (ad)";
 
 // Bölge ataması ayrı tabloda; personel listesi ekranda tek satır olarak
 // göründüğü için iki sorgu birleştirilip tek tipe indiriliyor.
 export async function personeliGetir(hepsi = false): Promise<Personel[]> {
-  let sorgu = supabase.from("personel").select(ALANLAR);
+  // Kasa köprüsünün hesabı bir insan değil; listede görünürse "bu kim, neden
+  // telefonu yok" sorusu doğurur ve yanlışlıkla silinir. Yönetimi Yazıcılar
+  // sekmesinde.
+  let sorgu = supabase.from("personel").select(ALANLAR).eq("sistem", false);
   if (!hepsi) sorgu = sorgu.eq("aktif", true);
   const [{ data }, { data: baglar }] = await Promise.all([
     sorgu.order("sira"),
@@ -124,7 +127,7 @@ export async function personeliGetir(hepsi = false): Promise<Personel[]> {
     rolId: p.rol_id ?? null,
     rolAd: p.roller?.ad ?? "",
     hesapVar: !!p.auth_id,
-    pinVar: !!p.pin_hash,
+    pinVar: !!p.pin_var,
     girisEngelli: p.giris_engelli ?? false,
     aktif: p.aktif ?? true,
     sira: p.sira ?? 0,
@@ -138,8 +141,8 @@ export function telefonSade(telefon: string) {
   return telefon.replace(/\D/g, "");
 }
 
-async function satirAlanlari(a: PersonelAlanlari) {
-  const satir: Record<string, unknown> = {
+function satirAlanlari(a: PersonelAlanlari) {
+  return {
     ad: a.ad,
     telefon: telefonSade(a.telefon) || null,
     eposta: a.eposta || null,
@@ -147,8 +150,18 @@ async function satirAlanlari(a: PersonelAlanlari) {
     giris_engelli: a.girisEngelli,
     aktif: a.aktif,
   };
-  if (a.pin !== undefined) satir.pin_hash = a.pin ? await ozet(a.pin) : null;
-  return satir;
+}
+
+// PIN satırla birlikte yazılmıyor: `pin_hash` sütununa yazma yetkisi
+// tarayıcıda yok, özeti sunucu alıyor. undefined ise PIN'e dokunulmamış
+// demektir, çağrı hiç yapılmıyor.
+async function pinYaz(personelId: number, pin?: string | null) {
+  if (pin === undefined) return;
+  const { error } = await supabase.rpc("pin_ata", {
+    p_personel_id: personelId,
+    p_pin: pin ?? "",
+  });
+  if (error) throw new Error(error.message);
 }
 
 async function bolgeleriYaz(personelId: number, bolgeIdler: number[]) {
@@ -173,12 +186,13 @@ async function hesabiYaz(personelId: number, sifre?: string) {
 export async function personelEkle(alanlar: PersonelAlanlari, sira: number) {
   const { data, error } = await supabase
     .from("personel")
-    .insert({ ...(await satirAlanlari(alanlar)), sira })
+    .insert({ ...satirAlanlari(alanlar), sira })
     .select("id")
     .single();
   if (error) throw new Error("Personel eklenemedi.");
   const id = (data as any).id as number;
   await bolgeleriYaz(id, alanlar.bolgeIdler);
+  await pinYaz(id, alanlar.pin);
   await hesabiYaz(id, alanlar.sifre);
   return id;
 }
@@ -186,10 +200,11 @@ export async function personelEkle(alanlar: PersonelAlanlari, sira: number) {
 export async function personelGuncelle(id: number, alanlar: PersonelAlanlari) {
   const { error } = await supabase
     .from("personel")
-    .update(await satirAlanlari(alanlar))
+    .update(satirAlanlari(alanlar))
     .eq("id", id);
   if (error) throw new Error("Personel kaydedilemedi.");
   await bolgeleriYaz(id, alanlar.bolgeIdler);
+  await pinYaz(id, alanlar.pin);
   await hesabiYaz(id, alanlar.sifre);
 }
 
@@ -216,8 +231,9 @@ export async function telefonKullanimda(telefon: string, haricId?: number) {
 // Burada işletme içi yeterli: PIN yalnızca kendi kasandaki kişiyi seçiyor,
 // satır güvenliği de sorguyu kendi işletmene daraltıyor.
 export async function pinKullanimda(pin: string, haricId?: number) {
-  let sorgu = supabase.from("personel").select("id").eq("pin_hash", await ozet(pin));
-  if (haricId) sorgu = sorgu.neq("id", haricId);
-  const { data } = await sorgu;
-  return ((data as any[]) ?? []).length > 0;
+  const { data } = await supabase.rpc("pin_kullanimda", {
+    p_pin: pin,
+    p_haric: haricId ?? null,
+  });
+  return data === true;
 }

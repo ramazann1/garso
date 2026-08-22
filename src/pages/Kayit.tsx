@@ -1,6 +1,7 @@
 import { useState } from "react";
-import { ArrowLeft, Eye, EyeOff, Lock, Phone, Store, User } from "lucide-react";
+import { ArrowLeft, Check, Circle, Eye, EyeOff, Lock, Phone, Store, User } from "lucide-react";
 import { isletmeKur } from "../oturum";
+import { sifreKurallari } from "../personel";
 
 /**
  * Yeni işletmenin kendi hesabını açtığı ekran. Giriş ekranının kardeşi: aynı
@@ -15,6 +16,12 @@ export default function Kayit({ onGeri }: { onGeri: () => void }) {
   const [sifreGorunsun, setSifreGorunsun] = useState(false);
   const [hata, setHata] = useState("");
   const [bekliyor, setBekliyor] = useState(false);
+
+  // Kural listesi personel şifresiyle aynı yerden geliyor. Burası ayrı bir
+  // kural işletiyordu — yalnız uzunluğa bakıyordu — ve işletmeyi kuran
+  // yöneticinin şifresi, sonradan eklediği garsonunkinden zayıf kalabiliyordu.
+  const kurallar = sifreKurallari(sifre);
+  const sifreTamam = kurallar.every((k) => k.tamam);
 
   const gonder = async (e: React.FormEvent) => {
     e.preventDefault();
@@ -79,7 +86,7 @@ export default function Kayit({ onGeri }: { onGeri: () => void }) {
               type={sifreGorunsun ? "text" : "password"}
               value={sifre}
               onChange={(e) => setSifre(e.target.value)}
-              placeholder="Şifre belirle (en az 6 karakter)"
+              placeholder="Şifre belirle"
             />
             <button
               type="button"
@@ -90,11 +97,22 @@ export default function Kayit({ onGeri }: { onGeri: () => void }) {
             </button>
           </label>
 
+          {sifre !== "" && (
+            <ul className="sifre-kurallar">
+              {kurallar.map((k) => (
+                <li key={k.metin} className={k.tamam ? "tamam" : undefined}>
+                  {k.tamam ? <Check size={13} /> : <Circle size={13} />}
+                  {k.metin}
+                </li>
+              ))}
+            </ul>
+          )}
+
           <p className={hata ? "giris-hata" : "giris-hata bos"}>{hata || "."}</p>
 
           <button
             className="giris-gonder"
-            disabled={bekliyor || !isletme || !ad || !telefon || sifre.length < 6}
+            disabled={bekliyor || !isletme || !ad || !telefon || !sifreTamam}
           >
             {bekliyor ? "İşletmen kuruluyor…" : "İşletmemi kur"}
           </button>

@@ -187,8 +187,16 @@ export default function Salon() {
     odenmezleriGetir().then(setOdenmezler);
   }, []);
 
-  const salonuOku = async () => {
-    setYukleniyor(true);
+  // `gorunur`: yükleniyor halkası çıksın mı. İlk açılışta ve "Yeniden dene"de
+  // çıkıyor — ekranda gösterilecek bir şey yok, beklediğini söylemek gerekiyor.
+  //
+  // Canlı tazelemede çıkmıyor. Çıkarsa salon her haberde boşalıp yeniden
+  // çiziliyordu: bir fiş basılırken kuyruk satırı üç kez değişiyor (kuyruğa
+  // düştü, köprü aldı, basıldı) ve ekran üç kez zıplıyordu. Aynısı başka bir
+  // garson kalem eklediğinde de oluyordu. Ekranda zaten doğru masalar duruyor,
+  // yeni veri gelince sessizce yerini alıyor.
+  const salonuOku = async (gorunur = false) => {
+    if (gorunur) setYukleniyor(true);
     setOkunamadi(false);
 
     // Okuma düşerse ya da cevapsız kalırsa halka sonsuza kadar dönüyordu:
@@ -228,7 +236,7 @@ export default function Salon() {
   };
 
   useEffect(() => {
-    salonuOku();
+    salonuOku(true);
   }, []);
 
   // Garson telefondan sipariş girdiğinde kasadaki salon kendiliğinden
@@ -252,7 +260,7 @@ export default function Salon() {
   const cevrimici = useBaglanti();
   const oncekiDurum = useRef(cevrimici);
   useEffect(() => {
-    if (cevrimici && (okunamadi || !oncekiDurum.current)) salonuOku();
+    if (cevrimici && (okunamadi || !oncekiDurum.current)) salonuOku(true);
     oncekiDurum.current = cevrimici;
   }, [cevrimici]);
 
@@ -493,7 +501,7 @@ export default function Salon() {
             <p>
               Masalar yüklenemedi. Sunucuya ulaşılamıyor; bağlantı gelince yeniden deneyin.
             </p>
-            <button className="ayar-ekle" onClick={salonuOku}>
+            <button className="ayar-ekle" onClick={() => salonuOku(true)}>
               <RotateCw size={16} /> Yeniden dene
             </button>
           </div>

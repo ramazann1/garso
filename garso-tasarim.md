@@ -3,8 +3,25 @@
 
 ## 0. SIRADAKİ İŞ (22 Ağu 2026'da güncellendi)
 
-> **Sıradaki iş: İstasyon ve Satış sekmeleri yeni tasarım diline geçmedi.**
-> Mobilin kalan iki sekmesi; sipariş ve hesap ekranı bu seansta oturdu.
+> **Sıradaki iş: yayın güvenlik başlıkları.** Karar bekliyor — Garso nereye
+> kurulacak? Ayar dosyası servise göre değişiyor: Vercel'de `vercel.json`,
+> Cloudflare Pages/Netlify'da `public/_headers`, kendi sunucuda nginx bloğu.
+> Ramazan bu kararı bir sonraki seansa bıraktı.
+> Yazılacak başlıklar: `Content-Security-Policy`, `Strict-Transport-Security`,
+> `X-Frame-Options`, `Referrer-Policy`. Envanter çıkarıldı: yazı tipi pakete
+> gömülü, dışarıdan script/stil çekilmiyor, `connect-src` yalnız Supabase
+> (realtime için `wss:` de gerekiyor), 27 satır içi stil olduğu için
+> `style-src` `'unsafe-inline'` istiyor.
+>
+> **Güvenlik denetiminden kalan iki madde:**
+> - **Kayıt ekranına CAPTCHA** — Supabase panelinde açılıyor ama hCaptcha ya da
+>   Cloudflare Turnstile'da hesap açmak gerekiyor; Ramazan'ın yapması lazım.
+> - **Köprü exe'sinin imzalanması** — `indir.garso.app`'ten imzasız exe iniyor,
+>   özeti de doğrulanmıyor. Tedarik zinciri riski; mağazaya çıkış işleriyle
+>   birlikte.
+>
+> **İstasyon ve Satış sekmeleri yeni tasarım diline geçmedi.**
+> Mobilin kalan iki sekmesi; sipariş ve hesap ekranı 22 Ağu'da oturdu.
 >
 > Küçük iş: **sipariş ekranının sepet dökümünde KDV** — hesap ekranı 22 Ağu'da
 > düzeldi (KDV dahil modda da yazıyor), sipariş ekranı eski davranışta kaldı.
@@ -16,8 +33,8 @@
 >
 > **"Kim yaptı" imzasını sunucuya taşımak.** `adisyonlar.acan_id` ile
 > `turlar.garson_id` hâlâ tarayıcının gönderdiği değerle yazılıyor; dayanak
-> hazır: `oturum_personeli()`. Küçük kardeşi: **PIN belirleme** de hâlâ
-> tarayıcıda özetleniyor (`personel.ts:43`).
+> hazır: `oturum_personeli()`. (Küçük kardeşi olan PIN özeti 22 Ağu'da
+> sunucuya taşındı.)
 >
 > Sırada bekleyenler: **kurye atama ve teslimat takibi** → **KDS'in kalan
 > parçaları** (pişirme/paketleme aşamaları, mutfak fişi, hazırlık süresi
@@ -2497,3 +2514,129 @@ sıfır olduğu için satır büsbütün kayboluyordu. Vergi artık kasadaki gib
 **Açık kalan:** sipariş ekranının sepet dökümü hâlâ eski davranışta (KDV dahil
 modda satır çıkmıyor). Kuver/garsoniyeyi **o hesaba özel açma-kapama** ne
 kasada ne mobilde var — okunup geri yazılıyor ama elle değiştirilemiyor.
+
+---
+
+## 22 Ağu 2026 (2. seans): Canlıya çıkış öncesi güvenlik denetimi
+
+Ramazan "canlıya geçersek açık var mı" diye sordu; seans baştan sona denetim
+ve düzeltme oldu. Sıradaki iş listesindeki madde bu seansta işlenmedi.
+
+### Denetimin sonucu: yapı sağlam, kapılar açık kalmıştı
+
+Kod incelemesi + Supabase panelinin canlı denetimi yapıldı. Temel doğru
+kurulmuştu: **45 tablonun 45'inde de RLS açık**, açık depolama kovası yok,
+`auth` şeması dışarıya kapalı, `service_role` anahtarı hiçbir yerde geçmiyor,
+`innerHTML`/`eval` yok, köprü dinleyen bir port açmıyor.
+
+**Boşa çıkan şüphe:** göç dosyalarında 4 Ağu'daki `using (true)` politikaları
+(`adisyonlar_hepsi`, `tahsilatlar_hepsi`…) hiç düşürülmemiş görünüyordu. Canlıda
+yoktular — bir noktada elle silinmişler. `pg_policies` sorgulanmadan karar
+verilmemeli; dosyalar canlının aynası değil.
+
+**Yanlış çıkan tespit:** "köprü şifreyi düz metin saklıyor" denmişti; köprü
+zaten Windows DPAPI ile şifreliyor (`kopru/elektron/kimlik.js`). Görülen düz
+metin dosya geliştirme makinesindeki `kopru/ayarlar.json`'du.
+
+### Kapatılan açıklar
+
+**`sql/2026-09-01-guvenlik-sikilastirma.sql`**
+- `adisyonlar_eski` tablosunda `public` rolüne verilmiş, koşulu `true` olan bir
+  politika duruyordu: anonim anahtarla okunup yazılabiliyordu. Kapatıldı.
+- `personel_hesabi_yaz` personelin hangi işletmeden olduğuna bakmıyordu —
+  yetkisi olan biri **başka işletmenin** personelinin şifresini değiştirip onun
+  yerine girebilirdi. İşletme kontrolü eklendi.
+- Yirmi beş tanımlayıcı fonksiyonun tamamı `anon` rolüne açıktı (Postgres'te
+  yetki yazılmayan fonksiyon herkese açık doğuyor). Hepsi kapatılıp gerçekten
+  gerekenler tek tek açıldı.
+
+**İki tuzak:** toplu kapatmada köprünün çağırdığı beş fonksiyon (`kuyruktan_al`,
+`kuyruk_sonuc`, `kopru_bildir`, `kopru_kapandi`, `yazici_durum_bildir`) ve
+`siradaki_no` unutulsaydı sırasıyla fiş basılmaz, hiçbir adisyon açılmazdı.
+`siradaki_no`'yu çağıran üç tetikleyici tanımlayıcı değil — kaydı yapan kişinin
+yetkisiyle koşuyorlar.
+
+### PIN sertleştirildi — `sql/2026-09-02-pin-sertlestirme.sql`
+
+30 Ağu'da doğrulama sunucuya taşınmıştı ama **özet hâlâ tarayıcıya iniyordu**:
+personel listesi `pin_hash` sütununu da çekiyordu. Satır güvenliği satırı korur,
+sütunu korumaz. Özet tuzsuz SHA-256'ydı; 4 haneli, sıfırla başlamayan PIN'de
+9.000 ihtimal saniyeler içinde çözülüyordu — yani bir garson yöneticinin PIN'ini
+bulup onun yerine geçebilirdi.
+
+- `pin_hash` **sütun yetkisiyle** gizlendi. Tablo yetkisi geri alınıp diğer
+  sütunlar döngüyle verildi; sütun listesi elle yazılmıyor.
+- Ekranın ihtiyacı olan evet/hayır için türetilmiş `pin_var` sütunu.
+- Özet **bcrypt**'e geçti. `pin_ile_gec` eski SHA-256 özetini de kabul ediyor ve
+  doğru PIN girildiği anda kaydı sessizce çeviriyor — kimse PIN'ini yeniden
+  kurmadı.
+- `pin_ata` ve `pin_kullanimda` fonksiyonları; `ozet()` istemciden silindi.
+
+**Reddedilen öneri:** 5 yanlış denemeden sonra 2 saniye gecikme. Ramazan
+istemedi ("sistemi kilitleyebilir" endişesi — tasarımda kilit yoktu, yalnız
+gecikme vardı). PIN denemesi şu an sınırsız; bilinçli karar.
+
+### Şifre kuralları sunucuya taşındı — `sql/2026-09-03-sifre-kurallari.sql`
+
+Kurallar yalnız `sifreKurallari` içinde, yani tarayıcıdaydı: kural değil tavsiye
+oluyordu. `sifre_gecerli(text)` aynı dört maddeyi veritabanında işletiyor;
+`isletme_kur` ve `personel_hesabi_yaz` çağırıyor (ikincisinde hiç kural yoktu).
+
+Kayıt ekranı yalnız uzunluğa bakıyordu — işletmeyi kuran yöneticinin şifresi
+sonradan eklediği garsonunkinden zayıf kalabiliyordu. Artık aynı kural listesini
+kullanıyor ve tikli listeyi gösteriyor.
+
+**Uzunluk 6'da kaldı** (Ramazan'ın kararı; 8'e çıkarılmıştı, geri alındı).
+Supabase panelindeki şifre ayarları bu üründe zaten işlemiyor: hesaplar Auth'un
+kayıt akışından değil, kendi SQL fonksiyonumuzdan açılıyor.
+
+### Kasa köprüsünün kendi hesabı — `sql/2026-09-04-yazici-hesabi.sql`
+
+Köprü işletmecinin **yönetici hesabıyla** giriyordu. İki sakıncası vardı: kasaya
+ulaşan biri (DPAPI aynı Windows kullanıcısı için çözülüyor) yönetici oluyordu; ve
+işletmeci şifresini değiştirdiği gün köprü sessizce susuyordu.
+
+- Yetkisiz bir hesap yetiyor: köprünün çağırdığı beş fonksiyonun **hiçbiri yetki
+  sormuyor**. Hesabın rolü yok — `oturum_yetkisi` rolü olmayana hep false diyor.
+- `yazici_hesabi_kur(telefon)` hesabı açıyor ya da şifresini yeniliyor, şifreyi
+  **bir kez** döndürüyor. Saklanmıyor: saklasak "şifre kasada duruyor" sorununu
+  ekranın içine taşırdık.
+- Yeni yetki kodu **`yazici.hesap`** ("Kasa köprüsü şifresi oluşturma").
+  Yazıcı tanımlamakla kasaya girebilen bir hesabın şifresini üretmek aynı
+  ağırlıkta işler değil. Başlangıçta yalnız Yönetici'de; dağıtımı işletmeye ait
+  — Ramazan'ın isteği.
+- `personel.sistem` sütunu bu kaydı Personel listesinden gizliyor: "Kasa
+  Köprüsü" bir insan değil, telefonu olmayan bir kayıt listede soru doğuruyor ve
+  yanlışlıkla siliniyor. Yönetimi Yazıcılar sekmesinde.
+- **Köprünün giriş ekranı değişmedi** — yine telefon + şifre. Numarayı işletmeci
+  kendisi yazıyor (Ramazan'ın kararı; işletme kodundan üretme seçeneği elendi).
+
+### Salon ekranı her canlı tazelemede zıplıyordu
+
+Ramazan fiş basınca "ekran üç kere gidip geliyor" dedi. Sebep: bir fiş basılırken
+kuyruk satırı üç kez değişiyor (kuyruğa düştü → köprü aldı → basıldı) ve Salon bu
+tabloyu dinliyor. `salonuOku` her çağrıldığında `setYukleniyor(true)` yapıyordu,
+yani ekran boşalıp yeniden çiziliyordu.
+
+Bu seansın işlerinden gelmiyordu; **her** canlı tazelemede oluyordu — başka bir
+garson kalem eklediğinde de. Halka artık yalnız ilk açılışta ve "Yeniden dene"de
+çıkıyor. Mobil masalar ekranında sorun yoktu (orada "veri yoksa halka" yazılmış).
+
+### Zil varsayılanı değişti
+
+Yeni yazıcıda **"Fiş çıkarken zil çalsın" açık geliyor**. Önceki gerekçe
+"kasadaki adisyon yazıcısı her fişte ötmesin"di; Ramazan'ın gözlemi daha güçlü
+çıktı: yazıcı takılıyor, fiş çıkıyor ama ses çıkmıyor ve **sessizlik arıza gibi
+görünüyor**. İstemeyen kasa yazıcısında anahtarı kapatıyor. Kayıtlı yazıcılar
+kendi ayarlarıyla geliyor.
+
+### Bağımlılık
+
+`react-router` CSRF açığı (GHSA-qwww-vcr4-c8h2) kapandı — `npm audit fix`,
+0 zafiyet.
+
+### Panelden okunan durum (22 Ağu 2026)
+
+CAPTCHA **kapalı**, sızmış şifre kontrolü **kapalı** (Free planda yok, Pro
+gerekiyor), giriş hız sınırı 5 dakikada 30 (IP başına), dışarı açılan şemalar
+`public` + `graphql_public`, açık kova yok, realtime yayınında 10 tablo.

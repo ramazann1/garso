@@ -14267,3 +14267,65 @@ body {
   color: var(--mercan);
   font-weight: 600;
 }
+
+/* Kasa köprüsü hesabı — Yazıcılar sekmesinin alt bölümü */
+.kopru-hesap {
+  display: flex;
+  align-items: flex-end;
+  gap: 12px;
+  flex-wrap: wrap;
+  margin-top: 14px;
+}
+
+.kopru-hesap .alan { flex: 0 1 240px; }
+
+/* Üretilen şifre. Bir kez gösteriliyor, o yüzden göz ilk bakışta buraya
+   düşsün: kutu vurgu rengiyle çerçeveli ve yazı puntosu büyük. */
+.kopru-sifre {
+  margin-top: 16px;
+  padding: 14px 16px;
+  border: 1.5px solid var(--mercan);
+  border-radius: 12px;
+  background: var(--kart);
+  display: flex;
+  align-items: center;
+  gap: 12px;
+  flex-wrap: wrap;
+}
+
+.kopru-sifre code {
+  font-family: "Poppins", sans-serif;
+  font-size: 20px;
+  font-weight: 600;
+  letter-spacing: 1.5px;
+  color: var(--metin);
+}
+
+.kopru-sifre button {
+  display: inline-flex;
+  align-items: center;
+  gap: 6px;
+  padding: 7px 13px;
+  border: 1px solid var(--mercan);
+  border-radius: 9px;
+  background: transparent;
+  color: var(--mercan);
+  font-size: 14px;
+  font-weight: 500;
+  cursor: pointer;
+}
+
+.kopru-sifre button:hover { background: rgba(255, 122, 89, 0.08); }
+
+.kopru-sifre p {
+  flex: 1 1 100%;
+  margin: 0;
+  font-size: 14px;
+  color: var(--soluk);
+}
+
+.kopru-hesap-not {
+  margin: 14px 0 0;
+  font-size: 14px;
+  color: var(--soluk);
+}

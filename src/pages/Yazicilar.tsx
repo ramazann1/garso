@@ -6,6 +6,8 @@ import {
   ChefHat,
   ChevronDown,
   ChevronUp,
+  Copy,
+  KeyRound,
   Network,
   Pencil,
   Plus,
@@ -16,6 +18,8 @@ import {
   X,
   Zap,
 } from "lucide-react";
+import { yetkiVar } from "../oturum";
+import { yaziciHesabiKur, yaziciHesabiniGetir } from "../yaziciHesabi";
 import { koprulariGetir, type KopruCihazi } from "../kopru";
 import Duzen from "../components/Duzen";
 import AyarBasligi from "../components/AyarBasligi";
@@ -84,7 +88,11 @@ function YaziciPaneli({
   const [cihaz, setCihaz] = useState(yazici?.cihaz ?? "");
   const [kasalar, setKasalar] = useState<KopruCihazi[]>([]);
   const [kagit, setKagit] = useState(yazici?.kagitGenislik ?? 80);
-  const [zil, setZil] = useState(yazici?.zil ?? false);
+  // Yeni yazıcıda zil açık geliyor. Kapalı başlayınca yazıcı takılıyor, fiş
+  // çıkıyor ama ses çıkmıyor ve sebebi aranıyor — sessizlik arıza gibi
+  // görünüyor. Ses istenmeyen tek yer kasadaki adisyon yazıcısı; orada
+  // anahtar kapatılıyor. Kayıtlı yazıcı kendi ayarıyla geliyor.
+  const [zil, setZil] = useState(yazici?.zil ?? true);
   const [cekmece, setCekmece] = useState(yazici?.cekmece ?? false);
   const [turler, setTurler] = useState<YaziciTuru[]>(yazici?.turler ?? ["adisyon"]);
   const [secilenler, setSecilenler] = useState<number[]>(yazici?.istasyonlar ?? []);
@@ -283,7 +291,7 @@ function YaziciPaneli({
 
           <Anahtar
             etiket="Fiş çıkarken zil çalsın"
-            ipucu="Mutfakta fişin düştüğünü haber verir"
+            ipucu="Fişin düştüğünü haber verir. Kasa yazıcısında kapatabilirsiniz."
             acik={zil}
             degistir={setZil}
           />
@@ -408,6 +416,115 @@ function IstasyonPaneli({
   );
 }
 
+/**
+ * Kasa köprüsünün giriş hesabı.
+ *
+ * Köprü, kasadaki yazıcılara basabilmek için Garso'ya giriş yapıyor. Bunun
+ * için işletmecinin kendi hesabı kullanılmıyor: şifre kasadaki bilgisayarda
+ * duruyor ve o makineye ulaşan biri yönetici olurdu. Buradaki hesabın hiçbir
+ * yetkisi yok.
+ *
+ * Şifre üretildiği an bir kez gösteriliyor, saklanmıyor. Saklasaydık "şifre
+ * kasada duruyor" sorununu ekranın içine taşımış olurduk.
+ */
+function KopruHesabi({ onHata }: { onHata: (metin: string) => void }) {
+  const [telefon, setTelefon] = useState("");
+  const [kurulu, setKurulu] = useState(false);
+  const [sifre, setSifre] = useState("");
+  const [kopyalandi, setKopyalandi] = useState(false);
+  const [bekliyor, setBekliyor] = useState(false);
+
+  const yetkili = yetkiVar("yazici.hesap");
+
+  useEffect(() => {
+    yaziciHesabiniGetir().then((h) => {
+      if (!h) return;
+      setTelefon(h.telefon);
+      setKurulu(h.kurulu);
+    });
+  }, []);
+
+  const numaraTamam = telefon.replace(/\D/g, "").length >= 10;
+
+  const uret = async () => {
+    setBekliyor(true);
+    setSifre("");
+    setKopyalandi(false);
+    try {
+      const yeni = await yaziciHesabiKur(telefon);
+      setSifre(yeni);
+      setKurulu(true);
+    } catch (e: any) {
+      onHata(e.message);
+    }
+    setBekliyor(false);
+  };
+
+  const kopyala = () => {
+    navigator.clipboard.writeText(sifre);
+    setKopyalandi(true);
+  };
+
+  return (
+    <section className="ayar-bolum">
+      <div className="ayar-bolum-ust">
+        <h2><KeyRound size={17} /> Kasa köprüsü hesabı</h2>
+      </div>
+
+      <Bilgi>
+        Kasa köprüsü fiş basabilmek için Garso'ya girer. Kendi hesabınızla
+        değil, buradaki yetkisiz hesapla girmesi gerekir: şifresi kasadaki
+        bilgisayarda saklandığı için, sizin şifreniz orada durmamalıdır.
+      </Bilgi>
+
+      <div className="kopru-hesap">
+        <div className="alan">
+          <label>Telefon</label>
+          <input
+            value={telefon}
+            onChange={(e) => setTelefon(e.target.value)}
+            placeholder="0500 000 00 00"
+            inputMode="tel"
+            disabled={!yetkili}
+          />
+        </div>
+
+        <button
+          className="ayar-ekle"
+          onClick={uret}
+          disabled={!yetkili || !numaraTamam || bekliyor}
+          title={yetkili ? undefined : "Bu işlem için yetkin yok"}
+        >
+          <KeyRound size={15} />
+          {kurulu ? "Şifreyi yenile" : "Şifre oluştur"}
+        </button>
+      </div>
+
+      {sifre && (
+        <div className="kopru-sifre">
+          <code>{sifre}</code>
+          <button onClick={kopyala}>
+            {kopyalandi ? <Check size={15} /> : <Copy size={15} />}
+            {kopyalandi ? "Kopyalandı" : "Kopyala"}
+          </button>
+          <p>
+            Bu şifre bir daha gösterilmeyecek. Köprünün giriş ekranına
+            yukarıdaki telefon ve bu şifreyle girin. Kaybederseniz yenisini
+            oluşturabilirsiniz.
+          </p>
+        </div>
+      )}
+
+      {!sifre && kurulu && (
+        <p className="kopru-hesap-not">
+          Hesap kurulu. Şifreyi unuttuysanız yenisini oluşturun — köprüye
+          yeniden girmeniz gerekir.
+        </p>
+      )}
+    </section>
+  );
+}
+
 export default function Yazicilar() {
   const { pathname } = useLocation();
   const istasyonBolumu = pathname === "/ayarlar/istasyonlar";
@@ -522,6 +639,7 @@ export default function Yazicilar() {
             )}
           </section>
         ) : (
+          <>
           <section className="ayar-bolum">
             <div className="ayar-bolum-ust">
               <h2><Printer size={17} /> Yazıcılar</h2>
@@ -583,6 +701,9 @@ export default function Yazicilar() {
               </div>
             )}
           </section>
+
+          <KopruHesabi onHata={setHata} />
+          </>
         )}
       </div>
 
