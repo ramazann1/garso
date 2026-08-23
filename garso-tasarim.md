@@ -1,9 +1,34 @@
 ﻿# GARSO — Teknik Tasarım: Veri Modeli & Ekran Haritası
 *Restoran ve cafe'ler için bulut tabanlı satış ve işletme yönetim sistemi.*
 
-## 0. SIRADAKİ İŞ (6 Eyl 2026'da güncellendi)
+## 0. SIRADAKİ İŞ (7 Eyl 2026'da güncellendi)
 
-> **Sıradaki iş: çevrimdışı giriş ve PIN ile kişi değiştirme.** Cihaz kapanıp
+> **Sıradaki iş: çevrimdışı ödemenin kasa ekranlarında görünmesi.** Kuyrukta
+> bekleyen tahsilat şu an kasa hareketleri, vardiya ve Satış ekranlarının
+> hiçbirinde sayılmıyor; vardiya kapatılırken çekmecede para var ama sistemde
+> yok, kasiyer yanlış fark yazıyor. Yapılacak: bekleyen ödemeler "bekliyor"
+> işaretiyle sayılara katılacak, **kuyrukta ödeme varken kasa kapatma uyarısı**
+> çıkacak, kayıt sunucuya gidince işaret kalkacak.
+>
+> Yanına: **kasa çevrimdışıyken masa durumlarının güncel olmadığı uyarısı**.
+> Salonun tepesinde şerit, o hâldeyken ödeme almaya kalkılınca "bu hesap başka
+> bir cihazdan kapanmış olabilir, doğrulanamıyor" penceresi. Engel değil uyarı.
+>
+> **Açık soru (7 Eyl 2026, Ramazan test edecek).** Senaryo: kasa bilgisayarı
+> internetsiz, garson kendi telefonunun interneti ile hesabı kapatıyor. Sunucuda
+> her şey doğru ama kasa ekranı interneti gelene kadar masayı dolu gösteriyor;
+> arada kasadan ikinci kez tahsil edilebiliyor. Ramazan Adisyo'nun bu durumda
+> ne yaptığını deneyecek. Çözüm seçenekleri:
+> - **Ucuz yol (önerilen):** yukarıdaki iki uyarı. Yarım seans.
+> - **Yerel ağ:** telefon, kasadaki köprüye wifi üzerinden haber verir. Şu an
+>   böyle bir kanal **yok** — köprü de her şeyi Supabase üzerinden yapıyor.
+>   Önündeki asıl engel: Garso telefonda https ile açılıyor, tarayıcı https
+>   sayfasının yerel ağdaki http adresine istek atmasına izin vermiyor. Aşmanın
+>   yolları (köprüye sertifika, uygulamayı köprüden yayınlama) kurulumu
+>   işletmecinin kendi başına yapamayacağı hâle getiriyor. Birkaç seans, kırılgan.
+>   Kesintiler gerçekten sık yaşanırsa yeniden değerlendirilecek.
+>
+> **Ondan sonra: çevrimdışı giriş ve PIN ile kişi değiştirme.** Cihaz kapanıp
 > açılırsa garson çevrimdışı sipariş de alamıyor, tahsilat da; şifre ve PIN
 > sunucuda doğrulanıyor. Çevrimdışı tahsilat 7 Eyl'de bitti, sıradaki engel bu.
 >
