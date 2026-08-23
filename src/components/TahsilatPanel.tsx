@@ -9,7 +9,7 @@ import KdvDokum from "./KdvDokum";
 import OdemeTipDugmeleri from "./OdemeTipDugmeleri";
 import MusteriSecici from "./MusteriSecici";
 import { adetGoster } from "../para";
-import { kalemTutari } from "../adisyonlar";
+import { kalemTutari, yeniTahsilat } from "../adisyonlar";
 import { indirimYapabilir, yetkiVar } from "../oturum";
 import { odemeTipleriniGetir } from "../odemeTipleri";
 import type { OdemeTipi } from "../odemeTipleri";
@@ -243,7 +243,7 @@ export default function TahsilatPanel({ kalemler, toplam, araToplam, indirim, se
     const secilenKalemler = Object.keys(secilen).length > 0 ? kalemPaylari(tutar) : undefined;
     const yeni = [
       ...(tahsilatlar ?? []),
-      { tip, tutar, bahsis, musteriId, kalemler: secilenKalemler },
+      yeniTahsilat({ tip, tutar, bahsis, musteriId, kalemler: secilenKalemler }),
     ];
     setTahsilatlar(yeni);
     setSecilen({});

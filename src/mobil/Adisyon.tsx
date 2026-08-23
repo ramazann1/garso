@@ -29,7 +29,10 @@ import {
   kalemTasi,
   kalemTutari,
   servisGirdisi,
+  yeniTahsilat,
 } from "../adisyonlar";
+import { hesapKopyasiOku, hesapKopyasiSil, kopyaSaati } from "../hesapKopyasi";
+import { kuyrugaEkle } from "../kuyruk";
 import type { AdisyonVerisi } from "../adisyonlar";
 import { servisSatirlari } from "../servis";
 import { kdvDokumu } from "../kdv";
@@ -38,7 +41,7 @@ import { odemeTipleriniGetir } from "../odemeTipleri";
 import type { OdemeTipi } from "../odemeTipleri";
 import { useCanli } from "../canli";
 import { useMasayiTut } from "../mesguliyet";
-import { baglantiVar, useBaglanti } from "../baglanti";
+import { baglantiHatasi, baglantiVar, useBaglanti } from "../baglanti";
 import { indirimYapabilir, yetkiVar } from "../oturum";
 import { adetGoster, paraGoster } from "../para";
 import type { SepetKalemi, Tahsilat } from "../types";
@@ -70,6 +73,9 @@ export default function MobilAdisyon() {
 
   const [masaAdi, setMasaAdi] = useState("");
   const [veri, setVeri] = useState<AdisyonVerisi | null>(null);
+  // Çevrimdışıyken açılan hesap sunucudan değil kopyadan geliyor; kopyanın
+  // saati ekranda yazıyor, ödemeyi alan kişi bayatlığı görsün.
+  const [kopyaZamani, setKopyaZamani] = useState<number | null>(null);
   const [odemeTipleri, setOdemeTipleri] = useState<OdemeTipi[]>([]);
   const [girilen, setGirilen] = useState("");
   const [calisiyor, setCalisiyor] = useState(false);
@@ -103,11 +109,16 @@ export default function MobilAdisyon() {
   }, [masaId]);
 
   useEffect(() => {
-    // Bağlantı yoksa istek atılmıyor; tahsilat zaten çevrimdışı alınmıyor.
+    // Bağlantı yokken istek atılmıyor; ekran cihazdaki son bilinen hesabı
+    // açıyor. Kopya olmadan çevrimdışı tahsilat alınamaz — garson neyi
+    // tahsil ettiğini bilemez.
     if (!baglantiVar()) {
-      setVeri(CEVRIMDISI_ADISYON);
+      const kopya = hesapKopyasiOku({ tip: "masa", masaId });
+      setVeri(kopya?.veri ?? CEVRIMDISI_ADISYON);
+      setKopyaZamani(kopya?.zaman ?? null);
       return;
     }
+    setKopyaZamani(null);
     adisyonGetir(masaId).then(setVeri);
   }, [masaId, cevrimici]);
 
@@ -163,15 +174,37 @@ export default function MobilAdisyon() {
     eksik?: AdisyonVerisi["eksik"],
     degisen?: Partial<AdisyonVerisi>
   ) => {
+    const tam = { ...veri, ...degisen, tahsilatlar, eksik };
+
+    // Bağlantının olmadığı biliniyorsa sunucu hiç denenmiyor: ödeme cihazda
+    // kuyruğa giriyor, müşteri bekletilmiyor. Aynı tahsilatın iki kez
+    // yazılmasını istemci kimliği durduruyor.
+    const kuyruga = () => {
+      kuyrugaEkle({ tip: "masa", masaId, masaAdi, veri: tam, kapat });
+      if (kapat) hesapKopyasiSil({ tip: "masa", masaId });
+      else setVeri(tam);
+      setGirilen("");
+    };
+
+    if (!baglantiVar()) {
+      kuyruga();
+      return true;
+    }
+
     setCalisiyor(true);
     try {
-      const kayitli = await adisyonKaydet(masaId, { ...veri, ...degisen, tahsilatlar, eksik }, kapat);
+      const kayitli = await adisyonKaydet(masaId, tam, kapat);
       // Yeni ödemeler kayıtta kimlik kazanıyor; ekran onları geri almazsa
       // aynı sayfadan alınan ikinci ödeme birincisini bir daha yazardı.
       if (!kapat) setVeri({ ...veri, ...degisen, ...kayitli });
       setGirilen("");
       return true;
     } catch (e) {
+      // Sebep bağlantıysa para kaybolmuyor, kuyruğa düşüyor.
+      if (baglantiHatasi(e) || !baglantiVar()) {
+        kuyruga();
+        return true;
+      }
       setUyari(e instanceof Error ? e.message : "Kaydedilemedi.");
       return false;
     } finally {
@@ -184,7 +217,7 @@ export default function MobilAdisyon() {
    * kapanır. Fiş yazdırmak ayrı bir iş, masa kartının menüsünde duruyor.
    */
   const tahsilatIsle = async (tip: string, tutar: number, bahsis?: number, musteriId?: number) => {
-    const tahsilatlar = [...veri.tahsilatlar, { tip, tutar, bahsis, musteriId }];
+    const tahsilatlar = [...veri.tahsilatlar, yeniTahsilat({ tip, tutar, bahsis, musteriId })];
     const odenen = tahsilatlar.reduce((t, o) => t + o.tutar, 0);
     const kapat = odenen >= ozet.toplam - 0.005;
 
@@ -240,10 +273,24 @@ export default function MobilAdisyon() {
       <div className="m-adisyon-icerik">
         {veri.sepet.length === 0 ? (
           <div className="m-bos">
-            <p>{cevrimici ? "Bu masada açık hesap yok." : "Bağlantı yok, hesap okunamadı."}</p>
+            <CloudOff size={30} style={{ display: cevrimici ? "none" : undefined }} />
+            <p>
+              {cevrimici
+                ? "Bu masada açık hesap yok."
+                : "Bağlantı yok ve bu hesabın cihazda kopyası yok. Hesabı bir kez bağlantılıyken açmak gerekiyor."}
+            </p>
           </div>
         ) : (
           <>
+            {/* Kopyadan çalışıldığı gizlenmiyor: hesap o saatten sonra
+                değişmiş olabilir, ödemeyi alan kişi bilerek alsın. */}
+            {kopyaZamani && (
+              <div className="m-kopya-serit">
+                <CloudOff size={17} />
+                Bağlantı yok — hesabın {kopyaSaati(kopyaZamani)} itibarıyla bilinen hâli. Alınan
+                ödeme bağlantı gelince kasaya yazılacak.
+              </div>
+            )}
             {/* Kaleme dokunmak o satırın işlemlerini açıyor. */}
             <div className="m-adisyon-kalemler">
               {veri.sepet.map((k) => (
@@ -369,12 +416,6 @@ export default function MobilAdisyon() {
             <div className="m-odeme-kapali">
               <Lock size={18} />
               Ödeme alma yetkiniz yok.
-            </div>
-          ) : !cevrimici ? (
-            // Para işlemi kuyruğa girmiyor: bağlantı gelmeden tahsilat alınmıyor.
-            <div className="m-odeme-kapali">
-              <CloudOff size={18} />
-              Bağlantı yok — tahsilat alınamıyor.
             </div>
           ) : odemeBitti ? (
             <button

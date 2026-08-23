@@ -67,6 +67,12 @@ export type SepetKalemi = {
 export type Tahsilat = {
   /** Kayıtlı tahsilatın kimliği; yeni alınan ödemede boş. */
   id?: number;
+  /**
+   * Ödemeyi alan cihazın ürettiği kimlik. Çevrimdışı tahsilat kuyrukta
+   * beklerken aynı kayıt iki kez gönderilebiliyor (istek gitti, cevap
+   * dönerken bağlantı koptu); sunucu bu kimliğe bakıp ikincisini yazmıyor.
+   */
+  istemciKimlik?: string;
   tip: string;
   tutar: number;
   bahsis?: number; // hesabın üstünde kalan, müşterinin bıraktığı tutar

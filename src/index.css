@@ -12799,7 +12799,13 @@ body {
   color: var(--soluk);
 }
 
+/* Ad solda, tutar sağda, çubuk altta genişliğin tamamında: esnek dizilimde
+   rakamlar birbirinin altına tutmuyordu. */
 .m-pay {
+  display: grid;
+  grid-template-columns: 1fr auto;
+  align-items: center;
+  gap: 2px 12px;
   padding: 9px 0;
   border-bottom: 1px solid #f2ece4;
 }
@@ -12809,24 +12815,25 @@ body {
   padding-bottom: 2px;
 }
 
-.m-pay-ust {
-  display: flex;
-  align-items: center;
-  justify-content: space-between;
-  gap: 12px;
-  font-size: 15px;
-}
-
-.m-pay-ust > span:first-child {
+.m-pay-ad {
   display: flex;
   align-items: center;
   gap: 8px;
+  min-width: 0;
+  font-size: 15px;
   font-weight: 500;
 }
 
+.m-pay-ad small {
+  font-size: 13.5px;
+  font-weight: 400;
+  color: var(--soluk);
+}
+
 .m-pay-cubuk {
+  grid-column: 1 / -1;
   height: 7px;
-  margin: 7px 0 5px;
+  margin: 6px 0 1px;
   border-radius: 999px;
   background: #f2ece4;
   overflow: hidden;
@@ -12838,18 +12845,63 @@ body {
   background: var(--mercan);
 }
 
-.m-pay-adet {
-  font-size: 13.5px;
-  color: var(--soluk);
+/* Kartın içindeki alt bölüm: kendi çerçevesi yok, çizgiyle ayrılıyor. */
+.m-kutu-grup {
+  margin-top: 12px;
+  padding-top: 12px;
+  border-top: 1px solid #f2ece4;
 }
 
-.m-satis-not {
-  padding: 0 2px;
+/* Çevrimdışı hesabın başındaki uyarı şeridi: kopyadan çalışıldığı gizlenmiyor. */
+.m-kopya-serit {
+  display: flex;
+  align-items: flex-start;
+  gap: 9px;
+  margin-bottom: 10px;
+  padding: 11px 13px;
+  border: 1px solid #e8c9a8;
+  border-radius: 13px;
+  background: #fdf3e7;
+  color: var(--metin);
   font-size: 14px;
-  color: var(--soluk);
+  line-height: 1.45;
+}
+
+.m-kopya-serit svg {
+  flex-shrink: 0;
+  margin-top: 1px;
 }
 
 /* --- Mobil istasyon ekranı ------------------------------------------------ */
+
+/* Tezgâh seçimi düz liste satırıydı; ekranın geri kalanı kart diliyle
+   yazıldığı için tek başına yabancı duruyordu. */
+.m-istasyon-sec {
+  display: flex;
+  flex-direction: column;
+  gap: 10px;
+}
+
+.m-istasyon-sec button {
+  display: flex;
+  align-items: center;
+  gap: 11px;
+  width: 100%;
+  padding: 16px;
+  border: 1px solid #eee6dc;
+  border-radius: 16px;
+  background: var(--kart);
+  color: var(--metin);
+  font-size: 16px;
+  font-weight: 500;
+  text-align: left;
+  cursor: pointer;
+}
+
+.m-istasyon-sec button > span {
+  flex: 1;
+  min-width: 0;
+}
 
 .m-istasyon-ad {
   display: flex;
@@ -12876,10 +12928,31 @@ body {
   background: var(--kart);
 }
 
+/* Sol kenardaki şerit karta uzaktan bakınca durumu söylüyor: bekleyen sakin
+   tonda, geciken mercan. Kartın tamamını boyamak listeyi alacalı yapıyordu. */
+.m-kart.seritli {
+  position: relative;
+  padding-left: 16px;
+  overflow: hidden;
+}
+
+.m-kart.seritli::before {
+  content: "";
+  position: absolute;
+  top: 0;
+  bottom: 0;
+  left: 0;
+  width: 4px;
+  background: #d9cfc0;
+}
+
 /* Geciken kart tezgâhta göze ilk çarpan şey olmalı. */
 .m-kart.geciken {
   border-color: var(--mercan);
-  box-shadow: inset 0 0 0 1px var(--mercan);
+}
+
+.m-kart.geciken.seritli::before {
+  background: var(--mercan);
 }
 
 .m-kart-ust {

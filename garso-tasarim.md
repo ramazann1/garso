@@ -3,8 +3,56 @@
 
 ## 0. SIRADAKİ İŞ (6 Eyl 2026'da güncellendi)
 
-> **Sıradaki iş: İstasyon ve Satış sekmelerinin yeni tasarım diline geçmesi.**
-> Mobilin kalan iki sekmesi; sipariş ve hesap ekranı 22 Ağu'da oturmuştu.
+> **Sıradaki iş: çevrimdışı giriş ve PIN ile kişi değiştirme.** Cihaz kapanıp
+> açılırsa garson çevrimdışı sipariş de alamıyor, tahsilat da; şifre ve PIN
+> sunucuda doğrulanıyor. Çevrimdışı tahsilat 7 Eyl'de bitti, sıradaki engel bu.
+>
+> **Sonra: `sql/2026-09-07-cevrimdisi-tahsilat.sql` Supabase'e çalıştırılacak.**
+> Çalıştırılmadan çevrimdışı tahsilat çift ödeme koruması olmadan işler.
+>
+> **7 Eyl 2026: çevrimdışı tahsilat geldi.** 20 Ağu'daki "çevrimdışı tahsilat
+> yok" kararı **iptal edildi**. Gerekçe Ramazan'dan: Adisyo'da internet gidince
+> ödeme almak durmuyor, işletmede müşteri masada bekletilemiyor. Kural role
+> değil yetkiye bağlandı — **`odeme.al` yetkisi olan** çevrimdışı da tahsilat
+> alıyor, "yönetici" diye istisna yok. Yapılanlar:
+> - **`hesapKopyasi.ts` (yeni)** — açık hesabın cihazdaki son bilinen kopyası.
+>   Canlı veri önbelleğe girmez kuralından bilerek ayrıldık: cihaz hesabı
+>   bilmeden parasını alamaz. Kopya `adisyonGetir`/`masasizGetir` her okuduğunda
+>   tazeleniyor, hesap kapanınca siliniyor, 12 saatte bir düşüyor (bir
+>   vardiyadan eski kopya bilgi değil tahmindir), en son 60 hesap tutuluyor.
+>   Bayatlık gizlenmiyor: mobil ve kasa hesap ekranında "hesabın 14:32
+>   itibarıyla bilinen hâli" şeridi çıkıyor (`.m-kopya-serit`).
+> - **Kuyruk artık parayı da taşıyor** (`kuyruk.ts`). İş künyesine `kapat`
+>   eklendi. Üç yeni kural: kapatma kaydının üstüne yazılmıyor (yazılsaydı
+>   hesabın kapandığı bilgisi kaybolurdu), `bekleyenKayit` kapatma kaydını
+>   sepet diye vermiyor, `bekleyenMasalar` kapatılan masayı dolu göstermiyor.
+> - **Çift ödeme koruması**: `tahsilatlar.istemci_kimlik` (uuid, tekil).
+>   Kimlik **ödeme alındığı anda** üretiliyor (`yeniTahsilat()`), kaydedilirken
+>   değil — kuyruk aynı kaydı yeniden gönderirse kimlik de aynı kalsın diye.
+>   Sunucu ikinci kaydı yazmıyor, var olanın kimliğini döndürüyor. Ödeme üreten
+>   beş yer de bu yardımcıdan geçiyor.
+> - **Çevrimdışı salon dolu masaları gösteriyor** (`kopyaMasalari()`). Eskiden
+>   bomboştu; dolu masaya girilemeyince ödemesi de alınamıyordu.
+> - **Ödeme yolları kuyruğa düşüyor**: mobil hesap ekranı, mobil Hızlı Öde,
+>   kasa sipariş/tahsilat ekranı, kasa Hızlı Öde, kasadan hesap kapatma.
+>   Hepsinde aynı desen — bağlantı yoksa hiç denenmiyor, deneme bağlantı
+>   yüzünden düşerse kuyruğa iniyor, başka hata ekranda söyleniyor.
+> - **Sessiz kalmayan iki durum**: para taşıyan kayıt sunucuda reddedilirse
+>   şerit "tahsilat kasaya girmedi" diyor; hesap bu arada başka cihazdan
+>   kapanmışsa "aynı hesap iki kez tahsil edilmiş olabilir" uyarısı çıkıyor.
+>
+> **Yan etki — kasa sipariş ekranı çevrimdışı artık boş açılmıyor.** 30 Ağu'daki
+> "çevrimdışı ekran boş sepetle açılır" kuralı kopya varken geçerli değil;
+> silme koruması `bilinenIdler`den geliyor, yani kopyanın görmediği kaleme
+> dokunulmuyor. Gözlenecek: bayat kopyayla kaydetme bir sorun çıkarırsa kural
+> yalnız ödeme ekranına daraltılacak.
+>
+> **7 Eyl 2026: İstasyon ve Satış sekmeleri yeni tasarım diline geçti.**
+> Satış'ta ciro altındaki üç kutu tek karta indi (`m-kutu-grup`), ödeme tipi
+> satırı ızgaraya alındı (ad · tutar, çubuk altta), alt açıklama `Bilgi`
+> kutusuna geçti. İstasyon'da başlığa yenile düğmesi, kart soluna 4px durum
+> şeridi (bekleyen sakin ton / geciken mercan, eski iç gölge kalktı),
+> "Hazırlanan" boş durumuna ikon, tezgâh seçimi kart diline geçti.
 >
 > **6 Eyl 2026: okuma tarafı bütünüyle kapandı.** Üç grup da bitti, dosyalar:
 > - `2026-09-06-okuma-yetkileri.sql` (kolay) — kasa vardiyaları, kasa
@@ -81,9 +129,9 @@
 > parçaları** (pişirme/paketleme aşamaları, mutfak fişi, hazırlık süresi
 > raporu, çoklu istasyon).
 >
-> Offline'ın açık kalan uçları (acil değil): **çevrimdışı giriş ve PIN ile kişi
-> değiştirme**, **çevrimdışı tahsilat** (bilinçli kapsam dışı), **masasız
-> adisyonun çevrimdışı açılması**.
+> Offline'ın açık kalan uçları: **çevrimdışı giriş ve PIN ile kişi değiştirme**
+> (artık sıranın başında), **masasız adisyonun çevrimdışı açılması**.
+> Çevrimdışı tahsilat 7 Eyl'de bitti.
 >
 > Küçük iş: **Analiz ve Kasa ekranlarına canlı tazeleme** (katman hazır:
 > `useCanli(..., SAKIN)`). Küçük iş: **Analiz'in diğer tablolarına kendi
@@ -264,6 +312,8 @@ Kararlar:
 - **Ödeme sırasında açık hesap seçilirse müşteri sorulur** (Hızlı Öde'de
   sorulmuyordu, düzeltildi: borcun kime yazıldığı bilinmeden hesap kapanmaz).
 - **Çevrimdışı tahsilat yok**, bağlantı gelmeden ödeme alınmıyor.
+  *(7 Eyl 2026'da iptal edildi — bölüm 0'a bak: `odeme.al` yetkisi olan
+  çevrimdışı da tahsilat alacak.)*
 
 **19 Ağu 2026 (5. seans): Mobil arayüz — aşama 1 (kabuk + Masalar) ve
 aşama 2 (sipariş ekranı) bitti.** Kapsam kararı yukarıda; burada yapılanlar.

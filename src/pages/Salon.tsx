@@ -20,7 +20,8 @@ import {
   Trash2,
   Zap,
 } from "lucide-react";
-import { bekleyenMasalar, useKuyruk } from "../kuyruk";
+import { bekleyenMasalar, kopyaMasalari, kuyrugaEkle, useKuyruk } from "../kuyruk";
+import { hesapKopyasiOku, hesapKopyasiSil } from "../hesapKopyasi";
 import MasaKarti from "../components/MasaKarti";
 import MasaSecim from "../components/MasaSecim";
 import MasaPlani, { yerlesimiVar } from "../components/MasaPlani";
@@ -32,7 +33,7 @@ import MasasizSiparis from "../components/MasasizSiparis";
 import Kasa from "../components/Kasa";
 import { yetkiVar } from "../oturum";
 import { ayarlar } from "../isletmeAyarlari";
-import { baglantiVar, sureSinirli, useBaglanti } from "../baglanti";
+import { baglantiHatasi, baglantiVar, sureSinirli, useBaglanti } from "../baglanti";
 import { useCanli } from "../canli";
 import { devralabilir, masayiDevral, useMesguliyetler } from "../mesguliyet";
 import {
@@ -49,6 +50,7 @@ import {
   masasizSil,
   servisGirdisi,
   tumAdisyonlar,
+  yeniTahsilat,
 } from "../adisyonlar";
 import { servisSatirlari } from "../servis";
 import type { AdisyonVerisi, MasaOzeti, MasasizAdisyon } from "../adisyonlar";
@@ -227,7 +229,7 @@ export default function Salon() {
     // Cihazda bekleyen siparişler sunucudakilerin üstüne biniyor: masa dolu
     // görünsün, garson aynı masaya ikinci hesap açmasın. Gönderilmiş kayıt
     // kuyruktan düştüğü için burada kendiliğinden sunucununki geçerli oluyor.
-    setAdisyonlar({ ...(a ?? {}), ...bekleyenMasalar() });
+    setAdisyonlar({ ...(baglantiVar() ? {} : kopyaMasalari()), ...(a ?? {}), ...bekleyenMasalar() });
     setMasasizlar(m ?? []);
     // Kayıtlı bölge silinmiş olabilir; öyleyse ilk bölgeye dönülüyor.
     setSeciliId((s) =>
@@ -340,6 +342,17 @@ export default function Salon() {
   // Masadan tek dokunuşla tahsilat: adisyon okunup panel açılıyor, ödenecek
   // bir şey kalmamışsa panel yerine uyarı çıkıyor.
   async function hizliOdeAc(masa: Masa) {
+    // Bağlantı yokken hesap cihazdaki kopyadan açılıyor; alınan ödeme kuyruğa
+    // girip bağlantı gelince kasaya yazılıyor.
+    if (!baglantiVar()) {
+      const kopya = hesapKopyasiOku({ tip: "masa", masaId: masa.id });
+      if (!kopya) {
+        setUyari("Bağlantı yok ve bu hesabın cihazda kopyası yok, ödeme alınamıyor.");
+        return;
+      }
+      setHizli({ masa, veri: kopya.veri });
+      return;
+    }
     try {
       const veri = await adisyonGetir(masa.id);
       if (adisyonOzeti(veri).kalan <= 0) {
@@ -359,6 +372,24 @@ export default function Salon() {
       mesaj: `${masa.ad} masasının hesabı tamamen ödendi. Adisyon kapatılsın mı?`,
       onOnay: async () => {
         setOnay(null);
+        // Bağlantı yoksa kapanış kuyruğa giriyor; masa cihazda boşalıyor.
+        if (!baglantiVar()) {
+          const kopya = hesapKopyasiOku({ tip: "masa", masaId: masa.id });
+          if (!kopya) {
+            setUyari("Bağlantı yok ve bu hesabın cihazda kopyası yok, kapatılamıyor.");
+            return;
+          }
+          kuyrugaEkle({
+            tip: "masa",
+            masaId: masa.id,
+            masaAdi: masa.ad,
+            veri: kopya.veri,
+            kapat: true,
+          });
+          hesapKopyasiSil({ tip: "masa", masaId: masa.id });
+          await yenile();
+          return;
+        }
         try {
           const veri = await adisyonGetir(masa.id);
           await adisyonKaydet(masa.id, veri, true);
@@ -686,17 +717,28 @@ export default function Salon() {
               onSec={async (tip, tutar, kapat, bahsis, musteriId) => {
                 const { masa, veri } = hizli;
                 setHizli(null);
+                const tam = {
+                  ...veri,
+                  tahsilatlar: [...veri.tahsilatlar, yeniTahsilat({ tip, tutar, bahsis, musteriId })],
+                };
+                // Bağlantı yoksa ödeme kuyrukta bekliyor, müşteri bekletilmiyor.
+                const kuyruga = async () => {
+                  kuyrugaEkle({ tip: "masa", masaId: masa.id, masaAdi: masa.ad, veri: tam, kapat });
+                  if (kapat) hesapKopyasiSil({ tip: "masa", masaId: masa.id });
+                  await yenile();
+                };
+                if (!baglantiVar()) {
+                  await kuyruga();
+                  return;
+                }
                 try {
-                  await adisyonKaydet(
-                    masa.id,
-                    {
-                      ...veri,
-                      tahsilatlar: [...veri.tahsilatlar, { tip, tutar, bahsis, musteriId }],
-                    },
-                    kapat
-                  );
+                  await adisyonKaydet(masa.id, tam, kapat);
                   await yenile();
                 } catch (e) {
+                  if (baglantiHatasi(e) || !baglantiVar()) {
+                    await kuyruga();
+                    return;
+                  }
                   setUyari(e instanceof Error ? e.message : "Tahsilat kaydedilemedi.");
                 }
               }}

@@ -6,6 +6,7 @@ import type { AnalizOzeti } from "../analiz";
 import { baglantiVar, useBaglanti } from "../baglanti";
 import { SAKIN, useCanli } from "../canli";
 import { paraGoster } from "../para";
+import Bilgi from "../components/Bilgi";
 
 /**
  * Mobil Satış ekranı — Analiz'in tamamı değil, telefonda bakılacak kadarı.
@@ -102,9 +103,11 @@ export default function MobilSatis() {
             </div>
           </section>
 
-          {/* Açık masa ciroya girmiyor ama işletmecinin gördüğü paranın
-              yarısı orada; ikisi ayrı yazılıp altta toplanıyor. */}
+          {/* Cironun altındaki her şey tek kartta, aralarında ince çizgi.
+              Ayrı ayrı çerçevelenince ekran kutu yığınına dönüyordu. */}
           <section className="m-kutu">
+            {/* Açık masa ciroya girmiyor ama işletmecinin gördüğü paranın
+                yarısı orada; ikisi ayrı yazılıp altta toplanıyor. */}
             <div className="m-kutu-satir">
               <span>
                 <Utensils size={17} />
@@ -118,64 +121,62 @@ export default function MobilSatis() {
               <span>Günün toplam işi</span>
               <strong>{paraGoster(ozet.toplamIs)}</strong>
             </div>
-          </section>
 
-          <section className="m-kutu">
-            <p className="m-alt-baslik">Ödeme tipleri</p>
-            {ozet.odemeler.length === 0 ? (
-              <p className="m-kutu-bos">Bugün henüz tahsilat yok.</p>
-            ) : (
-              ozet.odemeler.map((o) => {
-                const enBuyuk = ozet.odemeler[0].tutar || 1;
-                return (
-                  <div key={o.ad} className="m-pay">
-                    <div className="m-pay-ust">
-                      <span>
+            <div className="m-kutu-grup">
+              <p className="m-alt-baslik">Ödeme tipleri</p>
+              {ozet.odemeler.length === 0 ? (
+                <p className="m-kutu-bos">Bugün henüz tahsilat yok.</p>
+              ) : (
+                ozet.odemeler.map((o) => {
+                  const enBuyuk = ozet.odemeler[0].tutar || 1;
+                  return (
+                    <div key={o.ad} className="m-pay">
+                      <span className="m-pay-ad">
                         <OdemeIkon ad={o.ad} size={17} />
                         {o.ad}
+                        <small>{o.adet} tahsilat</small>
                       </span>
                       <span className="m-kutu-deger">{paraGoster(o.tutar)}</span>
+                      {/* Çubuk rakamın süsü değil: hangi tipin ağır bastığı
+                          listeye bakmadan görünsün. */}
+                      <div className="m-pay-cubuk">
+                        <div style={{ width: `${Math.max(4, (o.tutar / enBuyuk) * 100)}%` }} />
+                      </div>
                     </div>
-                    {/* Çubuk rakamın süsü değil: hangi tipin ağır bastığı
-                        listeye bakmadan görünsün. */}
-                    <div className="m-pay-cubuk">
-                      <div style={{ width: `${Math.max(4, (o.tutar / enBuyuk) * 100)}%` }} />
-                    </div>
-                    <p className="m-pay-adet">{o.adet} tahsilat</p>
+                  );
+                })
+              )}
+            </div>
+
+            {(ozet.eksikTahsilat > 0 || ozet.bahsis > 0 || ozet.ikram > 0) && (
+              <div className="m-kutu-grup">
+                <div className="m-kutu-satir">
+                  <span>Kasaya giren</span>
+                  <span className="m-kutu-deger">{paraGoster(ozet.tahsilEdilen)}</span>
+                </div>
+                {ozet.eksikTahsilat > 0 && (
+                  <div className="m-kutu-satir eksik">
+                    <span>Eksik tahsilat</span>
+                    <span className="m-kutu-deger">{paraGoster(ozet.eksikTahsilat)}</span>
                   </div>
-                );
-              })
+                )}
+                {ozet.ikram > 0 && (
+                  <div className="m-kutu-satir">
+                    <span>İkram</span>
+                    <span className="m-kutu-deger">{paraGoster(ozet.ikram)}</span>
+                  </div>
+                )}
+                {ozet.bahsis > 0 && (
+                  <div className="m-kutu-satir">
+                    <span>Bahşiş</span>
+                    <span className="m-kutu-deger">{paraGoster(ozet.bahsis)}</span>
+                  </div>
+                )}
+              </div>
             )}
           </section>
 
-          {(ozet.eksikTahsilat > 0 || ozet.bahsis > 0 || ozet.ikram > 0) && (
-            <section className="m-kutu">
-              <div className="m-kutu-satir">
-                <span>Kasaya giren</span>
-                <span className="m-kutu-deger">{paraGoster(ozet.tahsilEdilen)}</span>
-              </div>
-              {ozet.eksikTahsilat > 0 && (
-                <div className="m-kutu-satir eksik">
-                  <span>Eksik tahsilat</span>
-                  <span className="m-kutu-deger">{paraGoster(ozet.eksikTahsilat)}</span>
-                </div>
-              )}
-              {ozet.ikram > 0 && (
-                <div className="m-kutu-satir">
-                  <span>İkram</span>
-                  <span className="m-kutu-deger">{paraGoster(ozet.ikram)}</span>
-                </div>
-              )}
-              {ozet.bahsis > 0 && (
-                <div className="m-kutu-satir">
-                  <span>Bahşiş</span>
-                  <span className="m-kutu-deger">{paraGoster(ozet.bahsis)}</span>
-                </div>
-              )}
-            </section>
-          )}
-
-          <p className="m-satis-not">Gider, kâr ve ayrıntılı raporlar kasadaki Analiz ekranında.</p>
+          <Bilgi>Gider, kâr ve ayrıntılı raporlar kasadaki Analiz ekranında.</Bilgi>
         </div>
       ) : null}
     </>

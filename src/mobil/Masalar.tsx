@@ -29,6 +29,7 @@ import {
   masaTasi,
   tumAdisyonlar,
   type MasaOzeti,
+  yeniTahsilat,
 } from "../adisyonlar";
 import type { AdisyonVerisi } from "../adisyonlar";
 import { adisyonFisiYaz } from "../yazicilar";
@@ -38,8 +39,9 @@ import AltSayfa from "./AltSayfa";
 import OdemeTipleri from "./OdemeTipleri";
 import MusteriSecici from "../components/MusteriSecici";
 import { odemeTipleriniGetir, type OdemeTipi } from "../odemeTipleri";
-import { bekleyenMasalar, useKuyruk } from "../kuyruk";
-import { baglantiVar, sureSinirli, useBaglanti } from "../baglanti";
+import { bekleyenMasalar, kopyaMasalari, kuyrugaEkle, useKuyruk } from "../kuyruk";
+import { hesapKopyasiOku, hesapKopyasiSil } from "../hesapKopyasi";
+import { baglantiHatasi, baglantiVar, sureSinirli, useBaglanti } from "../baglanti";
 import { useCanli } from "../canli";
 import { devralabilir, masayiDevral, useMesguliyetler } from "../mesguliyet";
 import { odenmezleriGetir, type Odenmez } from "../odenmezler";
@@ -131,7 +133,7 @@ export default function MobilMasalar() {
     setBolgeler(b);
     // Cihazda bekleyen siparişler sunucudakinin üstüne biniyor: masa dolu
     // görünsün, aynı masaya ikinci hesap açılmasın.
-    setAdisyonlar({ ...(a ?? {}), ...bekleyenMasalar() });
+    setAdisyonlar({ ...(baglantiVar() ? {} : kopyaMasalari()), ...(a ?? {}), ...bekleyenMasalar() });
     setSeciliBolge((s) => (b.some((x) => x.id === s) ? s : b[0]?.id ?? null));
   };
 
@@ -245,6 +247,16 @@ export default function MobilMasalar() {
 
   const hizliOdeAc = async (masa: Masa) => {
     setIslemMasasi(null);
+    // Bağlantı yokken hesap cihazdaki kopyadan açılıyor; ödeme kuyruğa girecek.
+    if (!baglantiVar()) {
+      const kopya = hesapKopyasiOku({ tip: "masa", masaId: masa.id });
+      if (!kopya) {
+        setUyari("Bağlantı yok ve bu hesabın cihazda kopyası yok, ödeme alınamıyor.");
+        return;
+      }
+      setHizliMasa({ masa, veri: kopya.veri });
+      return;
+    }
     try {
       setHizliMasa({ masa, veri: await adisyonGetir(masa.id) });
     } catch {
@@ -269,14 +281,30 @@ export default function MobilMasalar() {
     const kalan = Math.round(adisyonOzeti(veri).kalan * 100) / 100;
     setCariSorusu(null);
     setHizliMasa(null);
+
+    const tam = {
+      ...veri,
+      tahsilatlar: [...veri.tahsilatlar, yeniTahsilat({ tip, tutar: kalan, musteriId })],
+    };
+    // Bağlantı yoksa ödeme kuyrukta bekliyor; masa cihazda boşalıyor.
+    const kuyruga = async () => {
+      kuyrugaEkle({ tip: "masa", masaId: masa.id, masaAdi: masa.ad, veri: tam, kapat: true });
+      hesapKopyasiSil({ tip: "masa", masaId: masa.id });
+      await oku();
+    };
+
+    if (!baglantiVar()) {
+      await kuyruga();
+      return;
+    }
     try {
-      await adisyonKaydet(
-        masa.id,
-        { ...veri, tahsilatlar: [...veri.tahsilatlar, { tip, tutar: kalan, musteriId }] },
-        true
-      );
+      await adisyonKaydet(masa.id, tam, true);
       await oku();
     } catch (e) {
+      if (baglantiHatasi(e) || !baglantiVar()) {
+        await kuyruga();
+        return;
+      }
       setUyari(e instanceof Error ? e.message : "Ödeme kaydedilemedi.");
     }
   };

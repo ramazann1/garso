@@ -8,6 +8,7 @@ import { denetimYaz } from "./denetim";
 import { cekmeceyiAc, iptalFisiYaz, mutfakFisiYaz } from "./yazicilar";
 import { kasayaGirerMi } from "./odemeTipleri";
 import { adisyonuCariyeYaz } from "./cari";
+import { hesapKopyasiYaz } from "./hesapKopyasi";
 import { servisTutarlari } from "./servis";
 import type { ServisGirdisi } from "./servis";
 import type { DenetimIslemi, DenetimKaydi } from "./denetim";
@@ -166,7 +167,7 @@ const ADISYON_ALANLARI = `id, adisyon_no, indirim, indirim_tanim_id, indirim_ad,
        acan:personel!adisyonlar_acan_id_fkey (ad),
        turlar (sira, olusturma, garson:personel!turlar_garson_id_fkey (ad),
                adisyon_kalemleri (${KALEM_ALANLARI})),
-       tahsilatlar (id, tip, tutar, bahsis, kalem_adetleri)`;
+       tahsilatlar (id, tip, tutar, bahsis, kalem_adetleri, istemci_kimlik)`;
 
 export async function adisyonGetir(masaId: number): Promise<AdisyonVerisi> {
   const { data } = await supabase
@@ -176,7 +177,11 @@ export async function adisyonGetir(masaId: number): Promise<AdisyonVerisi> {
     .eq("durum", "acik")
     .maybeSingle();
 
-  return okundu(adisyonaCevir(data));
+  const veri = okundu(adisyonaCevir(data));
+  // Cihaz hesabı öğreniyor: bağlantı gidince ekran bu kopyayı açıp parasını
+  // alabilsin. Hesap boş çıktıysa kopya siliniyor, kapanmış hesap geri gelmesin.
+  hesapKopyasiYaz({ tip: "masa", masaId }, veri);
+  return veri;
 }
 
 /** Masasız adisyon kimliğiyle okunuyor; masalıda anahtar masa, burada adisyon. */
@@ -188,7 +193,9 @@ export async function masasizGetir(adisyonId: number): Promise<AdisyonVerisi> {
     .eq("durum", "acik")
     .maybeSingle();
 
-  return okundu(adisyonaCevir(data));
+  const veri = okundu(adisyonaCevir(data));
+  hesapKopyasiYaz({ tip: "masasiz", adisyonId }, veri);
+  return veri;
 }
 
 /**
@@ -255,6 +262,16 @@ export async function gecKalanSiparis(masaId: number, zaman: number) {
   return data ? ((data as any).adisyon_no as number) : null;
 }
 
+/**
+ * Yeni alınan ödemenin künyesi. Kimlik **ödeme alındığı anda** üretiliyor,
+ * kaydedilirken değil: kuyrukta bekleyen bir tahsilat yeniden gönderilirken
+ * kimliği de aynı kalsın ki sunucu ikinci kaydı yazmasın. Kaydetme anında
+ * üretilseydi her deneme yeni kimlik alır, çift tahsilat yine oluşurdu.
+ */
+export function yeniTahsilat(alanlar: Omit<Tahsilat, "id" | "istemciKimlik">): Tahsilat {
+  return { ...alanlar, istemciKimlik: crypto.randomUUID() };
+}
+
 export function sepetiTazele(
   sunucu: SepetKalemi[],
   yerel: SepetKalemi[],
@@ -319,6 +336,7 @@ function adisyonaCevir(data: any): AdisyonVerisi {
     tutar: Number(t.tutar),
     bahsis: Number(t.bahsis ?? 0) || undefined,
     kalemler: t.kalem_adetleri ?? undefined,
+    istemciKimlik: t.istemci_kimlik ?? undefined,
   }));
 
   const kalemIdler = sepet.map((k) => k.id).filter((id): id is number => !!id && id > 0);
@@ -1148,6 +1166,7 @@ async function kalemleriYaz(
       tutar: t.tutar,
       bahsis: t.bahsis ?? 0,
       kalem_adetleri: t.kalemler ? gercekKimlikler(t.kalemler, kimlikEsi) : null,
+      istemci_kimlik: t.istemciKimlik ?? null,
     };
 
     if (t.id) {
@@ -1163,11 +1182,26 @@ async function kalemleriYaz(
       await supabase.from("tahsilatlar").update(satir).eq("id", t.id);
       yazilanTahsilatlar.push(t);
     } else {
-      const { data: eklenen } = await supabase
+      const { data: eklenen, error: ekleHatasi } = await supabase
         .from("tahsilatlar")
         .insert({ adisyon_id: adisyonId, ...satir })
         .select("id")
         .single();
+
+      // Aynı kimlik ikinci kez geldi: bu ödeme daha önce yazılmış, kuyruk
+      // kaydı yeniden deniyor. Çevrimdışı tahsilatın çift işlenmesini burası
+      // durduruyor — kayıt tekrar yazılmıyor, var olanın kimliği alınıyor.
+      if (ekleHatasi?.code === "23505" && t.istemciKimlik) {
+        const { data: duran } = await supabase
+          .from("tahsilatlar")
+          .select("id")
+          .eq("istemci_kimlik", t.istemciKimlik)
+          .maybeSingle();
+        yazilanTahsilatlar.push({ ...t, id: duran ? ((duran as any).id as number) : undefined });
+        continue;
+      }
+      if (ekleHatasi) throw ekleHatasi;
+
       // Kimlik geri dönüyor ki aynı ekranda yapılan ikinci kayıt bu tahsilatı
       // yeni sanıp bir daha eklemesin.
       const yeniId = eklenen ? ((eklenen as any).id as number) : undefined;

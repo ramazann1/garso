@@ -1,11 +1,13 @@
 import { useCallback, useEffect, useRef, useState } from "react";
 import {
   Bike,
+  ChefHat,
   Check,
   ChevronRight,
   CircleCheckBig,
   Clock,
   MessageSquareText,
+  RotateCw,
   ShoppingBag,
   Undo2,
   UtensilsCrossed,
@@ -99,11 +101,12 @@ export default function MobilIstasyon() {
             <p>Henüz istasyon tanımlanmamış. Kasadan İşletme Ayarları → Yazıcılar → İstasyonlar.</p>
           </div>
         ) : (
-          <div className="m-liste">
+          <div className="m-istasyon-sec">
             {istasyonlar.map((i) => (
-              <button key={i.id} className="m-satir" onClick={() => setSeciliId(i.id)}>
+              <button key={i.id} onClick={() => setSeciliId(i.id)}>
+                <ChefHat size={19} />
                 <span>{i.ad}</span>
-                <ChevronRight size={18} style={{ marginLeft: "auto" }} />
+                <ChevronRight size={18} />
               </button>
             ))}
           </div>
@@ -205,6 +208,11 @@ function Ekran({
             {bekleyenAdet > 0 ? `${bekleyenAdet} ürün hazırlanıyor` : "Bekleyen sipariş yok"}
           </p>
         </div>
+        {/* Mutfakta kablosuz zayıf olunca canlı bağlantı düşüyor; elle
+            tazeleme yoklamanın otuz saniyesini beklemeden kartı getiriyor. */}
+        <button className="m-ikon-dugme" onClick={() => yenile()} aria-label="Yenile">
+          <RotateCw size={20} />
+        </button>
       </header>
 
       {/* İki liste telefonda yan yana sığmıyor; sekmeye ayrıldı. */}
@@ -244,6 +252,7 @@ function Ekran({
         )
       ) : hazirlanan.length === 0 ? (
         <div className="m-bos">
+          <Check size={30} />
           <p>Bu vardiyada henüz hazırlanan yok.</p>
         </div>
       ) : (
@@ -300,7 +309,7 @@ function Kart({
   const geciken = gecikme > 0 && dakika >= gecikme;
 
   return (
-    <article className={geciken ? "m-kart geciken" : "m-kart"}>
+    <article className={geciken ? "m-kart seritli geciken" : "m-kart seritli"}>
       <header className="m-kart-ust">
         <span className="m-kart-masa">
           <TipIkonu tip={kart.tip} />

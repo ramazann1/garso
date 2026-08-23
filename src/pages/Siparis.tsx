@@ -5,6 +5,7 @@ import {
   Bike,
   Check,
   ChevronDown,
+  CloudOff,
   LockKeyhole,
   Percent,
   Pencil,
@@ -28,6 +29,7 @@ import {
   masasizKaydet,
   sepetiTazele,
   yeniKalemId,
+  yeniTahsilat,
 } from "../adisyonlar";
 import type { AdisyonVerisi } from "../adisyonlar";
 import { masaGetir } from "../masalar";
@@ -47,6 +49,7 @@ import type { AdisyonBilgisi } from "../components/AdisyonBilgi";
 import { kilitKaldir, kilitKur } from "../cikisKilidi";
 import { baglantiHatasi, baglantiVar, hataMesaji } from "../baglanti";
 import { bekleyenKayit, kuyrugaEkle } from "../kuyruk";
+import { hesapKopyasiOku, hesapKopyasiSil, kopyaSaati } from "../hesapKopyasi";
 import type { KuyrukIsi } from "../kuyruk";
 import { kdvDokumu } from "../kdv";
 import { adetGoster, paraGoster } from "../para";
@@ -164,10 +167,16 @@ export default function Siparis() {
   const adisyonuOku = async (): Promise<AdisyonVerisi> => {
     const bekleyen = bekleyenKayit(hedef);
     if (bekleyen) return bekleyen;
-    // Bağlantı yoksa istek atılmıyor: adisyon sunucuda kalıyor ama cevapsız
-    // isteği beklemek ekranı saniyelerce halkada tutuyordu. Masa çevrimdışı
-    // boş sayfa gibi açılıyor, girilen sipariş kuyruğa yazılıyor.
-    if (!baglantiVar()) return CEVRIMDISI_ADISYON;
+    // Bağlantı yoksa istek atılmıyor: cevapsız isteği beklemek ekranı
+    // saniyelerce halkada tutuyordu. Cihazda hesabın kopyası varsa açılıyor —
+    // ödeme alınabilmesi buna bağlı; yoksa masa boş sayfa gibi açılıyor ve
+    // girilen sipariş kuyruğa yazılıyor.
+    if (!baglantiVar()) {
+      const kopya = hesapKopyasiOku(hedef);
+      setKopyaZamani(kopya?.zaman ?? null);
+      return kopya?.veri ?? CEVRIMDISI_ADISYON;
+    }
+    setKopyaZamani(null);
     return masasiz ? masasizGetir(adisyonId) : adisyonGetir(masaId);
   };
   const navigate = useNavigate();
@@ -184,6 +193,9 @@ export default function Siparis() {
   // İndirim ön tanımlıysa kaynağı da taşınıyor; rapor hangi indirim olduğunu görecek.
   const [indirimTanim, setIndirimTanim] = useState<IndirimKaynagi | undefined>();
   const [kayitliTahsilatlar, setKayitliTahsilatlar] = useState<Tahsilat[]>([]);
+  // Ekran çevrimdışı açıldıysa hesap cihazdaki kopyadan geliyor; kopyanın
+  // saati şeritte yazıyor, ödeme alan kişi bayatlığı bilerek alsın.
+  const [kopyaZamani, setKopyaZamani] = useState<number | null>(null);
   // Ekrandan kaldırılan ama henüz kaydedilmemiş tahsilatların sebepleri;
   // ilk kayıtta denetim defterine gidiyorlar.
   const silinenTahsilatlar = useRef<{ id: number; sebep?: string }[]>([]);
@@ -252,16 +264,34 @@ export default function Siparis() {
 
   // Kaydetme çağrılarının hepsi buradan geçiyor ki adisyon bilgisi hiçbir
   // yoldan düşmesin.
-  const adisyonuYaz = (veri: AdisyonVerisi, kapat = false) => {
+  const adisyonuYaz = async (veri: AdisyonVerisi, kapat = false): Promise<AdisyonVerisi> => {
     const tam = tamVeri(veri);
     sonYazilan.current = tam;
-    const yazma = masasiz ? masasizKaydet(adisyonId, tam, kapat) : adisyonKaydet(masaId, tam, kapat);
-    // Yeni alınan ödemeler kayıtta kimlik kazanıyor; ekran bu kimlikleri geri
-    // almazsa aynı sayfada yapılan ikinci kayıt onları bir daha yazardı.
-    return yazma.then((kayitli) => {
+
+    // Bağlantı yoksa kayıt kuyruğa giriyor — tahsilat ve hesap kapatma dahil.
+    // Aynı ödemenin iki kez yazılmasını istemci kimliği durduruyor.
+    const kuyruga = () => {
+      kuyrugaEkle({ ...kuyrukIsi(tam), kapat });
+      if (kapat) hesapKopyasiSil(hedef);
+      setKayitliTahsilatlar(tam.tahsilatlar);
+      return tam;
+    };
+
+    if (!baglantiVar()) return kuyruga();
+
+    try {
+      const kayitli = masasiz
+        ? await masasizKaydet(adisyonId, tam, kapat)
+        : await adisyonKaydet(masaId, tam, kapat);
+      // Yeni alınan ödemeler kayıtta kimlik kazanıyor; ekran bu kimlikleri geri
+      // almazsa aynı sayfada yapılan ikinci kayıt onları bir daha yazardı.
       setKayitliTahsilatlar(kayitli.tahsilatlar);
       return kayitli;
-    });
+    } catch (e) {
+      // Sebep bağlantıysa para da sipariş de kaybolmuyor, kuyrukta bekliyor.
+      if (baglantiHatasi(e) || !baglantiVar()) return kuyruga();
+      throw e;
+    }
   };
 
   useEffect(() => {
@@ -717,6 +747,15 @@ export default function Siparis() {
 
         <aside className="sepet">
           <h2>Adisyon</h2>
+          {/* Kopyadan çalışıldığı gizlenmiyor: hesap o saatten sonra değişmiş
+              olabilir, ödemeyi alan kişi bilerek alsın. */}
+          {kopyaZamani && (
+            <div className="m-kopya-serit">
+              <CloudOff size={17} />
+              Bağlantı yok — hesabın {kopyaSaati(kopyaZamani)} itibarıyla bilinen hâli. Alınan
+              ödeme bağlantı gelince kasaya yazılacak.
+            </div>
+          )}
           <div className="sepet-liste">
             {yukleniyor && <div className="yukleniyor"><div className="cember" /></div>}
             {!yukleniyor && sepet.length === 0 && <p className="bos">Henüz ürün yok</p>}
@@ -939,7 +978,7 @@ export default function Siparis() {
           onIndirimDegis={(tutar, kaynak) => { setIndirim(tutar); setIndirimTanim(kaynak); }}
           onKapat={() => setHizliAcik(false)}
           onSec={async (tip, tutar, kapat, bahsis, musteriId) => {
-            const tahsilatlar = [...kayitliTahsilatlar, { tip, tutar, bahsis, musteriId }];
+            const tahsilatlar = [...kayitliTahsilatlar, yeniTahsilat({ tip, tutar, bahsis, musteriId })];
             try {
               await adisyonuYaz({ sepet, indirim, indirimTanim, tahsilatlar }, kapat);
             } catch (e) {

@@ -2,6 +2,7 @@ import { useEffect, useState } from "react";
 import { adisyonKaydet, adisyonOzeti, gecKalanSiparis, masasizKaydet } from "./adisyonlar";
 import type { AdisyonVerisi, MasaOzeti } from "./adisyonlar";
 import { baglantiDinle, baglantiHatasi, baglantiVar } from "./baglanti";
+import { hesapKopyalari, hesapKopyasiSil } from "./hesapKopyasi";
 
 /**
  * Bağlantı yokken alınan siparişlerin cihazdaki kuyruğu.
@@ -15,16 +16,19 @@ import { baglantiDinle, baglantiHatasi, baglantiVar } from "./baglanti";
  * bütün hâliyle geliyor; aynı masanın iki kaydı arka arkaya gönderilseydi ilk
  * kaydın ürünleri ikinci kayıtta yeniden eklenir, masaya iki katı yazılırdı.
  *
- * Kapsam dışı: tahsilat ve hesap kapatma kuyruğa girmiyor. Para işlemi
- * bekletilemez — kapatma çevrimdışıyken yine engelleniyor, sipariş almak
- * devam ediyor.
+ * **Tahsilat ve hesap kapatma da kuyruğa giriyor** (7 Eyl 2026). Önceki kural
+ * "para işlemi bekletilemez" diyordu; işletmede internet gidince müşteri
+ * bekletilemediği için kural değişti. Çift ödemeyi tahsilatın istemci kimliği
+ * durduruyor: aynı kayıt iki kez gönderilse de sunucu ikincisini yazmıyor.
+ * Yetki çevrimdışıyken cihazdaki listeye bakıyor, kayıt sunucuya varınca
+ * tetikleyici yeniden denetliyor — reddedilirse sebep şeritte yazıyor.
  */
 
 const ANAHTAR = "garso-kuyruk";
 
 export type KuyrukIsi =
-  | { tip: "masa"; masaId: number; masaAdi?: string; veri: AdisyonVerisi }
-  | { tip: "masasiz"; adisyonId: number; veri: AdisyonVerisi };
+  | { tip: "masa"; masaId: number; masaAdi?: string; veri: AdisyonVerisi; kapat?: boolean }
+  | { tip: "masasiz"; adisyonId: number; veri: AdisyonVerisi; kapat?: boolean };
 
 export type KuyrukKaydi = KuyrukIsi & { zaman: number };
 
@@ -55,7 +59,13 @@ function yaz() {
 }
 
 export function kuyrugaEkle(is: KuyrukIsi) {
-  kuyruk = [...kuyruk.filter((k) => hedef(k) !== hedef(is)), { ...is, zaman: Date.now() }];
+  // Kapatma kaydı yerinde kalıyor: üstüne yazılırsa hesabın kapandığı bilgisi
+  // kaybolur ve masa sunucuda açık kalırdı. Aynı masaya sonra girilen sipariş
+  // kuyruğun arkasına ekleniyor — sırayla gidince yeni hesap olarak açılıyor.
+  kuyruk = [
+    ...kuyruk.filter((k) => k.kapat || hedef(k) !== hedef(is)),
+    { ...is, zaman: Date.now() },
+  ];
   yaz();
 }
 
@@ -65,7 +75,9 @@ export function bekleyenSayisi() {
 
 /** Bu masanın/adisyonun gönderilmemiş kaydı — ekran açılınca sepet buradan geliyor. */
 export function bekleyenKayit(is: { tip: "masa"; masaId: number } | { tip: "masasiz"; adisyonId: number }) {
-  return kuyruk.find((k) => hedef(k) === hedef(is as KuyrukIsi))?.veri;
+  // Kapanmış hesabın kaydı sepet değildir: sipariş ekranı onu açsa ödenmiş
+  // ürünler yeni siparişin içine karışırdı.
+  return kuyruk.find((k) => hedef(k) === hedef(is as KuyrukIsi) && !k.kapat)?.veri;
 }
 
 /**
@@ -75,7 +87,9 @@ export function bekleyenKayit(is: { tip: "masa"; masaId: number } | { tip: "masa
 export function bekleyenMasalar(): Record<number, MasaOzeti> {
   const sonuc: Record<number, MasaOzeti> = {};
   for (const k of kuyruk) {
-    if (k.tip !== "masa") continue;
+    // Çevrimdışı kapatılan hesap masayı boşaltıyor; dolu göstermek garsonu
+    // ödenmiş masaya geri yollardı.
+    if (k.tip !== "masa" || k.kapat) continue;
     const ozet = adisyonOzeti(k.veri);
     sonuc[k.masaId] = {
       // Sunucudaki kimliği yok; kart yalnız tutar ve adet gösteriyor.
@@ -89,6 +103,36 @@ export function bekleyenMasalar(): Record<number, MasaOzeti> {
       acilis: new Date(k.zaman).toISOString(),
       ad: k.veri.ad || undefined,
       kisiSayisi: k.veri.kisiSayisi || undefined,
+      bekliyor: true,
+    };
+  }
+  return sonuc;
+}
+
+/**
+ * Bağlantı yokken salonun doldurduğu masalar: cihazın bildiği son hesaplar.
+ *
+ * Sunucudan adisyon okunamadığı için salon çevrimdışıyken bomboş görünüyordu;
+ * dolu masaya girilemeyince ödemesi de alınamıyordu. Kopya "bu masada şu
+ * hesap vardı" diyor, kart bekleyen işaretiyle çiziliyor.
+ */
+export function kopyaMasalari(): Record<number, MasaOzeti> {
+  const sonuc: Record<number, MasaOzeti> = {};
+  for (const kopya of hesapKopyalari()) {
+    const masaId = Number(kopya.anahtar.replace("masa-", ""));
+    if (!kopya.anahtar.startsWith("masa-") || !masaId) continue;
+    const ozet = adisyonOzeti(kopya.veri);
+    sonuc[masaId] = {
+      id: kopya.veri.id ?? 0,
+      tutar: ozet.toplam,
+      odenen: ozet.odenen,
+      kalan: ozet.kalan,
+      adet: kopya.veri.sepet
+        .filter((s) => (s.durum ?? "normal") !== "iptal")
+        .reduce((t, s) => t + s.adet, 0),
+      acilis: kopya.veri.acilis ?? new Date(kopya.zaman).toISOString(),
+      ad: kopya.veri.ad || undefined,
+      kisiSayisi: kopya.veri.kisiSayisi || undefined,
       bekliyor: true,
     };
   }
@@ -124,26 +168,40 @@ export async function kuyruguGonder() {
   try {
     while (kuyruk.length) {
       const kayit = kuyruk[0];
+      const paraVar = kayit.veri.tahsilatlar.some((t) => !t.id);
       try {
         if (kayit.tip === "masa") {
-          await adisyonKaydet(kayit.masaId, kayit.veri);
+          await adisyonKaydet(kayit.masaId, kayit.veri, kayit.kapat ?? false);
           // Sipariş cihazda beklerken hesap kapandıysa ürün yeni bir hesaba
           // düştü ve parası alınmadı; işletmeci görsün.
           const no = await gecKalanSiparis(kayit.masaId, kayit.zaman).catch(() => null);
           if (no) {
-            sonUyari = `${kayit.masaAdi ?? "Masa"} için bekleyen sipariş, hesap (#${no}) kapandıktan sonra yazıldı. Ürünler yeni bir hesapta duruyor, parası alınmadı.`;
+            const masa = kayit.masaAdi ?? "Masa";
+            sonUyari = paraVar
+              ? `${masa} için çevrimdışı alınan ödeme, hesap (#${no}) kapandıktan sonra yazıldı. Aynı hesap iki kez tahsil edilmiş olabilir — kasa hareketlerinden kontrol edin.`
+              : `${masa} için bekleyen sipariş, hesap (#${no}) kapandıktan sonra yazıldı. Ürünler yeni bir hesapta duruyor, parası alınmadı.`;
           }
-        } else await masasizKaydet(kayit.adisyonId, kayit.veri);
+        } else await masasizKaydet(kayit.adisyonId, kayit.veri, kayit.kapat ?? false);
+        // Hesap kapandı: cihazdaki kopya artık yanlış bilgi.
+        if (kayit.kapat) {
+          hesapKopyasiSil(
+            kayit.tip === "masa"
+              ? { tip: "masa", masaId: kayit.masaId }
+              : { tip: "masasiz", adisyonId: kayit.adisyonId }
+          );
+        }
       } catch (hata) {
         // Bağlantı yine gitmişse kayıt kuyrukta kalıyor ve sessizce bekliyor.
         if (baglantiHatasi(hata) || !baglantiVar()) return;
         // Başka bir hata (silinmiş masa, yetki) tekrar denemekle düzelmiyor:
         // kayıt kuyruktan çıkarılıyor ve sebebi ekranda söyleniyor, yoksa
         // kuyruk sonsuza kadar aynı kaydı deneyip tıkanırdı.
-        sonHata =
-          hata instanceof Error && hata.message
-            ? hata.message
-            : "Bekleyen sipariş sunucuya yazılamadı.";
+        // Para taşıyan kayıt düşerse sessiz kalmamalı: tahsilat cihazda alındı
+        // ama kasaya girmedi, biri elle girmek zorunda.
+        const varsayilan = paraVar
+          ? "Çevrimdışı alınan ödeme sunucuya yazılamadı. Tahsilat kasaya girmedi."
+          : "Bekleyen sipariş sunucuya yazılamadı.";
+        sonHata = hata instanceof Error && hata.message ? hata.message : varsayilan;
         kuyruk = kuyruk.slice(1);
         yaz();
         continue;
