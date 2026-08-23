@@ -34,6 +34,12 @@ export type AktarimPlani = {
   yeniKategoriler: KategoriYeri[];
   degismeyen: number;
   hatalar: AktarimHatasi[];
+  /**
+   * Dosyanın ham satırları planla birlikte taşınıyor: önizleme ile yazma
+   * arasında menü değişebiliyor (başka cihaz, aynı ekranda yapılan silme) ve
+   * plan yazmadan hemen önce güncel menüyle baştan kuruluyor.
+   */
+  satirlar: AktarimSatiri[];
 };
 
 const kucuk = (s: string) => s.trim().toLocaleLowerCase("tr");
@@ -455,5 +461,6 @@ export function planHazirla(satirlar: AktarimSatiri[], kaynak: Kaynak): AktarimP
     yeniKategoriler,
     degismeyen,
     hatalar: hatalar.sort((a, b) => a.satir - b.satir),
+    satirlar,
   };
 }

@@ -122,6 +122,34 @@ export function menuGetir() {
   return onbellekliGetir("menu", menuOku);
 }
 
+/**
+ * Porsiyon maliyetleri menüyle birlikte gelmiyor.
+ *
+ * Maliyet kâr marjı demek: ne aldığını ve ne kazandığını gösteriyor. Menü
+ * her satış ekranında okunuyor, maliyet oraya karışırsa sipariş alan herkes
+ * marjı görür. Bu yüzden ayrı bir istek — ve sunucu tarafında `tanim.menu`
+ * yetkisi olmayana boş dönüyor. Cihaza da kopyalanmıyor.
+ */
+export async function maliyetleriGetir(): Promise<Map<number, number>> {
+  const { data } = await supabase.from("porsiyon_maliyetleri").select("id, maliyet");
+  const harita = new Map<number, number>();
+  for (const p of ((data as any[]) ?? [])) {
+    if (p.maliyet != null) harita.set(p.id, Number(p.maliyet));
+  }
+  return harita;
+}
+
+/** Menüden gelen ürünlere maliyeti işler — menü ekranları bunu kullanıyor. */
+export function maliyetleriIsle(urunler: MenuUrun[], harita: Map<number, number>) {
+  return urunler.map((u) => ({
+    ...u,
+    porsiyonlar: u.porsiyonlar.map((p) => ({
+      ...p,
+      maliyet: p.id != null ? harita.get(p.id) : undefined,
+    })),
+  }));
+}
+
 async function menuOku() {
   const [kat, urn, grp, brm, kdv] = await Promise.all([
     supabase
@@ -131,7 +159,7 @@ async function menuOku() {
     supabase
       .from("urunler")
       .select(
-        "id, ad, kod, kdv_id, istasyon_id, renk, favori, satista_gorunur, mutfakta_gorunur, porsiyonlar(id, birim_id, fiyat, maliyet, barkod, masa_fiyat, gelal_fiyat, paket_fiyat, varsayilan, sira, porsiyon_secenek_gruplari(grup_id)), urun_kategorileri(kategori_id, sira), menu_gruplari(id, baslik, secilebilir_adet, sira, menu_satirlari(id, urun_id, porsiyon_id, miktar, ek_fiyat, varsayilan, sira))"
+        "id, ad, kod, kdv_id, istasyon_id, renk, favori, satista_gorunur, mutfakta_gorunur, porsiyonlar(id, birim_id, fiyat, barkod, masa_fiyat, gelal_fiyat, paket_fiyat, varsayilan, sira, porsiyon_secenek_gruplari(grup_id)), urun_kategorileri(kategori_id, sira), menu_gruplari(id, baslik, secilebilir_adet, sira, menu_satirlari(id, urun_id, porsiyon_id, miktar, ek_fiyat, varsayilan, sira))"
       ),
     supabase
       .from("secenek_gruplari")
@@ -175,7 +203,7 @@ async function menuOku() {
         birimId: p.birim_id ?? undefined,
         ad: birimler.find((b) => b.id === p.birim_id)?.ad ?? "",
         fiyat: Number(p.fiyat),
-        maliyet: say(p.maliyet),
+        // Maliyet burada gelmiyor; menü ekranları maliyetleriGetir() ile ekliyor.
         barkod: p.barkod ?? undefined,
         masaFiyat: say(p.masa_fiyat),
         gelalFiyat: say(p.gelal_fiyat),
@@ -324,15 +352,34 @@ export async function urunKaydet(u: MenuUrun) {
     mutfakta_gorunur: u.mutfaktaGorunur,
   };
 
+  // Güncellemede kaç satır döndüğüne bakılıyor. Ürün bu arada silinmişse
+  // (başka cihaz ya da aynı ekranda yapılan silme) veritabanı hata vermiyor,
+  // sessizce hiçbir şey yapmıyordu: program "yazıldı" der, ortada hiçbir şey
+  // olmazdı. Böyle bir durumda ürün yeniden açılıyor.
+  let yenidenAcildi = false;
+
   if (id) {
-    const { error } = await supabase.from("urunler").update(alanlar).eq("id", id);
+    const { data, error } = await supabase
+      .from("urunler")
+      .update(alanlar)
+      .eq("id", id)
+      .select("id");
     if (error) return yazmaHatasi(error);
-  } else {
+    if (!data?.length) {
+      id = undefined;
+      yenidenAcildi = true;
+    }
+  }
+
+  if (!id) {
     const { data, error } = await supabase.from("urunler").insert(alanlar).select("id").single();
     if (error) return yazmaHatasi(error);
     id = data?.id;
   }
   if (!id) return;
+
+  // Ürün yeniden açıldıysa eski porsiyon numaraları da yok; hepsi yeni yazılır.
+  if (yenidenAcildi) u = { ...u, porsiyonlar: u.porsiyonlar.map(({ id: _, ...p }) => p) };
 
   // Porsiyonlar silinip yeniden yazılmaz, id'leriyle güncellenir — seçenek grupları
   // porsiyon id'sine bağlı, silinen porsiyonla birlikte bağlantıları da giderdi.

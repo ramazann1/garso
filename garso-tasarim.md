@@ -1,27 +1,40 @@
 ﻿# GARSO — Teknik Tasarım: Veri Modeli & Ekran Haritası
 *Restoran ve cafe'ler için bulut tabanlı satış ve işletme yönetim sistemi.*
 
-## 0. SIRADAKİ İŞ (5 Eyl 2026'da güncellendi)
+## 0. SIRADAKİ İŞ (6 Eyl 2026'da güncellendi)
 
-> **Sıradaki iş: yetki envanteri.** Yetki sayfasında (Ayarlar → Yetkiler)
-> gerçekten bütün yetkiler var mı, detaylı kontrol edilecek. Artık kurallar
-> veritabanında da bu kodlara bağlı; eksik bir yetki kodu, kimsenin
-> ayarlayamadığı bir kapı demek. Ramazan 5 Eyl'de istedi.
+> **Sıradaki iş: İstasyon ve Satış sekmelerinin yeni tasarım diline geçmesi.**
+> Mobilin kalan iki sekmesi; sipariş ve hesap ekranı 22 Ağu'da oturmuştu.
 >
-> **Sonra: okuma tarafının yetkilendirilmesi.** 5 Eyl'de yazma tarafı kapandı
-> ama okuma açık kaldı: giriş yapmış biri doğrudan sorguyla ciroyu, gider
-> dökümünü, kasa hareketlerini, müşteri bilgilerini okuyabiliyor — ekran ona
-> kapalı olsa bile. İki parça:
-> - **Kolay parça** — bu tabloları okumak yetki istesin: `kasa_vardiyalari`
->   (`kasa.ac_kapat`), `kasa_hareketleri` (`kasa.ac_kapat` veya `kasa.para`),
->   `masraflar` (`kasa.gider`), `denetim_kayitlari` (`rapor.tumu`),
->   `musteriler`/`musteri_adresleri`/`cari_hareketler` (`cari.gor`). Ayrıca
->   `urunler.maliyet` sütunu (`tanim.menu`) — kâr marjı, `pin_hash` gibi sütun
->   bazında kapanır.
-> - **Zor parça** — `adisyonlar`, `turlar`, `adisyon_kalemleri`, `tahsilatlar`.
->   Kural satır bazında olmak zorunda: açık adisyon `siparis.al`, kapanmış
->   adisyon `siparis.kapali_gor` / `rapor.gun_sonu`. Yanlış kurulursa garson
->   kendi masasını göremez hale gelir; ayrı ve dikkatli yapılacak.
+> **6 Eyl 2026: okuma tarafı bütünüyle kapandı.** Üç grup da bitti, dosyalar:
+> - `2026-09-06-okuma-yetkileri.sql` (kolay) — kasa vardiyaları, kasa
+>   hareketleri, giderler, denetim defteri, müşteri/adres/cari hareket. Tek
+>   `for all` politikası bölündü: yazma eskisi gibi işletmeye bakıyor, okuma
+>   ayrıca yetki soruyor (aynı komuta bakan politikalar VEYA ile birleştiği
+>   için bölmek şarttı). `personel.pin_hash` sütunu tarayıcıya kapandı.
+> - `2026-09-06-adisyon-okuma.sql` (zor) — adisyon durumuna göre: açık adisyon
+>   `siparis.al`/`odeme.al`/`mutfak.ekran`/`kasa.ac_kapat`/rapor, kapanmış
+>   adisyon `siparis.kapali_gor`/`aktif_et`/`tip_duzelt`/`iade`/`kasa.ac_kapat`
+>   /rapor. Tur, kalem ve tahsilat bağlı oldukları adisyona bakıyor.
+>   `kasa.ac_kapat` iki listede: kasayı kapatan hesapları göremeden kasa
+>   sayamıyor. Ödenmez silmedeki kullanım sayımı sunucuya alındı
+>   (`odenmez_kullanimda`), yoksa yetkisiz kişide sıfır görünüp kullanılmış
+>   kayıt kalıcı silinecekti.
+> - `2026-09-06-maliyet-gizli.sql` (orta) — `porsiyonlar.maliyet` sütunu
+>   kapandı; `tanim.menu` yetkisi olana `porsiyon_maliyetleri` görünümünden
+>   veriliyor. Menü sorgusundan maliyet çıkarıldı (`menu.ts`), menü ekranı
+>   `maliyetleriGetir()` ile ayrıca alıyor.
+>
+> **6 Eyl 2026: yetki envanteri.** 37 kodun hepsi kullanımda, karşılıksız kod
+> yok. Çakışan sıra numaraları düzeltildi (gruplara yüzlük bloklar), istasyon
+> yetkisi kendi grubuna alındı, iki eksik yetki eklendi: `siparis.fis_yazdir`
+> ve `kasa.cekmece` (`2026-09-06-yetki-envanteri.sql`). Adisyo'nun 46 satırıyla
+> karşılaştırması: fark ya bizde olmayan modül (stok, entegrasyon, şube) ya da
+> bizim bilerek tek kodda tuttuğumuz ayrım.
+>
+> **Özellik gelince yetkisi de gelecek** (şimdi eklenmedi, ekranı yok):
+> kasa açılış/kapanış tutarını sonradan düzeltme, manuel mutfak çıktısı, stok.
+> Kural: ekranı olmayan yetki listede durmaz, işletmeci boşuna açıp kapatır.
 >
 > **Kural role değil yetkiye bağlanır (5 Eyl 2026 kararı).** Erişim kuralı
 > tasarlarken "bizim işletmede garson bunu yapmıyor" varsayımı kullanılmaz.
@@ -29,11 +42,17 @@
 > Ölçüt her zaman "bu iş hangi yetki kodunun kapsamında". Yetki canlı okunuyor,
 > işletmeci ayarı değiştirince kural kendiliğinden uyar.
 >
-> **İstasyon ve Satış sekmeleri yeni tasarım diline geçmedi.**
-> Mobilin kalan iki sekmesi; sipariş ve hesap ekranı 22 Ağu'da oturdu.
+> Küçük iş: **`yazdirma_kuyrugu` tablosu yetkisiz** — fiş yazdırma düğmeleri
+> 6 Eyl'de `siparis.fis_yazdir`a bağlandı ama tablonun kendisi hâlâ açık,
+> konsoldan kuyruğa satır atılabiliyor. Köprü o tabloyu okuyup güncellediği
+> için kapı dikkatli konmalı: yanlış kural yazıcıyı durdurur.
 >
-> Küçük iş: **`yazdirma_kuyrugu` okuma/yazma yetkisiz** — işletmedeki herkes
-> fiş bastırabiliyor. Zararı kağıt israfı, düşük öncelik.
+> Küçük iş: **Excel aktarımında isimle eşleşme** — dosyadaki ürün, menüdeki
+> aynı adlı ürünün üstüne yazıyor; kullanıcı yeni ürün eklediğini sanıyor.
+> 6 Eyl'de yazma anında menü tazelenmesi ve silinmiş ürünün yeniden açılması
+> düzeltildi, ama önizleme hangi ürünlerin üstüne yazılacağını hâlâ isim isim
+> göstermiyor. Ramazan "liste ekran görüntüsünü çirkinleştirir" dedi; başka
+> bir yol bulunursa yapılacak.
 > Küçük iş: **sipariş ekranının sepet dökümünde KDV** — hesap ekranı 22 Ağu'da
 > düzeldi (KDV dahil modda da yazıyor), sipariş ekranı eski davranışta kaldı.
 > Küçük iş: **kuver/garsoniyeyi o hesaba özel açma-kapama** — veri katmanı

@@ -424,7 +424,7 @@ export default function Salon() {
             },
           ]
         : []),
-      ...(acik
+      ...(acik && yetkiVar("siparis.fis_yazdir")
         ? [
             {
               ad: "Yazdır",

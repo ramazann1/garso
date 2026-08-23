@@ -186,14 +186,15 @@ begin
         'siparis.al', 'siparis.urun_cikar', 'siparis.miktar', 'siparis.tasi',
         'siparis.kalem_tasi', 'siparis.gelal', 'siparis.paket', 'siparis.kapali_gor',
         'odeme.al', 'odeme.indirim', 'odeme.indirim_tanimli', 'odeme.acik_hesap',
-        'kasa.ac_kapat', 'kasa.gider', 'rapor.gun_sonu'
+        'kasa.ac_kapat', 'kasa.gider', 'kasa.cekmece', 'rapor.gun_sonu',
+        'siparis.fis_yazdir'
       ))
       -- Garson sipariş ve ödeme alır. Hesabın tutarını değiştiren her şey
       -- (indirim, ikram, fiyat, iptal) müdürde.
       or (r.ad = 'Garson' and y.kod in (
         'siparis.al', 'siparis.miktar', 'siparis.tasi',
         'siparis.kalem_tasi', 'siparis.gelal', 'siparis.paket',
-        'odeme.al'
+        'siparis.fis_yazdir', 'odeme.al'
       ))
       -- Kurye: paket siparişi alır, kapıda tahsilat yapar.
       or (r.ad = 'Kurye' and y.kod in ('siparis.paket', 'odeme.al'))

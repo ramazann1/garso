@@ -153,6 +153,7 @@ function KasaPenceresi({
 
   const vardiya = durum.vardiya;
   const paraYetkisi = ayarlar().paraHareketiAcik && yetkiVar("kasa.para");
+  const cekmeceYetkisi = yetkiVar("kasa.cekmece");
 
   // Çekmece açmak kasanın parasını değiştirmiyor, ekranın tazelenmesine gerek yok.
   const cekmeceAc = async () => {
@@ -294,10 +295,12 @@ function KasaPenceresi({
                     </button>
                   </>
                 )}
-                <button className="kasa-ikincil" onClick={cekmeceAc}>
-                  <Inbox size={16} />
-                  Çekmeceyi aç
-                </button>
+                {cekmeceYetkisi && (
+                  <button className="kasa-ikincil" onClick={cekmeceAc}>
+                    <Inbox size={16} />
+                    Çekmeceyi aç
+                  </button>
+                )}
                 <button className="kasa-birincil" onClick={() => setKapaniyor(true)}>
                   <Lock size={16} />
                   Kasayı kapat

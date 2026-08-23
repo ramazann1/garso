@@ -14,6 +14,8 @@ import Anahtar from "../components/Anahtar";
 import RenkSecici, { renkler } from "../components/RenkSecici";
 import {
   menuGetir,
+  maliyetleriGetir,
+  maliyetleriIsle,
   kategoriEkle,
   kategoriGuncelle,
   kategoriSil,
@@ -34,7 +36,7 @@ import {
   urunGrupIdleri,
 } from "../menu";
 import type { KategoriAlanlari, KdvSatiri, TopluPorsiyon, TopluUrun } from "../menu";
-import type { AktarimPlani } from "../aktarim";
+import { planHazirla, type AktarimPlani } from "../aktarim";
 import { istasyonlariGetir, istasyonHaritasiniUnut } from "../yazicilar";
 import type { Istasyon } from "../yazicilar";
 import { kilitKaldir, kilitKur } from "../cikisKilidi";
@@ -564,9 +566,11 @@ export default function MenuStudyosu() {
   const yukle = async (ilk = false) => {
     // Ürün/kategori istasyonu değişmiş olabilir; fiş tarafındaki eşleme tazelensin.
     istasyonHaritasiniUnut();
-    const veri = await menuGetir();
+    // Maliyet menüyle birlikte gelmiyor (kâr marjı satış ekranlarına
+    // düşmesin); menü ekranı onu ayrıca isteyip ürünlere işliyor.
+    const [veri, maliyetler] = await Promise.all([menuGetir(), maliyetleriGetir()]);
     setKategoriler(veri.kategoriler);
-    setUrunler(veri.urunler);
+    setUrunler(maliyetleriIsle(veri.urunler, maliyetler));
     setGruplar(veri.gruplar);
     setBirimler(veri.birimler);
     setKdvler(veri.kdvler);
@@ -754,9 +758,28 @@ export default function MenuStudyosu() {
   // ürünün bağlanacağı kategorinin id'si ancak açıldıktan sonra belli oluyor.
   // Ürünler tek tek gidiyor: urunKaydet porsiyon, kategori ve sıra işlerini
   // zaten hallediyor, aynı işi ikinci kez yazmaya gerek yok.
-  const aktarimYaz = async (plan: AktarimPlani, ilerle: (yapilan: number) => void) => {
+  const aktarimYaz = async (onizleme: AktarimPlani, ilerle: (yapilan: number) => void) => {
     let yapilan = 0;
     const adim = () => ilerle(++yapilan);
+
+    // Önizleme dosya seçilirken kurulmuştu; o günden bu yana menü değişmiş
+    // olabilir — aynı ekranda silinen bir ürün, başka bir cihazda eklenen bir
+    // kategori. Eşleştirme yazmadan hemen önce menünün son hâliyle baştan
+    // yapılıyor, yoksa program olmayan ürünü güncellemeye çalışır.
+    const [taze, maliyetler] = await Promise.all([menuGetir(), maliyetleriGetir()]);
+    const plan = planHazirla(onizleme.satirlar, {
+      ...taze,
+      urunler: maliyetleriIsle(taze.urunler, maliyetler),
+    });
+
+    if (plan.hatalar.length) {
+      await yukle();
+      return plan.hatalar[0].mesaj;
+    }
+    if (!plan.urunler.length) {
+      await yukle();
+      return "Menü bu arada değişmiş: dosyadaki bilgiler menüdekiyle aynı, yazılacak bir şey kalmadı.";
+    }
 
     const yeniKategori = (ad: string, sira: number, ustId?: number) =>
       kategoriEkle({

@@ -804,12 +804,14 @@ export default function MobilSiparis() {
                   {yetkiVar("odeme.al") ? "Öde" : "Hesap"}
                 </button>
 
-                <button className="m-islem m-islem-yazdir" onClick={fisYazdir}>
-                  <span className="m-islem-ikon">
-                    <Printer size={19} />
-                  </span>
-                  Hesap fişi yazdır
-                </button>
+                {yetkiVar("siparis.fis_yazdir") && (
+                  <button className="m-islem m-islem-yazdir" onClick={fisYazdir}>
+                    <span className="m-islem-ikon">
+                      <Printer size={19} />
+                    </span>
+                    Hesap fişi yazdır
+                  </button>
+                )}
 
                 {/* Taşıma ve birleştirme sunucu işi: ekranda bekleyen sipariş
                     varsa önce o gitmeli, yoksa taşınan masada görünmez. */}

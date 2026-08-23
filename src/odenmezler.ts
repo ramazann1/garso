@@ -59,18 +59,16 @@ export async function odenmezKaydet(
  * ölü satır olarak kalmasın.
  */
 export async function odenmezSil(id: number) {
-  const [kalem, adisyon] = await Promise.all([
-    supabase
-      .from("adisyon_kalemleri")
-      .select("id", { count: "exact", head: true })
-      .eq("odenmez_id", id),
-    supabase
-      .from("adisyonlar")
-      .select("id", { count: "exact", head: true })
-      .eq("odenmez_id", id),
-  ]);
+  // Sayımı sunucu yapıyor: adisyon okumak ayrı bir yetki, ödenmez listesini
+  // yöneten kişide olmayabilir. Buradan sayılsaydı yetkisizde sıfır görünür
+  // ve kullanılmış kayıt kalıcı silinirdi.
+  const { data: kullanimda, error: sayimHatasi } = await supabase.rpc(
+    "odenmez_kullanimda",
+    { o_id: id }
+  );
+  if (sayimHatasi) throw new Error("Ödenmez silinemedi.");
 
-  if ((kalem.count ?? 0) + (adisyon.count ?? 0) > 0) {
+  if (kullanimda) {
     const { error } = await supabase
       .from("odenmezler")
       .update({ aktif: false })

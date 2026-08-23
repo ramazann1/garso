@@ -611,7 +611,9 @@ function MasaIslemleri({
           },
         ]
       : [{ ad: "Hesabı gör", ikon: <Wallet size={19} />, renk: "ode", sec: onOde }]),
-    { ad: "Yazdır", ikon: <Printer size={19} />, renk: "yazdir", sec: onYazdir },
+    ...(yetkiVar("siparis.fis_yazdir")
+      ? [{ ad: "Yazdır", ikon: <Printer size={19} />, renk: "yazdir", sec: onYazdir }]
+      : []),
     ...(yetkiVar("siparis.tasi")
       ? [
           {
