@@ -3,32 +3,74 @@
 
 ## 0. SIRADAKİ İŞ (7 Eyl 2026'da güncellendi)
 
-> **Sıradaki iş: çevrimdışı ödemenin kasa ekranlarında görünmesi.** Kuyrukta
-> bekleyen tahsilat şu an kasa hareketleri, vardiya ve Satış ekranlarının
-> hiçbirinde sayılmıyor; vardiya kapatılırken çekmecede para var ama sistemde
-> yok, kasiyer yanlış fark yazıyor. Yapılacak: bekleyen ödemeler "bekliyor"
-> işaretiyle sayılara katılacak, **kuyrukta ödeme varken kasa kapatma uyarısı**
-> çıkacak, kayıt sunucuya gidince işaret kalkacak.
+> **Sıradaki iş: kuyruk kaydı indirim ve hesap bilgilerini körü körüne
+> yazmasın.** Sessiz veri kaybı, o yüzden en üstte. `indirimAlanlari()` her
+> kayıtta indirimi üstüne yazıyor; kuyrukta bekleyen bayat kopya gidince
+> arada verilmiş indirim siliniyor. Kalemlerde koruma var (`bilinenIdler`),
+> indirim ve `bilgiAlanlari()` alanlarında yok. Çözüm: kopyanın gerçekten
+> değiştirdiği alan yazılsın, dokunulmayan alan olduğu gibi kalsın —
+> Adisyo'nun yaptığı gibi bütün kaydı reddetmek değil.
 >
-> Yanına: **kasa çevrimdışıyken masa durumlarının güncel olmadığı uyarısı**.
-> Salonun tepesinde şerit, o hâldeyken ödeme almaya kalkılınca "bu hesap başka
-> bir cihazdan kapanmış olabilir, doğrulanamıyor" penceresi. Engel değil uyarı.
+> **Sonra: çevrimdışı ödemenin kasa ekranlarında görünmesi.** Kuyrukta bekleyen
+> tahsilat şu an kasa hareketleri, vardiya ve Satış ekranlarının hiçbirinde
+> sayılmıyor; vardiya kapatılırken çekmecede para var ama sistemde yok, kasiyer
+> yanlış fark yazıyor. Bekleyen ödemeler "bekliyor" işaretiyle sayılara
+> katılacak, **kuyrukta ödeme varken kasa kapatma uyarısı** çıkacak, kayıt
+> sunucuya gidince işaret kalkacak.
 >
-> **Açık soru (7 Eyl 2026, Ramazan test edecek).** Senaryo: kasa bilgisayarı
-> internetsiz, garson kendi telefonunun interneti ile hesabı kapatıyor. Sunucuda
-> her şey doğru ama kasa ekranı interneti gelene kadar masayı dolu gösteriyor;
-> arada kasadan ikinci kez tahsil edilebiliyor. Ramazan Adisyo'nun bu durumda
-> ne yaptığını deneyecek. Çözüm seçenekleri:
-> - **Ucuz yol (önerilen):** yukarıdaki iki uyarı. Yarım seans.
-> - **Yerel ağ:** telefon, kasadaki köprüye wifi üzerinden haber verir. Şu an
->   böyle bir kanal **yok** — köprü de her şeyi Supabase üzerinden yapıyor.
->   Önündeki asıl engel: Garso telefonda https ile açılıyor, tarayıcı https
->   sayfasının yerel ağdaki http adresine istek atmasına izin vermiyor. Aşmanın
->   yolları (köprüye sertifika, uygulamayı köprüden yayınlama) kurulumu
->   işletmecinin kendi başına yapamayacağı hâle getiriyor. Birkaç seans, kırılgan.
->   Kesintiler gerçekten sık yaşanırsa yeniden değerlendirilecek.
+> **Sonra: köprüye yerel yazdırma dinleyicisi** (`127.0.0.1`). Kasa kendi
+> ekranından bastığı fişi buluta uğratmadan doğrudan köprüye versin; kasanın
+> interneti yokken de kâğıt çıksın. Tarayıcı ile köprü aynı makinede olduğu
+> için sertifika sorunu yok — tarayıcılar `127.0.0.1`'i güvenli sayıyor.
+> Köprü Electron/Node, dinleyici birkaç satır. Kurgu: kasa önce köprüye
+> gönderir, ulaşamazsa eski yol (`yazdirma_kuyrugu`); her fişte kimlik olur ki
+> internet gelince aynı fiş iki kez basılmasın; kayıt yine buluta "yerel
+> basıldı" işaretiyle yazılır, yazdırma geçmişi bozulmaz. İki seanslık iş
+> (köprü tarafı + Garso tarafı).
 >
-> **Ondan sonra: çevrimdışı giriş ve PIN ile kişi değiştirme.** Cihaz kapanıp
+> **Sonra: Adisyo'dan alınacak iki şey** — kasa ekranında görünür "N bekleyen"
+> sayacı, ve hesap listesinde **kaynak ayrımı** (sunucudan mı geldi, cihazdaki
+> kopyadan mı).
+>
+> **Sonra: kasa çevrimdışıyken "masa durumları güncel değil" uyarısı.** Salonun
+> tepesinde şerit, o hâldeyken ödeme almaya kalkılınca "bu hesap başka bir
+> cihazdan kapanmış olabilir, doğrulanamıyor" penceresi. Engel değil uyarı.
+>
+> **Ondan sonra: çevrimdışı giriş ve PIN ile kişi değiştirme.**
+>
+> **7 Eyl 2026: Adisyo'nun çevrimdışı turu (ekran kaydı).** Adisyo'nun çözümü
+> yapı olarak bizimkinden farklı — kasada **ayrı bir program**: "Adisyo
+> Çevrimdışı".
+> - Çevrimdışı mod **elle** açılıyor (üstte siyah şerit + "Çevrimdışı moda geç").
+> - Mod açılınca **ana POS penceresi kilitleniyor**: "Bu ekranda başka işlem
+>   yapmayın." Bütün iş ayrı panele taşınıyor.
+> - Panel "sunucudaki açık siparişler ve bu cihazda bekleyen çevrimdışı
+>   işlemler" diyor — yani onlar da hesabın kopyasını cihazda tutuyor, bizim
+>   `hesapKopyasi` ile aynı fikir. Sayaç: "19 sipariş · 0 bekleyen". Listede
+>   **Kaynak** sütunu (Sunucu / cihaz), satırda yazdır + Öde.
+> - Senkron **elle**: "Adisyo'ya Gönder".
+> - Bağlantı gelince ekran kendiliğinden tazelenmiyor: "Güncel siparişlerinizi
+>   görmek için buraya tıklayınız."
+>
+> **Bizim önde olduğumuz yerler — değiştirilmeyecek:** çevrimdışına kendiliğinden
+> geçiyoruz, ekran kilitlenmiyor, senkron kendiliğinden, bağlantı gelince ekran
+> kendini tazeliyor, çift ödeme koruması var (Adisyo'da izi yok).
+>
+> **Adisyo'nun iki davranışı (Ramazan'ın denemesi):** (1) kasa çevrimdışıyken
+> telefondan kapatılan hesabı görmüyor — bizimle aynı, sektörün hâli. (2) Aynı
+> masa hem çevrimdışı kasadan hem çevrimiçi telefondan değiştirilince senkron
+> **tamamen başarısız** oluyor ("başka bir işlem yapılmış"), çevrimdışı girilen
+> ürünler kayboluyor. Bizde beklenen davranış birleştirme — `bilinenIdler`
+> sayesinde iki taraf da duruyor. Denenmedi, denenecek.
+>
+> **Yerel ağ (telefon → kasadaki köprü) yapılmayacak — 7 Eyl 2026 kararı.**
+> Senaryolar ayrıştırılınca işe yaramadığı görüldü: (1) komple kesintide wifi
+> ayakta ve herkes yerel ağda — burada işe yarardı ama o an telefonun da
+> interneti yok; (2) kasa internetsiz, garson kendi 4G'sinde — telefon yerel
+> ağda **değil**, köprüye zaten ulaşamıyor; (3) wifi'de internet var ve kasa
+> bağlı değilse kasayı bağlamak zaten çözüm. Yani asıl senaryonun (2)
+> yazılımsal çözümü yok; çözümü kasaya yedek bağlantı vermek (hotspot / 4G
+> çubuğu). Adisyo da telefondan kasaya yerel ağdan haber göndermiyor. Cihaz kapanıp
 > açılırsa garson çevrimdışı sipariş de alamıyor, tahsilat da; şifre ve PIN
 > sunucuda doğrulanıyor. Çevrimdışı tahsilat 7 Eyl'de bitti, sıradaki engel bu.
 >
