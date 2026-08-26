@@ -1,3 +1,4 @@
+import { durumluModul } from "./sicakGuncelleme";
 import { useEffect, useState } from "react";
 import { baglantiHatasi, baglantiVar } from "./baglanti";
 import { acikOturum } from "./oturum";
@@ -157,3 +158,6 @@ export function zamanMetni(zaman: number) {
   if (bugun) return saat;
   return `${t.toLocaleDateString("tr-TR", { day: "numeric", month: "short" })} ${saat}`;
 }
+
+// Modül kendi durumunu bellekte tutuyor: sıcak güncelleme yerine tam yenileme.
+durumluModul(import.meta.hot);

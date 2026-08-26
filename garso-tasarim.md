@@ -1,17 +1,9 @@
 ﻿# GARSO — Teknik Tasarım: Veri Modeli & Ekran Haritası
 *Restoran ve cafe'ler için bulut tabanlı satış ve işletme yönetim sistemi.*
 
-## 0. SIRADAKİ İŞ (7 Eyl 2026'da güncellendi)
+## 0. SIRADAKİ İŞ (8 Eyl 2026'da güncellendi)
 
-> **Sıradaki iş: kuyruk kaydı indirim ve hesap bilgilerini körü körüne
-> yazmasın.** Sessiz veri kaybı, o yüzden en üstte. `indirimAlanlari()` her
-> kayıtta indirimi üstüne yazıyor; kuyrukta bekleyen bayat kopya gidince
-> arada verilmiş indirim siliniyor. Kalemlerde koruma var (`bilinenIdler`),
-> indirim ve `bilgiAlanlari()` alanlarında yok. Çözüm: kopyanın gerçekten
-> değiştirdiği alan yazılsın, dokunulmayan alan olduğu gibi kalsın —
-> Adisyo'nun yaptığı gibi bütün kaydı reddetmek değil.
->
-> **Sonra: çevrimdışı ödemenin kasa ekranlarında görünmesi.** Kuyrukta bekleyen
+> **Sıradaki iş: çevrimdışı ödemenin kasa ekranlarında görünmesi.** Kuyrukta bekleyen
 > tahsilat şu an kasa hareketleri, vardiya ve Satış ekranlarının hiçbirinde
 > sayılmıyor; vardiya kapatılırken çekmecede para var ama sistemde yok, kasiyer
 > yanlış fark yazıyor. Bekleyen ödemeler "bekliyor" işaretiyle sayılara
@@ -28,15 +20,47 @@
 > basıldı" işaretiyle yazılır, yazdırma geçmişi bozulmaz. İki seanslık iş
 > (köprü tarafı + Garso tarafı).
 >
-> **Sonra: Adisyo'dan alınacak iki şey** — kasa ekranında görünür "N bekleyen"
-> sayacı, ve hesap listesinde **kaynak ayrımı** (sunucudan mı geldi, cihazdaki
-> kopyadan mı).
+> **Sonra: Adisyo'dan alınacak** kasa ekranında görünür "N bekleyen" sayacı.
+> (Kaynak ayrımı 8 Eyl'de yapıldı, aşağıda.)
+>
+> **Sonra: servis bedeli bayat sepetten hesaplanıyor.** `servisAlanlari()`
+> kuver/garsoniye **tutarını** her kayıtta yeniden hesaplayıp yazıyor; kuyrukta
+> bekleyen kopya, kendi görmediği ürünleri saymadığı için tutarı eksiltebilir.
+> Karar bayrakları 8 Eyl'de korumaya alındı, tutar hâlâ körü körüne yazılıyor.
 >
 > **Sonra: kasa çevrimdışıyken "masa durumları güncel değil" uyarısı.** Salonun
 > tepesinde şerit, o hâldeyken ödeme almaya kalkılınca "bu hesap başka bir
 > cihazdan kapanmış olabilir, doğrulanamıyor" penceresi. Engel değil uyarı.
 >
 > **Ondan sonra: çevrimdışı giriş ve PIN ile kişi değiştirme.**
+>
+> **8 Eyl 2026: üç iş bitti.**
+> - **Başlık alanları artık körü körüne yazılmıyor.** `AdisyonVerisi.bilinenBilgi`
+>   hesabın okunduğu andaki başlığını (indirim, tanım, ad, kişi sayısı, not,
+>   müşteri, servis kararı) kaydın içinde taşıyor; `indirimAlanlari()`,
+>   `bilgiAlanlari()` ve servis bayrakları yalnız **değişen sütuna** dokunuyor.
+>   `bilinenIdler` ile aynı desen — ekranlar taşıdığı için kuyruğa da giriyor.
+>   `CEVRIMDISI_ADISYON`'da `bilinenBilgi: { indirim: 0 }`: "hiçbir şey görmedim"
+>   hâli başlıkta da geçerli.
+> - **Kuyruk gönderimi tek tetiğe bağlı değil.** Eskiden yalnız açılışta ve
+>   bağlantı gelince deneniyordu; modem yeni kalkarken ilk deneme düşünce durum
+>   çevrimiçi kalıyor, kuyruk sayfa yenilenene kadar bekliyordu. Artık bağlantı
+>   hatasında `kopukBildir()` çağrılıyor ve 3 sn'den başlayıp 30 sn'ye çıkan
+>   artan bekleme kuruluyor; başarılı kayıtta sıfırlanıyor.
+> - **Çevrimdışı salon artık gerçeği gösteriyor.** `salonKopyasiYaz()` her salon
+>   okumasında masaların özetini cihaza yazıyor (`tumAdisyonlar` sonunda);
+>   eskiden yalnız elle açılan masaların kopyası vardı, kesintide salon boş
+>   görünüyordu. Kart rozetinde **kaynak ayrımı**: kuyrukta bekleyen kayıt
+>   "Gönderilmedi" (mercan), kopyadan çizilen masa "21:05 hâli" (koyu, `.kopya`).
+>   Çevrimdışı kapatılan hesap salon kopyasından da düşüyor.
+>
+> **8 Eyl 2026: geliştirme tuzağı — `src/sicakGuncelleme.ts`.** Vite sıcak
+> güncellemede modülün eski kopyası bellekte kalabiliyor: gönderimi yeni kopya
+> yapıyor, ekranlar eskiye abone kalıyor ve kuyruk boşaldığı hâlde şerit "1
+> sipariş bekliyor" diyor. Çalışan bir düzeltme üç tur boyunca bozuk sanıldı.
+> Durumunu bellekte tutan modüller (`kuyruk`, `baglanti`, `oturum`, `onbellek`,
+> `hesapKopyasi`, `mesguliyet`) artık `durumluModul(import.meta.hot)` ile sıcak
+> güncelleme yerine tam yenileme istiyor. Üretim paketine girmiyor.
 >
 > **7 Eyl 2026: Adisyo'nun çevrimdışı turu (ekran kaydı).** Adisyo'nun çözümü
 > yapı olarak bizimkinden farklı — kasada **ayrı bir program**: "Adisyo

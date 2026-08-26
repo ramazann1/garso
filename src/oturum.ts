@@ -1,3 +1,4 @@
+import { durumluModul } from "./sicakGuncelleme";
 import { useEffect, useState } from "react";
 import { baglantiHatasi, baglantiVar } from "./baglanti";
 import { onbellegiTemizle, onbellekOku, onbellekYaz } from "./onbellek";
@@ -312,3 +313,6 @@ export async function girisKuruldu() {
   const { data } = await supabase.rpc("giris_kuruldu");
   return data === true;
 }
+
+// Modül kendi durumunu bellekte tutuyor: sıcak güncelleme yerine tam yenileme.
+durumluModul(import.meta.hot);

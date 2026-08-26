@@ -21,7 +21,7 @@ import {
   Zap,
 } from "lucide-react";
 import { bekleyenMasalar, kopyaMasalari, kuyrugaEkle, useKuyruk } from "../kuyruk";
-import { hesapKopyasiOku, hesapKopyasiSil } from "../hesapKopyasi";
+import { hesapKopyasiOku, hesapKopyasiSil, kopyaSaati } from "../hesapKopyasi";
 import MasaKarti from "../components/MasaKarti";
 import MasaSecim from "../components/MasaSecim";
 import MasaPlani, { yerlesimiVar } from "../components/MasaPlani";
@@ -504,6 +504,7 @@ export default function Salon() {
             ad: acik.ad,
             kisiSayisi: acik.kisiSayisi,
             bekliyor: acik.bekliyor,
+            kopyaSaati: acik.kopyaZamani ? kopyaSaati(acik.kopyaZamani) : undefined,
           }
         }
         aksiyonlar={aksiyonlar(masa)}

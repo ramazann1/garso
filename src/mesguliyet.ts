@@ -1,3 +1,4 @@
+import { durumluModul } from "./sicakGuncelleme";
 import { useEffect, useState } from "react";
 import { supabase } from "./supabase";
 import { acikOturum, yetkiVar } from "./oturum";
@@ -208,3 +209,6 @@ export function useMesguliyetler() {
 
   return liste;
 }
+
+// Modül kendi durumunu bellekte tutuyor: sıcak güncelleme yerine tam yenileme.
+durumluModul(import.meta.hot);

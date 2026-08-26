@@ -37,6 +37,11 @@ export type MasaDurumu = {
   kisiSayisi?: number;
   /** Sipariş cihazda kuyrukta, sunucuya henüz yazılmadı. */
   bekliyor?: boolean;
+  /**
+   * Masa sunucuya sorulamadı, cihazdaki kopyadan çiziliyor. Kopyanın alındığı
+   * saat kartta yazıyor: gördüğü tutar o andan kalma, sonrası bilinmiyor.
+   */
+  kopyaSaati?: string;
 };
 export type SepetKalemi = {
   id?: number; // kalem kimliği; negatifse henüz kaydedilmemiş

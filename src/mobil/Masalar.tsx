@@ -6,6 +6,7 @@ import {
   Check,
   CircleCheckBig,
   CloudOff,
+  CloudUpload,
   EllipsisVertical,
   Gift,
   LockKeyhole,
@@ -40,7 +41,7 @@ import OdemeTipleri from "./OdemeTipleri";
 import MusteriSecici from "../components/MusteriSecici";
 import { odemeTipleriniGetir, type OdemeTipi } from "../odemeTipleri";
 import { bekleyenMasalar, kopyaMasalari, kuyrugaEkle, useKuyruk } from "../kuyruk";
-import { hesapKopyasiOku, hesapKopyasiSil } from "../hesapKopyasi";
+import { hesapKopyasiOku, hesapKopyasiSil, kopyaSaati } from "../hesapKopyasi";
 import { baglantiHatasi, baglantiVar, sureSinirli, useBaglanti } from "../baglanti";
 import { useCanli } from "../canli";
 import { devralabilir, masayiDevral, useMesguliyetler } from "../mesguliyet";
@@ -446,7 +447,13 @@ export default function MobilMasalar() {
                     <span className="m-masa-alt">
                       {acik.bekliyor ? (
                         <>
-                          <CloudOff size={13} /> Gönderilmedi
+                          <CloudUpload size={13} /> Gönderilmedi
+                        </>
+                      ) : acik.kopyaZamani ? (
+                        // Gönderilmemiş kayıt değil: masa sunucuya sorulamadı,
+                        // cihazdaki kopyadan çiziliyor. Kopyanın saati yazıyor.
+                        <>
+                          <CloudOff size={13} /> {kopyaSaati(acik.kopyaZamani)} hâli
                         </>
                       ) : (
                         sure(acik.acilis)

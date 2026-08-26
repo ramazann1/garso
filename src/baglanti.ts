@@ -1,3 +1,4 @@
+import { durumluModul } from "./sicakGuncelleme";
 import { useEffect, useState } from "react";
 
 /**
@@ -169,3 +170,6 @@ export function baglantiyiIzle() {
 
   tazele();
 }
+
+// Modül kendi durumunu bellekte tutuyor: sıcak güncelleme yerine tam yenileme.
+durumluModul(import.meta.hot);

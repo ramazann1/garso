@@ -1,6 +1,6 @@
 import { useEffect, useRef, useState } from "react";
 import type { ReactNode } from "react";
-import { CircleCheckBig, Clock, CloudUpload, LockKeyhole, MoreVertical, Plus, Printer, Users } from "lucide-react";
+import { CircleCheckBig, Clock, CloudOff, CloudUpload, LockKeyhole, MoreVertical, Plus, Printer, Users } from "lucide-react";
 import { paraGoster } from "../para";
 import type { Masa, MasaDurumu } from "../types";
 
@@ -97,12 +97,19 @@ export default function MasaKarti({ masa, durum, aksiyonlar, mesgul, onClick }: 
               düğmeyle aynı hizaya düşüp sıkışmıyor. */}
           <span className="masa-baslik">
             <span className="masa-ad">{masa.ad}</span>
-            {/* Sipariş cihazda bekliyor, sunucuya gitmedi. Süre yerine bu
-                yazıyor: masanın kaç dakikadır açık olduğundan önemli. */}
+            {/* Süre yerine masanın hâli yazıyor, ikisi de olduğunda önemli
+                olan bu: sipariş cihazda mı bekliyor, yoksa masa sunucuya
+                sorulamayıp cihazdaki kopyadan mı çiziliyor. İkisi ayrı şey —
+                kopyada gönderilmemiş bir kayıt yok, bilgi eski olabilir. */}
             {durum.bekliyor ? (
               <span className="masa-bekliyor">
                 <CloudUpload size={13} />
                 Gönderilmedi
+              </span>
+            ) : durum.kopyaSaati ? (
+              <span className="masa-bekliyor kopya">
+                <CloudOff size={13} />
+                {durum.kopyaSaati} hâli
               </span>
             ) : (
               <span className="masa-sure">

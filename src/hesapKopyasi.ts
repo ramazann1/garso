@@ -1,4 +1,5 @@
-import type { AdisyonVerisi } from "./adisyonlar";
+import { durumluModul } from "./sicakGuncelleme";
+import type { AdisyonVerisi, MasaOzeti } from "./adisyonlar";
 
 /**
  * Açık hesabın cihazdaki son bilinen kopyası.
@@ -75,9 +76,67 @@ export function hesapKopyasiSil(hedef: HesapHedefi) {
   const ad = anahtar(hedef);
   const kalan = tumu().filter((k) => k.anahtar !== ad);
   yaz(kalan);
+  // Masa salon kopyasında da dolu duruyor; kapanan hesap orada da kalkmalı,
+  // yoksa çevrimdışı salon ödenmiş masayı dolu göstermeye devam eder.
+  if (hedef.tip === "masa") salonKopyasindanSil(hedef.masaId);
+}
+
+/**
+ * Salonun son bilinen hâli: hangi masa dolu, ne kadar, kaç kişi.
+ *
+ * Hesap kopyası yalnız açılan masalar için yazılıyordu; bağlantı kesilince
+ * salon, garsonun en son elle açtığı bir iki masa dışında bomboş görünüyordu.
+ * Boş görünen dolu masaya ikinci hesap açılır. Bu kopya salon her okunduğunda
+ * tazeleniyor, ödeme için gereken sepet yine hesap kopyasında duruyor.
+ */
+const SALON_ANAHTAR = "garso-salon-kopyasi";
+
+export function salonKopyasiYaz(masalar: Record<number, MasaOzeti>) {
+  try {
+    localStorage.setItem(
+      SALON_ANAHTAR,
+      JSON.stringify({ zaman: Date.now(), masalar })
+    );
+  } catch {
+    // Yer yoksa salon çevrimdışıyken boş görünür; başka bir şey etkilenmiyor.
+  }
+}
+
+/** Çevrimdışı salonun çizdiği masalar; kopyanın alındığı an kartlara giriyor. */
+export function salonKopyasiOku(): Record<number, MasaOzeti> {
+  try {
+    const ham = localStorage.getItem(SALON_ANAHTAR);
+    if (!ham) return {};
+    const kayit = JSON.parse(ham) as { zaman: number; masalar: Record<number, MasaOzeti> };
+    // Bir vardiyadan eski salon bilgi değil, tahmindir.
+    if (Date.now() - kayit.zaman > OMUR) return {};
+
+    const sonuc: Record<number, MasaOzeti> = {};
+    for (const [id, ozet] of Object.entries(kayit.masalar ?? {})) {
+      sonuc[Number(id)] = { ...ozet, kopyaZamani: kayit.zaman };
+    }
+    return sonuc;
+  } catch {
+    return {};
+  }
+}
+
+function salonKopyasindanSil(masaId: number) {
+  try {
+    const ham = localStorage.getItem(SALON_ANAHTAR);
+    if (!ham) return;
+    const kayit = JSON.parse(ham) as { zaman: number; masalar: Record<number, MasaOzeti> };
+    delete kayit.masalar[masaId];
+    localStorage.setItem(SALON_ANAHTAR, JSON.stringify(kayit));
+  } catch {
+    // Kopya okunamıyorsa yapacak bir şey yok; bağlantı gelince tazelenecek.
+  }
 }
 
 /** Kopyanın yaşı — şeritte "14:32'deki hâli" diye yazılıyor. */
 export function kopyaSaati(zaman: number) {
   return new Date(zaman).toLocaleTimeString("tr", { hour: "2-digit", minute: "2-digit" });
 }
+
+// Modül kendi durumunu bellekte tutuyor: sıcak güncelleme yerine tam yenileme.
+durumluModul(import.meta.hot);

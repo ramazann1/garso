@@ -8,11 +8,29 @@ import { denetimYaz } from "./denetim";
 import { cekmeceyiAc, iptalFisiYaz, mutfakFisiYaz } from "./yazicilar";
 import { kasayaGirerMi } from "./odemeTipleri";
 import { adisyonuCariyeYaz } from "./cari";
-import { hesapKopyasiYaz } from "./hesapKopyasi";
+import { hesapKopyasiYaz, salonKopyasiYaz } from "./hesapKopyasi";
 import { servisTutarlari } from "./servis";
 import type { ServisGirdisi } from "./servis";
 import type { DenetimIslemi, DenetimKaydi } from "./denetim";
 import type { SepetKalemi, Tahsilat } from "./types";
+
+/**
+ * Adisyon başlığının okunduğu andaki hâli. Kaydetme buna bakıp yalnız gerçekten
+ * değişen sütuna dokunuyor; ekranın elini sürmediği alan olduğu gibi kalıyor.
+ */
+export type BilinenBilgi = {
+  indirim: number;
+  indirimTanimId?: number | null;
+  indirimAd?: string | null;
+  ad?: string | null;
+  kisiSayisi?: number | null;
+  not?: string | null;
+  musteriAd?: string | null;
+  musteriTelefon?: string | null;
+  adres?: string | null;
+  kuverUygula?: boolean | null;
+  garsoniyeUygula?: boolean | null;
+};
 
 export type AdisyonVerisi = {
   id?: number;
@@ -42,6 +60,13 @@ export type AdisyonVerisi = {
   bilinenIdler?: number[];
   /** Aynı kural tahsilatlar için: başka kasada alınan ödeme silinmesin. */
   bilinenTahsilatIdler?: number[];
+  /**
+   * Adisyon başlığının okunduğu andaki hâli. Kuyrukta bekleyen bayat kopya
+   * sunucuya gidince indirim ve bilgi sütunları körü körüne üstüne yazılıyor,
+   * arada başka cihazdan verilmiş indirim sessizce siliniyordu. Kaydetme artık
+   * buna bakıyor: değeri değişmemiş sütuna hiç dokunulmuyor.
+   */
+  bilinenBilgi?: BilinenBilgi;
   acilis?: string;
   garson?: string;
   tip?: AdisyonTipi;
@@ -239,6 +264,10 @@ export const CEVRIMDISI_ADISYON: AdisyonVerisi = {
   tahsilatlar: [],
   bilinenIdler: [],
   bilinenTahsilatIdler: [],
+  // Aynı kural başlık için: hiçbir şey görmedik, o yüzden hiçbir sütun
+  // değişmiş sayılmıyor. Ekran indirime dokunmadan kaydederse sunucudaki
+  // indirim yerinde kalıyor.
+  bilinenBilgi: { indirim: 0 },
 };
 
 /**
@@ -348,6 +377,19 @@ function adisyonaCevir(data: any): AdisyonVerisi {
     sepet,
     bilinenIdler: kalemIdler,
     bilinenTahsilatIdler: tahsilatIdler,
+    bilinenBilgi: {
+      indirim: Number((data as any).indirim ?? 0),
+      indirimTanimId: (data as any).indirim_tanim_id ?? null,
+      indirimAd: (data as any).indirim_ad ?? null,
+      ad: (data as any).ad ?? null,
+      kisiSayisi: (data as any).kisi_sayisi ?? null,
+      not: (data as any).not_metni ?? null,
+      musteriAd: (data as any).musteri_ad ?? null,
+      musteriTelefon: (data as any).musteri_telefon ?? null,
+      adres: (data as any).adres ?? null,
+      kuverUygula: (data as any).kuver_uygula ?? null,
+      garsoniyeUygula: (data as any).garsoniye_uygula ?? null,
+    },
     indirim: Number((data as any).indirim ?? 0),
     indirimTanim: {
       id: (data as any).indirim_tanim_id ?? undefined,
@@ -503,6 +545,12 @@ export type MasaOzeti = {
   kisiSayisi?: number;
   /** Kayıt henüz cihazda, sunucuya gönderilmedi (bkz. kuyruk.ts). */
   bekliyor?: boolean;
+  /**
+   * Masa sunucudan değil cihazdaki kopyadan çiziliyor: bağlantı yokken salonun
+   * boş görünmemesi için son bilinen hâli gösteriliyor. Kopyanın alındığı an
+   * kartta yazıyor — "gönderilmemiş sipariş" ile karıştırılmasın, o ayrı hâl.
+   */
+  kopyaZamani?: number;
 };
 
 // Salon ekranı için: açık adisyonların masa bazlı özeti. Tahsilatlar da geliyor —
@@ -575,6 +623,9 @@ export async function tumAdisyonlar(): Promise<Record<number, MasaOzeti>> {
       kisiSayisi: satir.kisi_sayisi ?? undefined,
     };
   }
+  // Salonun son bilinen hâli cihaza yazılıyor: bağlantı kesilince ekran boş
+  // kalmasın, garson dolu masayı boş sanıp ikinci hesap açmasın.
+  salonKopyasiYaz(sonuc);
   return sonuc;
 }
 
@@ -870,16 +921,33 @@ export async function masasizKaydet(
  */
 function bilgiAlanlari(veri: AdisyonVerisi) {
   const alanlar: Record<string, unknown> = {};
-  if (veri.ad !== undefined) alanlar.ad = veri.ad.trim() || null;
-  if (veri.kisiSayisi !== undefined) alanlar.kisi_sayisi = veri.kisiSayisi || null;
-  if (veri.not !== undefined) alanlar.not_metni = veri.not.trim() || null;
+  const yaz = (sutun: string, deger: unknown, onceki: unknown) => {
+    if (degismis(veri, deger, onceki)) alanlar[sutun] = deger;
+  };
+  const bilinen = veri.bilinenBilgi;
+
+  if (veri.ad !== undefined) yaz("ad", veri.ad.trim() || null, bilinen?.ad ?? null);
+  if (veri.kisiSayisi !== undefined)
+    yaz("kisi_sayisi", veri.kisiSayisi || null, bilinen?.kisiSayisi ?? null);
+  if (veri.not !== undefined) yaz("not_metni", veri.not.trim() || null, bilinen?.not ?? null);
   if (veri.musteri) {
     const m = veri.musteri;
-    if (m.ad !== undefined) alanlar.musteri_ad = m.ad.trim() || null;
-    if (m.telefon !== undefined) alanlar.musteri_telefon = m.telefon.trim() || null;
-    if (m.adres !== undefined) alanlar.adres = m.adres.trim() || null;
+    if (m.ad !== undefined) yaz("musteri_ad", m.ad.trim() || null, bilinen?.musteriAd ?? null);
+    if (m.telefon !== undefined)
+      yaz("musteri_telefon", m.telefon.trim() || null, bilinen?.musteriTelefon ?? null);
+    if (m.adres !== undefined) yaz("adres", m.adres.trim() || null, bilinen?.adres ?? null);
   }
   return alanlar;
+}
+
+/**
+ * Bu sütun gerçekten bu ekranda mı değişti? Hesabın okunduğu andaki hâli
+ * bilinmiyorsa (yeni adisyon, kaydı taşımayan eski çağrı) eski davranış
+ * geçerli: değer ne ise yazılıyor.
+ */
+function degismis(veri: AdisyonVerisi, deger: unknown, onceki: unknown) {
+  if (!veri.bilinenBilgi) return true;
+  return deger !== onceki;
 }
 
 /**
@@ -889,21 +957,37 @@ function bilgiAlanlari(veri: AdisyonVerisi) {
  */
 function servisAlanlari(veri: AdisyonVerisi) {
   const ozet = adisyonOzeti(veri);
-  return {
+  const bilinen = veri.bilinenBilgi;
+  const kuver = veri.kuverUygula ?? null;
+  const garsoniye = veri.garsoniyeUygula ?? null;
+
+  const alanlar: Record<string, unknown> = {
     kuver_tutar: ozet.kuver,
     garsoniye_tutar: ozet.garsoniye,
-    kuver_uygula: veri.kuverUygula ?? null,
-    garsoniye_uygula: veri.garsoniyeUygula ?? null,
   };
+  // Karar bayrakları tutarlardan ayrı: ekran kuverı elle kaldırmadıysa başka
+  // bir cihazın kararı bu kayıtla geri alınmıyor.
+  if (degismis(veri, kuver, bilinen?.kuverUygula ?? null)) alanlar.kuver_uygula = kuver;
+  if (degismis(veri, garsoniye, bilinen?.garsoniyeUygula ?? null))
+    alanlar.garsoniye_uygula = garsoniye;
+  return alanlar;
 }
 
-// Hesap geneli indirim tutarıyla birlikte hangi tanımdan geldiğini de yazıyor.
+/**
+ * Hesap geneli indirim tutarıyla birlikte hangi tanımdan geldiğini de yazıyor.
+ * Ekran indirime dokunmadıysa sütunlar olduğu gibi bırakılıyor: kuyrukta
+ * bekleyen bayat kopya, arada başka bir cihazdan verilen indirimi silmesin.
+ */
 function indirimAlanlari(veri: AdisyonVerisi) {
-  return {
-    indirim: veri.indirim,
-    indirim_tanim_id: veri.indirim > 0 ? veri.indirimTanim?.id ?? null : null,
-    indirim_ad: veri.indirim > 0 ? veri.indirimTanim?.ad ?? null : null,
-  };
+  const bilinen = veri.bilinenBilgi;
+  const tanimId = veri.indirim > 0 ? veri.indirimTanim?.id ?? null : null;
+  const ad = veri.indirim > 0 ? veri.indirimTanim?.ad ?? null : null;
+
+  const alanlar: Record<string, unknown> = {};
+  if (degismis(veri, veri.indirim, bilinen?.indirim)) alanlar.indirim = veri.indirim;
+  if (degismis(veri, tanimId, bilinen?.indirimTanimId ?? null)) alanlar.indirim_tanim_id = tanimId;
+  if (degismis(veri, ad, bilinen?.indirimAd ?? null)) alanlar.indirim_ad = ad;
+  return alanlar;
 }
 
 /**
@@ -1268,6 +1352,31 @@ async function kalemleriYaz(
     silinenTahsilatlar: undefined,
     bilinenIdler: yeniKalemIdler,
     bilinenTahsilatIdler: yeniTahsilatIdler,
+    bilinenBilgi: yazilanBilgi(veri),
+  };
+}
+
+/**
+ * Kayıttan sonra başlığın yeni "bilinen hâli". Ekranın taşımadığı alan
+ * (sipariş ekranı müşteri bilgisini göndermiyor) okunduğu gibi kalıyor, yoksa
+ * bir sonraki kayıt onu değişmiş sanıp üstüne yazardı.
+ */
+function yazilanBilgi(veri: AdisyonVerisi): BilinenBilgi {
+  const bilinen = veri.bilinenBilgi;
+  const m = veri.musteri;
+  return {
+    indirim: veri.indirim,
+    indirimTanimId: veri.indirim > 0 ? veri.indirimTanim?.id ?? null : null,
+    indirimAd: veri.indirim > 0 ? veri.indirimTanim?.ad ?? null : null,
+    ad: veri.ad !== undefined ? veri.ad.trim() || null : bilinen?.ad ?? null,
+    kisiSayisi: veri.kisiSayisi !== undefined ? veri.kisiSayisi || null : bilinen?.kisiSayisi ?? null,
+    not: veri.not !== undefined ? veri.not.trim() || null : bilinen?.not ?? null,
+    musteriAd: m?.ad !== undefined ? m.ad.trim() || null : bilinen?.musteriAd ?? null,
+    musteriTelefon:
+      m?.telefon !== undefined ? m.telefon.trim() || null : bilinen?.musteriTelefon ?? null,
+    adres: m?.adres !== undefined ? m.adres.trim() || null : bilinen?.adres ?? null,
+    kuverUygula: veri.kuverUygula ?? null,
+    garsoniyeUygula: veri.garsoniyeUygula ?? null,
   };
 }
 

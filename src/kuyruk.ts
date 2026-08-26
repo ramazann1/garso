@@ -1,8 +1,9 @@
+import { durumluModul } from "./sicakGuncelleme";
 import { useEffect, useState } from "react";
 import { adisyonKaydet, adisyonOzeti, gecKalanSiparis, masasizKaydet } from "./adisyonlar";
 import type { AdisyonVerisi, MasaOzeti } from "./adisyonlar";
-import { baglantiDinle, baglantiHatasi, baglantiVar } from "./baglanti";
-import { hesapKopyalari, hesapKopyasiSil } from "./hesapKopyasi";
+import { baglantiDinle, baglantiHatasi, baglantiVar, kopukBildir } from "./baglanti";
+import { hesapKopyalari, hesapKopyasiSil, salonKopyasiOku } from "./hesapKopyasi";
 
 /**
  * Bağlantı yokken alınan siparişlerin cihazdaki kuyruğu.
@@ -114,14 +115,22 @@ export function bekleyenMasalar(): Record<number, MasaOzeti> {
  *
  * Sunucudan adisyon okunamadığı için salon çevrimdışıyken bomboş görünüyordu;
  * dolu masaya girilemeyince ödemesi de alınamıyordu. Kopya "bu masada şu
- * hesap vardı" diyor, kart bekleyen işaretiyle çiziliyor.
+ * hesap vardı" diyor, kart kopyanın saatiyle çiziliyor — "gönderilmedi" değil,
+ * "doğrulanamadı".
  */
 export function kopyaMasalari(): Record<number, MasaOzeti> {
-  const sonuc: Record<number, MasaOzeti> = {};
+  // Salonun son bilinen hâli temel; masaya girilmişse o hesabın kendi kopyası
+  // daha yenidir, üstüne biniyor. İkisi de "sunucudan değil cihazdan" —
+  // kartta gönderilmemiş sipariş değil, doğrulanamayan masa olarak çiziliyor.
+  const sonuc: Record<number, MasaOzeti> = salonKopyasiOku();
   for (const kopya of hesapKopyalari()) {
     const masaId = Number(kopya.anahtar.replace("masa-", ""));
     if (!kopya.anahtar.startsWith("masa-") || !masaId) continue;
     const ozet = adisyonOzeti(kopya.veri);
+    const oncekiZaman = sonuc[masaId]?.kopyaZamani ?? 0;
+    // Salon kopyası daha yeniyse o geçerli: masaya girildikten sonra başka bir
+    // cihazdan ürün eklenmiş olabilir.
+    if (oncekiZaman > kopya.zaman) continue;
     sonuc[masaId] = {
       id: kopya.veri.id ?? 0,
       tutar: ozet.toplam,
@@ -133,7 +142,7 @@ export function kopyaMasalari(): Record<number, MasaOzeti> {
       acilis: kopya.veri.acilis ?? new Date(kopya.zaman).toISOString(),
       ad: kopya.veri.ad || undefined,
       kisiSayisi: kopya.veri.kisiSayisi || undefined,
-      bekliyor: true,
+      kopyaZamani: kopya.zaman,
     };
   }
   return sonuc;
@@ -156,12 +165,44 @@ export function kuyrukUyarisiniKapat() {
 }
 
 /**
+ * Gönderim bağlantı yüzünden düştüğünde kurulan emniyet zamanlayıcısı.
+ *
+ * Gönderimi başlatan iki tetik vardı: program açılışı ve bağlantının gelmesi.
+ * Modem yeni kalkarken ilk deneme düşüyor, durum çevrimiçi kalıyor ve ikinci
+ * tetik bir daha gelmiyordu — kuyruk sayfa yenilenene kadar bekliyordu.
+ *
+ * Bekleme artıyor: ilk deneme hızlı olsun ki normal bir kesintide kimse
+ * beklemesin, sunucu uzun süre kapalıysa boş istek yağmuru olmasın.
+ */
+const ILK_BEKLEME = 3_000;
+const EN_UZUN_BEKLEME = 30_000;
+let bekleme = ILK_BEKLEME;
+let denemeZamanlayici: ReturnType<typeof setTimeout> | null = null;
+
+function yenidenDene() {
+  if (denemeZamanlayici) clearTimeout(denemeZamanlayici);
+  denemeZamanlayici = setTimeout(() => {
+    denemeZamanlayici = null;
+    void kuyruguGonder();
+  }, bekleme);
+  bekleme = Math.min(bekleme * 2, EN_UZUN_BEKLEME);
+}
+
+/**
  * Kuyruğu sırayla sunucuya gönderir. Sıra korunuyor: kayıtlar aynı anda
  * gitseydi iki masanın turları birbirine karışabilirdi. Bir kayıt bağlantı
  * yüzünden düşerse kuyruk olduğu yerde duruyor, sonraki denemeyi bekliyor.
  */
 export async function kuyruguGonder() {
-  if (gonderiliyor || !kuyruk.length || !baglantiVar()) return;
+  if (gonderiliyor || !kuyruk.length) return;
+  // Bağlantı yokken tetik yoklamadan gelecek; yine de kuyruk kendi kendini
+  // yoklamayı sürdürüyor ki hiçbir durumda tek tetiğe bağlı kalmasın.
+  if (!baglantiVar()) return yenidenDene();
+  // Bekleyen deneme varsa iptal: aynı kuyruk iki kez gönderilmesin.
+  if (denemeZamanlayici) {
+    clearTimeout(denemeZamanlayici);
+    denemeZamanlayici = null;
+  }
   gonderiliyor = true;
   sonHata = null;
 
@@ -192,7 +233,13 @@ export async function kuyruguGonder() {
         }
       } catch (hata) {
         // Bağlantı yine gitmişse kayıt kuyrukta kalıyor ve sessizce bekliyor.
-        if (baglantiHatasi(hata) || !baglantiVar()) return;
+        // Durum da kopuğa çevriliyor: çevrimiçi sanılırsa "bağlantı geldi"
+        // tetiği bir daha gelmez, kuyruk tek fırsatını kaybederdi.
+        if (baglantiHatasi(hata) || !baglantiVar()) {
+          kopukBildir();
+          yenidenDene();
+          return;
+        }
         // Başka bir hata (silinmiş masa, yetki) tekrar denemekle düzelmiyor:
         // kayıt kuyruktan çıkarılıyor ve sebebi ekranda söyleniyor, yoksa
         // kuyruk sonsuza kadar aynı kaydı deneyip tıkanırdı.
@@ -206,6 +253,8 @@ export async function kuyruguGonder() {
         yaz();
         continue;
       }
+      // Kayıt geçti: bir sonraki kesintide yeniden baştan, hızlı denensin.
+      bekleme = ILK_BEKLEME;
       kuyruk = kuyruk.slice(1);
       yaz();
     }
@@ -235,3 +284,6 @@ export function kuyruguIzle() {
   });
   void kuyruguGonder();
 }
+
+// Modül kendi durumunu bellekte tutuyor: sıcak güncelleme yerine tam yenileme.
+durumluModul(import.meta.hot);

@@ -11514,6 +11514,13 @@ body {
   color: var(--mercan);
 }
 
+/* Sunucuya sorulamayan masa: bekleyen kayıt yok, gösterilen bilgi cihazdaki
+   kopyadan. İki hâl karışmasın diye rozet mercan değil koyu gri yazıyor. */
+.masa-bekliyor.kopya {
+  color: var(--metin);
+  background: rgba(255, 255, 255, 0.88);
+}
+
 /* ---------------------------------------------------------------------------
    MOBİL ARAYÜZ
    Garsonun telefonu. Masaüstü ekranların dar hâli değil, kendi düzeni:
