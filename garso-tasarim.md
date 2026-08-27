@@ -3,12 +3,7 @@
 
 ## 0. SIRADAKİ İŞ (9 Eyl 2026'da güncellendi)
 
-> **Sıradaki iş: `sql/2026-09-08-yerel-yazdirma.sql` Supabase'e çalıştırılacak.**
-> Çalıştırılmadan **hiçbir fiş basılamaz** (`istemci_kimlik` / `kaynak`
-> sütunları yok). Aynı dosya `kuyruktan_al`'a `tip`'i geri koyuyor: 25 Ağu'daki
-> sürümde düşmüş, o yüzden çekmece işi fiş sanılıp boş kâğıt çıkıyordu.
->
-> **Sonra: yerel yazdırmanın gerçek kesintide denenmesi.** 8 Eyl'de kod bitti
+> **Sıradaki iş: yerel yazdırmanın gerçek kesintide denenmesi.** 8 Eyl'de kod bitti
 > ama test yapılamadı: eGZOZ'da yazıcılar **ağ (wifi) yazıcısı**, wifi kapatınca
 > kasa yazıcıyı da kaybediyor. Doğru test modemin WAN kablosunu çıkarmak
 > (wifi ayakta, internet yok). Köprünün de yeniden paketlenmesi gerekiyor —
