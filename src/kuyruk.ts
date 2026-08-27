@@ -111,6 +111,23 @@ export function bekleyenMasalar(): Record<number, MasaOzeti> {
 }
 
 /**
+ * Kuyrukta bekleyen, sunucuya henüz yazılmamış tahsilatlar.
+ *
+ * Kimliği olan tahsilat sunucuda zaten duruyor; kayıt yalnız başka bir alanı
+ * değiştirmek için kuyruğa girmiş olabilir. Onu da saysaydık para kasada iki
+ * kez görünürdü.
+ */
+export function bekleyenTahsilatlar(): { tip: string; tutar: number }[] {
+  const sonuc: { tip: string; tutar: number }[] = [];
+  for (const k of kuyruk) {
+    for (const t of k.veri.tahsilatlar) {
+      if (!t.id) sonuc.push({ tip: t.tip, tutar: t.tutar });
+    }
+  }
+  return sonuc;
+}
+
+/**
  * Bağlantı yokken salonun doldurduğu masalar: cihazın bildiği son hesaplar.
  *
  * Sunucudan adisyon okunamadığı için salon çevrimdışıyken bomboş görünüyordu;

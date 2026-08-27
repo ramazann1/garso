@@ -11,6 +11,7 @@ import {
 } from "./bulut.js";
 import { SURUM } from "./surum.js";
 import { cekmeceyiAc, yaziciDurumu, yaziciyaBas } from "./yazdir.js";
+import { basilanlarDefteri, yerelSunucuBaslat } from "./yerelSunucu.js";
 
 /**
  * Köprünün çalışan yanı.
@@ -26,6 +27,9 @@ const KAYIT_SINIRI = 50;
 
 export async function motorBaslat(ayar, bildir = () => {}) {
   const cihaz = cihazKimligi();
+  // Basılan fişlerin kimlikleri iki yol için ortak: kasa yerelden bastırdıysa
+  // aynı fiş buluttan geldiğinde ikinci kez kâğıda dökülmüyor.
+  const defter = basilanlarDefteri();
   const kayitlar = [];
   const zamanlayicilar = [];
 
@@ -36,6 +40,9 @@ export async function motorBaslat(ayar, bildir = () => {}) {
     bulutHata: "",
     yazicilar: [],
     sonIs: null,
+    /** Kasanın kendi ekranından doğrudan basma yolu açık mı. */
+    yerel: "kapali",
+    yerelPort: null,
   };
 
   const yayinla = () => bildir({ durum: { ...durum, kayitlar: [...kayitlar] } });
@@ -60,11 +67,19 @@ export async function motorBaslat(ayar, bildir = () => {}) {
     const yazicilar = await yazicilariGetir();
 
     for (const is of isler) {
+      // Kasa bu fişi doğrudan bastırmıştı; bulut kaydı yalnız geçmiş için
+      // yazılmış. Basıldı deyip geçiliyor, kâğıt ikinci kez çıkmıyor.
+      if (is.istemci_kimlik && defter.gorulduMu(is.istemci_kimlik)) {
+        await sonucBildir(is.id, true);
+        continue;
+      }
+
       const yazici = yazicilar.get(is.yazici_id);
       const cekmece = is.tip === "cekmece";
       try {
         cekmece ? await cekmeceyiAc(yazici) : await yaziciyaBas(yazici, is.icerik);
         await sonucBildir(is.id, true);
+        defter.isaretle(is.istemci_kimlik);
         durum.sonIs = new Date().toISOString();
         kayitYaz(`${cekmece ? "Çekmece açıldı" : "Basıldı"}: #${is.id} → ${yazici.ad}`);
       } catch (e) {
@@ -142,6 +157,45 @@ export async function motorBaslat(ayar, bildir = () => {}) {
   yazicilariYokla();
   zamanlayicilar.push(setInterval(yazicilariYokla, 30_000));
 
+  /**
+   * Kasanın kendi ekranından gelen fiş: buluta uğramadan doğrudan yazıcıya.
+   * Yazdırma işini buluttan gelen fişle aynı yol yapıyor, tek fark işin nereden
+   * geldiği — kayıt satırında "yerel" diye ayrılıyor ki hangi yolun çalıştığı
+   * görülebilsin.
+   */
+  const yerelBas = async (is) => {
+    const yazicilar = await yazicilariGetir();
+    const yazici = yazicilar.get(is.yaziciId);
+    const cekmece = is.tip === "cekmece";
+    try {
+      cekmece ? await cekmeceyiAc(yazici) : await yaziciyaBas(yazici, is.icerik);
+      durum.sonIs = new Date().toISOString();
+      kayitYaz(`${cekmece ? "Çekmece açıldı" : "Basıldı"} (yerel) → ${yazici?.ad ?? "?"}`);
+      return { yazici: yazici?.ad ?? "" };
+    } catch (e) {
+      kayitYaz(`${cekmece ? "Çekmece açılamadı" : "Basılamadı"} (yerel) → ${e.message}`, "hata");
+      // Yazıcı silinmiş ya da adresi değişmiş olabilir; liste tazelensin.
+      await yazicilariGetir(true).catch(() => {});
+      throw e;
+    }
+  };
+
+  const yerel = yerelSunucuBaslat({
+    port: ayar.yerelPort,
+    bilgi: () => ({ cihaz, surum: SURUM, isletme: oturum.isletme, kod: oturum.kod }),
+    bas: yerelBas,
+    defter,
+    acilinca: (acikPort) => {
+      durum.yerel = "acik";
+      durum.yerelPort = acikPort;
+      kayitYaz(`Yerel yazdırma açık: 127.0.0.1:${acikPort}`);
+    },
+    hataysa: (metin) => {
+      durum.yerel = "kapali";
+      kayitYaz(metin, "hata");
+    },
+  });
+
   // Yedek yoklama: canlı bağlantının kaçırdığı ya da yeniden sıraya alınan
   // fişler burada yakalanıyor.
   zamanlayicilar.push(setInterval(bas, ayar.yoklamaSaniye * 1000));
@@ -155,6 +209,7 @@ export async function motorBaslat(ayar, bildir = () => {}) {
     durdur() {
       for (const z of zamanlayicilar) clearInterval(z);
       zamanlayicilar.length = 0;
+      void yerel.kapat();
     },
 
     /**
@@ -165,6 +220,7 @@ export async function motorBaslat(ayar, bildir = () => {}) {
     async kapat() {
       for (const z of zamanlayicilar) clearInterval(z);
       zamanlayicilar.length = 0;
+      await yerel.kapat();
       await Promise.race([
         kapanisBildir(cihaz).catch(() => {}),
         new Promise((tamam) => setTimeout(tamam, 2000)),

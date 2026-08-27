@@ -1,38 +1,56 @@
 ﻿# GARSO — Teknik Tasarım: Veri Modeli & Ekran Haritası
 *Restoran ve cafe'ler için bulut tabanlı satış ve işletme yönetim sistemi.*
 
-## 0. SIRADAKİ İŞ (8 Eyl 2026'da güncellendi)
+## 0. SIRADAKİ İŞ (9 Eyl 2026'da güncellendi)
 
-> **Sıradaki iş: çevrimdışı ödemenin kasa ekranlarında görünmesi.** Kuyrukta bekleyen
-> tahsilat şu an kasa hareketleri, vardiya ve Satış ekranlarının hiçbirinde
-> sayılmıyor; vardiya kapatılırken çekmecede para var ama sistemde yok, kasiyer
-> yanlış fark yazıyor. Bekleyen ödemeler "bekliyor" işaretiyle sayılara
-> katılacak, **kuyrukta ödeme varken kasa kapatma uyarısı** çıkacak, kayıt
-> sunucuya gidince işaret kalkacak.
+> **Sıradaki iş: `sql/2026-09-08-yerel-yazdirma.sql` Supabase'e çalıştırılacak.**
+> Çalıştırılmadan **hiçbir fiş basılamaz** (`istemci_kimlik` / `kaynak`
+> sütunları yok). Aynı dosya `kuyruktan_al`'a `tip`'i geri koyuyor: 25 Ağu'daki
+> sürümde düşmüş, o yüzden çekmece işi fiş sanılıp boş kâğıt çıkıyordu.
 >
-> **Sonra: köprüye yerel yazdırma dinleyicisi** (`127.0.0.1`). Kasa kendi
-> ekranından bastığı fişi buluta uğratmadan doğrudan köprüye versin; kasanın
-> interneti yokken de kâğıt çıksın. Tarayıcı ile köprü aynı makinede olduğu
-> için sertifika sorunu yok — tarayıcılar `127.0.0.1`'i güvenli sayıyor.
-> Köprü Electron/Node, dinleyici birkaç satır. Kurgu: kasa önce köprüye
-> gönderir, ulaşamazsa eski yol (`yazdirma_kuyrugu`); her fişte kimlik olur ki
-> internet gelince aynı fiş iki kez basılmasın; kayıt yine buluta "yerel
-> basıldı" işaretiyle yazılır, yazdırma geçmişi bozulmaz. İki seanslık iş
-> (köprü tarafı + Garso tarafı).
+> **Sonra: yerel yazdırmanın gerçek kesintide denenmesi.** 8 Eyl'de kod bitti
+> ama test yapılamadı: eGZOZ'da yazıcılar **ağ (wifi) yazıcısı**, wifi kapatınca
+> kasa yazıcıyı da kaybediyor. Doğru test modemin WAN kablosunu çıkarmak
+> (wifi ayakta, internet yok). Köprünün de yeniden paketlenmesi gerekiyor —
+> kasadaki exe eski sürüm.
 >
 > **Sonra: Adisyo'dan alınacak** kasa ekranında görünür "N bekleyen" sayacı.
-> (Kaynak ayrımı 8 Eyl'de yapıldı, aşağıda.)
->
-> **Sonra: servis bedeli bayat sepetten hesaplanıyor.** `servisAlanlari()`
-> kuver/garsoniye **tutarını** her kayıtta yeniden hesaplayıp yazıyor; kuyrukta
-> bekleyen kopya, kendi görmediği ürünleri saymadığı için tutarı eksiltebilir.
-> Karar bayrakları 8 Eyl'de korumaya alındı, tutar hâlâ körü körüne yazılıyor.
+> (Kasa penceresindeki bekleyen ödeme satırı 8 Eyl'de geldi; eksik olan salon
+> üstünde her ekrandan görünen sayaç.)
 >
 > **Sonra: kasa çevrimdışıyken "masa durumları güncel değil" uyarısı.** Salonun
 > tepesinde şerit, o hâldeyken ödeme almaya kalkılınca "bu hesap başka bir
 > cihazdan kapanmış olabilir, doğrulanamıyor" penceresi. Engel değil uyarı.
 >
 > **Ondan sonra: çevrimdışı giriş ve PIN ile kişi değiştirme.**
+>
+> **8 Eyl 2026: üç iş daha bitti.**
+> - **Çevrimdışı ödeme kasada görünüyor.** `bekleyenTahsilatlar()` (kuyruk)
+>   kimliği olmayan — yani sunucuya hiç gitmemiş — tahsilatları veriyor;
+>   `kasaDurumu` bunların kasaya giren tiplerini süzüp `bekleyenNakit`
+>   olarak "kasada olması gereken"e katıyor (para çekmecede, sunucuda
+>   olmaması sayımı değiştirmez). Ödeme tipi listesi önbellekten okunuyor ki
+>   çevrimdışı da süzülebilsin; hiç okunamazsa bekleyen sıfır sayılıyor —
+>   olmayan parayı kasaya yazmak eksik yazmaktan beter. Kasa penceresinde
+>   mercan "Gönderilmeyi bekleyen · N ödeme" satırı, kapatırken "Yine de
+>   kapat / Bekle" uyarısı (engel değil).
+> - **Yerel yazdırma: kasa fişi doğrudan köprüye veriyor.** Köprüde
+>   `src/yerelSunucu.js` — yalnız `127.0.0.1:7423`, `GET /durum` +
+>   `POST /yazdir`. Garso'da `src/yerelYazdirma.ts` (1,5 sn zaman aşımı,
+>   yoklama 30 sn akılda). `kuyrugaEkle` önce köprüye gidiyor; kâğıt çıktıysa
+>   bulut kaydı "basıldı · yerel" yazılıyor, internetsizlikten yazılamazsa
+>   sessiz geçiliyor — işin aslı kâğıt zaten çıktı. Çift basımı `istemci_kimlik`
+>   durduruyor: köprü bastığı kimlikleri 12 saat hatırlıyor, aynı fiş buluttan
+>   gelirse basmadan "basıldı" diyor. Kuyruk ekranında "Kasadan" rozeti,
+>   köprünün durum penceresinde "Yerel yazdırma · Açık" satırı.
+>   **Kazanç sınırlı olduğu bilinerek yapıldı:** ağ yazıcısı kullanan işletmede
+>   yalnız "modem çalışıyor ama dışarısı kesik" durumunu kurtarıyor; USB
+>   yazıcıda internet tamamen gitse de fiş çıkıyor. Ayrıca fiş buluta gidip
+>   dönmediği için mutfağa daha hızlı düşüyor.
+> - **Servis bedeli artık bayat sepetten hesaplanmıyor.** `servisAlanlari()`
+>   yalnız karar bayraklarını yazıyor; tutarı, kalemler yazıldıktan sonra
+>   `servisiTazele()` koyuyor — o ekranın sepetine değil hesabın sunucudaki son
+>   hâline bakıyor. Servis kapalıysa (`servisVar()`) hiç çağrılmıyor.
 >
 > **8 Eyl 2026: üç iş bitti.**
 > - **Başlık alanları artık körü körüne yazılmıyor.** `AdisyonVerisi.bilinenBilgi`

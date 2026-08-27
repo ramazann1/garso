@@ -3,6 +3,7 @@ import { hostname, networkInterfaces } from "node:os";
 import { join } from "node:path";
 import { sunucuBilgisi } from "./sunucu.js";
 import { kokDizin } from "./yerler.js";
+import { VARSAYILAN_PORT } from "./yerelSunucu.js";
 
 /**
  * Ayar dosyasının tam yolu.
@@ -50,6 +51,9 @@ export function ayarlariTamamla(ayar) {
     telefon: ayar.telefon,
     sifre: ayar.sifre,
     yoklamaSaniye: Math.max(Number(ayar.yoklamaSaniye) || 3, 1),
+    // Kasanın kendi ekranından gelen fişlerin dinlendiği yerel port. Başka bir
+    // program aynı portu tutuyorsa dosyadan değiştirilebilsin diye ayarda.
+    yerelPort: Number(ayar.yerelPort) || VARSAYILAN_PORT,
   };
 
   for (const alan of ["telefon", "sifre"]) {

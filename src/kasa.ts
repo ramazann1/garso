@@ -1,4 +1,6 @@
+import { bekleyenTahsilatlar } from "./kuyruk";
 import { nakitGiderToplami } from "./masraflar";
+import { odemeTipleriniGetir } from "./odemeTipleri";
 import { supabase } from "./supabase";
 
 export type Vardiya = {
@@ -32,9 +34,41 @@ export type KasaDurumu = {
   cikis: number;
   /** Vardiya boyunca nakit ödenen giderler; kasadan çıkmış sayılıyor. */
   nakitGider: number;
-  /** Kasada olması gereken: açılış + nakit satış + giriş − çıkış − nakit gider. */
+  /** Cihazda kuyrukta bekleyen, kasaya giren tahsilatların toplamı. */
+  bekleyenNakit: number;
+  /** Kaç tahsilat bekliyor — dökümde ve kapatma uyarısında yazıyor. */
+  bekleyenAdet: number;
+  /**
+   * Kasada olması gereken: açılış + nakit satış + giriş − çıkış − nakit gider.
+   * Bekleyen tahsilat da içinde: para çekmecede, sunucuya yazılmamış olması
+   * sayımı değiştirmiyor.
+   */
   beklenen: number;
 };
+
+/**
+ * Kuyrukta bekleyen tahsilatların kasaya giren kısmı. Tip listesi önbellekten
+ * de gelebiliyor: kasa çevrimdışıyken de doğru süzülsün.
+ */
+async function bekleyenKasaTahsilati() {
+  const bekleyen = bekleyenTahsilatlar();
+  if (!bekleyen.length) return { tutar: 0, adet: 0 };
+
+  let adlar: string[];
+  try {
+    adlar = (await odemeTipleriniGetir(true)).filter((t) => t.kasayaGirer).map((t) => t.ad);
+  } catch {
+    // Tip listesi hiç okunamadıysa süzemiyoruz; olmayan parayı kasaya yazmak
+    // eksik yazmaktan beter, bekleyen tutar sıfır kalıyor.
+    return { tutar: 0, adet: 0 };
+  }
+
+  const kasaya = bekleyen.filter((t) => adlar.includes(t.tip));
+  return {
+    tutar: kasaya.reduce((toplam, t) => toplam + t.tutar, 0),
+    adet: kasaya.length,
+  };
+}
 
 const ALANLAR = `id, acilis, acilis_tutar, acilis_not, kapanis, sayilan_tutar, kapanis_not,
                  acan:acan_id (ad), kapatan:kapatan_id (ad)`;
@@ -83,11 +117,14 @@ export async function kasaDurumu(): Promise<KasaDurumu> {
       giris: 0,
       cikis: 0,
       nakitGider: 0,
+      bekleyenNakit: 0,
+      bekleyenAdet: 0,
       beklenen: 0,
     };
   }
 
   const tipler = await kasayaGirenTipler();
+  const bekleyen = await bekleyenKasaTahsilati();
   const [{ data: hareketVeri }, { data: tahsilatVeri }, nakitGider] = await Promise.all([
     supabase
       .from("kasa_hareketleri")
@@ -127,7 +164,9 @@ export async function kasaDurumu(): Promise<KasaDurumu> {
     giris,
     cikis,
     nakitGider,
-    beklenen: vardiya.acilisTutar + nakitSatis + giris - cikis - nakitGider,
+    bekleyenNakit: bekleyen.tutar,
+    bekleyenAdet: bekleyen.adet,
+    beklenen: vardiya.acilisTutar + nakitSatis + giris - cikis - nakitGider + bekleyen.tutar,
   };
 }
 

@@ -1,5 +1,6 @@
 {
   "telefon": "05001234567",
   "sifre": "teknik-kullanicinin-sifresi",
-  "yoklamaSaniye": 3
+  "yoklamaSaniye": 3,
+  "yerelPort": 7423
 }

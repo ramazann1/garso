@@ -2,6 +2,7 @@ import { supabase } from "./supabase";
 import { fisIcerigi, fisPaketi } from "./fis";
 import type { AdisyonVerisi } from "./adisyonlar";
 import type { SepetKalemi } from "./types";
+import { yerelBas } from "./yerelYazdirma";
 
 /** Yazıcının nasıl bağlandığı — ekranlarda bu sırayla listeleniyor. */
 export const BAGLANTILAR = [
@@ -431,16 +432,42 @@ export async function urunIstasyonlari() {
   return harita;
 }
 
+/**
+ * Fişi yazıcıya ulaştırma.
+ *
+ * Önce kasadaki köprüye doğrudan veriliyor: kâğıt kasanın interneti olmasa da
+ * çıksın. Kâğıt çıktıysa bulut kaydı "basıldı · yerel" olarak yazılıyor —
+ * yazdırma geçmişi eksik kalmasın. O kayıt internetsizlikten yazılamazsa
+ * sessiz geçiliyor; işin aslı olan kâğıt zaten çıktı.
+ *
+ * Köprü yoksa (tablet, telefon, kapalı köprü) ya da yazıcı cevap vermezse eski
+ * yol işliyor: fiş kuyrukta bekliyor, köprü buluttan alıp basıyor. Her iki
+ * kayıt da aynı kimliği taşıyor; köprü aynı kimliği ikinci kez basmıyor.
+ */
 async function kuyrugaEkle(
   tip: FisSablonu["tip"] | "cekmece",
   adisyonId: number | undefined,
   yaziciId: number,
   icerik: string
 ) {
-  const { error } = await supabase
-    .from("yazdirma_kuyrugu")
-    .insert({ tip, adisyon_id: adisyonId ?? null, yazici_id: yaziciId, icerik });
-  if (error) throw new Error(`Fiş kuyruğa yazılamadı: ${error.message}`);
+  const kimlik = crypto.randomUUID();
+  const yerel = await yerelBas({ kimlik, yaziciId, tip, icerik });
+
+  const satir = {
+    tip,
+    adisyon_id: adisyonId ?? null,
+    yazici_id: yaziciId,
+    icerik,
+    istemci_kimlik: kimlik,
+    kaynak: yerel.basildi ? "yerel" : "bulut",
+    ...(yerel.basildi ? { durum: "basildi", basilma: new Date().toISOString() } : {}),
+  };
+
+  const { error } = await supabase.from("yazdirma_kuyrugu").insert(satir);
+  if (error) {
+    if (yerel.basildi) return; // kâğıt çıktı; kayıt bağlantı gelince değil, hiç yazılmıyor
+    throw new Error(`Fiş kuyruğa yazılamadı: ${error.message}`);
+  }
 }
 
 /**
@@ -586,6 +613,8 @@ export type KuyrukSatiri = {
   basilma: string | null;
   yaziciAd: string | null;
   adisyonNo: number | null;
+  /** Fiş kuyruktan mı basıldı, kasadan doğrudan mı verildi. */
+  kaynak: "bulut" | "yerel";
 };
 
 /**
@@ -599,7 +628,7 @@ export async function kuyrugaBak(
   let sorgu = supabase
     .from("yazdirma_kuyrugu")
     .select(
-      "id, tip, durum, icerik, deneme, hata, olusturma, basilma, yazicilar (ad), adisyonlar (adisyon_no)"
+      "id, tip, durum, icerik, deneme, hata, olusturma, basilma, kaynak, yazicilar (ad), adisyonlar (adisyon_no)"
     )
     .order("olusturma", { ascending: false })
     .limit(sinir);
@@ -618,6 +647,7 @@ export async function kuyrugaBak(
     basilma: s.basilma ?? null,
     yaziciAd: s.yazicilar?.ad ?? null,
     adisyonNo: s.adisyonlar?.adisyon_no ?? null,
+    kaynak: s.kaynak === "yerel" ? "yerel" : "bulut",
   }));
 }
 

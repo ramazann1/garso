@@ -69,6 +69,16 @@ function ciz(durum) {
       bagli ? "acik" : "kapali",
       bagli ? "Bağlı" : "Bağlantı yok",
       bagli ? "Fişler anında alınıyor" : durum.bulutHata || "Yeniden deneniyor"
+    ),
+    // Kasanın kendi ekranından doğrudan basma yolu. İnternet gitse de bu yol
+    // ayakta kalıyor; açık olup olmadığı bakılan ilk yer burası olmalı.
+    satir(
+      "Yerel yazdırma",
+      durum.yerel === "acik" ? "acik" : "kapali",
+      durum.yerel === "acik" ? "Açık" : "Kapalı",
+      durum.yerel === "acik"
+        ? `Bu kasanın fişleri internetsiz de basılıyor · port ${durum.yerelPort}`
+        : "Fişler yalnız internet varken basılabilir"
     )
   );
 
@@ -106,6 +116,7 @@ function ozetMetni() {
     `Cihaz   : ${d.cihaz}`,
     `Sürüm   : ${d.surum}`,
     `Sunucu  : ${d.bulut === "bagli" ? "bağlı" : `bağlantı yok (${d.bulutHata || "sebep yok"})`}`,
+    `Yerel   : ${d.yerel === "acik" ? `açık (port ${d.yerelPort})` : "kapalı"}`,
     "Yazıcılar:",
     ...(d.yazicilar.length
       ? d.yazicilar.map((y) => `  ${y.ad}: ${y.durum}${y.hata ? ` (${y.hata})` : ""}`)

@@ -136,6 +136,10 @@ export default function YazdirmaKuyrugu() {
                       <td className="hucre-no">{s.adisyonNo ? `#${s.adisyonNo}` : "—"}</td>
                       <td>
                         <span className={DURUM_SINIFI[s.durum]}>{DURUM_ADI[s.durum]}</span>
+                        {/* Kasanın doğrudan bastırdığı fiş kuyrukta hiç
+                            beklemedi; internet yokken de çıktığı buradan
+                            anlaşılıyor. */}
+                        {s.kaynak === "yerel" && <span className="rozet">Kasadan</span>}
                       </td>
                       <td>{s.hata ?? (s.deneme > 0 ? `${s.deneme} deneme` : "—")}</td>
                       <td className="sag kuyruk-islem">

@@ -9,7 +9,7 @@ import { cekmeceyiAc, iptalFisiYaz, mutfakFisiYaz } from "./yazicilar";
 import { kasayaGirerMi } from "./odemeTipleri";
 import { adisyonuCariyeYaz } from "./cari";
 import { hesapKopyasiYaz, salonKopyasiYaz } from "./hesapKopyasi";
-import { servisTutarlari } from "./servis";
+import { servisTutarlari, servisVar } from "./servis";
 import type { ServisGirdisi } from "./servis";
 import type { DenetimIslemi, DenetimKaydi } from "./denetim";
 import type { SepetKalemi, Tahsilat } from "./types";
@@ -951,22 +951,21 @@ function degismis(veri: AdisyonVerisi, deger: unknown, onceki: unknown) {
 }
 
 /**
- * Servis bedelinin sütunları. Tutar her kayıtta yeniden hesaplanıp yazılıyor:
- * masaya bir ürün daha girince yüzdeli garsoniye de büyümeli. Kapanmış adisyonda
- * kayıt donuyor, çünkü kapandıktan sonra yeni bir kayıt geçmiyor.
+ * Servis bedelinin sütunları — yalnız karar bayrakları.
+ *
+ * Tutar buradan yazılmıyor: ekrandaki sepetten hesaplansaydı kuyrukta bekleyen
+ * bayat kopya, kendi görmediği ürünleri saymadığı için tutarı eksiltirdi. Tutarı
+ * kalemler yazıldıktan sonra `servisiTazele` koyuyor; o, ekranın sepetine değil
+ * hesabın sunucudaki son hâline bakıyor.
  */
 function servisAlanlari(veri: AdisyonVerisi) {
-  const ozet = adisyonOzeti(veri);
   const bilinen = veri.bilinenBilgi;
   const kuver = veri.kuverUygula ?? null;
   const garsoniye = veri.garsoniyeUygula ?? null;
 
-  const alanlar: Record<string, unknown> = {
-    kuver_tutar: ozet.kuver,
-    garsoniye_tutar: ozet.garsoniye,
-  };
-  // Karar bayrakları tutarlardan ayrı: ekran kuverı elle kaldırmadıysa başka
-  // bir cihazın kararı bu kayıtla geri alınmıyor.
+  const alanlar: Record<string, unknown> = {};
+  // Ekran kuverı elle kaldırmadıysa başka bir cihazın kararı bu kayıtla geri
+  // alınmıyor.
   if (degismis(veri, kuver, bilinen?.kuverUygula ?? null)) alanlar.kuver_uygula = kuver;
   if (degismis(veri, garsoniye, bilinen?.garsoniyeUygula ?? null))
     alanlar.garsoniye_uygula = garsoniye;
@@ -1211,6 +1210,12 @@ async function kalemleriYaz(
       )
       .catch((e) => console.error("İptal fişi kuyruğa yazılamadı:", e));
   }
+
+  // Kuver ve garsoniye kalemler yazıldıktan sonra hesaplanıyor: yüzdeli
+  // garsoniye bu turda eklenen ürünleri de saysın, kuyrukta bekleyen bayat
+  // kopya ise arada başka cihazdan girilen ürünleri düşürmesin. Servis
+  // kullanmayan işletmede boşuna sunucuya gidilmiyor.
+  if (servisVar()) await servisiTazele(adisyonId);
 
   // Tahsilatlar eskiden her kayıtta silinip yeniden yazılıyordu; kimlik
   // korunmadığı için "şu tahsilat silindi" diye bir olay da yoktu. Artık

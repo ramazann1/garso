@@ -10,10 +10,12 @@ import {
   LockOpen,
   Minus,
   Plus,
+  UploadCloud,
   X,
 } from "lucide-react";
 import OnayModal from "./OnayModal";
 import { ayarlar } from "../isletmeAyarlari";
+import { useKuyruk } from "../kuyruk";
 import { yetkiVar } from "../oturum";
 import { paraGoster, paraSayi, paraYaz } from "../para";
 import { kisaAd } from "../personel";
@@ -35,6 +37,8 @@ const BOS: KasaDurumu = {
   giris: 0,
   cikis: 0,
   nakitGider: 0,
+  bekleyenNakit: 0,
+  bekleyenAdet: 0,
   beklenen: 0,
 };
 
@@ -60,11 +64,15 @@ export default function Kasa() {
   // Hatırlatma ertelendiğinde bu ana kadar susuyor.
   const [ertelemeSonu, setErtelemeSonu] = useState(0);
 
+  // Kuyruk boşaldıkça bekleyen tahsilat kasa dökümünden düşmeli; sayı değişince
+  // döküm kendiliğinden tazeleniyor.
+  const { bekleyen } = useKuyruk();
+
   const yenile = () => kasaDurumu().then(setDurum);
 
   useEffect(() => {
     yenile();
-  }, []);
+  }, [bekleyen]);
 
   // Düğmedeki süre yazısı dursun diye değil, ilerlesin diye: yarım dakikada bir
   // kendini yeniliyor. Kapanış hatırlatması da bu sayaçla uyanıyor.
@@ -150,6 +158,9 @@ function KasaPenceresi({
   const [hareketTipi, setHareketTipi] = useState<"giris" | "cikis" | null>(null);
   const [uyari, setUyari] = useState("");
   const [hata, setHata] = useState("");
+  // Bekleyen ödeme uyarısı bir kez çıkıyor; kasiyer "yine de kapat" derse
+  // sayım bilerek yapılmış sayılıyor. Bekleyen sayım formunu tutan kapanış.
+  const [bekleyenSorusu, setBekleyenSorusu] = useState<(() => void) | null>(null);
 
   const vardiya = durum.vardiya;
   const paraYetkisi = ayarlar().paraHareketiAcik && yetkiVar("kasa.para");
@@ -202,8 +213,19 @@ function KasaPenceresi({
                 );
                 return;
               }
-              await isle(() => kasaKapat(vardiya.id, sayilan, not));
-              setKapaniyor(false);
+
+              const kapat = async () => {
+                await isle(() => kasaKapat(vardiya.id, sayilan, not));
+                setKapaniyor(false);
+              };
+
+              // Kuyrukta ödeme varken sayım tartışmalı: para çekmecede ama
+              // kayıt henüz sunucuya gitmedi, başka bir terminal onu görmüyor.
+              if (durum.bekleyenAdet > 0) {
+                setBekleyenSorusu(() => kapat);
+                return;
+              }
+              await kapat();
             }}
           />
         ) : (
@@ -232,6 +254,16 @@ function KasaPenceresi({
                 <div>
                   <dt>Kasadan çıkan</dt>
                   <dd className="azalan">−{paraGoster(durum.cikis)}</dd>
+                </div>
+              )}
+              {durum.bekleyenAdet > 0 && (
+                <div className="kasa-bekleyen">
+                  <dt>
+                    <UploadCloud size={15} />
+                    Gönderilmeyi bekleyen
+                    <em>{durum.bekleyenAdet} ödeme</em>
+                  </dt>
+                  <dd>{paraGoster(durum.bekleyenNakit)}</dd>
                 </div>
               )}
               {durum.nakitGider > 0 && (
@@ -314,6 +346,24 @@ function KasaPenceresi({
       </div>
 
       {uyari && <OnayModal mesaj={uyari} tekTus onKapat={() => setUyari("")} />}
+
+      {bekleyenSorusu && (
+        <OnayModal
+          baslik="Gönderilmemiş ödeme var"
+          ikon={<UploadCloud size={20} />}
+          mesaj={`Çevrimdışı alınan ${durum.bekleyenAdet} ödeme (${paraGoster(
+            durum.bekleyenNakit
+          )}) hâlâ cihazda bekliyor. Para kasada sayılıyor ama kayıtlar sunucuya gidene kadar raporlarda görünmez. Bağlantı gelip kuyruk boşaldıktan sonra kapatmak daha güvenli.`}
+          onayMetni="Yine de kapat"
+          iptalMetni="Bekle"
+          onOnay={() => {
+            const kapat = bekleyenSorusu;
+            setBekleyenSorusu(null);
+            void kapat();
+          }}
+          onKapat={() => setBekleyenSorusu(null)}
+        />
+      )}
     </div>
   );
 }

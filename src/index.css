@@ -7949,6 +7949,27 @@ body {
   font-variant-numeric: tabular-nums;
 }
 
+/* Cihazda bekleyen tahsilat: para kasada var, kayıt sunucuda yok. Mercan
+   işaret geçici olduğunu söylüyor, kuyruk boşalınca satır kayboluyor. */
+.kasa-dokum .kasa-bekleyen dt {
+  display: flex;
+  align-items: center;
+  gap: 7px;
+  color: var(--mercan);
+  font-weight: 600;
+}
+
+.kasa-dokum .kasa-bekleyen em {
+  font-style: normal;
+  font-size: 13px;
+  font-weight: 500;
+  color: var(--soluk);
+}
+
+.kasa-dokum .kasa-bekleyen dd {
+  color: var(--mercan);
+}
+
 /* Beklenen tutar dökümün sonucu; diğer satırlardan büyük ve koyu duruyor. */
 .kasa-dokum .kasa-beklenen {
   border-bottom: none;
