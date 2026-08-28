@@ -1,114 +1,229 @@
 /* QR menü — müşterinin telefonunda açılan vitrin.
-   POS ekranlarının sıkışık liste estetiği buraya girmiyor: geniş boşluk,
-   iri başlık, yumuşak geçiş. Renk paleti aynı kalıyor. */
 
-.qr {
-  max-width: 620px;
-  margin: 0 auto;
-  padding: 0 22px 64px;
+   POS ekranları krem zeminde bir araç; burası beyaz zeminde bir vitrin.
+   Renkli kalabalık yok: taşıyıcı unsur tipografi ve boşluk, tek vurgu mercan.
+   Fotoğraf varsa öne çıkıyor, yoksa sayfa yine de tam görünüyor. */
+
+.qr-sayfa {
+  --qr-cizgi: #ece7e1;
+  --qr-yumusak: #f7f4f1;
+  min-height: 100vh;
+  background: #fff;
   color: var(--metin);
+  padding-bottom: 72px;
 }
 
+/* Lastik gibi esneyen kaydırmada altta krem zemin görünmesin. */
+body:has(.qr-sayfa) {
+  background: #fff;
+}
+
+/* --- Tepe --- */
+
 .qr-tepe {
-  padding: 56px 0 32px;
+  padding: 58px 22px 34px;
   text-align: center;
+  /* Sayfanın açılışı çırılçıplak beyaz olmasın: adın arkasında çok hafif
+     sıcak bir hâle var, aşağı inerken beyaza karışıyor. */
+  background: radial-gradient(120% 90% at 50% 0%, #fff4f0 0%, #fff 62%);
+}
+
+/* Adın üstündeki küçük "MENÜ" satırı — sayfanın ne olduğunu ilk bakışta
+   söylüyor ve başlığa nefes veriyor. */
+.qr-tepe-etiket {
+  display: block;
+  font-size: 12.5px;
+  font-weight: 600;
+  letter-spacing: 3px;
+  text-transform: uppercase;
+  color: var(--mercan);
 }
 
 .qr-tepe h1 {
-  font-size: 38px;
+  margin-top: 12px;
+  font-size: 36px;
   font-weight: 600;
-  letter-spacing: -0.5px;
-  line-height: 1.2;
+  letter-spacing: -0.8px;
+  line-height: 1.15;
+}
+
+/* İki ucu inceleyen kısa çizgi: ad ile adres arasını ayırıyor. */
+.qr-tepe-suslu {
+  display: block;
+  width: 64px;
+  height: 2px;
+  margin: 16px auto 0;
+  border-radius: 2px;
+  background: linear-gradient(90deg, transparent, var(--mercan), transparent);
 }
 
 .qr-adres {
-  margin-top: 12px;
+  margin-top: 14px;
   display: inline-flex;
   align-items: center;
   gap: 6px;
-  font-size: 14px;
+  font-size: 13.5px;
   color: var(--soluk);
 }
 
-/* Kategori şeridi tepeye yapışıyor: uzun menüde müşteri bölüm aramak için
-   başa dönmek zorunda kalmasın. */
+/* Kapak girilmişse tam genişlik fotoğraf, adı üstüne biniyor. */
+.qr-tepe.kapakli {
+  position: relative;
+  padding: 0;
+  overflow: hidden;
+  background: none;
+}
+
+.qr-kapak {
+  display: block;
+  width: 100%;
+  height: 260px;
+  object-fit: cover;
+}
+
+.qr-tepe.kapakli .qr-tepe-yazi {
+  position: absolute;
+  inset: auto 0 0 0;
+  padding: 60px 22px 24px;
+  color: #fff;
+  background: linear-gradient(to top, rgba(0, 0, 0, 0.68), transparent);
+}
+
+.qr-tepe.kapakli .qr-adres {
+  color: #f2ece8;
+}
+
+.qr-tepe.kapakli .qr-tepe-etiket {
+  color: #ffd9cd;
+}
+
+.qr-tepe.kapakli .qr-tepe-suslu {
+  margin-top: 12px;
+  background: linear-gradient(90deg, transparent, #ffd9cd, transparent);
+}
+
+/* --- Kategori şeridi --- */
+
+/* Şerit hap düğme değil altı çizili sekme: renkli baloncuklar vitrinin
+   önüne geçiyordu, ince çizgi sayfayı sakin bırakıyor. */
 .qr-serit {
   position: sticky;
   top: 0;
-  z-index: 2;
+  z-index: 3;
+  background: rgba(255, 255, 255, 0.92);
+  backdrop-filter: blur(10px);
+  border-bottom: 1px solid var(--qr-cizgi);
+}
+
+.qr-serit-ic {
+  max-width: 640px;
+  margin: 0 auto;
   display: flex;
-  gap: 8px;
+  gap: 22px;
   overflow-x: auto;
-  padding: 12px 0;
-  background: var(--zemin);
+  padding: 0 22px;
   scrollbar-width: none;
 }
 
-.qr-serit::-webkit-scrollbar {
+.qr-serit-ic::-webkit-scrollbar {
   display: none;
 }
 
 .qr-serit button {
   flex: 0 0 auto;
-  border: 1px solid #e6ded3;
-  background: var(--kart);
-  color: var(--metin);
+  position: relative;
+  border: 0;
+  background: none;
+  color: var(--soluk);
   font: inherit;
-  font-size: 14px;
-  padding: 9px 18px;
-  border-radius: 999px;
+  font-size: 14.5px;
+  padding: 15px 0 13px;
   cursor: pointer;
-  transition: background 0.2s, color 0.2s, border-color 0.2s;
+  white-space: nowrap;
+  transition: color 0.2s;
 }
 
 .qr-serit button.acik {
-  background: var(--mercan);
-  border-color: var(--mercan);
-  color: #fff;
+  color: var(--metin);
+  font-weight: 500;
 }
 
-.qr-govde section {
-  padding-top: 44px;
-  scroll-margin-top: 66px;
-}
-
-.qr-govde h2 {
-  font-size: 24px;
-  font-weight: 600;
-  margin-bottom: 6px;
-}
-
-.qr-govde h2::after {
+.qr-serit button.acik::after {
   content: "";
-  display: block;
-  width: 42px;
-  height: 3px;
-  margin-top: 10px;
-  border-radius: 2px;
+  position: absolute;
+  inset: auto 0 0 0;
+  height: 2px;
+  border-radius: 2px 2px 0 0;
   background: var(--mercan);
 }
 
-.qr-urun {
-  display: flex;
-  align-items: baseline;
-  gap: 16px;
-  padding: 18px 2px;
-  border-bottom: 1px solid #eee6da;
+/* --- Bölümler --- */
+
+.qr-govde {
+  max-width: 640px;
+  margin: 0 auto;
+  padding: 0 22px;
 }
 
-.qr-urun-ad {
+.qr-bolum {
+  padding-top: 46px;
+  scroll-margin-top: 62px;
+}
+
+/* Başlığın altına kalın mercan çubuk yerine, adın hizasında sağa uzanan
+   ince bir çizgi: bölümü ayırıyor ama gürültü yapmıyor. */
+.qr-bolum-basi {
+  display: flex;
+  align-items: center;
+  gap: 16px;
+}
+
+.qr-bolum h2 {
+  font-size: 25px;
+  font-weight: 600;
+  letter-spacing: -0.4px;
+  flex-shrink: 0;
+}
+
+.qr-cizik {
   flex: 1;
+  height: 1px;
+  background: linear-gradient(90deg, var(--mercan), var(--qr-cizgi) 42%);
+}
+
+.qr-bolum-not {
+  margin-top: 12px;
+  font-size: 14px;
+  line-height: 1.5;
+  color: var(--soluk);
+}
+
+/* --- Ortak ürün parçaları --- */
+
+.qr-ad {
   font-size: 17px;
+  font-weight: 500;
+  line-height: 1.35;
+}
+
+.qr-tanitim {
+  margin-top: 5px;
+  font-size: 14px;
+  line-height: 1.5;
+  color: var(--soluk);
+  /* Kapalı hâlde iki satır: liste ritmi bozulmasın, gerisi açılınca okunuyor. */
+  display: -webkit-box;
+  -webkit-line-clamp: 2;
+  -webkit-box-orient: vertical;
+  overflow: hidden;
 }
 
 .qr-fiyatlar {
   display: flex;
   gap: 18px;
-  text-align: right;
+  flex-shrink: 0;
 }
 
-/* Tek fiyatlı üründe sadece rakam; birden çok porsiyonda üstünde adı
-   (Tam, Yarım) küçük ama okunur bir tonda duruyor. */
 .qr-fiyat {
   display: flex;
   flex-direction: column;
@@ -124,6 +239,277 @@
   font-weight: 400;
   color: var(--soluk);
 }
+
+.qr-rozet {
+  display: inline-block;
+  margin-left: 8px;
+  padding: 3px 9px;
+  border-radius: 999px;
+  font-size: 12.5px;
+  font-weight: 500;
+  vertical-align: middle;
+  background: var(--qr-yumusak);
+  color: var(--metin);
+}
+
+.qr-rozet.yeni,
+.qr-rozet.populer,
+.qr-rozet.sef,
+.qr-rozet.aci {
+  background: #fff1ec;
+  color: #c74e2c;
+}
+
+.qr-rozet.bitti {
+  background: #ecebe9;
+  color: #5c5c5c;
+}
+
+/* Tükenen ürün listeden silinmiyor: soluklaşıyor ama okunur kalıyor. */
+.qr-satir.tukendi .qr-ad,
+.qr-satir.tukendi .qr-fiyatlar,
+.qr-kart.tukendi .qr-ad,
+.qr-kart.tukendi .qr-fiyatlar {
+  color: #8a8a8a;
+}
+
+.qr-kart.tukendi .qr-gorsel img,
+.qr-kart.tukendi .qr-gorsel video {
+  filter: grayscale(0.7);
+  opacity: 0.75;
+}
+
+.qr-ok {
+  flex-shrink: 0;
+  color: var(--soluk);
+  transition: transform 0.2s;
+}
+
+.acik .qr-ok {
+  transform: rotate(180deg);
+}
+
+/* --- Görselsiz ürün: liste satırı --- */
+
+.qr-liste {
+  margin-top: 8px;
+}
+
+.qr-satir {
+  border-bottom: 1px solid var(--qr-cizgi);
+}
+
+.qr-satir-ust {
+  width: 100%;
+  display: flex;
+  align-items: flex-start;
+  gap: 16px;
+  padding: 18px 2px;
+  background: none;
+  border: 0;
+  font: inherit;
+  color: inherit;
+  text-align: left;
+  cursor: pointer;
+}
+
+.qr-satir-ust:disabled {
+  cursor: default;
+}
+
+.qr-satir-yazi {
+  flex: 1;
+  min-width: 0;
+}
+
+/* --- Görselli ürün: kart --- */
+
+/* Vitrin her zaman iki sütun: telefonda tek sütun kart fazla iri kalıyor,
+   ikişerli dizilim menüyü bir bakışta gösteriyor. */
+.qr-vitrin {
+  margin-top: 22px;
+  display: grid;
+  grid-template-columns: 1fr 1fr;
+  gap: 16px;
+}
+
+.qr-vitrin .qr-ad {
+  font-size: 16px;
+}
+
+.qr-vitrin .qr-fiyat {
+  font-size: 16px;
+}
+
+.qr-vitrin .qr-kart-yazi {
+  padding: 12px 13px 14px;
+}
+
+/* Açılan kart iki sütunda dar kalıyor; detay için satırın tamamını alıyor. */
+.qr-vitrin .qr-kart.acik {
+  grid-column: 1 / -1;
+}
+
+/* Karma bölümde görselliler yatay kayan şeritte öne çıkıyor, kalanı
+   altındaki listede duruyor. */
+.qr-one-cikan {
+  margin: 22px -22px 10px;
+  padding: 0 22px 4px;
+  display: flex;
+  gap: 16px;
+  overflow-x: auto;
+  scroll-snap-type: x mandatory;
+  scrollbar-width: none;
+}
+
+.qr-one-cikan::-webkit-scrollbar {
+  display: none;
+}
+
+.qr-kart {
+  border: 1px solid var(--qr-cizgi);
+  border-radius: 16px;
+  overflow: hidden;
+  background: #fff;
+}
+
+.qr-kart.dar {
+  flex: 0 0 250px;
+  scroll-snap-align: start;
+}
+
+/* Açılan kart şeritte de listede de kendi genişliğini koruyor;
+   detay içeride akıyor. */
+.qr-kart.acik {
+  border-color: #ded6cd;
+}
+
+.qr-kart-ust {
+  width: 100%;
+  display: block;
+  padding: 0;
+  background: none;
+  border: 0;
+  font: inherit;
+  color: inherit;
+  text-align: left;
+  cursor: pointer;
+}
+
+.qr-kart-ust:disabled {
+  cursor: default;
+}
+
+.qr-gorsel {
+  background: var(--qr-yumusak);
+  aspect-ratio: 4 / 3;
+}
+
+.qr-gorsel img,
+.qr-gorsel video {
+  width: 100%;
+  height: 100%;
+  object-fit: cover;
+  display: block;
+}
+
+.qr-kart-yazi {
+  padding: 14px 16px 16px;
+}
+
+.qr-kart-alt {
+  margin-top: 12px;
+  display: flex;
+  align-items: flex-end;
+  justify-content: space-between;
+  gap: 12px;
+}
+
+/* --- Satırın içinde açılan detay --- */
+
+.qr-detay {
+  padding: 2px 2px 20px;
+  animation: qr-acil 0.18s ease-out;
+}
+
+.qr-kart .qr-detay {
+  padding: 0 16px 18px;
+  border-top: 1px solid var(--qr-cizgi);
+  margin-top: 2px;
+  padding-top: 16px;
+}
+
+@keyframes qr-acil {
+  from {
+    opacity: 0;
+    transform: translateY(-4px);
+  }
+}
+
+.qr-detay-yazi {
+  font-size: 15px;
+  line-height: 1.6;
+  color: var(--metin);
+}
+
+.qr-medya-serit {
+  display: flex;
+  gap: 10px;
+  overflow-x: auto;
+  margin-bottom: 14px;
+  scrollbar-width: none;
+}
+
+.qr-medya-serit::-webkit-scrollbar {
+  display: none;
+}
+
+.qr-medya-serit img,
+.qr-medya-serit video {
+  flex: 0 0 auto;
+  width: 220px;
+  height: 150px;
+  object-fit: cover;
+  border-radius: 12px;
+  background: var(--qr-yumusak);
+}
+
+.qr-kunye {
+  margin-top: 14px;
+  display: flex;
+  flex-wrap: wrap;
+  gap: 8px 18px;
+  font-size: 14px;
+  color: var(--soluk);
+}
+
+.qr-kunye span {
+  display: inline-flex;
+  align-items: center;
+  gap: 6px;
+}
+
+.qr-alerjen {
+  margin-top: 14px;
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  gap: 8px;
+}
+
+.qr-alerjen-baslik {
+  font-size: 14px;
+  color: var(--soluk);
+}
+
+.qr-alerjen-rozet {
+  padding: 4px 10px;
+  border-radius: 999px;
+  border: 1px solid var(--qr-cizgi);
+  font-size: 13px;
+}
+
+/* --- Kenar durumları --- */
 
 .qr-bos,
 .qr-dip {

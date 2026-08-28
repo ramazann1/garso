@@ -1,15 +1,31 @@
 ﻿# GARSO — Teknik Tasarım: Veri Modeli & Ekran Haritası
 *Restoran ve cafe'ler için bulut tabanlı satış ve işletme yönetim sistemi.*
 
-## 0. SIRADAKİ İŞ (10 Eyl 2026'da güncellendi)
+## 0. SIRADAKİ İŞ (11 Eyl 2026'da güncellendi)
 
-> **Sıradaki iş: QR menü sayfasının baştan tasarımı.** Veri ve giriş hazır;
-> kalan tek adım müşterinin gördüğü sayfa. Beyaz zemin + mercan vurgu, taşıyıcı
-> unsur tipografi ve boşluk. **Kademeli zenginlik:** medya yoksa zarif liste,
-> bazı ürünlerde varsa onlar öne çıkan kart olur, hepsinde varsa tam vitrin.
-> Ürün detayı ayrı modal değil satırın içinde açılıyor; künye (dakika/kalori/
-> gram), alerjen rozetleri, etiket rozeti ve "tükendi" hâli çizilecek. Bugünkü
-> `QrMenu.tsx` ve `qrMenu.css` atılıp yeniden yazılacak.
+> **Sıradaki iş: Ramazan'ın eski menü projesine bakmak.** 11 Eyl'de seans
+> sonunda çıktı: daha önce üzerinde çalıştığı ayrı bir menü projesi varmış,
+> onun entegre edilip edilemeyeceğini konuşacağız. **Ramazan'a hatırlat:
+> projenin klasör yolunu, GitHub adresini ya da canlı adresini istiyoruz.**
+> Bakılınca karar verilecek: kodu olduğu gibi almak (ancak React+TypeScript
+> ise ve veri yapısı uyuyorsa) mı, yoksa yalnız görünümünü alıp Garso'nun
+> `qr_menu` verisine bağlamak mı. İkincisi muhtemelen daha temiz — bugünkü
+> sayfada kademeli zenginlik, tükendi, alerjen gibi Garso'ya özel işler var,
+> onlar kaybedilmemeli.
+>
+> **11 Eyl 2026: QR menü sayfası baştan yazıldı.** `QrMenu.tsx` ve
+> `qrMenu.css` atılıp yeniden yazıldı. Zemin beyaz, tek vurgu mercan.
+> **Kademeli zenginlik** çalışıyor: kategori kendi içine bakıyor — hiç görsel
+> yoksa liste, hepsinde varsa iki sütunlu vitrin, arada kalıyorsa görselliler
+> yatay kayan kart olarak öne çıkıp kalanı liste sürüyor. Ürün detayı ayrı
+> pencere değil satırın içinde açılıyor (ek görseller, tanıtım yazısı,
+> dk/kcal/gr künyesi, alerjen rozetleri); gösterecek bir şey yoksa satır
+> tıklanmıyor. Etiket rozeti adın yanında, tükenen ürün silinmiyor soluklaşıp
+> "Bugün yok" alıyor. Tepede küçük aralıklı "MENÜ" satırı + ad + iki ucu
+> silinen mercan çizgi, arkada çok hafif sıcak hâle; kategori şeridi hap düğme
+> değil altı çizili sekme, yarı saydam ve arkası bulanık. Kapak varsa tam
+> genişlik fotoğrafın üstünde aynı düzen. Vitrin her satırda iki ürün; açılan
+> kart satırın tamamına yayılıyor.
 >
 > **Sonra: kategori ve kapak görsellerinin girişi.** Veritabanında alanlar var
 > (`kategoriler.gorsel`, `kategoriler.aciklama`, `isletme_ayarlari.qr_menu_kapaklar`)
