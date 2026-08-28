@@ -8,6 +8,7 @@ import {
   menuMaliyeti,
   porsiyonFiyat,
   varsayilanBirim,
+  bosMenuAlanlari,
 } from "../menu";
 import { paraMetin, paraSayi, paraYaz } from "../para";
 import type {
@@ -151,6 +152,7 @@ export default function KampanyaSekmesi({
 
     const temel = duzenlenen?.porsiyonlar[0];
     const menu: MenuUrun = {
+      ...bosMenuAlanlari(),
       ...duzenlenen,
       favori: duzenlenen?.favori ?? false,
       satistaGorunur: duzenlenen?.satistaGorunur ?? true,

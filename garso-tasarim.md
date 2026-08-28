@@ -1,28 +1,47 @@
 ﻿# GARSO — Teknik Tasarım: Veri Modeli & Ekran Haritası
 *Restoran ve cafe'ler için bulut tabanlı satış ve işletme yönetim sistemi.*
 
-## 0. SIRADAKİ İŞ (9 Eyl 2026'da güncellendi)
+## 0. SIRADAKİ İŞ (10 Eyl 2026'da güncellendi)
 
-> **Sıradaki iş: QR menü — salt okunur menü sayfası.** Müşteri masadaki karekodu
-> okutuyor, menüyü telefonunda görüyor. İlk sürümde sipariş yok, sadece menü.
-> Tasarlanacak üç parça: (1) `qr_menu(kod)` adında, satır güvenliğini aşan ve
-> yalnız satışta görünür kategori + ürün + fiyat döndüren veritabanı fonksiyonu
-> — tablolara "herkes okuyabilir" izni verilmiyor; (2) giriş kapısının dışında
-> halka açık `/m/:kod` sayfası; (3) İşletme Ayarları'nda açma/kapama, adres ve
-> yazdırılabilir karekod (`qrcode` paketi zaten kurulu).
+> **Sıradaki iş: QR menü sayfasının baştan tasarımı.** Veri ve giriş hazır;
+> kalan tek adım müşterinin gördüğü sayfa. Beyaz zemin + mercan vurgu, taşıyıcı
+> unsur tipografi ve boşluk. **Kademeli zenginlik:** medya yoksa zarif liste,
+> bazı ürünlerde varsa onlar öne çıkan kart olur, hepsinde varsa tam vitrin.
+> Ürün detayı ayrı modal değil satırın içinde açılıyor; künye (dakika/kalori/
+> gram), alerjen rozetleri, etiket rozeti ve "tükendi" hâli çizilecek. Bugünkü
+> `QrMenu.tsx` ve `qrMenu.css` atılıp yeniden yazılacak.
 >
-> **QR menünün kendi tasarım dili olacak — 9 Eyl 2026 kararı.** Garso'nun kendi
-> ekranları bir *araç*: garson yoğun serviste hızlı dokunsun diye sıkı yerleşim,
-> büyük düğme, süs yok. QR menü ise bir *vitrin*: onu kullanan müşteri, acelesi
-> yok, izlenim ediniyor. Bol boşluk, iri ve zarif başlık, yumuşak geçiş, akan
-> kaydırma, fotoğrafın öne çıktığı kart. POS'un sıkışık liste satırı estetiği
-> oraya girmeyecek. Renk paleti aynı kalıyor, değişen şey arayüzün havası.
+> **Sonra: kategori ve kapak görsellerinin girişi.** Veritabanında alanlar var
+> (`kategoriler.gorsel`, `kategoriler.aciklama`, `isletme_ayarlari.qr_menu_kapaklar`)
+> ama girecek ekran yok: kategori penceresi bugün bu iki alanı taşıyor ama
+> düzenletmiyor, kapaklar da İşletme Ayarları'nın QR Menü bölümüne eklenecek.
 >
-> **Sonra: menüyü zenginleştiren alanlar.** Bugünkü ürün modelinde açıklama ve
-> fotoğraf yok; QR menü ilk sürümü ad + fiyatla çıkacak. Adisyo turunda görülen
-> ek alanlar sıraya girdi: açıklama, en fazla 3 fotoğraf (min 300×300), kalori,
-> hazırlanma süresi, alerjen listesi, etiket (Yeni / Popüler / Şefin Önerisi /
-> İmza Ürün), "tükendi" anahtarı.
+> **10 Eyl 2026: QR menü fotoğrafa mecbur olmayacak — ürünün asıl ayrımı.**
+> Foost ve Adisyo/QRall fotoğrafsız çöküyor: kartlar boş kalıyor, menü bozuk
+> görünüyor. Garso'nun QR menüsü **girilen kadarına göre şekil değiştirecek**:
+> hiç medya yoksa tipografiye dayalı zarif liste, bazı ürünlerde varsa onlar
+> öne çıkan kart olur kalanı satır kalır, hepsinde varsa tam vitrin. Tek sayfa,
+> tek kod. İşletmeciye "fotoğraf çek yoksa menün kötü görünür" denmiyor.
+>
+> **10 Eyl 2026: QR menünün rengi beyaz + mercan.** POS krem zeminde
+> (`--zemin`) kalıyor, QR menü beyaza geçiyor. Gerekçe: vitrin galeri gibi
+> dursun, fotoğraf koyan işletmede yemeğin rengi öne çıksın, iki arayüz
+> birbirinden ayrılsın. Yeşil-beyaz elendi: "sağlıklı/vejetaryen" mesajı
+> veriyor, her işletmeye uymuyor. Mercan zaten Garso'nun kimlik rengi.
+> Taşıyıcı unsur fotoğraf değil **tipografi ve boşluk**.
+>
+> **10 Eyl 2026: Foost turu (qr.thefoost.com/coolchicken).** Görülen akış:
+> tam ekran kapak fotoğrafı slaytı + "Menüyü Görüntüle" → fotoğraflı kategori
+> ızgarası (kartlar farklı genişlikte, her kategoride bir cümlelik açıklama) →
+> kategori sayfası (yapışkan yatay kategori şeridi, öne çıkanlar yatay kayan
+> büyük kartlar, altında ürün listesi) → ürün modalı (geniş fotoğraf, açıklama,
+> "20 dk · 900 kcal · 500 gr" şeridi, "Öneriler" bölümünde gerekçeli yan ürün).
+> Yan menüde kategori listesi ve beş dilli seçici; sağ üstte "ChefAI" adlı menü
+> asistanı (serbest soru ya da üç soruluk yönlendirme). Fotoğraflar bulanık
+> başlayıp netleşiyor. Ürün adının yanında acı gibi etiket ikonları var.
+> **Kopyalanmayacaklar:** koyu/neon palet, kategori ızgarası (bizde akan
+> bölümler), ayrı ürün modalı (bizde satırın içinde açılan detay).
+> ChefAI şimdilik sıraya alınmadı — menü oturmadan sırası değil.
 >
 > **Sonra: masadan sipariş ve garson çağırma.** QR menünün sipariş kanalına
 > dönmesi. Ayrı ve büyük iş, menü sayfası oturduktan sonra.
@@ -34,12 +53,39 @@
 > gider). Beklenen: kâğıt çıkıyor, kuyrukta "Kasadan" rozeti; kablo takılınca
 > aynı fiş ikinci kez basılmıyor.
 >
+> **Ertelendi: masa ve bölge başına ayrı karekod.** Bugün işletmenin tek
+> karekodu var. QRall'da alan ve masa başına ayrı QR üretiliyor; o ayrım ancak
+> masadan sipariş gelince anlam kazanıyor, o zaman yapılacak.
+>
 > **Ertelendi: çevrimdışı giriş ve PIN ile kişi değiştirme.** Cihaz kesinti
 > sırasında kapanıp açılırsa Garso tamamen kilitleniyor; şifre ve PIN sunucuda
 > doğrulanıyor. Gerçek bir açık ama şimdilik sırada değil (9 Eyl kararı).
 >
 > **Ertelendi: kurye atama ve teslimat takibi.** Faz 2'nin açık kalan tek maddesi.
 > Yeni modül olduğu için önce Adisyo turu gerekiyor (9 Eyl kararı).
+>
+> **10 Eyl 2026: menü zenginleştirmenin iki adımı bitti.**
+> - **Veri katmanı.** `urunler`'e açıklama, hazırlanma dakikası, kalori, gramaj,
+>   alerjen listesi, etiket ve "tükendi"; `kategoriler`'e açıklama ve görsel;
+>   `isletme_ayarlari`'na kapak görselleri; ürün başına en fazla 3 medya tutan
+>   `urun_medya` tablosu (sınır tetikleyicide — arayüz atlansa da dördüncü
+>   giremiyor). Dosyalar `menu` adlı kovada: müşteri okuyabiliyor (hesabı yok),
+>   yazmak giriş istiyor ve dosya `<isletmeId>/` klasörüne düşüyor.
+>   `qr_menu()` yeni alanları da döndürüyor. Yeni `medya.ts`: fotoğraf 5 MB,
+>   video 20 MB; ada zaman damgası ekleniyor ki aynı adlı ikinci dosya
+>   birincisini ezmesin.
+> - **Menü Stüdyosu girişi.** Ürün penceresinde "QR menü görünümü" bölümü —
+>   görsel şeridi, tanıtım yazısı (240 karakter), rozet seçimi, künye ve
+>   alerjen işaretleri; "Bugün tükendi" anahtarı diğer anahtarların yanında.
+>   Yeni ürün açan üç yer `bosMenuAlanlari()`ndan besleniyor: alan eklendiğinde
+>   tek yer değişiyor.
+>
+> **9 Eyl 2026: QR menü ilk sürümü bitti.** `qr_menu(kod)` adlı, satır
+> güvenliğini aşan ve yalnız satışta görünür kategori/ürün/fiyat döndüren
+> veritabanı işlevi; giriş kapısının dışında `/m/:kod` sayfası; İşletme
+> Ayarları'nda "QR Menü" bölümü (anahtar, adres, kopyalanabilir bağlantı,
+> yazdırılabilir karekod). Sayfanın görünümü yeniden yapılacak — bugünkü hâli
+> süslenmiş bir fiyat listesi, veri katmanı gelince baştan tasarlanacak.
 >
 > **İPTAL: kasa çevrimdışıyken "masa durumları güncel değil" uyarısı.** Salonun
 > tepesine şerit ve ödeme öncesi onay penceresi planlanmıştı; 9 Eyl'de iptal
@@ -57,7 +103,6 @@
 > (2) müşteriye ikinci abonelik ödetmek; (3) QRall kendi POS'unu, kioskunu ve
 > sanal POS'unu satıyor, ticari bağımlılık riskli; (4) bağlanmak zaten onların
 > iş ortaklığı kabul etmesini gerektirir, geliştirme kararı değil.
->
 > **9 Eyl 2026: Adisyo QR menü turu (canlı panel).** QRall'da görülenler:
 > QR **iki seviyede** üretiliyor — alan/bölge başına ve her masa için ayrı
 > (masada kişi sayısı da tutuluyor), toplu indirme var. QR menü orada sadece

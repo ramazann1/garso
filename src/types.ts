@@ -104,6 +104,10 @@ export type MenuKategori = {
   istasyonId?: number; // altındaki ürünler bu istasyonda hazırlanır
   satistaGorunur: boolean;
   mutfaktaGorunur: boolean;
+  /** QR menüde başlığın altındaki tanıtım cümlesi; boş bırakılabilir. */
+  aciklama: string;
+  /** Kategori görselinin depodaki yolu; yoksa başlık düz çizilir. */
+  gorsel?: string;
 };
 
 export type MenuBirim = {
@@ -170,6 +174,16 @@ export type MenuIcerikGrubu = {
   satirlar: MenuIcerikSatiri[];
 };
 
+/** Ürünün üstünde duran rozet; menüde göze çarpsın diye tek seçim. */
+export type UrunEtiketi = "yeni" | "populer" | "sef" | "aci";
+
+export type UrunMedya = {
+  id?: number;
+  /** Depodaki yol (`<isletmeId>/dosya`); tam adres okurken kuruluyor. */
+  yol: string;
+  tur: "foto" | "video";
+};
+
 export type MenuUrun = {
   id?: number;
   ad: string;
@@ -184,4 +198,14 @@ export type MenuUrun = {
   menuGruplari: MenuIcerikGrubu[]; // boşsa normal ürün
   kategoriIdler: number[];
   kategoriSira: Record<number, number>; // ürünün her kategorideki kendi sırası
+  // QR menüde görünen alanlar. Hiçbiri zorunlu değil: doldurulmayan alan
+  // müşteri sayfasında hiç çizilmiyor, menü eksik görünmüyor.
+  aciklama: string;
+  hazirlanmaDk: number; // 0 = girilmemiş
+  kalori: number;
+  gramaj: number;
+  alerjenler: string[];
+  etiket?: UrunEtiketi;
+  tukendi: boolean;
+  medya: UrunMedya[]; // en fazla 3
 };

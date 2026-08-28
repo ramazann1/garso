@@ -14,6 +14,8 @@ import {
   Map,
   Pencil,
   Plus,
+  Printer,
+
   Trash2,
   Users,
   Wallet,
@@ -24,7 +26,15 @@ import AyarBasligi from "../components/AyarBasligi";
 import AyarSatiri from "../components/AyarSatiri";
 import AramaKutusu from "../components/AramaKutusu";
 import { acikAdisyonSayisi } from "../adisyonlar";
-import { ayarlar, ayarlariKaydet, isletmeAdi, isletmeKodu } from "../isletmeAyarlari";
+import QRCode from "qrcode";
+import {
+  ayarlar,
+  ayarlariKaydet,
+  isletmeAdi,
+  isletmeKodu,
+  qrMenuAdresi,
+  qrMenuKoduUret,
+} from "../isletmeAyarlari";
 import { eslesiyor } from "../arama";
 import { servisEtiketi } from "../servis";
 import type {
@@ -602,12 +612,149 @@ function ServisPaneli({
   );
 }
 
+
+/**
+ * QR menü bölümü: müşterinin masadaki karekodu okutunca gördüğü menünün
+ * açma/kapama anahtarı, adresi ve yazdırılabilir karekodu.
+ *
+ * Menü Garso'nun kendi veritabanından okunuyor; fiyat değiştiği anda müşterinin
+ * telefonundaki menü de değişiyor, ayrıca bir yere kopyalamak gerekmiyor.
+ */
+function QrMenuBolumu({
+  genel,
+  degistir,
+  ara,
+  uyar,
+}: {
+  genel: IsletmeAyarlariTipi;
+  degistir: (degisen: Partial<IsletmeAyarlariTipi>, mesaj?: string) => Promise<void>;
+  ara: string;
+  uyar: (mesaj: string) => void;
+}) {
+  const [adres, setAdres] = useState(genel.qrMenuAdres);
+  const [karekod, setKarekod] = useState("");
+  const [kopyalandi, setKopyalandi] = useState(false);
+  const [uretiliyor, setUretiliyor] = useState(false);
+
+  const bagAdresi = genel.qrMenuKod ? qrMenuAdresi(genel.qrMenuKod) : "";
+
+  // Karekod resmi adresten üretiliyor; kod değişince kendiliğinden yenileniyor.
+  useEffect(() => {
+    if (!bagAdresi) return setKarekod("");
+    QRCode.toDataURL(bagAdresi, { width: 640, margin: 1 })
+      .then(setKarekod)
+      .catch(() => setKarekod(""));
+  }, [bagAdresi]);
+
+  // Menü ilk kez açılırken adresi yoksa sunucu bir tane üretiyor.
+  const anahtar = async (acik: boolean) => {
+    try {
+      let kod = genel.qrMenuKod;
+      if (acik && !kod) {
+        setUretiliyor(true);
+        kod = await qrMenuKoduUret();
+      }
+      // Yeni kod ekrandaki ayara da yazılıyor: yazılmazsa karekod kartı ancak
+      // sayfa yenilendiğinde görünürdü.
+      await degistir(
+        { qrMenuAcik: acik, qrMenuKod: kod },
+        acik ? "QR menü açıldı" : "QR menü kapatıldı"
+      );
+    } catch (e) {
+      uyar(e instanceof Error ? e.message : "QR menü açılamadı.");
+    } finally {
+      setUretiliyor(false);
+    }
+  };
+
+  const kopyala = async () => {
+    try {
+      await navigator.clipboard.writeText(bagAdresi);
+      setKopyalandi(true);
+      setTimeout(() => setKopyalandi(false), 1800);
+    } catch {
+      uyar("Adres kopyalanamadı. Elle not alabilirsiniz.");
+    }
+  };
+
+  // Karekod masaya konacak; yazdırma ekranı sade tutuluyor: işletme adı,
+  // kare ve altında "menü için okutun" satırı.
+  const yazdir = () => {
+    const pencere = window.open("", "_blank", "width=520,height=680");
+    if (!pencere) return uyar("Yazdırma penceresi açılamadı. Tarayıcı engellemiş olabilir.");
+    pencere.document.write(`<!doctype html><html lang="tr"><head><meta charset="utf-8">
+      <title>${isletmeAdi()} — QR Menü</title>
+      <style>
+        body { font-family: system-ui, sans-serif; text-align: center; padding: 48px 32px; }
+        h1 { font-size: 26px; margin-bottom: 6px; }
+        p { font-size: 15px; color: #444; }
+        img { width: 340px; margin: 28px 0 10px; }
+        small { font-size: 12px; color: #777; word-break: break-all; }
+      </style></head><body>
+      <h1>${isletmeAdi()}</h1>
+      <p>Menümüz için karekodu okutun</p>
+      <img src="${karekod}" alt="">
+      <small>${bagAdresi}</small>
+      </body></html>`);
+    pencere.document.close();
+    pencere.focus();
+    pencere.print();
+  };
+
+  return (
+    <section className="ayar-bolum ayar-liste">
+      <AyarSatiri
+        ad="QR menü"
+        ara={ara}
+        ipucu="Kapatırsanız karekodu okutan müşteri menü yerine kısa bir uyarı görür; karekodları toplamanıza gerek kalmaz. Menü adresi silinmez, yeniden açınca aynı kod çalışır."
+      >
+        <AyarAnahtari acik={genel.qrMenuAcik} degistir={anahtar} />
+      </AyarSatiri>
+
+      <AyarSatiri
+        ad="İşletme adresi"
+        ara={ara}
+        ipucu="Menü sayfasının başında işletme adının altında görünür. Boş bırakılırsa hiç yazılmaz."
+      >
+        <input
+          className="ayar-metin"
+          value={adres}
+          placeholder="Örn. Cumhuriyet Cad. No: 12, Kadıköy"
+          onChange={(e) => setAdres(e.target.value)}
+          onBlur={() => adres !== genel.qrMenuAdres && degistir({ qrMenuAdres: adres }, "Adres kaydedildi")}
+        />
+      </AyarSatiri>
+
+      {genel.qrMenuKod && (
+        <div className="qr-ayar-kart">
+          {karekod ? <img src={karekod} alt="QR menü karekodu" /> : <div className="qr-ayar-bos" />}
+          <div className="qr-ayar-alan">
+            <label>MENÜ ADRESİ</label>
+            <strong>{bagAdresi}</strong>
+            <div className="qr-ayar-dugmeler">
+              <button onClick={kopyala}>
+                {kopyalandi ? <Check size={15} /> : <Copy size={15} />}
+                {kopyalandi ? "Kopyalandı" : "Adresi kopyala"}
+              </button>
+              <button onClick={yazdir} disabled={!karekod}>
+                <Printer size={15} /> Karekodu yazdır
+              </button>
+            </div>
+          </div>
+        </div>
+      )}
+
+      {uretiliyor && <p className="ayar-not">Menü adresi oluşturuluyor…</p>}
+    </section>
+  );
+}
 export default function IsletmeAyarlari() {
   const { bolum } = useParams();
   const odemeBolumu = bolum === "odeme-tipleri";
   const satisBolumu = bolum === "satis";
   const genelBolumu = bolum === "genel";
-  const masalarBolumu = !odemeBolumu && !satisBolumu && !genelBolumu;
+  const qrBolumu = bolum === "qr-menu";
+  const masalarBolumu = !odemeBolumu && !satisBolumu && !genelBolumu && !qrBolumu;
 
   const [kdvDahil, setKdvDahil] = useState(ayarlar().kdvDahil);
   // Genel parametreler tek tek kaydediliyor; her satır kendi başına anlamlı,
@@ -808,7 +955,9 @@ export default function IsletmeAyarlari() {
                 ? "Kasada hangi ödeme düğmelerinin çıkacağını buradan belirlersiniz."
                 : genelBolumu
                   ? "İşletmenin çalışma düzenini buradan kurarsınız."
-                  : "Satışın genel kurallarını buradan belirlersiniz."}
+                  : qrBolumu
+                    ? "Masalara koyacağınız karekodu okutan müşteri menünüzü telefonunda görür. Menü Garso'daki ürünlerden okunur; fiyatı değiştirdiğinizde müşterinin gördüğü menü de aynı anda değişir. Yalnız satışta görünür kategori ve ürünler listelenir."
+                    : "Satışın genel kurallarını buradan belirlersiniz."}
           </Bilgi>
           {(genelBolumu || satisBolumu) && (
             <AramaKutusu deger={ara} degistir={setAra} yer="Ayar ara" />
@@ -969,6 +1118,10 @@ export default function IsletmeAyarlari() {
                 {kodKopyalandi ? <Check size={14} /> : <Copy size={14} />}
               </button>
             </section>
+          )}
+
+          {qrBolumu && (
+            <QrMenuBolumu genel={genel} degistir={genelDegistir} ara={ara} uyar={setUyari} />
           )}
 
           {genelBolumu && (

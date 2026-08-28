@@ -10,6 +10,7 @@ import type {
   MenuSecenekGrubu,
   MenuUrun,
   SiparisTuru,
+  UrunMedya,
 } from "./types";
 
 // Sipariş türüne göre fiyat: tür fiyatı boşsa tek fiyat geçerlidir.
@@ -114,6 +115,20 @@ export function agacUrunleri(urunler: MenuUrun[], kategoriler: MenuKategori[], k
   return liste;
 }
 
+/**
+ * QR menü alanlarının boş hâli. Yeni ürün açan her yer bu listeyi tek tek
+ * yazmasın: alan eklendiğinde tek yerden geliyor.
+ */
+export const bosMenuAlanlari = () => ({
+  aciklama: "",
+  hazirlanmaDk: 0,
+  kalori: 0,
+  gramaj: 0,
+  alerjenler: [] as string[],
+  tukendi: false,
+  medya: [] as UrunMedya[],
+});
+
 const say = (v: any) => (v == null ? undefined : Number(v));
 
 // Menü kasadaki en kritik okuma: yüklenemezse garson ürün bile seçemiyor.
@@ -154,12 +169,14 @@ async function menuOku() {
   const [kat, urn, grp, brm, kdv] = await Promise.all([
     supabase
       .from("kategoriler")
-      .select("id, ad, renk, sira, satista_gorunur, mutfakta_gorunur, ust_id, istasyon_id")
+      .select(
+        "id, ad, renk, sira, satista_gorunur, mutfakta_gorunur, ust_id, istasyon_id, aciklama, gorsel"
+      )
       .order("sira"),
     supabase
       .from("urunler")
       .select(
-        "id, ad, kod, kdv_id, istasyon_id, renk, favori, satista_gorunur, mutfakta_gorunur, porsiyonlar(id, birim_id, fiyat, barkod, masa_fiyat, gelal_fiyat, paket_fiyat, varsayilan, sira, porsiyon_secenek_gruplari(grup_id)), urun_kategorileri(kategori_id, sira), menu_gruplari(id, baslik, secilebilir_adet, sira, menu_satirlari(id, urun_id, porsiyon_id, miktar, ek_fiyat, varsayilan, sira))"
+        "id, ad, kod, kdv_id, istasyon_id, renk, favori, satista_gorunur, mutfakta_gorunur, aciklama, hazirlanma_dk, kalori, gramaj, alerjenler, etiket, tukendi, urun_medya(id, yol, tur, sira), porsiyonlar(id, birim_id, fiyat, barkod, masa_fiyat, gelal_fiyat, paket_fiyat, varsayilan, sira, porsiyon_secenek_gruplari(grup_id)), urun_kategorileri(kategori_id, sira), menu_gruplari(id, baslik, secilebilir_adet, sira, menu_satirlari(id, urun_id, porsiyon_id, miktar, ek_fiyat, varsayilan, sira))"
       ),
     supabase
       .from("secenek_gruplari")
@@ -180,6 +197,8 @@ async function menuOku() {
       istasyonId: k.istasyon_id ?? undefined,
       satistaGorunur: k.satista_gorunur,
       mutfaktaGorunur: k.mutfakta_gorunur,
+      aciklama: k.aciklama ?? "",
+      gorsel: k.gorsel ?? undefined,
     }))
   );
   const birimler = (brm.data ?? []) as MenuBirim[];
@@ -234,6 +253,17 @@ async function menuOku() {
     kategoriSira: Object.fromEntries(
       (u.urun_kategorileri ?? []).map((x: any) => [x.kategori_id, x.sira])
     ),
+    aciklama: u.aciklama ?? "",
+    hazirlanmaDk: u.hazirlanma_dk ?? 0,
+    kalori: u.kalori ?? 0,
+    gramaj: u.gramaj ?? 0,
+    alerjenler: u.alerjenler ?? [],
+    etiket: u.etiket ?? undefined,
+    tukendi: u.tukendi ?? false,
+    medya: (u.urun_medya ?? [])
+      .slice()
+      .sort((a: any, b: any) => a.sira - b.sira)
+      .map((m: any) => ({ id: m.id, yol: m.yol, tur: m.tur })),
   }));
 
   const gruplar: MenuSecenekGrubu[] = (grp.data ?? []).map((g: any) => ({
@@ -263,6 +293,8 @@ export type KategoriAlanlari = {
   istasyonId?: number;
   satistaGorunur: boolean;
   mutfaktaGorunur: boolean;
+  aciklama: string;
+  gorsel?: string;
 };
 
 const kategoriSatiri = (k: KategoriAlanlari) => ({
@@ -272,6 +304,8 @@ const kategoriSatiri = (k: KategoriAlanlari) => ({
   istasyon_id: k.istasyonId ?? null,
   satista_gorunur: k.satistaGorunur,
   mutfakta_gorunur: k.mutfaktaGorunur,
+  aciklama: k.aciklama,
+  gorsel: k.gorsel ?? null,
 });
 
 // Sıra kardeşler arasında geçerli: ana kategoriler kendi arasında, bir üstün
@@ -350,6 +384,13 @@ export async function urunKaydet(u: MenuUrun) {
     favori: u.favori,
     satista_gorunur: u.satistaGorunur,
     mutfakta_gorunur: u.mutfaktaGorunur,
+    aciklama: u.aciklama,
+    hazirlanma_dk: u.hazirlanmaDk,
+    kalori: u.kalori,
+    gramaj: u.gramaj,
+    alerjenler: u.alerjenler,
+    etiket: u.etiket ?? null,
+    tukendi: u.tukendi,
   };
 
   // Güncellemede kaç satır döndüğüne bakılıyor. Ürün bu arada silinmişse
@@ -432,6 +473,23 @@ export async function urunKaydet(u: MenuUrun) {
   }
 
   await menuGruplariYaz(id, u.menuGruplari);
+  await urunMedyasiYaz(id, u.medya);
+}
+
+// Medya satırları silinip yeniden yazılıyor: sıralarını da kullanıcı
+// değiştiriyor, tek tek güncellemek yerine liste baştan kuruluyor. Dosyanın
+// kendisi depoda duruyor, satırın silinmesi dosyayı silmiyor.
+async function urunMedyasiYaz(urunId: number, medya: UrunMedya[]) {
+  await supabase.from("urun_medya").delete().eq("urun_id", urunId);
+  if (!medya.length) return;
+  await supabase.from("urun_medya").insert(
+    medya.slice(0, 3).map((m, i) => ({
+      urun_id: urunId,
+      yol: m.yol,
+      tur: m.tur,
+      sira: i + 1,
+    }))
+  );
 }
 
 // Menü grupları silinip yeniden yazılıyor — satırlara bağlı başka kayıt yok,

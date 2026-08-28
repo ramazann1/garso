@@ -38,6 +38,7 @@ export const ayarBolumleri: Bolum[] = [
   { yol: "/ayarlar/personel", ad: "Personel ve Yetkiler", alt: personelBolumleri },
   { yol: "/ayarlar/odeme-tipleri", ad: "Ödeme Tipleri" },
   { yol: "/ayarlar/satis", ad: "Satış" },
+  { yol: "/ayarlar/qr-menu", ad: "QR Menü" },
   { yol: "/ayarlar/odenmezler", ad: "Ödenmezler" },
   { yol: "/ayarlar/yazicilar", ad: "Yazıcılar", alt: yaziciBolumleri },
 ];

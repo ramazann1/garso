@@ -1,0 +1,169 @@
+/* QR menü — müşterinin telefonunda açılan vitrin.
+   POS ekranlarının sıkışık liste estetiği buraya girmiyor: geniş boşluk,
+   iri başlık, yumuşak geçiş. Renk paleti aynı kalıyor. */
+
+.qr {
+  max-width: 620px;
+  margin: 0 auto;
+  padding: 0 22px 64px;
+  color: var(--metin);
+}
+
+.qr-tepe {
+  padding: 56px 0 32px;
+  text-align: center;
+}
+
+.qr-tepe h1 {
+  font-size: 38px;
+  font-weight: 600;
+  letter-spacing: -0.5px;
+  line-height: 1.2;
+}
+
+.qr-adres {
+  margin-top: 12px;
+  display: inline-flex;
+  align-items: center;
+  gap: 6px;
+  font-size: 14px;
+  color: var(--soluk);
+}
+
+/* Kategori şeridi tepeye yapışıyor: uzun menüde müşteri bölüm aramak için
+   başa dönmek zorunda kalmasın. */
+.qr-serit {
+  position: sticky;
+  top: 0;
+  z-index: 2;
+  display: flex;
+  gap: 8px;
+  overflow-x: auto;
+  padding: 12px 0;
+  background: var(--zemin);
+  scrollbar-width: none;
+}
+
+.qr-serit::-webkit-scrollbar {
+  display: none;
+}
+
+.qr-serit button {
+  flex: 0 0 auto;
+  border: 1px solid #e6ded3;
+  background: var(--kart);
+  color: var(--metin);
+  font: inherit;
+  font-size: 14px;
+  padding: 9px 18px;
+  border-radius: 999px;
+  cursor: pointer;
+  transition: background 0.2s, color 0.2s, border-color 0.2s;
+}
+
+.qr-serit button.acik {
+  background: var(--mercan);
+  border-color: var(--mercan);
+  color: #fff;
+}
+
+.qr-govde section {
+  padding-top: 44px;
+  scroll-margin-top: 66px;
+}
+
+.qr-govde h2 {
+  font-size: 24px;
+  font-weight: 600;
+  margin-bottom: 6px;
+}
+
+.qr-govde h2::after {
+  content: "";
+  display: block;
+  width: 42px;
+  height: 3px;
+  margin-top: 10px;
+  border-radius: 2px;
+  background: var(--mercan);
+}
+
+.qr-urun {
+  display: flex;
+  align-items: baseline;
+  gap: 16px;
+  padding: 18px 2px;
+  border-bottom: 1px solid #eee6da;
+}
+
+.qr-urun-ad {
+  flex: 1;
+  font-size: 17px;
+}
+
+.qr-fiyatlar {
+  display: flex;
+  gap: 18px;
+  text-align: right;
+}
+
+/* Tek fiyatlı üründe sadece rakam; birden çok porsiyonda üstünde adı
+   (Tam, Yarım) küçük ama okunur bir tonda duruyor. */
+.qr-fiyat {
+  display: flex;
+  flex-direction: column;
+  align-items: flex-end;
+  font-size: 17px;
+  font-weight: 500;
+  white-space: nowrap;
+}
+
+.qr-fiyat em {
+  font-style: normal;
+  font-size: 13px;
+  font-weight: 400;
+  color: var(--soluk);
+}
+
+.qr-bos,
+.qr-dip {
+  text-align: center;
+  color: var(--soluk);
+  font-size: 14px;
+}
+
+.qr-bos {
+  padding: 60px 0;
+}
+
+.qr-dip {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  gap: 6px;
+  padding-top: 56px;
+}
+
+.qr-mesaj {
+  max-width: 420px;
+  margin: 0 auto;
+  padding: 120px 24px;
+  text-align: center;
+}
+
+.qr-mesaj h1 {
+  font-size: 26px;
+  font-weight: 600;
+  margin-bottom: 10px;
+}
+
+.qr-mesaj p {
+  font-size: 15px;
+  color: var(--soluk);
+}
+
+.qr-yukleniyor {
+  display: flex;
+  justify-content: center;
+  padding-top: 160px;
+}

@@ -19,6 +19,7 @@ import BaglantiDurumu from "./pages/BaglantiDurumu";
 import FisTasarimi from "./pages/FisTasarimi";
 import YazdirmaKuyrugu from "./pages/YazdirmaKuyrugu";
 import Giris from "./pages/Giris";
+import QrMenu from "./pages/QrMenu";
 import MobilKabuk, { acikSekmeler } from "./mobil/MobilKabuk";
 import MobilMasalar from "./mobil/Masalar";
 import MobilSiparis from "./mobil/Siparis";
@@ -218,4 +219,16 @@ function YetkiKapisi({ children }: { children: React.ReactNode }) {
   return <Routes>{children}</Routes>;
 }
 
-export default App;
+/**
+ * Programın en dış kapısı. QR menü giriş kapısının dışında duruyor: müşterinin
+ * hesabı yok, oturum okunmasını beklemesi de gerekmiyor. Bu yüzden App hiç
+ * kurulmadan, doğrudan adresten ayrılıyor — yoksa ziyaretçi giriş ekranına
+ * düşer, arada bağlantı şeridi ve kilit mantığı boşuna çalışırdı.
+ */
+function Kok() {
+  const kod = window.location.pathname.match(/^\/m\/([a-z0-9]+)\/?$/i)?.[1];
+  if (kod) return <QrMenu kod={kod} />;
+  return <App />;
+}
+
+export default Kok;

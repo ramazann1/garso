@@ -3,6 +3,8 @@ import Bilgi from "./Bilgi";
 import { Check, ChevronDown, Plus, X } from "lucide-react";
 import Anahtar from "./Anahtar";
 import RenkSecici from "./RenkSecici";
+import MenuGorunumu from "./MenuGorunumu";
+import type { MenuAlanlari } from "./MenuGorunumu";
 import { paraMetin, paraSayi, paraYaz } from "../para";
 import { altKategoriler, varsayilanBirim } from "../menu";
 import type {
@@ -70,6 +72,7 @@ export default function UrunPaneli({
   onKapat,
   onKaydet,
   onSil,
+  onUyari,
 }: {
   urun: MenuUrun;
   kategoriler: MenuKategori[];
@@ -80,6 +83,7 @@ export default function UrunPaneli({
   onKapat: () => void;
   onKaydet: (u: MenuUrun) => void;
   onSil?: () => void;
+  onUyari: (mesaj: string) => void;
 }) {
   const yeniPorsiyon = (varsayilan: boolean): PorsiyonTaslak => ({
     birimId: varsayilanBirim(birimler)?.id,
@@ -107,6 +111,18 @@ export default function UrunPaneli({
   );
   const [kategoriIdler, setKategoriIdler] = useState<number[]>(urun.kategoriIdler);
   const [acik, setAcik] = useState<string[]>(["porsiyon"]);
+  // QR menü alanları tek bir nesnede: hepsi birlikte kaydediliyor, panelin
+  // tepesinde yedi ayrı durum değişkeni durmasın.
+  const [menuAlan, setMenuAlan] = useState<MenuAlanlari>({
+    aciklama: urun.aciklama,
+    hazirlanmaDk: urun.hazirlanmaDk,
+    kalori: urun.kalori,
+    gramaj: urun.gramaj,
+    alerjenler: urun.alerjenler,
+    etiket: urun.etiket,
+    tukendi: urun.tukendi,
+    medya: urun.medya,
+  });
   const [detayli, setDetayli] = useState<number[]>([]);
 
   const varsayilanKdv = kdvler.find((k) => k.varsayilan);
@@ -189,6 +205,8 @@ export default function UrunPaneli({
       mutfaktaGorunur,
       porsiyonlar: porsiyonlar.filter((p) => p.birimId).map(porsiyonYap),
       kategoriIdler,
+      ...menuAlan,
+      aciklama: menuAlan.aciklama.trim(),
     });
   };
 
@@ -474,6 +492,22 @@ export default function UrunPaneli({
             </div>
           )}
 
+          <div className="bolum">
+            <button className="bolum-basi" onClick={() => katla("menu")}>
+              <span>QR menü görünümü</span>
+              <small>{menuAlan.medya.length || (menuAlan.aciklama ? "•" : "")}</small>
+              <ChevronDown size={18} className={acik.includes("menu") ? "bolum-ok donuk" : "bolum-ok"} />
+            </button>
+
+            {acik.includes("menu") && (
+              <MenuGorunumu
+                deger={menuAlan}
+                degistir={(d) => setMenuAlan((m) => ({ ...m, ...d }))}
+                onUyari={onUyari}
+              />
+            )}
+          </div>
+
           <div className="alan">
             <span>Kart rengi</span>
             <RenkSecici renk={renk} degistir={setRenk} renksizOlur />
@@ -493,6 +527,12 @@ export default function UrunPaneli({
             etiket="Mutfak ekranında göster"
             acik={mutfaktaGorunur}
             degistir={setMutfaktaGorunur}
+          />
+          <Anahtar
+            etiket="Bugün tükendi"
+            ipucu="QR menüde durur ama alınamaz görünür"
+            acik={menuAlan.tukendi}
+            degistir={(v) => setMenuAlan((m) => ({ ...m, tukendi: v }))}
           />
 
         </div>

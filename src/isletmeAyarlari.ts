@@ -48,6 +48,12 @@ export type IsletmeAyarlari = {
   servisAcik: boolean;
   kuver: ServisTanimi;
   garsoniye: ServisTanimi;
+  /** QR menü müşteriye açık mı; kapalıyken karekod menü yerine uyarı gösteriyor. */
+  qrMenuAcik: boolean;
+  /** Menü adresindeki kod (/m/<kod>); ilk açılışta sunucu üretiyor. */
+  qrMenuKod: string;
+  /** İşletmenin açık adresi; QR menünün başında görünüyor. */
+  qrMenuAdres: string;
 };
 
 const VARSAYILAN: IsletmeAyarlari = {
@@ -69,6 +75,9 @@ const VARSAYILAN: IsletmeAyarlari = {
   servisAcik: false,
   kuver: { otomatik: true, ad: "Kuver", tip: "tutar", deger: 0 },
   garsoniye: { otomatik: true, ad: "Garsoniye", tip: "yuzde", deger: 0 },
+  qrMenuAcik: false,
+  qrMenuKod: "",
+  qrMenuAdres: "",
 };
 
 // Ayar her hesapta lazım ama satış sırasında değişmiyor; bir kez okunup burada
@@ -122,6 +131,9 @@ async function ayarlariOku(): Promise<IsletmeAyarlari> {
     servisAcik: s?.servis_acik ?? VARSAYILAN.servisAcik,
     kuver: servisTanimi(s, "kuver", VARSAYILAN.kuver),
     garsoniye: servisTanimi(s, "garsoniye", VARSAYILAN.garsoniye),
+    qrMenuAcik: s?.qr_menu_acik ?? VARSAYILAN.qrMenuAcik,
+    qrMenuKod: s?.qr_menu_kod ?? VARSAYILAN.qrMenuKod,
+    qrMenuAdres: s?.qr_menu_adres ?? VARSAYILAN.qrMenuAdres,
   };
 }
 
@@ -160,6 +172,10 @@ export async function ayarlariKaydet(degisen: Partial<IsletmeAyarlari>) {
       garsoniye_ad: yeni.garsoniye.ad,
       garsoniye_tip: yeni.garsoniye.tip,
       garsoniye_deger: yeni.garsoniye.deger,
+      qr_menu_acik: yeni.qrMenuAcik,
+      // Kod boşsa sütun boş kalıyor: boş metin tekil indekste çakışır.
+      qr_menu_kod: yeni.qrMenuKod || null,
+      qr_menu_adres: yeni.qrMenuAdres,
     },
     { onConflict: "isletme_id" }
   );
@@ -191,4 +207,20 @@ export async function isletmeKimliginiGetir() {
     return { ad: (s?.ad ?? "") as string, kod: (s?.kod ?? 0) as number };
   });
   return kimlik;
+}
+
+// QR menünün adresi ilk açılışta üretiliyor. Kod sunucuda rastgele seçiliyor:
+// tarayıcıda üretilse aynı anda iki kasa aynı kodu bulabilir, ayrıca tahmin
+// edilebilir bir kod menüyü herkese açık hâle getirir.
+export async function qrMenuKoduUret() {
+  const { data, error } = await supabase.rpc("qr_menu_kodu_uret");
+  if (error || !data) throw new Error("Menü adresi oluşturulamadı.");
+  await ayarlariKaydet({ qrMenuKod: data as string });
+  return data as string;
+}
+
+// Müşteriye verilecek tam adres. Program hangi alan adında açıksa menü de
+// oradan yayınlanıyor; ayrıca bir adres tanımlamaya gerek kalmıyor.
+export function qrMenuAdresi(kod: string) {
+  return `${window.location.origin}/m/${kod}`;
 }

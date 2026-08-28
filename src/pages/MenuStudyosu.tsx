@@ -34,6 +34,7 @@ import {
   topluKaydet,
   porsiyonFiyat,
   urunGrupIdleri,
+  bosMenuAlanlari,
 } from "../menu";
 import type { KategoriAlanlari, KdvSatiri, TopluPorsiyon, TopluUrun } from "../menu";
 import { planHazirla, type AktarimPlani } from "../aktarim";
@@ -153,7 +154,18 @@ function KategoriPenceresi({
             className="uygula"
             disabled={!ad.trim()}
             onClick={() =>
-              onKaydet({ ad: ad.trim(), renk, ustId, istasyonId, satistaGorunur, mutfaktaGorunur })
+              onKaydet({
+                ad: ad.trim(),
+                renk,
+                ustId,
+                istasyonId,
+                satistaGorunur,
+                mutfaktaGorunur,
+                // Tanıtım alanları bu pencerede düzenlenmiyor; olduğu gibi
+                // taşınıyor ki kaydetmek onları silmesin.
+                aciklama: kategori?.aciklama ?? "",
+                gorsel: kategori?.gorsel,
+              })
             }
           >
             Kaydet
@@ -788,6 +800,7 @@ export default function MenuStudyosu() {
         ustId,
         satistaGorunur: true,
         mutfaktaGorunur: true,
+        aciklama: "",
       });
 
     const yeniAnalar = plan.yeniKategoriler.filter((y) => !y.alt);
@@ -854,6 +867,7 @@ export default function MenuStudyosu() {
   };
 
   const yeniUrun = (): MenuUrun => ({
+    ...bosMenuAlanlari(),
     ad: "",
     favori: false,
     satistaGorunur: true,
@@ -1191,6 +1205,7 @@ export default function MenuStudyosu() {
           onKapat={() => setPanel(null)}
           onKaydet={kaydet}
           onSil={() => urunuSil(panel)}
+          onUyari={setUyari}
         />
       )}
 
