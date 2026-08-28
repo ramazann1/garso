@@ -1,9 +1,9 @@
 ﻿# GARSO — Teknik Tasarım: Veri Modeli & Ekran Haritası
 *Restoran ve cafe'ler için bulut tabanlı satış ve işletme yönetim sistemi.*
 
-## 0. SIRADAKİ İŞ (11 Eyl 2026'da güncellendi)
+## 0. SIRADAKİ İŞ (29 Ağu 2026'da güncellendi)
 
-> **Sıradaki iş: Ramazan'ın eski menü projesine bakmak.** 11 Eyl'de seans
+> **Sıradaki iş: Ramazan'ın eski menü projesine bakmak.** 29 Ağu'da seans
 > sonunda çıktı: daha önce üzerinde çalıştığı ayrı bir menü projesi varmış,
 > onun entegre edilip edilemeyeceğini konuşacağız. **Ramazan'a hatırlat:
 > projenin klasör yolunu, GitHub adresini ya da canlı adresini istiyoruz.**
@@ -13,7 +13,7 @@
 > sayfada kademeli zenginlik, tükendi, alerjen gibi Garso'ya özel işler var,
 > onlar kaybedilmemeli.
 >
-> **11 Eyl 2026: QR menü sayfası baştan yazıldı.** `QrMenu.tsx` ve
+> **29 Ağu 2026: QR menü sayfası baştan yazıldı.** `QrMenu.tsx` ve
 > `qrMenu.css` atılıp yeniden yazıldı. Zemin beyaz, tek vurgu mercan.
 > **Kademeli zenginlik** çalışıyor: kategori kendi içine bakıyor — hiç görsel
 > yoksa liste, hepsinde varsa iki sütunlu vitrin, arada kalıyorsa görselliler
