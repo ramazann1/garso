@@ -3,7 +3,8 @@ import { useEffect, useState } from "react";
 import { adisyonKaydet, adisyonOzeti, gecKalanSiparis, masasizKaydet } from "./adisyonlar";
 import type { AdisyonVerisi, MasaOzeti } from "./adisyonlar";
 import { baglantiDinle, baglantiHatasi, baglantiVar, kopukBildir } from "./baglanti";
-import { hesapKopyalari, hesapKopyasiSil, salonKopyasiOku } from "./hesapKopyasi";
+import { hesapKopyalari, hesapKopyasiOku, hesapKopyasiSil, salonKopyasiOku } from "./hesapKopyasi";
+import type { HesapHedefi } from "./hesapKopyasi";
 
 /**
  * Bağlantı yokken alınan siparişlerin cihazdaki kuyruğu.
@@ -79,6 +80,22 @@ export function bekleyenKayit(is: { tip: "masa"; masaId: number } | { tip: "masa
   // Kapanmış hesabın kaydı sepet değildir: sipariş ekranı onu açsa ödenmiş
   // ürünler yeni siparişin içine karışırdı.
   return kuyruk.find((k) => hedef(k) === hedef(is as KuyrukIsi) && !k.kapat)?.veri;
+}
+
+/**
+ * Bağlantı yokken hesabın cihazdaki son bilinen hâli: önce kuyrukta bekleyen
+ * kayıt, o yoksa hesap kopyası.
+ *
+ * Kopya yalnız hesap çevrimiçiyken okunduğunda yazılıyor; çevrimdışı açılan
+ * masanın kopyası hiç olmuyor. Yalnız kopyaya bakan ekranlar bu masada
+ * "cihazda kopyası yok" deyip ödemeyi reddediyordu, oysa hesap kuyrukta
+ * duruyor. Kuyruktaki kayıt kopyadan da yeni — sıra bu yüzden böyle.
+ */
+export function cevrimdisiHesap(is: HesapHedefi) {
+  const kayit = kuyruk.find((k) => hedef(k) === hedef(is as KuyrukIsi) && !k.kapat);
+  if (kayit) return { veri: kayit.veri, zaman: kayit.zaman };
+  const kopya = hesapKopyasiOku(is);
+  return kopya ? { veri: kopya.veri, zaman: kopya.zaman } : null;
 }
 
 /**
@@ -281,7 +298,7 @@ export async function kuyruguGonder() {
   }
 }
 
-/** Ekranların kuyruğu izlemesi: bekleyen sayısı ve hata mesajı. */
+/** Ekranların kuyruğu izlemesi: bekleyen kayıt/ödeme sayısı ve hata mesajı. */
 export function useKuyruk() {
   const [, yenile] = useState(0);
   useEffect(() => {
@@ -291,7 +308,12 @@ export function useKuyruk() {
       dinleyiciler.delete(f);
     };
   }, []);
-  return { bekleyen: kuyruk.length, hata: sonHata, uyari: sonUyari };
+  return {
+    bekleyen: kuyruk.length,
+    bekleyenOdeme: bekleyenTahsilatlar().length,
+    hata: sonHata,
+    uyari: sonUyari,
+  };
 }
 
 /** Kuyruğun kendi kendine boşalması: bağlantı gelir gelmez gönderiliyor. */

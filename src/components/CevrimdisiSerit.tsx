@@ -15,7 +15,13 @@ import { useYerelVeriZamani, zamanMetni } from "../onbellek";
 export default function CevrimdisiSerit() {
   const cevrimici = useBaglanti();
   const yerelZaman = useYerelVeriZamani();
-  const { bekleyen, hata, uyari } = useKuyruk();
+  const { bekleyen, bekleyenOdeme, hata, uyari } = useKuyruk();
+
+  // Kuyrukta masa başına tek kayıt duruyor, sipariş adedi değil — "hesap".
+  // Çevrimdışı alınan tahsilat ayrı sayılıyor: bekleyen şey para olduğunda
+  // "sipariş bekliyor" demek işletmeciyi yanlış yere bakmaya gönderiyor.
+  const bekleyenMetni =
+    bekleyenOdeme > 0 ? `${bekleyen} hesap · ${bekleyenOdeme} ödeme` : `${bekleyen} hesap`;
 
   // Geç kalan sipariş uyarısı hata değil ama kaybolmamalı: kendiliğinden
   // kalkmıyor, işletmeci okuyup kapatana kadar duruyor.
@@ -40,8 +46,8 @@ export default function CevrimdisiSerit() {
     return (
       <div className="cevrimdisi-serit" role="status">
         {hata ? <TriangleAlert size={17} /> : <CloudUpload size={17} />}
-        <strong>{hata ? "Sipariş yazılamadı" : "Bekleyen sipariş gönderiliyor"}</strong>
-        <span>{hata ?? `${bekleyen} sipariş sunucuya yazılıyor.`}</span>
+        <strong>{hata ? "Sipariş yazılamadı" : "Bekleyen kayıt gönderiliyor"}</strong>
+        <span>{hata ?? `${bekleyenMetni} sunucuya yazılıyor.`}</span>
       </div>
     );
   }
@@ -52,8 +58,8 @@ export default function CevrimdisiSerit() {
       <strong>Bağlantı yok</strong>
       <span>
         {bekleyen > 0
-          ? `${bekleyen} sipariş cihazda bekliyor, bağlantı gelince gönderilecek.`
-          : "Sipariş kaydı cihazda bekletilir, tahsilat alınamaz."}
+          ? `${bekleyenMetni} cihazda bekliyor, bağlantı gelince gönderilecek.`
+          : "Sipariş ve tahsilat cihazda bekletilir, bağlantı gelince gönderilir."}
         {/* Menü ve fiyatlar cihazdaki kopyadan geliyor: kopya ne zamanın,
             garson görsün — aradaki zam ekranda görünmüyor olabilir. */}
         {yerelZaman !== null && ` Menü ve ayarlar ${zamanMetni(yerelZaman)} bilgileriyle görünüyor.`}

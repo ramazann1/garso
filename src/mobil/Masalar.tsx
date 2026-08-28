@@ -40,8 +40,8 @@ import AltSayfa from "./AltSayfa";
 import OdemeTipleri from "./OdemeTipleri";
 import MusteriSecici from "../components/MusteriSecici";
 import { odemeTipleriniGetir, type OdemeTipi } from "../odemeTipleri";
-import { bekleyenMasalar, kopyaMasalari, kuyrugaEkle, useKuyruk } from "../kuyruk";
-import { hesapKopyasiOku, hesapKopyasiSil, kopyaSaati } from "../hesapKopyasi";
+import { bekleyenMasalar, cevrimdisiHesap, kopyaMasalari, kuyrugaEkle, useKuyruk } from "../kuyruk";
+import { hesapKopyasiSil, kopyaSaati } from "../hesapKopyasi";
 import { baglantiHatasi, baglantiVar, sureSinirli, useBaglanti } from "../baglanti";
 import { useCanli } from "../canli";
 import { devralabilir, masayiDevral, useMesguliyetler } from "../mesguliyet";
@@ -250,12 +250,12 @@ export default function MobilMasalar() {
     setIslemMasasi(null);
     // Bağlantı yokken hesap cihazdaki kopyadan açılıyor; ödeme kuyruğa girecek.
     if (!baglantiVar()) {
-      const kopya = hesapKopyasiOku({ tip: "masa", masaId: masa.id });
-      if (!kopya) {
-        setUyari("Bağlantı yok ve bu hesabın cihazda kopyası yok, ödeme alınamıyor.");
+      const hesap = cevrimdisiHesap({ tip: "masa", masaId: masa.id });
+      if (!hesap) {
+        setUyari("Bağlantı yok ve bu hesabın cihazda kaydı yok, ödeme alınamıyor.");
         return;
       }
-      setHizliMasa({ masa, veri: kopya.veri });
+      setHizliMasa({ masa, veri: hesap.veri });
       return;
     }
     try {

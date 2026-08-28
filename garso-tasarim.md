@@ -3,21 +3,87 @@
 
 ## 0. SIRADAKİ İŞ (9 Eyl 2026'da güncellendi)
 
-> **Sıradaki iş: yerel yazdırmanın gerçek kesintide denenmesi.** 8 Eyl'de kod bitti
-> ama test yapılamadı: eGZOZ'da yazıcılar **ağ (wifi) yazıcısı**, wifi kapatınca
-> kasa yazıcıyı da kaybediyor. Doğru test modemin WAN kablosunu çıkarmak
-> (wifi ayakta, internet yok). Köprünün de yeniden paketlenmesi gerekiyor —
-> kasadaki exe eski sürüm.
+> **Sıradaki iş: QR menü — salt okunur menü sayfası.** Müşteri masadaki karekodu
+> okutuyor, menüyü telefonunda görüyor. İlk sürümde sipariş yok, sadece menü.
+> Tasarlanacak üç parça: (1) `qr_menu(kod)` adında, satır güvenliğini aşan ve
+> yalnız satışta görünür kategori + ürün + fiyat döndüren veritabanı fonksiyonu
+> — tablolara "herkes okuyabilir" izni verilmiyor; (2) giriş kapısının dışında
+> halka açık `/m/:kod` sayfası; (3) İşletme Ayarları'nda açma/kapama, adres ve
+> yazdırılabilir karekod (`qrcode` paketi zaten kurulu).
 >
-> **Sonra: Adisyo'dan alınacak** kasa ekranında görünür "N bekleyen" sayacı.
-> (Kasa penceresindeki bekleyen ödeme satırı 8 Eyl'de geldi; eksik olan salon
-> üstünde her ekrandan görünen sayaç.)
+> **QR menünün kendi tasarım dili olacak — 9 Eyl 2026 kararı.** Garso'nun kendi
+> ekranları bir *araç*: garson yoğun serviste hızlı dokunsun diye sıkı yerleşim,
+> büyük düğme, süs yok. QR menü ise bir *vitrin*: onu kullanan müşteri, acelesi
+> yok, izlenim ediniyor. Bol boşluk, iri ve zarif başlık, yumuşak geçiş, akan
+> kaydırma, fotoğrafın öne çıktığı kart. POS'un sıkışık liste satırı estetiği
+> oraya girmeyecek. Renk paleti aynı kalıyor, değişen şey arayüzün havası.
 >
-> **Sonra: kasa çevrimdışıyken "masa durumları güncel değil" uyarısı.** Salonun
-> tepesinde şerit, o hâldeyken ödeme almaya kalkılınca "bu hesap başka bir
-> cihazdan kapanmış olabilir, doğrulanamıyor" penceresi. Engel değil uyarı.
+> **Sonra: menüyü zenginleştiren alanlar.** Bugünkü ürün modelinde açıklama ve
+> fotoğraf yok; QR menü ilk sürümü ad + fiyatla çıkacak. Adisyo turunda görülen
+> ek alanlar sıraya girdi: açıklama, en fazla 3 fotoğraf (min 300×300), kalori,
+> hazırlanma süresi, alerjen listesi, etiket (Yeni / Popüler / Şefin Önerisi /
+> İmza Ürün), "tükendi" anahtarı.
 >
-> **Ondan sonra: çevrimdışı giriş ve PIN ile kişi değiştirme.**
+> **Sonra: masadan sipariş ve garson çağırma.** QR menünün sipariş kanalına
+> dönmesi. Ayrı ve büyük iş, menü sayfası oturduktan sonra.
+>
+> **Bekleyen: yerel yazdırmanın gerçek kesintide denenmesi.** Köprü 9 Eyl'de
+> 1.3.2 sürümüyle yeniden paketlendi ve kasaya kuruldu, "Yerel yazdırma · Açık"
+> görüldü. Asıl test yapılmadı: modemin **WAN kablosu çıkarılacak** (wifi ayakta,
+> internet yok — eGZOZ'da yazıcılar ağ yazıcısı, wifi kapatılırsa yazıcı da
+> gider). Beklenen: kâğıt çıkıyor, kuyrukta "Kasadan" rozeti; kablo takılınca
+> aynı fiş ikinci kez basılmıyor.
+>
+> **Ertelendi: çevrimdışı giriş ve PIN ile kişi değiştirme.** Cihaz kesinti
+> sırasında kapanıp açılırsa Garso tamamen kilitleniyor; şifre ve PIN sunucuda
+> doğrulanıyor. Gerçek bir açık ama şimdilik sırada değil (9 Eyl kararı).
+>
+> **Ertelendi: kurye atama ve teslimat takibi.** Faz 2'nin açık kalan tek maddesi.
+> Yeni modül olduğu için önce Adisyo turu gerekiyor (9 Eyl kararı).
+>
+> **İPTAL: kasa çevrimdışıyken "masa durumları güncel değil" uyarısı.** Salonun
+> tepesine şerit ve ödeme öncesi onay penceresi planlanmıştı; 9 Eyl'de iptal
+> edildi. Gerekçe: kart rozeti zaten kopyadan çizilen masada "21:05 hâli" diyor,
+> aynı bilgiyi şeritte tekrar etmek gürültü; ödeme anındaki onay penceresi de her
+> çevrimdışı tahsilata bir tık ekliyor ve söylediği şey kartta zaten yazıyor.
+>
+> **9 Eyl 2026: QR menü dışarıdan alınmayacak.** Adisyo'nun "Dijital Menü"sü
+> kendi ürünü değil: sol menüden `qrall.co` adlı ayrı bir şirkete SSO ile giriş
+> yaptırıyor, ayrı panel ve ayrı abonelik. Menü oraya **"Adisyo'dan Menü Getir"
+> düğmesiyle elle kopyalanıyor** — canlı bağlı değil, fiyat değişince iki yerde
+> iş çıkıyor. Bize aynı yolu önerdi, reddedildi: (1) menü bizde zaten aynı
+> veritabanında, salt okunur sayfa birkaç günlük iş ve anlık güncel olur —
+> Adisyo'nun çözemediği şeyi doğuştan çözüyoruz, kozu dışarı vermek olur;
+> (2) müşteriye ikinci abonelik ödetmek; (3) QRall kendi POS'unu, kioskunu ve
+> sanal POS'unu satıyor, ticari bağımlılık riskli; (4) bağlanmak zaten onların
+> iş ortaklığı kabul etmesini gerektirir, geliştirme kararı değil.
+>
+> **9 Eyl 2026: Adisyo QR menü turu (canlı panel).** QRall'da görülenler:
+> QR **iki seviyede** üretiliyor — alan/bölge başına ve her masa için ayrı
+> (masada kişi sayısı da tutuluyor), toplu indirme var. QR menü orada sadece
+> menü değil sipariş kanalı: masadan sipariş, siparişin otomatik onaylanması,
+> garson çağırma ve hesap isteme, kupon kodu, müşterinin siparişini iptali,
+> online ödeme (ayrı sanal POS, %5+KDV komisyon). Kategoride görsel, üründe
+> zengin metin ad/açıklama, 3 fotoğraf, kalori, hazırlanma süresi, alerjen ve
+> etiket alanları var. Müşteri ekranı görülemedi — eGZOZ'un QRall paketi dolmuş,
+> menü "restoran tarafından erişime kapatılmıştır" diyor.
+>
+> **9 Eyl 2026: üç iş bitti.**
+> - **Çevrimdışı şerit gerçeği söylüyor.** `useKuyruk()` artık `bekleyenOdeme`
+>   de veriyor; şerit "3 sipariş" yerine **"3 hesap · 2 ödeme cihazda bekliyor"**
+>   diyor. Kuyrukta masa başına tek kayıt var, sipariş adedi değil — "hesap"
+>   doğru kelime; bekleyen şey para olduğunda "sipariş bekliyor" demek
+>   işletmeciyi yanlış yere bakmaya gönderiyordu.
+> - **Çevrimdışı açılan masadan ödeme alınabiliyor.** Hızlı ödeme ve hesap
+>   kapatma yalnız `hesapKopyasiOku()`ya bakıyordu; kopya ise sadece hesap
+>   *çevrimiçiyken* okunduğunda yazılıyor. Kesintide açılan masanın kopyası hiç
+>   olmadığı için "cihazda kopyası yok, ödeme alınamıyor" deyip reddediyordu —
+>   oysa hesap kuyrukta duruyordu. Yeni `cevrimdisiHesap(hedef)` önce kuyruğa,
+>   sonra kopyaya bakıyor (kuyruktaki kayıt kopyadan yeni). Salon ve mobilde
+>   dört çağrı yeri buna bağlandı; uyarı metni "cihazda kaydı yok" oldu —
+>   kullanıcı "kopya" kavramıyla uğraşmasın.
+> - **Bayat cümle düzeltildi.** Şerit bağlantı yokken hâlâ "tahsilat alınamaz"
+>   diyordu; çevrimdışı tahsilat 7 Eyl'de gelmişti.
 >
 > **8 Eyl 2026: üç iş daha bitti.**
 > - **Çevrimdışı ödeme kasada görünüyor.** `bekleyenTahsilatlar()` (kuyruk)

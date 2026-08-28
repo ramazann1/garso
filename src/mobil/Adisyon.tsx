@@ -31,8 +31,8 @@ import {
   servisGirdisi,
   yeniTahsilat,
 } from "../adisyonlar";
-import { hesapKopyasiOku, hesapKopyasiSil, kopyaSaati } from "../hesapKopyasi";
-import { kuyrugaEkle } from "../kuyruk";
+import { hesapKopyasiSil, kopyaSaati } from "../hesapKopyasi";
+import { cevrimdisiHesap, kuyrugaEkle } from "../kuyruk";
 import type { AdisyonVerisi } from "../adisyonlar";
 import { servisSatirlari } from "../servis";
 import { kdvDokumu } from "../kdv";
@@ -110,12 +110,12 @@ export default function MobilAdisyon() {
 
   useEffect(() => {
     // Bağlantı yokken istek atılmıyor; ekran cihazdaki son bilinen hesabı
-    // açıyor. Kopya olmadan çevrimdışı tahsilat alınamaz — garson neyi
-    // tahsil ettiğini bilemez.
+    // açıyor: kuyrukta bekleyen kayıt varsa o, yoksa hesap kopyası. İkisi de
+    // yoksa tahsilat alınamaz — garson neyi tahsil ettiğini bilemez.
     if (!baglantiVar()) {
-      const kopya = hesapKopyasiOku({ tip: "masa", masaId });
-      setVeri(kopya?.veri ?? CEVRIMDISI_ADISYON);
-      setKopyaZamani(kopya?.zaman ?? null);
+      const hesap = cevrimdisiHesap({ tip: "masa", masaId });
+      setVeri(hesap?.veri ?? CEVRIMDISI_ADISYON);
+      setKopyaZamani(hesap?.zaman ?? null);
       return;
     }
     setKopyaZamani(null);

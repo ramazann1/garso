@@ -20,8 +20,8 @@ import {
   Trash2,
   Zap,
 } from "lucide-react";
-import { bekleyenMasalar, kopyaMasalari, kuyrugaEkle, useKuyruk } from "../kuyruk";
-import { hesapKopyasiOku, hesapKopyasiSil, kopyaSaati } from "../hesapKopyasi";
+import { bekleyenMasalar, cevrimdisiHesap, kopyaMasalari, kuyrugaEkle, useKuyruk } from "../kuyruk";
+import { hesapKopyasiSil, kopyaSaati } from "../hesapKopyasi";
 import MasaKarti from "../components/MasaKarti";
 import MasaSecim from "../components/MasaSecim";
 import MasaPlani, { yerlesimiVar } from "../components/MasaPlani";
@@ -345,12 +345,12 @@ export default function Salon() {
     // Bağlantı yokken hesap cihazdaki kopyadan açılıyor; alınan ödeme kuyruğa
     // girip bağlantı gelince kasaya yazılıyor.
     if (!baglantiVar()) {
-      const kopya = hesapKopyasiOku({ tip: "masa", masaId: masa.id });
-      if (!kopya) {
-        setUyari("Bağlantı yok ve bu hesabın cihazda kopyası yok, ödeme alınamıyor.");
+      const hesap = cevrimdisiHesap({ tip: "masa", masaId: masa.id });
+      if (!hesap) {
+        setUyari("Bağlantı yok ve bu hesabın cihazda kaydı yok, ödeme alınamıyor.");
         return;
       }
-      setHizli({ masa, veri: kopya.veri });
+      setHizli({ masa, veri: hesap.veri });
       return;
     }
     try {
@@ -374,16 +374,16 @@ export default function Salon() {
         setOnay(null);
         // Bağlantı yoksa kapanış kuyruğa giriyor; masa cihazda boşalıyor.
         if (!baglantiVar()) {
-          const kopya = hesapKopyasiOku({ tip: "masa", masaId: masa.id });
-          if (!kopya) {
-            setUyari("Bağlantı yok ve bu hesabın cihazda kopyası yok, kapatılamıyor.");
+          const hesap = cevrimdisiHesap({ tip: "masa", masaId: masa.id });
+          if (!hesap) {
+            setUyari("Bağlantı yok ve bu hesabın cihazda kaydı yok, kapatılamıyor.");
             return;
           }
           kuyrugaEkle({
             tip: "masa",
             masaId: masa.id,
             masaAdi: masa.ad,
-            veri: kopya.veri,
+            veri: hesap.veri,
             kapat: true,
           });
           hesapKopyasiSil({ tip: "masa", masaId: masa.id });
