@@ -14,6 +14,7 @@ import { eslesiyor } from "../arama";
 import { paraGoster } from "../para";
 import { kisaAd } from "../personel";
 import { vardiyaGecmisi, vardiyaHareketleri, type Hareket, type VardiyaOzeti } from "../kasa";
+import { SAKIN, useCanli } from "../canli";
 
 const gunMetni = (t: string) =>
   new Date(t).toLocaleDateString("tr-TR", { day: "2-digit", month: "short" });
@@ -45,12 +46,20 @@ export default function KasaGecmisi() {
   const [ara, setAra] = useState("");
   const [secili, setSecili] = useState<VardiyaOzeti | null>(null);
 
-  useEffect(() => {
+  const oku = () =>
     vardiyaGecmisi().then((v) => {
       setListe(v);
       setYukleniyor(false);
     });
+
+  useEffect(() => {
+    oku();
+    // eslint-disable-next-line react-hooks/exhaustive-deps
   }, []);
+
+  // Kasa başka bir cihazdan açılıp kapatılabiliyor; liste kendiliğinden
+  // güncelleniyor. Bakma ekranı olduğu için sakin hızda.
+  useCanli(["kasa_vardiyalari", "kasa_hareketleri"], oku, SAKIN);
 
   const gorunen = liste.filter((v) =>
     eslesiyor(`${v.acan} ${v.kapatan} ${tamMetin(v.acilis)}`, ara)
@@ -124,9 +133,15 @@ export default function KasaGecmisi() {
 function VardiyaDetay({ vardiya, onKapat }: { vardiya: VardiyaOzeti; onKapat: () => void }) {
   const [hareketler, setHareketler] = useState<Hareket[]>([]);
 
+  const oku = () => vardiyaHareketleri(vardiya.id).then(setHareketler);
+
   useEffect(() => {
-    vardiyaHareketleri(vardiya.id).then(setHareketler);
+    oku();
+    // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [vardiya.id]);
+
+  // Panel açıkken kasaya para girip çıkabiliyor; hareketler listesi de canlı.
+  useCanli(["kasa_hareketleri"], oku, SAKIN);
 
   return (
     <div className="panel-fon" onClick={onKapat}>

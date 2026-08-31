@@ -25,6 +25,12 @@ const SEKME_ANAHTARI = "garso-sekme";
 // karşılığı (ad, rol, yetkiler). Ekranlar useOturum ile buraya bakıyor.
 let acik: AcikOturum | null = null;
 let kilitli = false;
+
+// Oturum her değiştiğinde artan sayaç. Açılıştaki okuma yavaş kalırsa kişi bu
+// arada giriş yapmış olabiliyor; okuma bittiğinde elindeki bilgi eskimiş
+// oluyor ve yazarsa taze oturumun üstünü siliyor. Okuma başlarken sayacı
+// alıyor, yazmadan önce hâlâ aynı mı diye bakıyor.
+let oturumKusagi = 0;
 const dinleyiciler = new Set<() => void>();
 
 function duyur() {
@@ -93,7 +99,29 @@ async function kisiyiYukle(sutun: "auth_id" | "id", deger: string | number) {
 
 // Program açılırken bir kez çalışıyor: Auth'ta oturum duruyorsa kişi bilgisi
 // yeniden okunuyor, böylece aradaki rol ve yetki değişiklikleri de geliyor.
-export async function oturumuYukle() {
+//
+// Okuma aynı anda yalnız bir kez dönüyor. Açılış çağrısı süre sınırına takılıp
+// ekranı açsa bile alttaki iş arkada sürmeye devam ediyor; üstüne ikinci bir
+// çağrı binerse kimlik işleri birbirini bekletiyor ve o sırada basılan giriş
+// düğmesi "Kontrol ediliyor…" hâlinde takılabiliyor. Süren okuma varsa aynı
+// söz döndürülüyor.
+let yuklemeIsi: Promise<void> | null = null;
+
+export function oturumuYukle() {
+  if (!yuklemeIsi) {
+    yuklemeIsi = oturumuOku().finally(() => {
+      yuklemeIsi = null;
+    });
+  }
+  return yuklemeIsi;
+}
+
+async function oturumuOku() {
+  const kusak = oturumKusagi;
+  // Okuma sürerken giriş, çıkış veya PIN'le kişi değişimi olduysa buradaki
+  // bilgi geçersiz: sessizce çekiliyor, yazan taraf zaten ekranı kurdu.
+  const eskidi = () => kusak !== oturumKusagi;
+
   // "Beni hatırla" işaretlenmemişse oturum yalnızca o sekme boyunca yaşıyor;
   // sekme kapanınca işaret kayboluyor ve program burada oturumu düşürüyor.
   if (localStorage.getItem(GECICI_ANAHTARI) === "1" && !sessionStorage.getItem(SEKME_ANAHTARI)) {
@@ -114,6 +142,7 @@ export async function oturumuYukle() {
   }
 
   const { data } = await supabase.auth.getSession();
+  if (eskidi()) return;
   // Bağlantı yokken bilet tazelenemediği için de "oturum yok" dönebiliyor;
   // o durumda kopya duruyor, oturum düşürülmüyor.
   if (!data.session) {
@@ -132,10 +161,13 @@ export async function oturumuYukle() {
     // garsonun yerine yöneticinin ekranı açılırdı. Kimin çalıştığını bilen tek
     // yer veritabanı, oraya soruluyor.
     const { data: kisiId } = await supabase.rpc("oturum_personeli");
-    acik = kisiId
+    const kisi = kisiId
       ? await kisiyiYukle("id", kisiId as number)
       : await kisiyiYukle("auth_id", data.session.user.id);
+    if (eskidi()) return;
+    acik = kisi;
   } catch (hata) {
+    if (eskidi()) return;
     // Bağlantı yoksa kişi bilgisi cihazdaki kopyadan kuruluyor; kasa
     // internetsiz açılınca da açık oturumla geliyor. Başka bir hataysa
     // (yetki gibi) eski bilgiyle devam etmek yanlış olur.
@@ -163,6 +195,16 @@ export async function oturumuYukle() {
 // diye anlaşılıyor. E-postanın hangi hesaba karşılık geldiğini veritabanı
 // söylüyor — kod tarafı personel tablosunu taramıyor.
 export async function girisYap(kimlik: string, sifre: string, kalici: boolean) {
+  // Giriş sonsuza kadar beklemiyor. Tek tek isteklerin kendi süre sınırı var
+  // ama sıraya girmiş bir kimlik işini beklerken hiç istek çıkmadan da asılı
+  // kalınabiliyor; o zaman düğme ölü kalıyordu. Süre dolarsa düğme eski hâline
+  // dönüyor, kişi yeniden deneyebiliyor.
+  const kisi = await sureSinirli(girisiTamamla(kimlik, sifre, kalici), 20_000);
+  if (!kisi) throw new Error("Sunucuya ulaşılamadı. Tekrar dene.");
+  return kisi;
+}
+
+async function girisiTamamla(kimlik: string, sifre: string, kalici: boolean) {
   let adres = hesapEpostasi(kimlik);
   if (kimlik.includes("@")) {
     const { data } = await supabase.rpc("eposta_hesabi", { giris: kimlik.trim() });
@@ -193,6 +235,7 @@ export async function girisYap(kimlik: string, sifre: string, kalici: boolean) {
   // vardiyadan kalmış bir PIN geçişi devralınmasın.
   await supabase.rpc("oturum_kisisini_birak");
 
+  oturumKusagi++;
   acik = kisi;
   oturumuHatirla(data.user.id);
   kilidiKaldir();
@@ -229,6 +272,7 @@ export async function oturumuKapat() {
   await supabase.rpc("oturum_kisisini_birak");
   kilidiKaldir();
   localStorage.removeItem(GECICI_ANAHTARI);
+  oturumKusagi++;
   acik = null;
   // Çıkışta cihazdaki kopyalar da gidiyor: kasayı devreden kişi kendi
   // işletmesinin menüsünü ve yetkilerini geride bırakmasın.
@@ -321,6 +365,7 @@ export async function pinIleAc(pin: string) {
 
 // PIN doğrulandıktan sonra ortak son adım: ekranın kişisi değişiyor.
 function kisiyeGec(kisi: AcikOturum) {
+  oturumKusagi++;
   acik = kisi;
   oturumuHatirla();
   kilidiKaldir();
@@ -348,6 +393,7 @@ export function bekleyenPinIzle() {
       // Yetkiler ve rol bu arada değişmiş olabilir; sunucudan gelen taze hâli
       // yerel kopyaya da geçiyor.
       await yerelPinKaydet(kisi, pin);
+      oturumKusagi++;
       acik = kisi;
       oturumuHatirla();
       duyur();

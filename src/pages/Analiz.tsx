@@ -59,6 +59,7 @@ import {
   type UrunOzeti,
   type UrunSatiri,
 } from "../analiz";
+import { SAKIN, useCanli } from "../canli";
 import { odemeAdi, type Masraf } from "../masraflar";
 import { kisaAd } from "../personel";
 
@@ -77,6 +78,10 @@ export default function Analiz() {
   const [uyari, setUyari] = useState<string | null>(null);
   // Adisyon yeniden açılınca liste eskiyor; sayaç değişince sorgu tekrarlanıyor.
   const [tazele, setTazele] = useState(0);
+  // Canlı haberle gelen tazelemede dönen halka gösterilmiyor: rakam yerinde
+  // güncelleniyor, okumakta olan kişinin ekranı boşalmıyor. Halka yalnız ilk
+  // açılışta ve filtre değiştiğinde çıkıyor.
+  const sessizTazeleme = useRef(false);
   // Özetteki eksik tahsilat satırından gelindiğinde liste o hesaplara daralıyor.
   const [sadeceEksik, setSadeceEksik] = useState(false);
   // Ürün → kategori eşlemesi filtreden bağımsız; bir kez çekilip saklanıyor.
@@ -89,7 +94,7 @@ export default function Analiz() {
   // Filtre değişince tek sorgu atılıyor; altı sekme de aynı listeden besleniyor.
   useEffect(() => {
     let gecerli = true;
-    setYukleniyor(true);
+    if (!sessizTazeleme.current) setYukleniyor(true);
     Promise.all([
       analizAdisyonlari(filtre),
       analizGiderleri(filtre),
@@ -105,11 +110,24 @@ export default function Analiz() {
       setCariHareketler(c);
       setMutfak(m);
       setYukleniyor(false);
+      sessizTazeleme.current = false;
     });
     return () => {
       gecerli = false;
     };
   }, [filtre, tazele]);
+
+  // Satış, tahsilat ve gider girildiği anda buradaki rakamlar eskiyor. Bakma
+  // ekranı olduğu için sakin hızda: yoğun saatte her kaleme sorgu atılmıyor,
+  // okunan sayı da altından kaymıyor.
+  useCanli(
+    ["adisyonlar", "adisyon_kalemleri", "tahsilatlar", "turlar", "masraflar"],
+    () => {
+      sessizTazeleme.current = true;
+      setTazele((t) => t + 1);
+    },
+    SAKIN
+  );
 
   const ozet = useMemo(() => analizOzeti(adisyonlar, giderler), [adisyonlar, giderler]);
   const urunler = useMemo(

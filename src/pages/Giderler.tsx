@@ -9,6 +9,7 @@ import { kasaGunuBasi } from "../analiz";
 import { eslesiyor } from "../arama";
 import { paraGoster, paraSayi, paraYaz } from "../para";
 import { kisaAd } from "../personel";
+import { SAKIN, useCanli } from "../canli";
 import {
   HAZIR_TIPLER,
   ODEME_TIPLERI,
@@ -87,6 +88,10 @@ export default function Giderler() {
     tazele().then(() => setYukleniyor(false));
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [donem]);
+
+  // Gider mobilden ya da başka bir kasadan da girilebiliyor; liste sakin
+  // hızda kendiliğinden tazeleniyor.
+  useCanli(["masraflar"], tazele, SAKIN);
 
   const kaydet = async (alanlar: MasrafAlanlari) => {
     if (panel) await masrafGuncelle(panel.id, alanlar);

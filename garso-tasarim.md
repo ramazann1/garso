@@ -1,11 +1,65 @@
 ﻿# GARSO — Teknik Tasarım: Veri Modeli & Ekran Haritası
 *Restoran ve cafe'ler için bulut tabanlı satış ve işletme yönetim sistemi.*
 
-## 0. SIRADAKİ İŞ (30 Ağu 2026'da güncellendi)
+## 0. SIRADAKİ İŞ (1 Eyl 2026'de güncellendi)
 
-> **Sıradaki iş: yeni cihazda ilk girişte takılan düğme.** "Kontrol ediliyor…"
-> hâlinde kalıyor, sayfa yenilenince geçiyor; ara sıra çıkıyor, henüz
-> yakalanamadı. Notu aşağıda.
+> **Sıra 1 Eyl 2026'da değişti.** Üç büyük madde — **masasız adisyonun
+> çevrimdışı açılması**, **QR menünün kalanı** ve **kurye atama** — en sona
+> alındı. Gerekçe: üçü de acele değil (eGZOZ'da paket servis işletilmiyor, QR
+> menü çalışır durumda, çevrimdışının kalan ucu tek bir akış). Önce elde biriken
+> küçük işler temizlenecek. Sıra:
+>
+> 1. **Analiz'in diğer tablolarına kendi kutusunda kaydırma**
+> 2. **PWA simgesi** — `public/favicon.svg` hâlâ Vite'ın mor varsayılanı
+> 3. **`yazdirma_kuyrugu` tablosu yetkisiz** — kapı dikkatli konmalı, köprü o tabloyu okuyor
+> 4. **Sipariş ekranının sepet dökümünde KDV** — hesap ekranı düzeldi, sipariş ekranı eski davranışta
+> 5. **Kuver/garsoniyeyi o hesaba özel açma-kapama** — veri katmanı hazır, arayüzü yok
+> 6. **Excel aktarımında isimle eşleşme** — önizleme üstüne yazılacakları göstermiyor (çirkinleştirmeyen bir yol bulunursa)
+>
+> Küçük işlerden sonraki sıra (1 Eyl 2026'da kesinleşti):
+>
+> 7. **Stok** — reçete, otomatik düşüm, kritik stok uyarısı, maliyet/kârlılık
+> 8. **Gelişmiş raporlar** — saatlik ciro, personel performansı, karşılaştırmalı analiz
+> 9. **Cari / veresiye modülü**
+> 10. **Masasız adisyonun çevrimdışı açılması** — offline'ın açık kalan tek ucu
+> 11. **QR menünün kalanı** — kategori/kapak görselleri, masadan sipariş, garson çağırma, masa başına karekod
+> 12. **Kurye atama ve teslimat takibi** — önce Adisyo'da canlı tur, sonra plan
+> 13. **Sadakat programı** (puan, kampanya)
+> 14. **Çoklu şube** — merkezi menü, şube karşılaştırma
+> 15. **İkon boyut standardı** — bütün ekranlar tek tek gezilecek, en sonda
+>
+> Ertelenen üçlü (10-12) buraya konuldu: acelesi yok ama stok ve raporlardan
+> sonra, sadakat ve çoklu şubeden önce. Ardından canlıya çıkış işleri
+> (güvenlik başlıkları, CAPTCHA, exe imzası, mağaza) ve Faz 4 entegrasyonları.
+>
+> **1 Eyl 2026: Analiz ve Kasa ekranlarına canlı tazeleme geldi.** Üç ekran da
+> `useCanli(..., SAKIN)` ile bağlandı — bakma ekranı oldukları için 4 saniyelik
+> sakin hız: yoğun saatte her kaleme sorgu atılmıyor, okunan sayı da altından
+> kaymıyor. **Analiz** beş tabloyu dinliyor (`adisyonlar`, `adisyon_kalemleri`,
+> `tahsilatlar`, `turlar`, `masraflar`); ekranda zaten duran `tazele` sayacı
+> artıyor. Yanına **sessiz tazeleme** eklendi (`sessizTazeleme` bayrağı): mevcut
+> okuma her çalıştığında dönen halkayı açıyordu, canlı haberde ekran dört
+> saniyede bir boşalırdı. Halka artık yalnız ilk açılışta ve filtre
+> değiştiğinde çıkıyor. **Kasa Geçmişi** `kasa_vardiyalari` + `kasa_hareketleri`
+> dinliyor, açık vardiya detay paneli de kendi hareketlerini tazeliyor.
+> **Giderler** `masraflar` dinliyor — gider mobilden de girilebiliyor. Yeni
+> tablo dinlemesi eklenmedi, beşi de `canli.ts`'de tanımlıydı; SQL gerekmedi.
+>
+> **1 Eyl 2026: yeni cihazda ilk girişte takılan düğme çözüldü.** Belirti:
+> giriş yapılıyor, hata çıkmıyor, düğme normale dönüyor ama ekran değişmiyordu;
+> yenileyince salon geliyordu. Sebep **yarış durumu**: program açılışında çalışan
+> `oturumuOku` "bu cihazda oturum var mı?" diye soruyor, yeni cihazda cevap
+> "yok" ve yavaş geliyor. O sırada giriş tamamlanıp oturum kuruluyor; sonra geç
+> dönen eski cevap elindeki "oturum yok" bilgisiyle temizliği çalıştırıp
+> **yeni kurulmuş oturumu siliyordu**. Düzeltme `oturum.ts`'de üç parça:
+> **kuşak sayacı** (`oturumKusagi` — her giriş/çıkış/PIN geçişinde artıyor;
+> okuma başlarken değeri alıyor, yazmadan önce hâlâ aynı mı diye bakıyor,
+> değiştiyse sessizce çekiliyor), **`oturumuYukle`'nin tek sıraya alınması**
+> (süren okuma varsa aynı söz dönüyor; App iki yerden çağırıyor) ve
+> **`girisYap`'a 20 saniye sınırı** (asılı kalırsa düğme ölü kalmasın diye;
+> tek isteğin kendi sınırı 12 sn, bu yalnız hiç istek çıkmadan bekleme hâlini
+> yakalıyor). Ara sıra çıkan bir sorundu, tek denemeyle kapandı sayılmaz —
+> tekrarlarsa nota dönülecek.
 >
 > **1 Eyl 2026: KDS'in kalanı bitti (bir maddesi atlandı).**
 > - **Aşamalar.** İstasyonun "Hazırlanıyor" ve "Paketleniyor" anahtarları artık
@@ -445,21 +499,13 @@
 > Faz 2'nin büyük maddeleri kapandı. Geriye kalanlar: **kurye atama** ve
 > **QR menünün kalanı** (ikisi de en sonda), bir de aşağıdaki küçük işler.
 >
-> Offline'ın açık kalan tek ucu: **masasız adisyonun çevrimdışı açılması**.
+> Offline'ın açık kalan tek ucu: **masasız adisyonun çevrimdışı açılması**
+> (1 Eyl 2026'da o da en sona alındı).
 > Çevrimdışı tahsilat 7 Eyl'de, PIN ile kişi değiştirme 30 Ağu'da bitti,
 > sıfırdan giriş 31 Ağu'da atlandı.
 >
-> Küçük iş: **Analiz ve Kasa ekranlarına canlı tazeleme** (katman hazır:
-> `useCanli(..., SAKIN)`). Küçük iş: **Analiz'in diğer tablolarına kendi
-> kutusunda kaydırma**. Küçük iş: **PWA simgesi** — `public/favicon.svg` hâlâ
-> Vite'ın mor varsayılan logosu.
->
-> **Ara sıra çıkan, henüz yakalanamamış sorun:** yeni cihazda **ilk giriş**
-> yapılırken düğme "Kontrol ediliyor…" hâlinde takılıyor; sayfa yenilenince
-> oturum açılmış oluyor. 31 Ağu 2026'da düğmenin ölü kalmaması düzeltildi
-> (`Giris.tsx`) ama **asıl sebep bulunamadı**. Şüpheli: girişten hemen sonra
-> yetkilerin okunması (`kisiyiYukle`). Tekrar olursa 15 saniye beklenip
-> konsoldaki hata kaydedilecek.
+> Küçük işlerin güncel sırası yukarıdaki numaralı listede; buradaki maddeler
+> onun ayrıntısı.
 >
 > **Proje sonuna doğru Ramazan'a hatırlatılacak:** mobil masa kartındaki
 > **"Hesap çıktı" şeridi** — bütün kartları 152px'e çıkarıyor, ekranda daha az
