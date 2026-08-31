@@ -1,6 +1,7 @@
 import { useEffect, useState } from "react";
 import { Delete } from "lucide-react";
 import { pinIleAc } from "../oturum";
+import { useBaglanti } from "../baglanti";
 
 // Kasa gün boyu açık kalıyor; başındaki kişi değiştiğinde ekran kilitleniyor ve
 // gelen kişi PIN'iyle devam ediyor. Program burada kapanmıyor — açık adisyonlar
@@ -10,6 +11,7 @@ export default function KilitEkrani() {
   const [pin, setPin] = useState("");
   const [hata, setHata] = useState("");
   const [bekliyor, setBekliyor] = useState(false);
+  const cevrimici = useBaglanti();
 
   // Dört hane dolunca ayrıca bir düğmeye basılmıyor.
   useEffect(() => {
@@ -46,7 +48,11 @@ export default function KilitEkrani() {
           Garso<i />
         </span>
         <h1>Ekran kilitli</h1>
-        <span className="giris-alt">Devam etmek için PIN'ini gir</span>
+        <span className="giris-alt">
+          {cevrimici
+            ? "Devam etmek için PIN'ini gir"
+            : "Bağlantı yok — bu kasada daha önce PIN'le geçenler devam edebilir"}
+        </span>
 
         <div className={hata ? "pin-nokta sarsil" : "pin-nokta"}>
           {[0, 1, 2, 3].map((i) => (

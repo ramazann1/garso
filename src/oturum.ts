@@ -1,6 +1,7 @@
 import { durumluModul } from "./sicakGuncelleme";
 import { useEffect, useState } from "react";
-import { baglantiHatasi, baglantiVar } from "./baglanti";
+import { baglantiDinle, baglantiHatasi, baglantiVar, kopukBildir, sureSinirli } from "./baglanti";
+import { yerelPinCoz, yerelPinKaydet, yerelPinVar, yerelPinleriSil } from "./cevrimdisiPin";
 import { onbellegiTemizle, onbellekOku, onbellekYaz } from "./onbellek";
 import { supabase } from "./supabase";
 import { telefonSade } from "./personel";
@@ -232,6 +233,8 @@ export async function oturumuKapat() {
   // Çıkışta cihazdaki kopyalar da gidiyor: kasayı devreden kişi kendi
   // işletmesinin menüsünü ve yetkilerini geride bırakmasın.
   onbellegiTemizle();
+  yerelPinleriSil();
+  bekleyenPin = null;
   duyur();
   await supabase.auth.signOut();
 }
@@ -267,17 +270,91 @@ export async function pinIleAc(pin: string) {
   // kurcalayana kalırdı; üstelik veritabanı tarafı kimin çalıştığını hiç
   // öğrenmiyordu ve yetki denetimleri kasayı açan kişiye göre işliyordu.
   // Fonksiyon kişiyi hem doğruluyor hem oturumun üstüne yazıyor.
-  const { data, error } = await supabase.rpc("pin_ile_gec", { pin });
-  if (error || !data) throw new Error("PIN doğru değil.");
+  try {
+    // Bağlantının kopuk olduğu zaten biliniyorsa sunucuya hiç gidilmiyor:
+    // cevapsız istek zaman aşımına düşene kadar tuş takımı saniyelerce
+    // donuyordu, üstelik doğru PIN'de de yanlışta da aynı süre.
+    if (!baglantiVar()) throw new Error("Bağlantı yok.");
 
-  const kisi = await kisiyiYukle("id", data as number);
-  if (!kisi) throw new Error("PIN doğru değil.");
+    // Bağlantı az önce koptuysa durum henüz güncellenmemiş olabilir; istek bu
+    // kez de asılı kalmasın diye süreyle sınırlı.
+    const cevap = await sureSinirli(Promise.resolve(supabase.rpc("pin_ile_gec", { pin })), 4_000);
+    if (!cevap) {
+      kopukBildir();
+      throw new Error("Bağlantı yok.");
+    }
+    const { data, error } = cevap;
+    if (error) throw error;
+    if (!data) throw new Error("PIN doğru değil.");
 
+    const kisi = await kisiyiYukle("id", data as number);
+    if (!kisi) throw new Error("PIN doğru değil.");
+
+    // Aynı PIN internetsizken de çalışsın diye doğrulayıcı cihaza bırakılıyor.
+    // Sunucudan özet indirmiyoruz: PIN zaten burada yazıldı, sunucu da doğru
+    // olduğunu söyledi. Böylece cihazda yalnız o kasada çalışanlar birikiyor.
+    await yerelPinKaydet(kisi, pin);
+    bekleyenPin = null;
+    return kisiyeGec(kisi);
+  } catch (hata) {
+    // Yalnız bağlantı düştüğünde yerele bakılıyor. "PIN doğru değil" gibi
+    // sunucudan gelen bir cevapta yerel deneme yapılırsa yanlış PIN ikinci bir
+    // şansla geçebilirdi.
+    if (baglantiVar() && !baglantiHatasi(hata)) throw hata;
+
+    // Bu kasada hiç kimse internet varken PIN'le geçmemişse mesele PIN'in
+    // yanlışlığı değil; kullanıcı doğru PIN'i yazıp durur.
+    if (!yerelPinVar()) {
+      throw new Error("Bağlantı yok — bu kasada daha önce PIN'le geçen kimse olmadığı için doğrulanamıyor.");
+    }
+    const kisi = await yerelPinCoz(pin);
+    if (!kisi) throw new Error("PIN doğru değil.");
+
+    // Sunucu tarafı hâlâ kasayı açan kişide; bağlantı gelince düzeltilecek.
+    // Düzeltilene kadar sunucuda yapılan yetki denetimleri ve "kimin yaptığı"
+    // kaydı yanlış kişiye işlerdi — kuyruk zaten bağlantı gelmeden kayıt
+    // göndermiyor, bu yüzden sıralama doğru kalıyor.
+    bekleyenPin = pin;
+    return kisiyeGec(kisi);
+  }
+}
+
+// PIN doğrulandıktan sonra ortak son adım: ekranın kişisi değişiyor.
+function kisiyeGec(kisi: AcikOturum) {
   acik = kisi;
   oturumuHatirla();
   kilidiKaldir();
   duyur();
   return kisi;
+}
+
+// Çevrimdışı geçilen PIN bellekte bekliyor; bağlantı dönünce sunucu tarafı da
+// aynı kişiye ayarlanıyor. Diskte tutulmuyor — düz PIN'in cihazda kalıcı
+// durması, yerel doğrulayıcıyı yavaş özetle korumanın anlamını kaçırırdı.
+// Sayfa bu arada yenilenirse geçiş sunucuya işlenemez; kişi PIN'i yeniden
+// yazacak.
+let bekleyenPin: string | null = null;
+
+export function bekleyenPinIzle() {
+  return baglantiDinle(async (acikMi) => {
+    if (!acikMi || !bekleyenPin) return;
+    const pin = bekleyenPin;
+    try {
+      const { data, error } = await supabase.rpc("pin_ile_gec", { pin });
+      if (error || !data) return;
+      const kisi = await kisiyiYukle("id", data as number);
+      if (!kisi) return;
+      bekleyenPin = null;
+      // Yetkiler ve rol bu arada değişmiş olabilir; sunucudan gelen taze hâli
+      // yerel kopyaya da geçiyor.
+      await yerelPinKaydet(kisi, pin);
+      acik = kisi;
+      oturumuHatirla();
+      duyur();
+    } catch {
+      // Bağlantı yine düştüyse bekleyen PIN duruyor, sonraki denemede gider.
+    }
+  });
 }
 
 /** Ekranların oturuma abone olma yolu; giriş/çıkış/kilitte hepsi birlikte yenileniyor. */

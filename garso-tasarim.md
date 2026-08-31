@@ -1,17 +1,55 @@
 ﻿# GARSO — Teknik Tasarım: Veri Modeli & Ekran Haritası
 *Restoran ve cafe'ler için bulut tabanlı satış ve işletme yönetim sistemi.*
 
-## 0. SIRADAKİ İŞ (29 Ağu 2026'da güncellendi)
+## 0. SIRADAKİ İŞ (30 Ağu 2026'da güncellendi)
 
-> **Sıradaki iş: Ramazan'ın eski menü projesine bakmak.** 29 Ağu'da seans
-> sonunda çıktı: daha önce üzerinde çalıştığı ayrı bir menü projesi varmış,
-> onun entegre edilip edilemeyeceğini konuşacağız. **Ramazan'a hatırlat:
-> projenin klasör yolunu, GitHub adresini ya da canlı adresini istiyoruz.**
-> Bakılınca karar verilecek: kodu olduğu gibi almak (ancak React+TypeScript
-> ise ve veri yapısı uyuyorsa) mı, yoksa yalnız görünümünü alıp Garso'nun
-> `qr_menu` verisine bağlamak mı. İkincisi muhtemelen daha temiz — bugünkü
-> sayfada kademeli zenginlik, tükendi, alerjen gibi Garso'ya özel işler var,
-> onlar kaybedilmemeli.
+> **Sıradaki iş: çevrimdışı sıfırdan giriş.** PIN tarafı 30 Ağu'da kapandı;
+> açık kalan, o cihazda daha önce hiç giriş yapılmamışsa internetsiz
+> girilememesi (`girisYap` → `signInWithPassword` sunucuya gidiyor). Daha nadir
+> bir durum, o yüzden PIN'den sonraya bırakıldı.
+>
+> **30 Ağu 2026: çevrimdışı PIN ile kişi değiştirme bitti.** Kilitli ekrandan
+> PIN'le geçmek artık internetsiz de çalışıyor. **Sunucudan hiçbir PIN özeti
+> inmiyor** — 2 Eyl'in sertleştirmesi (`pin_hash` sütunu tarayıcıya kapalı)
+> olduğu gibi duruyor. Bunun yerine cihaz kendi doğrulayıcısını, kişi o kasada
+> **internet varken PIN'le geçtiği an** üretiyor: PIN zaten kullanıcı tarafından
+> yazılmış, sunucu da doğru olduğunu söylemiş oluyor. Böylece cihazda yalnız o
+> kasada fiilen çalışanlar birikiyor, hiç uğramamış kişininki hiç inmiyor.
+> Yeni dosya `cevrimdisiPin.ts`: PBKDF2, kişi başına ayrı tuz, 250.000 tur
+> (dört hanede 9.000 ihtimal var, ucuz özet saniyeler içinde taranırdı).
+> Kayıt kişinin yetkilerini de taşıyor — internetsizken `kisiyiYukle`
+> çalışamıyor, yetkiler bilinmeden ekran kurulamaz.
+>
+> Kurallar: `pinIleAc` **önce sunucuya** soruyor, yalnız bağlantı düştüğünde
+> yerele bakıyor (sunucu "PIN yanlış" derse yerel deneme yapılmıyor, yoksa
+> yanlış PIN ikinci bir şans bulurdu). Bağlantının kopuk olduğu biliniyorsa
+> sunucuya hiç gidilmiyor ve kalan istek 4 saniyeyle sınırlı — ilk sürümde
+> cevapsız istek zaman aşımına düşene kadar tuş takımı saniyelerce donuyordu.
+> Çevrimdışı geçilen PIN **bellekte** bekliyor (diskte değil; düz PIN'in cihazda
+> kalıcı durması yavaş özetin anlamını kaçırırdı), bağlantı gelince
+> `pin_ile_gec` arkada çağrılıp sunucu tarafı da aynı kişiye ayarlanıyor —
+> yoksa yetki denetimleri ve "kim yaptı" kaydı kasayı açan kişiye işlerdi.
+> Doğrulayıcı PIN değişince siliniyor (`yerelPinUnut`, `personel.ts`) ve 30 gün
+> ömrü var: başka kasadaki kopya PIN değişikliğini duymuyor, süre kapatıyor.
+> Çıkışta diğer kopyalarla birlikte gidiyor. **SQL değişikliği gerekmedi.**
+>
+> **30 Ağu 2026: eski menü projesine (MENUPAD) bakıldı, kodu alınmayacak.**
+> Masaüstündeki `MENUPAD KOPYA` klasörü düz HTML+CSS+JS, kendi ayrı Supabase
+> projesine bağlı, menüyü tek `menus` tablosunda `type` alanıyla (tab/category/
+> product) tutuyor; yanında kayıt, işletme paneli, süper admin ve abonelik var.
+> Ne teknoloji (React+TS değil) ne veri yapısı Garso'ya uyuyor — aktarmak
+> yeniden yazmakla aynı emek. **Alınacak olan kod değil fikir listesi**, QR
+> menü sırası gelince bakılmak üzere: kategorilerin üstünde sekme katmanı
+> (Yiyecek/İçecek gibi), alt kategori ara başlığı, iki dil (TR/EN ayrı ad ve
+> açıklama alanı), yıldızlı puanlama + düşük puanda geri bildirim formu /
+> yüksek puanda Google yorum yönlendirmesi, alt bilgide wifi adı-şifresi ve
+> sosyal medya, besin değerleri (protein/karbonhidrat/yağ), ürün bazlı
+> görüntülenme sayacı. MENUPAD hiç canlıya çıkmadı.
+>
+> **30 Ağu 2026: çevrimdışı aşama 2 ve 3 aslında bitmiş.** Yol haritasında açık
+> görünüyordu; kodda `onbellek.ts` (yerel okuma kopyası, "önce sunucu olmazsa
+> yerel") ve `kuyruk.ts` (yazma kuyruğu, tahsilat ve hesap kapatma dahil) var.
+> İşaretler koddan geri kalmış — yol haritası gözden geçirilmeli.
 >
 > **29 Ağu 2026: QR menü sayfası baştan yazıldı.** `QrMenu.tsx` ve
 > `qrMenu.css` atılıp yeniden yazıldı. Zemin beyaz, tek vurgu mercan.
@@ -27,7 +65,7 @@
 > genişlik fotoğrafın üstünde aynı düzen. Vitrin her satırda iki ürün; açılan
 > kart satırın tamamına yayılıyor.
 >
-> **Sonra: kategori ve kapak görsellerinin girişi.** Veritabanında alanlar var
+> **Ertelendi: kategori ve kapak görsellerinin girişi.** Veritabanında alanlar var
 > (`kategoriler.gorsel`, `kategoriler.aciklama`, `isletme_ayarlari.qr_menu_kapaklar`)
 > ama girecek ekran yok: kategori penceresi bugün bu iki alanı taşıyor ama
 > düzenletmiyor, kapaklar da İşletme Ayarları'nın QR Menü bölümüne eklenecek.
@@ -59,7 +97,7 @@
 > bölümler), ayrı ürün modalı (bizde satırın içinde açılan detay).
 > ChefAI şimdilik sıraya alınmadı — menü oturmadan sırası değil.
 >
-> **Sonra: masadan sipariş ve garson çağırma.** QR menünün sipariş kanalına
+> **Ertelendi: masadan sipariş ve garson çağırma.** QR menünün sipariş kanalına
 > dönmesi. Ayrı ve büyük iş, menü sayfası oturduktan sonra.
 >
 > **Bekleyen: yerel yazdırmanın gerçek kesintide denenmesi.** Köprü 9 Eyl'de
@@ -73,7 +111,9 @@
 > karekodu var. QRall'da alan ve masa başına ayrı QR üretiliyor; o ayrım ancak
 > masadan sipariş gelince anlam kazanıyor, o zaman yapılacak.
 >
-> **Ertelendi: çevrimdışı giriş ve PIN ile kişi değiştirme.** Cihaz kesinti
+> **Kısmen kapandı (30 Ağu): çevrimdışı giriş ve PIN ile kişi değiştirme.**
+> PIN tarafı bitti, notu yukarıda. Aşağıdaki metin sıfırdan girişi anlatıyor,
+> o hâlâ açık. Cihaz kesinti
 > sırasında kapanıp açılırsa Garso tamamen kilitleniyor; şifre ve PIN sunucuda
 > doğrulanıyor. Gerçek bir açık ama şimdilik sırada değil (9 Eyl kararı).
 >

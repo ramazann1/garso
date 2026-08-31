@@ -1,4 +1,5 @@
 import { supabase } from "./supabase";
+import { yerelPinUnut } from "./cevrimdisiPin";
 
 export type Rol = {
   id: number;
@@ -162,6 +163,10 @@ async function pinYaz(personelId: number, pin?: string | null) {
     p_pin: pin ?? "",
   });
   if (error) throw new Error(error.message);
+
+  // Cihazdaki çevrimdışı doğrulayıcı eski PIN'e göre kurulmuştu; kalırsa
+  // internetsizken eski PIN'le geçilirdi.
+  yerelPinUnut(personelId);
 }
 
 async function bolgeleriYaz(personelId: number, bolgeIdler: number[]) {

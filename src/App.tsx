@@ -32,7 +32,7 @@ import KilitEkrani from "./components/KilitEkrani";
 import CevrimdisiSerit from "./components/CevrimdisiSerit";
 import { baglantiyiIzle, sureSinirli, useBaglanti } from "./baglanti";
 import { kuyruguIzle } from "./kuyruk";
-import { girisKuruldu, kilitle, oturumuYukle, useOturum } from "./oturum";
+import { bekleyenPinIzle, girisKuruldu, kilitle, oturumuYukle, useOturum } from "./oturum";
 
 function App() {
   const { oturum, kilitli } = useOturum();
@@ -48,6 +48,10 @@ function App() {
   // Bekleyen siparişler bağlantı gelir gelmez gönderiliyor. Program yeniden
   // açılsa da kuyruk cihazda durduğu için kayıp yok.
   useEffect(kuyruguIzle, []);
+
+  // İnternetsizken PIN'le geçen kişi sunucu tarafına da işlensin diye bağlantı
+  // dönüşü bekleniyor; yoksa yetki denetimleri kasayı açan kişiye göre işlerdi.
+  useEffect(bekleyenPinIzle, []);
 
   useEffect(() => {
     // Her okuma kendi hatasını yutuyor ve süreyle sınırlı: bağlantı yokken
