@@ -9420,7 +9420,8 @@ body {
   background: var(--kart);
 }
 
-.tablo-kaydir-dikey tfoot th {
+.tablo-kaydir-dikey tfoot th,
+.tablo-kaydir-dikey tfoot td {
   position: sticky;
   bottom: 0;
   z-index: 2;

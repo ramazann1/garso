@@ -1,7 +1,7 @@
 ﻿# GARSO — Teknik Tasarım: Veri Modeli & Ekran Haritası
 *Restoran ve cafe'ler için bulut tabanlı satış ve işletme yönetim sistemi.*
 
-## 0. SIRADAKİ İŞ (1 Eyl 2026'de güncellendi)
+## 0. SIRADAKİ İŞ (1 Eyl 2026 akşamı güncellendi)
 
 > **Sıra 1 Eyl 2026'da değişti.** Üç büyük madde — **masasız adisyonun
 > çevrimdışı açılması**, **QR menünün kalanı** ve **kurye atama** — en sona
@@ -9,28 +9,54 @@
 > menü çalışır durumda, çevrimdışının kalan ucu tek bir akış). Önce elde biriken
 > küçük işler temizlenecek. Sıra:
 >
-> 1. **Analiz'in diğer tablolarına kendi kutusunda kaydırma**
-> 2. **PWA simgesi** — `public/favicon.svg` hâlâ Vite'ın mor varsayılanı
-> 3. **`yazdirma_kuyrugu` tablosu yetkisiz** — kapı dikkatli konmalı, köprü o tabloyu okuyor
-> 4. **Sipariş ekranının sepet dökümünde KDV** — hesap ekranı düzeldi, sipariş ekranı eski davranışta
-> 5. **Kuver/garsoniyeyi o hesaba özel açma-kapama** — veri katmanı hazır, arayüzü yok
-> 6. **Excel aktarımında isimle eşleşme** — önizleme üstüne yazılacakları göstermiyor (çirkinleştirmeyen bir yol bulunursa)
+> 1. **`yazdirma_kuyrugu` tablosu yetkisiz** — kapı dikkatli konmalı, köprü o tabloyu okuyor
+> 2. **Sipariş ekranının sepet dökümünde KDV** — hesap ekranı düzeldi, sipariş ekranı eski davranışta
+> 3. **Kuver/garsoniyeyi o hesaba özel açma-kapama** — veri katmanı hazır, arayüzü yok
+> 4. **Excel aktarımında isimle eşleşme** — önizleme üstüne yazılacakları göstermiyor (çirkinleştirmeyen bir yol bulunursa)
 >
 > Küçük işlerden sonraki sıra (1 Eyl 2026'da kesinleşti):
 >
-> 7. **Stok** — reçete, otomatik düşüm, kritik stok uyarısı, maliyet/kârlılık
-> 8. **Gelişmiş raporlar** — saatlik ciro, personel performansı, karşılaştırmalı analiz
-> 9. **Cari / veresiye modülü**
-> 10. **Masasız adisyonun çevrimdışı açılması** — offline'ın açık kalan tek ucu
-> 11. **QR menünün kalanı** — kategori/kapak görselleri, masadan sipariş, garson çağırma, masa başına karekod
-> 12. **Kurye atama ve teslimat takibi** — önce Adisyo'da canlı tur, sonra plan
-> 13. **Sadakat programı** (puan, kampanya)
-> 14. **Çoklu şube** — merkezi menü, şube karşılaştırma
-> 15. **İkon boyut standardı** — bütün ekranlar tek tek gezilecek, en sonda
+> 5. **Stok** — reçete, otomatik düşüm, kritik stok uyarısı, maliyet/kârlılık
+> 6. **Gelişmiş raporlar** — saatlik ciro, personel performansı, karşılaştırmalı analiz
+> 7. **Cari / veresiye modülü**
+> 8. **Masasız adisyonun çevrimdışı açılması** — offline'ın açık kalan tek ucu
+> 9. **QR menünün kalanı** — kategori/kapak görselleri, masadan sipariş, garson çağırma, masa başına karekod
+> 10. **Kurye atama ve teslimat takibi** — önce Adisyo'da canlı tur, sonra plan
+> 11. **Sadakat programı** (puan, kampanya)
+> 12. **Çoklu şube** — merkezi menü, şube karşılaştırma
+> 13. **İkon boyut standardı** — bütün ekranlar tek tek gezilecek, en sonda
 >
-> Ertelenen üçlü (10-12) buraya konuldu: acelesi yok ama stok ve raporlardan
+> Ertelenen üçlü (8-10) buraya konuldu: acelesi yok ama stok ve raporlardan
 > sonra, sadakat ve çoklu şubeden önce. Ardından canlıya çıkış işleri
 > (güvenlik başlıkları, CAPTCHA, exe imzası, mağaza) ve Faz 4 entegrasyonları.
+>
+> **1 Eyl 2026 (akşam): Analiz tablolarına kendi kutusunda kaydırma.** Uzun
+> liste sayfayı uzatıyordu; aşağı inince sütun başlıkları ve toplam satırı
+> gözden kayboluyordu. Adisyonlar'daki çözüm yedi tabloya daha yayıldı
+> (Ürünler, Mutfak, Personel, Giderler, Denetim, Ödenmezler, Açık Hesap):
+> tablo ekrana sığan bir pencere gibi, liste onun içinde kayıyor, başlık üstte
+> ve toplam altta yapışık duruyor. "Ekranda kalan yeri ölç" hesabı
+> `src/kutuBoyu.ts`'ye (`useKutuBoyu`) taşındı, Adisyonlar da oradan
+> besleniyor — yedi kopya olmasın diye. **Taban yükseklik 280 → 520px**: üstünde
+> özet şeridi olan sekmelerde kalan yer altı satıra düşüyordu. Toplam satırının
+> yapışkanlığı CSS'te yalnız `tfoot th` için yazılmıştı, bu üç tabloda hücreler
+> `td` olduğu için işlemiyordu; kural ikisini de kapsıyor.
+>
+> **1 Eyl 2026 (akşam): PWA simgesi — dosyalar hazır, iOS doğrulaması canlıya
+> kaldı.** `public/favicon.svg` Vite'ın mor logosuydu; yerine mercan zeminde
+> beyaz servis kapağı çizildi. PNG'ler tek kaynaktan üretiliyor: `ikon.js` +
+> `npm.cmd run ikon` (`sharp` geliştirme bağımlılığı). Üç biçim gerekiyor —
+> normal (yuvarlak köşe), **maskable** (Android kısayolu kendi kalıbına göre
+> kırptığı için kare zemin, çizim ortada %70), **apple** (iOS saydam alanı
+> siyaha çevirdiği için saydamlık atılmış, dört boyut: 120/152/167/180).
+> Şablondan kalma `public/icons.svg` silindi. `index.html`: apple satırları,
+> `lang="tr"`, başlık `Garso`. Manifest'ten **SVG girdisi çıkarıldı** —
+> Safari `sizes: any` girdisini seçip çeviremiyor olabilir diye.
+> **Açık kalan:** iPhone'da "Ana Ekrana Ekle" hâlâ harf simgesi veriyor.
+> Sekme simgesi doğru, PNG'ler adresten açılıyor, manifest doğru üretiliyor —
+> yani dosyalar tamam. Kalan tek şüpheli, geliştirme sunucusunun kendi ürettiği
+> sertifikaya Safari'nin tam güvenmemesi. Gerçek sertifikalı sunucuda
+> doğrulanacak; orada da çıkmazsa maddeye dönülecek.
 >
 > **1 Eyl 2026: Analiz ve Kasa ekranlarına canlı tazeleme geldi.** Üç ekran da
 > `useCanli(..., SAKIN)` ile bağlandı — bakma ekranı oldukları için 4 saniyelik

@@ -62,6 +62,7 @@ import {
 import { SAKIN, useCanli } from "../canli";
 import { odemeAdi, type Masraf } from "../masraflar";
 import { kisaAd } from "../personel";
+import { useKutuBoyu } from "../kutuBoyu";
 
 export default function Analiz() {
   const { bolum = "ozet" } = useParams();
@@ -313,22 +314,7 @@ function Adisyonlar({
     artan: false,
   });
 
-  // Liste kutusu ekranda kendisine kalan yeri alıyor: alt kenarı — yatay
-  // kaydırma çubuğuyla birlikte — hep görünür kalsın, ona ulaşmak için sayfayı
-  // aşağı kaydırmak gerekmesin.
-  const kutu = useRef<HTMLDivElement>(null);
-  const [boy, setBoy] = useState(0);
-  useEffect(() => {
-    const olc = () => {
-      const k = kutu.current;
-      if (!k) return;
-      const ustten = k.getBoundingClientRect().top + window.scrollY;
-      setBoy(Math.max(280, window.innerHeight - ustten - 20));
-    };
-    olc();
-    window.addEventListener("resize", olc);
-    return () => window.removeEventListener("resize", olc);
-  }, [hepsi.length]);
+  const { kutu, boy } = useKutuBoyu(hepsi.length);
 
   const adisyonlar = useMemo(() => {
     const ara = arama.trim().toLocaleLowerCase("tr");
@@ -726,6 +712,8 @@ function Urunler({ ozet }: { ozet: UrunOzeti }) {
   const topla = (alan: (s: UrunSatiri) => number) =>
     satirlar.reduce((t, s) => t + alan(s), 0);
 
+  const { kutu, boy } = useKutuBoyu(`${kategoriler.length}-${satirlar.length}`);
+
   if (ozet.satirlar.length === 0) {
     return (
       <section className="ayar-bolum">
@@ -786,7 +774,7 @@ function Urunler({ ozet }: { ozet: UrunOzeti }) {
           <AramaKutusu deger={arama} degistir={setArama} yer="Ürün ara" />
         </div>
 
-        <div className="tablo-kaydir">
+        <div className="tablo-kaydir tablo-kaydir-dikey" ref={kutu} style={{ maxHeight: boy || undefined }}>
           <table className="analiz-tablo urun-tablo">
             <thead>
               <tr>
@@ -928,6 +916,7 @@ function sureGoster(saniye: number) {
  * sorumlusu da bakabiliyor.
  */
 function Mutfak({ ozet }: { ozet: MutfakSuresiOzeti | null }) {
+  const { kutu, boy } = useKutuBoyu(ozet?.satirlar.length ?? 0);
   const [sira, setSira] = useState<{ alan: MutfakAlani; artan: boolean }>({
     alan: "ortalama",
     artan: false,
@@ -1016,7 +1005,7 @@ function Mutfak({ ozet }: { ozet: MutfakSuresiOzeti | null }) {
           <AramaKutusu deger={arama} degistir={setArama} yer="Ürün ara" />
         </div>
 
-        <div className="tablo-kaydir">
+        <div className="tablo-kaydir tablo-kaydir-dikey" ref={kutu} style={{ maxHeight: boy || undefined }}>
           <table className="analiz-tablo">
             <thead>
               <tr>
@@ -1068,6 +1057,7 @@ function Mutfak({ ozet }: { ozet: MutfakSuresiOzeti | null }) {
 }
 
 function Personel({ ozet }: { ozet: PersonelOzeti }) {
+  const { kutu, boy } = useKutuBoyu(ozet.satirlar.length);
   const [sira, setSira] = useState<{ alan: PersonelAlani; artan: boolean }>({
     alan: "ciro",
     artan: false,
@@ -1152,7 +1142,7 @@ function Personel({ ozet }: { ozet: PersonelOzeti }) {
           <AramaKutusu deger={arama} degistir={setArama} yer="Personel ara" />
         </div>
 
-        <div className="tablo-kaydir">
+        <div className="tablo-kaydir tablo-kaydir-dikey" ref={kutu} style={{ maxHeight: boy || undefined }}>
           <table className="analiz-tablo urun-tablo">
             <thead>
               <tr>
@@ -1225,6 +1215,7 @@ function Giderler({
   ozet: GiderOzeti;
   ciro: number;
 }) {
+  const { kutu, boy } = useKutuBoyu(giderler.length);
   const [sira, setSira] = useState<{ alan: GiderAlani; artan: boolean }>({
     alan: "zaman",
     artan: false,
@@ -1323,7 +1314,7 @@ function Giderler({
           <AramaKutusu deger={arama} degistir={setArama} yer="Tür, açıklama, kişi" />
         </div>
 
-        <div className="tablo-kaydir">
+        <div className="tablo-kaydir tablo-kaydir-dikey" ref={kutu} style={{ maxHeight: boy || undefined }}>
           <table className="analiz-tablo urun-tablo">
             <thead>
               <tr>
@@ -1482,6 +1473,7 @@ type DenetimAlani = "zaman" | "kisi" | "islemAd" | "yer" | "konu" | "tutar";
  * üstte şerit, altında başlıktan sıralanan tablo ve sekmenin kendi araması.
  */
 function Denetim({ kayitlar }: { kayitlar: DenetimSatiri[] }) {
+  const { kutu, boy } = useKutuBoyu(kayitlar.length);
   const [sira, setSira] = useState<{ alan: DenetimAlani; artan: boolean }>({
     alan: "zaman",
     artan: false,
@@ -1582,7 +1574,7 @@ function Denetim({ kayitlar }: { kayitlar: DenetimSatiri[] }) {
           </div>
         </div>
 
-        <div className="tablo-kaydir">
+        <div className="tablo-kaydir tablo-kaydir-dikey" ref={kutu} style={{ maxHeight: boy || undefined }}>
           <table className="analiz-tablo urun-tablo">
             <thead>
               <tr>
@@ -1630,6 +1622,7 @@ function Denetim({ kayitlar }: { kayitlar: DenetimSatiri[] }) {
  * olduğu görünmezse rakam bir şey anlatmıyor.
  */
 function OdenmezDokumu({ satirlar }: { satirlar: OdenmezSatiri[] }) {
+  const { kutu, boy } = useKutuBoyu(satirlar.length);
   const [acik, setAcik] = useState<string | null>(null);
 
   if (satirlar.length === 0) {
@@ -1676,7 +1669,7 @@ function OdenmezDokumu({ satirlar }: { satirlar: OdenmezSatiri[] }) {
           <h2>Kime yazıldı</h2>
         </div>
 
-        <div className="tablo-kaydir">
+        <div className="tablo-kaydir tablo-kaydir-dikey" ref={kutu} style={{ maxHeight: boy || undefined }}>
           <table className="analiz-tablo urun-tablo">
             <thead>
               <tr>
@@ -1731,6 +1724,7 @@ function OdenmezDokumu({ satirlar }: { satirlar: OdenmezSatiri[] }) {
  * ne kadar veresiye verdik, ne kadar topladık" sorusu okunmuyordu.
  */
 function AcikHesap({ hareketler }: { hareketler: CariHareketSatiri[] }) {
+  const { kutu, boy } = useKutuBoyu(hareketler.length);
   const borclar = hareketler.filter((h) => h.borc > 0);
   const tahsilatlar = hareketler.filter((h) => h.alacak > 0);
 
@@ -1763,7 +1757,7 @@ function AcikHesap({ hareketler }: { hareketler: CariHareketSatiri[] }) {
           <p>Bu dönemde kayıt yok.</p>
         </div>
       ) : (
-        <div className="tablo-kaydir">
+        <div className="tablo-kaydir tablo-kaydir-dikey" ref={kutu} style={{ maxHeight: boy || undefined }}>
           <table className="analiz-tablo urun-tablo">
             <thead>
               <tr>

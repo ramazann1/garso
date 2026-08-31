@@ -24,7 +24,7 @@ export default defineConfig({
       // Yeni sürüm yayınlandığında kasada elle bir şey yapılmıyor: dosyalar
       // arkada iniyor, uygulama kapanıp açılınca yenisiyle geliyor.
       registerType: 'autoUpdate',
-      includeAssets: ['favicon.svg', 'icons.svg'],
+      includeAssets: ['favicon.svg', 'apple-icon-*.png'],
       manifest: {
         name: 'Garso',
         short_name: 'Garso',
@@ -34,12 +34,18 @@ export default defineConfig({
         display: 'standalone',
         background_color: '#fdf8f3',
         theme_color: '#ff7a59',
-        icons: [{ src: '/favicon.svg', sizes: 'any', type: 'image/svg+xml' }],
+        icons: [
+          { src: '/pwa-192.png', sizes: '192x192', type: 'image/png' },
+          { src: '/pwa-512.png', sizes: '512x512', type: 'image/png' },
+          // Android kısayol simgesini kendi kalıbına göre kırpıyor; bu sürümde
+          // çizim ortada küçük durduğu için kenarlardan bir şey kesilmiyor.
+          { src: '/pwa-maskable-512.png', sizes: '512x512', type: 'image/png', purpose: 'maskable' },
+        ],
       },
       workbox: {
         // Yazı tipi de önbellekte: internetsiz açılan kasada Poppins yerine
         // sistem yazısı çıkarsa ekran tanınmaz hale geliyor.
-        globPatterns: ['**/*.{js,css,html,svg,woff,woff2}'],
+        globPatterns: ['**/*.{js,css,html,svg,png,woff,woff2}'],
         // Adres çubuğuna doğrudan /salon yazılsa bile uygulama açılsın.
         navigateFallback: '/index.html',
         // Veri istekleri ÖNBELLEĞE ALINMIYOR. Bayat menü ya da bayat adisyon
