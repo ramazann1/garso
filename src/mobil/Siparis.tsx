@@ -46,7 +46,7 @@ import {
   yeniKalemId,
 } from "../adisyonlar";
 import type { AdisyonVerisi } from "../adisyonlar";
-import { servisSatirlari } from "../servis";
+import { servisEtiketi, servisTutarlari, servisVar } from "../servis";
 import { adisyonFisiYaz } from "../yazicilar";
 import { bekleyenKayit, kuyrugaEkle } from "../kuyruk";
 import { useMasayiTut } from "../mesguliyet";
@@ -348,7 +348,9 @@ export default function MobilSiparis() {
   const ozet = adisyonOzeti(adisyon);
   // Kuver ve garsoniye ürün değil, hesabın kendi bedeli; toplamda görünüp
   // dökümde görünmezse garson farkı nereden çıktı diye kalıyor.
-  const servisler = servisSatirlari(servisGirdisi(adisyon, Math.max(0, ozet.araToplam - indirim)));
+  const servisTutar = servisTutarlari(servisGirdisi(adisyon, Math.max(0, ozet.araToplam - indirim)));
+  // Servis bedelini kaldırmak parayı azaltıyor; her garsona açık değil.
+  const servisYetkisi = yetkiVar("siparis.servis");
   // Şeritte gönderilmemiş kalemlerin tamamı duruyor; garson o tura ne girdiğini
   // pencere açmadan görüyor.
   const bekleyenler = sepet.filter((k) => k.turSira == null && k.durum !== "iptal");
@@ -662,7 +664,10 @@ export default function MobilSiparis() {
               <div className="m-dokum">
                 {/* Ara toplam yalnız üstüne bir şey binmişse yazılıyor; hiçbiri
                     yoksa tek satırlık toplam zaten yeterli. */}
-                {(servisler.length > 0 || indirim > 0 || ozet.kdv > 0) && (
+                {(servisTutar.toplam > 0 ||
+                  (servisVar() && servisYetkisi) ||
+                  indirim > 0 ||
+                  ozet.kdv > 0) && (
                   <>
                     <div className="m-dokum-satir">
                       <span>Ara toplam</span>
@@ -674,12 +679,60 @@ export default function MobilSiparis() {
                         <span>-{paraGoster(indirim)}</span>
                       </div>
                     )}
-                    {servisler.map((sat) => (
-                      <div key={sat.ad} className="m-dokum-satir">
-                        <span>{sat.ad}</span>
-                        <span>{paraGoster(sat.tutar)}</span>
-                      </div>
-                    ))}
+                    {servisVar() &&
+                      (["kuver", "garsoniye"] as const).map((hangi) => {
+                        const tanim = ayarlar()[hangi];
+                        if (tanim.deger <= 0) return null;
+
+                        // Hesapta duruyor mu: kararı verilmişse o, verilmemişse
+                        // ayarın dediği. Mobilde sipariş her zaman masaya girilir.
+                        const alan = hangi === "kuver" ? "kuverUygula" : "garsoniyeUygula";
+                        const acik = servis[alan] ?? tanim.otomatik;
+                        const tutar =
+                          hangi === "kuver" ? servisTutar.kuver : servisTutar.garsoniye;
+
+                        if (!acik) {
+                          return servisYetkisi ? (
+                            <button
+                              key={hangi}
+                              className="m-dokum-satir m-servis-ekle"
+                              onClick={() => setServis((s) => ({ ...s, [alan]: true }))}
+                            >
+                              <span>
+                                <Plus size={15} /> {tanim.ad} ekle
+                              </span>
+                              <span>{servisEtiketi(tanim)}</span>
+                            </button>
+                          ) : null;
+                        }
+
+                        return (
+                          <div key={hangi} className="m-dokum-satir">
+                            <span>
+                              {tanim.ad}
+                              {hangi === "kuver" && tanim.tip === "tutar" && (
+                                <em className="m-servis-not">
+                                  {kisiSayisi
+                                    ? ` · ${kisiSayisi} kişi`
+                                    : " · misafir sayısı girilmedi"}
+                                </em>
+                              )}
+                            </span>
+                            <span className="m-servis-tutar">
+                              {paraGoster(tutar)}
+                              {servisYetkisi && (
+                                <button
+                                  className="m-servis-cikar"
+                                  title={`${tanim.ad} kaldır`}
+                                  onClick={() => setServis((s) => ({ ...s, [alan]: false }))}
+                                >
+                                  <X size={15} />
+                                </button>
+                              )}
+                            </span>
+                          </div>
+                        );
+                      })}
                     {ozet.kdv > 0 && (
                       <div className="m-dokum-satir">
                         <span>KDV</span>

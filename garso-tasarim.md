@@ -7,28 +7,59 @@
 > çevrimdışı açılması**, **QR menünün kalanı** ve **kurye atama** — en sona
 > alındı. Gerekçe: üçü de acele değil (eGZOZ'da paket servis işletilmiyor, QR
 > menü çalışır durumda, çevrimdışının kalan ucu tek bir akış). Önce elde biriken
-> küçük işler temizlenecek. Sıra:
+> küçük işler temizlendi; dördü de 1 Eyl akşamı kapandı. Kalan sıra:
 >
-> 1. **`yazdirma_kuyrugu` tablosu yetkisiz** — kapı dikkatli konmalı, köprü o tabloyu okuyor
-> 2. **Sipariş ekranının sepet dökümünde KDV** — hesap ekranı düzeldi, sipariş ekranı eski davranışta
-> 3. **Kuver/garsoniyeyi o hesaba özel açma-kapama** — veri katmanı hazır, arayüzü yok
-> 4. **Excel aktarımında isimle eşleşme** — önizleme üstüne yazılacakları göstermiyor (çirkinleştirmeyen bir yol bulunursa)
+> 1. **Stok** — reçete, otomatik düşüm, kritik stok uyarısı, maliyet/kârlılık
+> 2. **Gelişmiş raporlar** — saatlik ciro, personel performansı, karşılaştırmalı analiz
+> 3. **Cari / veresiye modülü**
+> 4. **Masasız adisyonun çevrimdışı açılması** — offline'ın açık kalan tek ucu
+> 5. **QR menünün kalanı** — kategori/kapak görselleri, masadan sipariş, garson çağırma, masa başına karekod
+> 6. **Kurye atama ve teslimat takibi** — önce Adisyo'da canlı tur, sonra plan
+> 7. **Sadakat programı** (puan, kampanya)
+> 8. **Çoklu şube** — merkezi menü, şube karşılaştırma
+> 9. **İkon boyut standardı** — bütün ekranlar tek tek gezilecek, en sonda
 >
-> Küçük işlerden sonraki sıra (1 Eyl 2026'da kesinleşti):
->
-> 5. **Stok** — reçete, otomatik düşüm, kritik stok uyarısı, maliyet/kârlılık
-> 6. **Gelişmiş raporlar** — saatlik ciro, personel performansı, karşılaştırmalı analiz
-> 7. **Cari / veresiye modülü**
-> 8. **Masasız adisyonun çevrimdışı açılması** — offline'ın açık kalan tek ucu
-> 9. **QR menünün kalanı** — kategori/kapak görselleri, masadan sipariş, garson çağırma, masa başına karekod
-> 10. **Kurye atama ve teslimat takibi** — önce Adisyo'da canlı tur, sonra plan
-> 11. **Sadakat programı** (puan, kampanya)
-> 12. **Çoklu şube** — merkezi menü, şube karşılaştırma
-> 13. **İkon boyut standardı** — bütün ekranlar tek tek gezilecek, en sonda
->
-> Ertelenen üçlü (8-10) buraya konuldu: acelesi yok ama stok ve raporlardan
+> Ertelenen üçlü (4-6) buraya konuldu: acelesi yok ama stok ve raporlardan
 > sonra, sadakat ve çoklu şubeden önce. Ardından canlıya çıkış işleri
 > (güvenlik başlıkları, CAPTCHA, exe imzası, mağaza) ve Faz 4 entegrasyonları.
+>
+> **1 Eyl 2026 (akşam): Excel aktarımı orta pencereye taşındı.** Önizleme
+> sayfanın altında dar bir kartta duruyordu ve yalnız sayı veriyordu ("5 ürün
+> güncellenecek"); hangi ürünün üstüne yazıldığı görünmüyordu, oysa yazılan menü
+> geri alınamıyor. Yeni `components/AktarimOnayi.tsx` ekranın ortasında açılıyor:
+> dört sayı şeridi, altında dört açılır bölüm (**üstüne yazılacaklar** —
+> varsayılan açık, **yeni ürünler**, **açılacak kategoriler**, **atlanan
+> satırlar**). Aynı anda tek bölüm açık, açık olan kalan yeri kaplayıp kendi
+> içinde kayıyor; pencere hiç taşmıyor. Farklar `aktarim.ts`'de üretiliyor
+> (`urunFarklari`): "Tam fiyatı: 45,00 ₺ → 50,00 ₺", "Kategori: … → …".
+> **Karşılaştırma tek yerde**: "değişti mi" ile "nesi değişti" aynı hesaptan
+> çıkıyor, eski `urunDegismis` kaldırıldı.
+> Yazarken pencere kapanmıyor, ilerleme + **geçen süre** orada; son adımdan
+> 8 sn geçerse "sunucudan cevap bekleniyor" yazıyor (çubuk kıpırdamayınca ekran
+> donmuş görünüyordu). Bitince kapanmak yerine **yeşil "Menüye yazıldı"
+> ekranı** çıkıyor — 2,6 saniyelik bildirim uzun aktarımın sonunda kaçıyordu.
+>
+> Bu iş sırasında iki gerçek hata çıktı:
+> - **Yakalanmayan hata pencereyi donduruyordu.** Yazma yüzlerce isteğe
+>   bölünüyor, her isteğin 12 sn sınırı var (`supabase.ts`) ve kesilen istek
+>   mesaj döndürmüyor, **fırlatıyor**. `uygula` bunu yakalamıyordu: iş yarıda
+>   kalıyor, ekran sonsuza kadar "Yazılıyor…" kalıyordu. Artık try/catch var,
+>   bağlantı hatası ayrı mesaj alıyor.
+> - **Excel'den açılan yeni ürün eksik doğuyordu.** QR menü alanları
+>   (`aciklama`, `alerjenler`, `medya`…) hiç yazılmıyordu; kaydetme görsel
+>   listesine gelince `medya.length` diye bakıp patlıyordu. Ürün satırı yazılmış,
+>   porsiyonu/kategorisi yazılmamış yarım ürünler bundan kalmış olabilir.
+>   Düzeltme: yeni ürün `bosMenuAlanlari()` ile açılıyor — alan tek tek
+>   yazılmıyor ki bir daha unutulmasın. Hata dünden beri oradaydı, ancak
+>   yakalama eklenince görünür oldu.
+>
+> **1 Eyl 2026 (akşam): mobilde kuver/garsoniye açma-kapama.** Karar veri
+> katmanında zaten vardı (`adisyonlar.kuver_uygula` / `garsoniye_uygula`: boş =
+> ayarın dediği, dolu = bu hesaba özel) ve kasada arayüzü de vardı; eksik olan
+> yalnız mobildi — orada satır sadece gösteriliyordu. Artık sepet dökümünde açık
+> satırın sağında kaldırma ikonu, kapalıyken aynı yerde "+ Kuver ekle · ₺20"
+> satırı var. Yetki `siparis.servis` (17 Ağu'dan beri var, yeni kod açılmadı);
+> yetkisi olmayan hiçbir düğme görmüyor. Veritabanı işi yoktu.
 >
 > **1 Eyl 2026 (akşam): Analiz tablolarına kendi kutusunda kaydırma.** Uzun
 > liste sayfayı uzatıyordu; aşağı inince sütun başlıkları ve toplam satırı
@@ -487,21 +518,29 @@
 > Ölçüt her zaman "bu iş hangi yetki kodunun kapsamında". Yetki canlı okunuyor,
 > işletmeci ayarı değiştirince kural kendiliğinden uyar.
 >
-> Küçük iş: **`yazdirma_kuyrugu` tablosu yetkisiz** — fiş yazdırma düğmeleri
-> 6 Eyl'de `siparis.fis_yazdir`a bağlandı ama tablonun kendisi hâlâ açık,
-> konsoldan kuyruğa satır atılabiliyor. Köprü o tabloyu okuyup güncellediği
-> için kapı dikkatli konmalı: yanlış kural yazıcıyı durdurur.
+> **Kapandı (1 Eyl 2026): `yazdirma_kuyrugu` tablosuna kapı.**
+> `sql/2026-09-01-kuyruk-yetkileri.sql`. Tabloda tek `for all` politikası vardı;
+> giriş yapmış herkes konsoldan bütün fişleri okuyabiliyor, sahte fiş atabiliyor
+> ve bekleyen fişi iptal edebiliyordu. Politika dörde bölündü: **okuma**
+> `yazici.yonet` / `siparis.fis_yazdir` / `siparis.al` (sonuncusu masa kartındaki
+> "fiş basıldı" rozeti için — garson kendi masasında görmeli), **ekleme**
+> `siparis.fis_yazdir` / `kasa.cekmece` / `yazici.yonet` (çekmece darbesi ve
+> deneme fişi de kuyruğa düşüyor), **güncelleme ve silme** yalnız
+> `yazici.yonet`. Kritik nokta: köprünün iki işlevi (`kuyruktan_al`,
+> `kuyruk_sonuc`) çağıranın yetkisiyle çalışıyordu, yani kapatılan açık
+> politikaya yaslanıyorlardı — ikisi **`security definer`** yapıldı ve
+> `isletme_id = oturum_isletmesi()` koşulu içlerine elle yazıldı. Yazılmasaydı
+> bir işletmenin köprüsü id tahmin ederek başkasının fişini alabilirdi.
+> Uygulama kodu değişmedi. Köprünün canlı dinlemesi de RLS'e baktığı için
+> köprü hesabının okuma yetkilerinden birine sahip olması gerekiyor; olmasa
+> fiş yine basılır (yoklama sürüyor) ama birkaç saniye gecikir.
 >
-> Küçük iş: **Excel aktarımında isimle eşleşme** — dosyadaki ürün, menüdeki
-> aynı adlı ürünün üstüne yazıyor; kullanıcı yeni ürün eklediğini sanıyor.
-> 6 Eyl'de yazma anında menü tazelenmesi ve silinmiş ürünün yeniden açılması
-> düzeltildi, ama önizleme hangi ürünlerin üstüne yazılacağını hâlâ isim isim
-> göstermiyor. Ramazan "liste ekran görüntüsünü çirkinleştirir" dedi; başka
-> bir yol bulunursa yapılacak.
-> Küçük iş: **sipariş ekranının sepet dökümünde KDV** — hesap ekranı 22 Ağu'da
-> düzeldi (KDV dahil modda da yazıyor), sipariş ekranı eski davranışta kaldı.
-> Küçük iş: **kuver/garsoniyeyi o hesaba özel açma-kapama** — veri katmanı
-> hazır (kuverUygula/garsoniyeUygula), arayüzü ne kasada ne mobilde var.
+> **Kapandı (1 Eyl 2026): Excel önizlemesi artık üstüne yazılacakları isim isim
+> gösteriyor** — orta pencerede, değişiklikleriyle birlikte (yukarıdaki nota bak).
+>
+> **Kapandı (1 Eyl 2026): sipariş ekranının sepet dökümünde KDV.** Madde
+> eskimiş: sipariş ekranı da `KdvDokum` kullanıyor ve KDV dahil modda yazıyor.
+> Hesap ekranı düzeltilirken beraber düzelmiş, listeden silinmemişti.
 >
 > **Paket / Gel Al mobile alınmayacak (19 Ağu 2026 kararı).** Masasız sipariş
 > telefonla ayakta girilen bir iş değil; mobil garsonun masa işi için.

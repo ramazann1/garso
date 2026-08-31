@@ -1,4 +1,5 @@
-import { kategoriUrunleri, varsayilanBirim, urunKdv } from "./menu";
+import { paraGoster } from "./para";
+import { bosMenuAlanlari, kategoriUrunleri, varsayilanBirim, urunKdv } from "./menu";
 import type { MenuBirim, MenuKategori, MenuKdv, MenuPorsiyon, MenuUrun } from "./types";
 
 // Dosya gerçek .xlsx: çift tıklayınca hiçbir soru sormadan açılıyor. Okuma ve
@@ -27,7 +28,18 @@ export type AktarimHatasi = { satir: number; mesaj: string };
 // id değil ad tutuluyor; id'ler yazma sırasında çözülüyor.
 export type KategoriYeri = { ana: string; alt: string };
 
-export type AktarimUrunu = { urun: MenuUrun; yerler: KategoriYeri[]; yeni: boolean };
+export type AktarimUrunu = {
+  urun: MenuUrun;
+  yerler: KategoriYeri[];
+  yeni: boolean;
+  /**
+   * Ürünün nesi değişiyor — "Fiyat 45,00 ₺ → 50,00 ₺" gibi okunur cümleler.
+   * Önizleme penceresi bunu yazıyor: "5 ürün güncellenecek" tek başına hangi
+   * ürünün neresine dokunulduğunu söylemiyordu, üzerine yazılan menü de geri
+   * alınamıyor.
+   */
+  degisiklikler: string[];
+};
 
 export type AktarimPlani = {
   urunler: AktarimUrunu[];
@@ -170,32 +182,80 @@ const mevcutYerleri = (u: MenuUrun, kategoriler: MenuKategori[]) =>
     return ust ? yerAnahtari(ust.ad, k.ad) : yerAnahtari(k.ad, "");
   });
 
-const porsiyonAyni = (a: MenuPorsiyon, b: MenuPorsiyon) =>
-  a.birimId === b.birimId &&
-  a.fiyat === b.fiyat &&
-  a.maliyet === b.maliyet &&
-  (a.barkod ?? "") === (b.barkod ?? "") &&
-  a.masaFiyat === b.masaFiyat &&
-  a.gelalFiyat === b.gelalFiyat &&
-  a.paketFiyat === b.paketFiyat;
 
-function urunDegismis(
+/** Kategorinin okunur adı: "İçecek › Sıcak İçecek". */
+const yerAdi = (y: KategoriYeri) => (y.alt ? `${y.ana} › ${y.alt}` : y.ana);
+
+const mevcutYerAdlari = (u: MenuUrun, kategoriler: MenuKategori[]) =>
+  u.kategoriIdler.map((id) => {
+    const k = kategoriler.find((x) => x.id === id);
+    if (!k) return "";
+    const ust = k.ustId ? kategoriler.find((x) => x.id === k.ustId) : undefined;
+    return ust ? `${ust.ad} › ${k.ad}` : k.ad;
+  });
+
+const kdvAdi = (id: number | undefined, kdvler: MenuKdv[]) => {
+  const k = kdvler.find((x) => x.id === id);
+  return k ? `%${k.oran}` : "varsayılan";
+};
+
+/** Tek bir alanın değişimi: değişmemişse hiç satır çıkmıyor. */
+const fark = (etiket: string, eski: string, yeni: string) =>
+  eski === yeni ? null : `${etiket}: ${eski} → ${yeni}`;
+
+const porsiyonAdi = (p: MenuPorsiyon, birimler: MenuBirim[]) =>
+  p.ad || birimler.find((b) => b.id === p.birimId)?.ad || "Porsiyon";
+
+/**
+ * Dosyanın üründe neyi değiştirdiği, okunur cümleler hâlinde. Boş dizi dönmesi
+ * "bu ürün aynı kalmış" demek; plan da bunu kullanıyor, ayrıca bir karşılaştırma
+ * yapılmıyor ki iki yerde iki farklı sonuç çıkmasın.
+ */
+function urunFarklari(
   mevcut: MenuUrun,
   yeni: MenuUrun,
   yerler: KategoriYeri[],
-  kategoriler: MenuKategori[]
-) {
-  if (mevcut.ad !== yeni.ad) return true;
-  if ((mevcut.kod ?? "") !== (yeni.kod ?? "")) return true;
-  if (mevcut.kdvId !== yeni.kdvId) return true;
+  kategoriler: MenuKategori[],
+  birimler: MenuBirim[],
+  kdvler: MenuKdv[]
+): string[] {
+  const cikan: (string | null)[] = [
+    fark("Ad", mevcut.ad, yeni.ad),
+    fark("Ürün kodu", mevcut.kod || "yok", yeni.kod || "yok"),
+    fark("KDV", kdvAdi(mevcut.kdvId, kdvler), kdvAdi(yeni.kdvId, kdvler)),
+  ];
 
-  const eskiYerler = mevcutYerleri(mevcut, kategoriler);
-  const yeniYerler = yerler.map((y) => yerAnahtari(y.ana, y.alt));
-  if (eskiYerler.length !== yeniYerler.length) return true;
-  if (yeniYerler.some((y) => !eskiYerler.includes(y))) return true;
+  const eskiYerler = mevcutYerAdlari(mevcut, kategoriler);
+  const yeniYerler = yerler.map(yerAdi);
+  const eskiAnahtar = mevcutYerleri(mevcut, kategoriler);
+  const yeniAnahtar = yerler.map((y) => yerAnahtari(y.ana, y.alt));
+  if (
+    eskiAnahtar.length !== yeniAnahtar.length ||
+    yeniAnahtar.some((y) => !eskiAnahtar.includes(y))
+  ) {
+    cikan.push(`Kategori: ${eskiYerler.join(", ") || "yok"} → ${yeniYerler.join(", ")}`);
+  }
 
-  if (mevcut.porsiyonlar.length !== yeni.porsiyonlar.length) return true;
-  return yeni.porsiyonlar.some((p, i) => !porsiyonAyni(p, mevcut.porsiyonlar[i]));
+  // Porsiyonlar birime göre eşleşiyor; dosyada olmayan porsiyon silinmediği için
+  // burada yalnız "değişti" ve "eklenecek" durumu çıkıyor.
+  for (const p of yeni.porsiyonlar) {
+    const ad = porsiyonAdi(p, birimler);
+    const eski = mevcut.porsiyonlar.find((e) => e.birimId === p.birimId);
+    if (!eski) {
+      cikan.push(`Yeni porsiyon: ${ad} · ${paraGoster(p.fiyat)}`);
+      continue;
+    }
+    cikan.push(
+      fark(`${ad} fiyatı`, paraGoster(eski.fiyat), paraGoster(p.fiyat)),
+      fark(`${ad} maliyeti`, paraGoster(eski.maliyet ?? 0), paraGoster(p.maliyet ?? 0)),
+      fark(`${ad} barkodu`, eski.barkod || "yok", p.barkod || "yok"),
+      fark(`${ad} masa fiyatı`, paraGoster(eski.masaFiyat ?? 0), paraGoster(p.masaFiyat ?? 0)),
+      fark(`${ad} gel al fiyatı`, paraGoster(eski.gelalFiyat ?? 0), paraGoster(p.gelalFiyat ?? 0)),
+      fark(`${ad} paket fiyatı`, paraGoster(eski.paketFiyat ?? 0), paraGoster(p.paketFiyat ?? 0))
+    );
+  }
+
+  return cikan.filter((s): s is string => s !== null);
 }
 
 export function planHazirla(satirlar: AktarimSatiri[], kaynak: Kaynak): AktarimPlani {
@@ -414,7 +474,11 @@ export function planHazirla(satirlar: AktarimSatiri[], kaynak: Kaynak): AktarimP
     }
 
     const urun: MenuUrun = {
+      // Yeni ürün menünün kendi varsayılanlarıyla açılıyor. Alanlar tek tek
+      // yazılsaydı biri unutulurdu: görsel listesi eksik kalınca kaydetme
+      // yarıda patlıyordu ve ürün yarım yazılmış hâlde kalıyordu.
       ...(mevcut ?? {
+        ...bosMenuAlanlari(),
         favori: false,
         satistaGorunur: true,
         mutfaktaGorunur: true,
@@ -431,12 +495,15 @@ export function planHazirla(satirlar: AktarimSatiri[], kaynak: Kaynak): AktarimP
 
     // Dosyadaki hâli menüdekiyle birebir aynıysa yazmaya gerek yok. Tek fiyat
     // düzeltmek için 200 ürünü baştan yazmak dakikalar sürüyordu.
-    if (mevcut && !urunDegismis(mevcut, urun, yerler, kategoriler)) {
+    const degisiklikler = mevcut
+      ? urunFarklari(mevcut, urun, yerler, kategoriler, birimler, kdvler)
+      : [];
+    if (mevcut && !degisiklikler.length) {
       degismeyen++;
       continue;
     }
 
-    cikan.push({ urun, yerler, yeni: !mevcut });
+    cikan.push({ urun, yerler, yeni: !mevcut, degisiklikler });
   }
 
   // Menüde olmayan kategori adları açılacaklar listesine giriyor. Liste yalnızca
