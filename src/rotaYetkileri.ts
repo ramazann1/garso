@@ -33,6 +33,8 @@ const ROTA_YETKILERI: [string, string][] = [
   ["/analiz", "rapor.tumu"],
   ["/analiz/ozet", "rapor.gun_sonu"],
   ["/analiz/adisyonlar", "rapor.gun_sonu"],
+  // Mutfak süreleri para içermiyor; ciroyu görmeyen tezgâh sorumlusu da baksın.
+  ["/analiz/mutfak", "rapor.gun_sonu"],
   ["/ayarlar", "tanim.ayar"],
   ["/ayarlar/masalar", "tanim.masa"],
   ["/ayarlar/personel", "tanim.personel"],

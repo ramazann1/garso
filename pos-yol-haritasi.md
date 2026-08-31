@@ -105,22 +105,30 @@ Garso'da dönüyor.
 
 ### FAZ 2 — Operasyon (4-6 hafta)
 Amaç: Yoğun bir restoranın mutfak-servis akışını taşıyabilmeli.
-- [ ] KDS mutfak ekranı: sipariş kartları, hazır bildirimi, süre takibi
-- [ ] Yazıcı yönetimi: ürün→yazıcı yönlendirme, mutfak fişi, adisyon çıktısı (ESC/POS)
-- [ ] Paket servis + gel-al akışı, müşteri/adres kayıtları
-- [ ] Kurye atama ve teslimat durumu takibi
-- [ ] Garson mobil sipariş ekranı (PWA)
+- [x] KDS mutfak ekranı: sipariş kartları, hazır bildirimi, süre takibi.
+      Çekirdek 19 Ağu 2026'da, kalanı 1 Eyl 2026'da bitti: istasyon bazlı
+      aşamalar (Sırada → Hazırlanıyor → Paketleniyor → Hazır), bir cihazın
+      birden çok tezgâha bakabilmesi, Analiz'de hazırlık süresi raporu.
+      Manuel mutfak çıktısı (fişi elle yeniden bastırma) iptal edildi —
+      gerekçesi `garso-tasarim.md`'de.
+- [x] Yazıcı yönetimi: ürün→istasyon→yazıcı zinciri, mutfak fişi, adisyon
+      çıktısı, köprü programı ve yerel yazdırma
+- [x] Paket servis + gel-al akışı, müşteri/adres kayıtları
+- [ ] Kurye atama ve teslimat durumu takibi — 31 Ağu 2026'da en sona ertelendi
+- [x] Garson mobil sipariş ekranı (PWA)
 - [x] Personel + PIN girişi; adisyonu açan garson masa kartında, turu yazan
       garson tur başlığında (`turlar.garson_id`) — karar 7
-- [ ] Offline dayanıklılık: bağlantı kopunca kuyruklama, senkronizasyon.
+- [x] Offline dayanıklılık: bağlantı kopunca kuyruklama, senkronizasyon.
       Üç aşamalı. **Aşama 1 (kabuk + bağlantı durumu) 20 Ağu 2026'da bitti:**
       service worker, `baglanti.ts`, çevrimdışı şeridi, sarılmış `fetch`.
       **Aşama 2 (yerel okuma önbelleği, `onbellek.ts`) ve aşama 3 (yazma
       kuyruğu, `kuyruk.ts` — tahsilat ve hesap kapatma dahil) de bitmiş**;
       30 Ağu 2026'da fark edildi, işaretler koddan geri kalmıştı. 30 Ağu'da
       ayrıca **çevrimdışı PIN ile kişi değiştirme** eklendi (`cevrimdisiPin.ts`).
-      Açık kalan tek parça: o cihazda hiç giriş yapılmamışsa internetsiz
-      sıfırdan giriş. Ayrıntısı `garso-tasarim.md`'de.
+      İnternetsiz sıfırdan giriş 31 Ağu 2026'da **atlandı** (kasa günün
+      başında bir kez, internet varken açılıyor); gerekçesi ve gerekirse
+      nasıl yapılacağı `garso-tasarim.md`'de. Açık kalan: masasız adisyonun
+      çevrimdışı açılması.
 - [x] **İşletme kaydı ekranı (yeni müşteri açılışı).** 19 Ağu 2026'da yapıldı —
       `isletme_kur` fonksiyonu ve `pages/Kayit.tsx`. Örnek salon ve menüyle
       birlikte kuruluyor. Kötüye kullanım koruması da eklendi.

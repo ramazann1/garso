@@ -11199,6 +11199,25 @@ body {
 
 .istasyon-urun em svg { width: 14px; height: 14px; flex: none; }
 
+/* Aşamalı istasyonda kalem hazır olana kadar kartta duruyor; hangi durakta
+   olduğu rozette yazıyor, yoksa iki aşçı aynı ürüne baştan başlar. */
+.istasyon-asama-rozet {
+  display: inline-block;
+  margin-top: 4px;
+  padding: 2px 8px;
+  border-radius: 999px;
+  background: var(--mercan);
+  color: #fff;
+  font-size: 0.78em;
+  font-weight: 600;
+  letter-spacing: 0.02em;
+}
+
+/* Yola çıkmış kalem sıradakinden ayrılsın: satırın zemini hafifçe doluyor. */
+.istasyon-kart li.istasyon-asamada {
+  background: #fdf3ef;
+}
+
 /* Hazır düğmesi: eldivenli elle basılıyor, hedef geniş tutuluyor. */
 .istasyon-kart li > button {
   display: inline-flex;
@@ -11435,7 +11454,49 @@ body {
   gap: 8px;
 }
 
-.istasyon-secim-kutu li > button {
+/* Satırın solundaki kutu birden çok tezgâhı aynı ekrana almak için; satırın
+   kendisi eskisi gibi tek tezgâhı açıyor. */
+.istasyon-secim-kutu li {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+}
+
+.istasyon-secim-kutucuk {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  width: 26px;
+  height: 26px;
+  flex: none;
+  padding: 0;
+  border: 1.5px solid #ddd3c7;
+  border-radius: 8px;
+  background: var(--kart);
+  cursor: pointer;
+}
+
+.istasyon-secim-kutucuk.secili {
+  border-color: var(--mercan);
+  background: var(--mercan);
+}
+
+.istasyon-secim-kutucuk svg { width: 16px; height: 16px; color: #fff; }
+
+.istasyon-birlikte {
+  width: 100%;
+  margin-top: 14px;
+  padding: 14px;
+  border: none;
+  border-radius: 14px;
+  background: var(--mercan);
+  color: #fff;
+  font-size: 16px;
+  font-weight: 600;
+  cursor: pointer;
+}
+
+.istasyon-secim-kutu li > button:not(.istasyon-secim-kutucuk) {
   display: flex;
   align-items: center;
   justify-content: space-between;
@@ -11451,12 +11512,12 @@ body {
   transition: border-color 0.12s, background 0.12s;
 }
 
-.istasyon-secim-kutu li > button:hover {
+.istasyon-secim-kutu li > button:not(.istasyon-secim-kutucuk):hover {
   border-color: var(--mercan);
   background: #fff4ef;
 }
 
-.istasyon-secim-kutu li > button svg {
+.istasyon-secim-kutu li > button:not(.istasyon-secim-kutucuk) svg {
   width: 19px;
   height: 19px;
   color: var(--mercan);
@@ -12910,6 +12971,34 @@ body {
   gap: 10px;
 }
 
+.m-istasyon-satir {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+}
+
+/* Soldaki kutu birden çok tezgâhı aynı ekrana almak için. */
+.m-istasyon-sec .m-istasyon-kutucuk {
+  width: 30px;
+  height: 30px;
+  flex: none;
+  display: grid;
+  place-items: center;
+  padding: 0;
+  border: 1.5px solid #ddd3c7;
+  border-radius: 9px;
+  background: var(--kart);
+  color: #fff;
+  cursor: pointer;
+}
+
+.m-istasyon-sec .m-istasyon-kutucuk.secili {
+  border-color: var(--mercan);
+  background: var(--mercan);
+}
+
+.m-istasyon-sec .m-istasyon-satir > button:not(.m-istasyon-kutucuk) { flex: 1; }
+
 .m-istasyon-sec button {
   display: flex;
   align-items: center;
@@ -13093,6 +13182,20 @@ body {
   font-size: 14px;
   color: var(--mercan);
 }
+
+/* Aşamalı istasyonda kalemin hangi durakta olduğu rozette yazıyor. */
+.m-asama-rozet {
+  align-self: flex-start;
+  margin-top: 2px;
+  padding: 2px 8px;
+  border-radius: 999px;
+  background: var(--mercan);
+  color: #fff;
+  font-size: 13px;
+  font-weight: 600;
+}
+
+.m-kart-kalem.asamada { background: #fdf3ef; }
 
 .m-hazir-satir {
   display: flex;

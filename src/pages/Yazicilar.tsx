@@ -360,7 +360,9 @@ function IstasyonPaneli({
   onSil?: () => void;
 }) {
   const [ad, setAd] = useState(istasyon?.ad ?? "");
-  const [pisirme, setPisirme] = useState(istasyon?.pisirme ?? true);
+  // Anahtarlar istasyon ekranındaki akışı uzatıyor; varsayılan kapalı, yani
+  // sipariş düşer düşmez tek tuşla hazır işaretleniyor.
+  const [pisirme, setPisirme] = useState(istasyon?.pisirme ?? false);
   const [paketleme, setPaketleme] = useState(istasyon?.paketleme ?? false);
 
   return (
@@ -383,14 +385,14 @@ function IstasyonPaneli({
           </div>
 
           <Anahtar
-            etiket="Hazırlık yapılıyor"
-            ipucu="Ocak, ızgara, fırın gibi siparişin pişirildiği istasyonlar"
+            etiket="Hazırlanıyor aşaması"
+            ipucu="İstasyon ekranında ürüne başlandığını işaretleyen ayrı bir adım çıkar"
             acik={pisirme}
             degistir={setPisirme}
           />
           <Anahtar
-            etiket="Paketleme yapılıyor"
-            ipucu="Paket ve gel al siparişlerinin toplandığı istasyon"
+            etiket="Paketleniyor aşaması"
+            ipucu="Yemek bittikten sonra kutulanmayı bekleyen ürünler ayrı görünür"
             acik={paketleme}
             degistir={setPaketleme}
           />
@@ -619,9 +621,9 @@ export default function Yazicilar() {
                         <ChefHat size={16} /> {i.ad}
                       </span>
                       <span className="odeme-tip-etiket">
-                        {[i.pisirme && "Hazırlık", i.paketleme && "Paketleme"]
+                        {[i.pisirme && "Hazırlanıyor", i.paketleme && "Paketleniyor"]
                           .filter(Boolean)
-                          .join(" · ") || "Aşama seçilmedi"}
+                          .join(" · ") || "Tek adım"}
                         {" · "}
                         {bagli.length > 0
                           ? bagli.map((y) => y.ad).join(", ")

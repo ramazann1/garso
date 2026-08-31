@@ -6,7 +6,9 @@ import {
   ChevronRight,
   CircleCheckBig,
   Clock,
+  Flame,
   MessageSquareText,
+  Package,
   RotateCw,
   ShoppingBag,
   Undo2,
@@ -14,8 +16,17 @@ import {
 } from "lucide-react";
 import { istasyonlariGetir } from "../yazicilar";
 import type { Istasyon } from "../yazicilar";
-import { hazirGeriAl, hazirYap, kartlariGetir, mutfagiDinle } from "../mutfak";
-import type { MutfakKarti } from "../mutfak";
+import {
+  ASAMA_ADI,
+  asamadanCik,
+  asamayaAl,
+  bulunanAsama,
+  istasyonAsamalari,
+  kartlariGetir,
+  mutfagiDinle,
+  siradakiAsama,
+} from "../mutfak";
+import type { Asama, MutfakKalemi, MutfakKarti } from "../mutfak";
 import { ayarlar } from "../isletmeAyarlari";
 import { adetGoster } from "../para";
 import type { AdisyonTipi } from "../adisyonlar";
@@ -33,6 +44,16 @@ function gecenSure(baslangic: string) {
 
 function saat(zaman: string) {
   return new Date(zaman).toLocaleTimeString("tr", { hour: "2-digit", minute: "2-digit" });
+}
+
+/** Durakların ortak sırası; kartta farklı akıştaki tezgâhlar yan yana olabiliyor. */
+const DURAK_SIRASI: Asama[] = ["hazirlik", "paketleme", "hazir"];
+
+/** Düğmenin ikonu gidilecek durağı anlatıyor: ocak, paket, bitti. */
+function AsamaIkonu({ asama }: { asama: Asama }) {
+  if (asama === "hazirlik") return <Flame size={20} />;
+  if (asama === "paketleme") return <Package size={20} />;
+  return <Check size={20} />;
 }
 
 function TipIkonu({ tip }: { tip: AdisyonTipi }) {
@@ -61,32 +82,42 @@ function useSaniye() {
  */
 export default function MobilIstasyon() {
   const [istasyonlar, setIstasyonlar] = useState<Istasyon[]>([]);
-  const [seciliId, setSeciliId] = useState<number | null>(() => {
+  const [seciliIdler, setSeciliIdler] = useState<number[]>(() => {
     const kayit = localStorage.getItem(ISTASYON_ANAHTARI);
-    return kayit ? Number(kayit) : null;
+    return (kayit ?? "").split(",").map(Number).filter((n) => n > 0);
   });
+  // Birlikte açılacaklar seçilirken işaretlenenler; henüz ekran açılmıyor.
+  const [isaretli, setIsaretli] = useState<number[]>([]);
   const [yukleniyor, setYukleniyor] = useState(true);
 
   useEffect(() => {
     istasyonlariGetir().then((liste) => {
       setIstasyonlar(liste);
       // Tek tezgâhı olan işletmede seçtirmenin anlamı yok.
-      setSeciliId((s) => (liste.some((i) => i.id === s) ? s : liste.length === 1 ? liste[0].id : null));
+      setSeciliIdler((s) => {
+        const kalan = s.filter((id) => liste.some((i) => i.id === id));
+        return kalan.length ? kalan : liste.length === 1 ? [liste[0].id] : [];
+      });
       setYukleniyor(false);
     });
   }, []);
 
   useEffect(() => {
-    if (seciliId) localStorage.setItem(ISTASYON_ANAHTARI, String(seciliId));
-  }, [seciliId]);
+    if (seciliIdler.length) {
+      localStorage.setItem(ISTASYON_ANAHTARI, seciliIdler.join(","));
+    }
+  }, [seciliIdler]);
 
   if (yukleniyor) {
     return <div className="yukleniyor"><div className="cember" /></div>;
   }
 
-  const secili = istasyonlar.find((i) => i.id === seciliId);
+  const secililer = istasyonlar.filter((i) => seciliIdler.includes(i.id));
 
-  if (!secili) {
+  if (!secililer.length) {
+    const cevir = (id: number) =>
+      setIsaretli((s) => (s.includes(id) ? s.filter((x) => x !== id) : [...s, id]));
+
     return (
       <>
         <header className="m-baslik">
@@ -103,13 +134,32 @@ export default function MobilIstasyon() {
         ) : (
           <div className="m-istasyon-sec">
             {istasyonlar.map((i) => (
-              <button key={i.id} onClick={() => setSeciliId(i.id)}>
-                <ChefHat size={19} />
-                <span>{i.ad}</span>
-                <ChevronRight size={18} />
-              </button>
+              <div key={i.id} className="m-istasyon-satir">
+                {/* Soldaki kutu birden çok tezgâhı aynı ekrana almak için;
+                    satırın kendisi eskisi gibi tek tezgâhı açıyor. */}
+                <button
+                  className={`m-istasyon-kutucuk${isaretli.includes(i.id) ? " secili" : ""}`}
+                  onClick={() => cevir(i.id)}
+                  aria-label={`${i.ad} tezgâhını birlikte aç`}
+                >
+                  {isaretli.includes(i.id) && <Check size={16} />}
+                </button>
+                <button onClick={() => setSeciliIdler([i.id])}>
+                  <ChefHat size={19} />
+                  <span>{i.ad}</span>
+                  <ChevronRight size={18} />
+                </button>
+              </div>
             ))}
           </div>
+        )}
+
+        {isaretli.length > 0 && (
+          <button className="m-dugme genis" onClick={() => setSeciliIdler(isaretli)}>
+            {isaretli.length === 1
+              ? "Seçilen tezgâhı aç"
+              : `${isaretli.length} tezgâhı birlikte aç`}
+          </button>
         )}
       </>
     );
@@ -117,19 +167,22 @@ export default function MobilIstasyon() {
 
   return (
     <Ekran
-      istasyon={secili}
+      istasyonlar={secililer}
       cokIstasyon={istasyonlar.length > 1}
-      onDegistir={() => setSeciliId(null)}
+      onDegistir={() => {
+        setIsaretli([]);
+        setSeciliIdler([]);
+      }}
     />
   );
 }
 
 function Ekran({
-  istasyon,
+  istasyonlar,
   cokIstasyon,
   onDegistir,
 }: {
-  istasyon: Istasyon;
+  istasyonlar: Istasyon[];
   cokIstasyon: boolean;
   onDegistir: () => void;
 }) {
@@ -137,19 +190,22 @@ function Ekran({
   const [hazirlanan, setHazirlanan] = useState<MutfakKarti[]>([]);
   const [sekme, setSekme] = useState<"bekleyen" | "hazirlanan">("bekleyen");
   // Son işaretlenen kalemler; geri alma şeridi bunlara bakıyor.
-  const [sonHazir, setSonHazir] = useState<number[] | null>(null);
-  const sonHazirZaman = useRef(0);
+  const [sonIslem, setSonIslem] = useState<{ idler: number[]; asama: Asama } | null>(null);
+  const sonIslemZaman = useRef(0);
 
   useSaniye();
 
+  const anahtar = istasyonlar.map((i) => i.id).join(",");
+
   const yenile = useCallback(async () => {
+    const liste = anahtar.split(",").map(Number);
     const [b, h] = await Promise.all([
-      kartlariGetir(istasyon.id),
-      kartlariGetir(istasyon.id, true),
+      kartlariGetir(liste),
+      kartlariGetir(liste, true),
     ]);
     setBekleyen(b);
     setHazirlanan(h);
-  }, [istasyon.id]);
+  }, [anahtar]);
 
   useEffect(() => {
     yenile();
@@ -162,31 +218,51 @@ function Ekran({
     };
   }, [yenile]);
 
-  const isaretle = async (kalemIdler: number[]) => {
-    // Ekran beklemesin: kalemler hemen kalkıyor, veritabanı arkadan yetişiyor.
+  const isaretle = async (kalemIdler: number[], asama: Asama) => {
+    // Ekran beklemesin: kalem hemen yeni hâline geçiyor, veritabanı arkadan
+    // yetişiyor. Hazır olan karttan kalkıyor, ara durakta kalan yerinde duruyor.
+    const simdi = new Date().toISOString();
     setBekleyen((k) =>
       k
         .map((kart) => ({
           ...kart,
-          kalemler: kart.kalemler.filter((x) => !kalemIdler.includes(x.id)),
+          kalemler:
+            asama === "hazir"
+              ? kart.kalemler.filter((x) => !kalemIdler.includes(x.id))
+              : kart.kalemler.map((x) =>
+                  kalemIdler.includes(x.id)
+                    ? {
+                        ...x,
+                        ...(asama === "hazirlik" ? { hazirlikAt: simdi } : { paketlemeAt: simdi }),
+                      }
+                    : x
+                ),
         }))
         .filter((kart) => kart.kalemler.length)
     );
-    setSonHazir(kalemIdler);
-    sonHazirZaman.current = Date.now();
-    await hazirYap(kalemIdler);
+    setSonIslem({ idler: kalemIdler, asama });
+    sonIslemZaman.current = Date.now();
+    await asamayaAl(kalemIdler, asama);
     yenile();
   };
 
-  const geriAl = async (kalemIdler: number[]) => {
-    setSonHazir(null);
-    await hazirGeriAl(kalemIdler);
+  const geriAl = async (kalemIdler: number[], asama: Asama) => {
+    setSonIslem(null);
+    await asamadanCik(kalemIdler, asama);
     yenile();
   };
 
   // Geri alma şeridi on saniye duruyor: yanlış dokunuş hemen fark ediliyor,
   // sürekli ekranda kalsa kartların önünü kapatırdı.
-  const geriAlinabilir = sonHazir && Date.now() - sonHazirZaman.current < 10000 ? sonHazir : null;
+  const geriAlinabilir =
+    sonIslem && Date.now() - sonIslemZaman.current < 10000 ? sonIslem : null;
+  // Akış tezgâh bazında: kalemin kendi istasyonuna bakılıyor.
+  const tezgahlar = new Map(istasyonlar.map((i) => [i.id, i]));
+  const asamalarOf = (kalem: MutfakKalemi) =>
+    istasyonAsamalari(tezgahlar.get(kalem.istasyonId) ?? { pisirme: false, paketleme: false });
+  // Tek tezgâhta ürünün yanına tezgâh adı yazmak gereksiz gürültü.
+  const tezgahAdi = (kalem: MutfakKalemi) =>
+    istasyonlar.length > 1 ? tezgahlar.get(kalem.istasyonId)?.ad : undefined;
   const bekleyenAdet = bekleyen.reduce((t, k) => t + k.kalemler.length, 0);
   const gecikme = ayarlar().mutfakGecikmeDk;
 
@@ -198,11 +274,11 @@ function Ekran({
               dönülecek bir yer yok, düz başlık kalıyor. */}
           {cokIstasyon ? (
             <button className="m-istasyon-ad" onClick={onDegistir}>
-              <h1>{istasyon.ad}</h1>
+              <h1>{istasyonlar.map((i) => i.ad).join(" + ")}</h1>
               <ChevronRight size={19} />
             </button>
           ) : (
-            <h1>{istasyon.ad}</h1>
+            <h1>{istasyonlar.map((i) => i.ad).join(" + ")}</h1>
           )}
           <p className="m-baslik-alt">
             {bekleyenAdet > 0 ? `${bekleyenAdet} ürün hazırlanıyor` : "Bekleyen sipariş yok"}
@@ -244,8 +320,10 @@ function Ekran({
                 key={kart.turId}
                 kart={kart}
                 gecikme={gecikme}
-                onKalem={(id) => isaretle([id])}
-                onTumu={() => isaretle(kart.kalemler.map((k) => k.id))}
+                asamalarOf={asamalarOf}
+                tezgahAdi={tezgahAdi}
+                onKalem={isaretle}
+                onTumu={isaretle}
               />
             ))}
           </div>
@@ -272,7 +350,7 @@ function Ekran({
                     {k.porsiyon && ` · ${k.porsiyon}`}
                   </span>
                   {k.hazirAt && <time>{saat(k.hazirAt)}</time>}
-                  <button onClick={() => geriAl([k.id])} aria-label="Geri al">
+                  <button onClick={() => geriAl([k.id], "hazir")} aria-label="Geri al">
                     <Undo2 size={17} />
                   </button>
                 </div>
@@ -284,8 +362,8 @@ function Ekran({
 
       {geriAlinabilir && (
         <div className="m-geri-serit">
-          <span>Hazır olarak işaretlendi.</span>
-          <button onClick={() => geriAl(geriAlinabilir)}>
+          <span>{ASAMA_ADI[geriAlinabilir.asama].gecmis}.</span>
+          <button onClick={() => geriAl(geriAlinabilir.idler, geriAlinabilir.asama)}>
             <Undo2 size={17} /> Geri al
           </button>
         </div>
@@ -297,16 +375,27 @@ function Ekran({
 function Kart({
   kart,
   gecikme,
+  asamalarOf,
+  tezgahAdi,
   onKalem,
   onTumu,
 }: {
   kart: MutfakKarti;
   gecikme: number;
-  onKalem: (kalemId: number) => void;
-  onTumu: () => void;
+  asamalarOf: (kalem: MutfakKalemi) => Asama[];
+  tezgahAdi: (kalem: MutfakKalemi) => string | undefined;
+  onKalem: (kalemIdler: number[], asama: Asama) => void;
+  onTumu: (kalemIdler: number[], asama: Asama) => void;
 }) {
   const dakika = (Date.now() - new Date(kart.olusturma).getTime()) / 60000;
   const geciken = gecikme > 0 && dakika >= gecikme;
+
+  // Alttaki düğme en geride kalan kaleme göre yazıyor.
+  // Kartta iki tezgâhın ürünü olabildiği için sıra ortak durak sırasından
+  // okunuyor, kalemin kendi akışından değil.
+  const siradakiler = kart.kalemler.map((k) => ({ k, s: siradakiAsama(k, asamalarOf(k)) }));
+  const enGeri = DURAK_SIRASI.find((a) => siradakiler.some((x) => x.s === a));
+  const toplu = siradakiler.filter((x) => x.s === enGeri).map((x) => x.k);
 
   return (
     <article className={geciken ? "m-kart seritli geciken" : "m-kart seritli"}>
@@ -330,29 +419,46 @@ function Kart({
       )}
 
       <div className="m-kart-kalemler">
-        {kart.kalemler.map((k) => (
-          <button key={k.id} className="m-kart-kalem" onClick={() => onKalem(k.id)}>
-            <span className="m-kart-adet">{adetGoster(k.adet)}</span>
-            <span className="m-kart-urun">
-              {k.ad}
-              {(k.porsiyon || k.secimler.length > 0) && (
-                <small>{[k.porsiyon, ...k.secimler].filter(Boolean).join(" · ")}</small>
-              )}
-              {k.not && (
-                <em>
-                  <MessageSquareText size={14} />
-                  {k.not}
-                </em>
-              )}
-            </span>
-            <Check size={20} />
-          </button>
-        ))}
+        {kart.kalemler.map((k) => {
+          const kalemAsamalari = asamalarOf(k);
+          const sirada = siradakiAsama(k, kalemAsamalari);
+          const durak = bulunanAsama(k, kalemAsamalari);
+          const tezgah = tezgahAdi(k);
+          return (
+            <button
+              key={k.id}
+              className={durak ? "m-kart-kalem asamada" : "m-kart-kalem"}
+              disabled={!sirada}
+              onClick={() => sirada && onKalem([k.id], sirada)}
+            >
+              <span className="m-kart-adet">{adetGoster(k.adet)}</span>
+              <span className="m-kart-urun">
+                {k.ad}
+                {(k.porsiyon || k.secimler.length > 0 || tezgah) && (
+                  <small>{[tezgah, k.porsiyon, ...k.secimler].filter(Boolean).join(" · ")}</small>
+                )}
+                {/* Ara duraktaki kalem kartta kalıyor; nerede olduğu rozette
+                    yazıyor ki iki aşçı aynı ürüne baştan başlamasın. */}
+                {durak && <b className="m-asama-rozet">{ASAMA_ADI[durak].simdi}</b>}
+                {k.not && (
+                  <em>
+                    <MessageSquareText size={14} />
+                    {k.not}
+                  </em>
+                )}
+              </span>
+              <AsamaIkonu asama={sirada ?? "hazir"} />
+            </button>
+          );
+        })}
       </div>
 
-      <button className="m-dugme genis" onClick={onTumu}>
-        <CircleCheckBig size={18} /> Tümü hazır
-      </button>
+      {enGeri && (
+        <button className="m-dugme genis" onClick={() => onTumu(toplu.map((k) => k.id), enGeri)}>
+          {enGeri === "hazir" ? <CircleCheckBig size={18} /> : <AsamaIkonu asama={enGeri} />}
+          {enGeri === "hazir" ? "Tümü hazır" : `Tümü ${ASAMA_ADI[enGeri].simdi.toLowerCase()}`}
+        </button>
+      )}
     </article>
   );
 }

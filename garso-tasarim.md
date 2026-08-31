@@ -3,10 +3,59 @@
 
 ## 0. SIRADAKİ İŞ (30 Ağu 2026'da güncellendi)
 
-> **Sıradaki iş: çevrimdışı sıfırdan giriş.** PIN tarafı 30 Ağu'da kapandı;
-> açık kalan, o cihazda daha önce hiç giriş yapılmamışsa internetsiz
-> girilememesi (`girisYap` → `signInWithPassword` sunucuya gidiyor). Daha nadir
-> bir durum, o yüzden PIN'den sonraya bırakıldı.
+> **Sıradaki iş: yeni cihazda ilk girişte takılan düğme.** "Kontrol ediliyor…"
+> hâlinde kalıyor, sayfa yenilenince geçiyor; ara sıra çıkıyor, henüz
+> yakalanamadı. Notu aşağıda.
+>
+> **1 Eyl 2026: KDS'in kalanı bitti (bir maddesi atlandı).**
+> - **Aşamalar.** İstasyonun "Hazırlanıyor" ve "Paketleniyor" anahtarları artık
+>   gerçekten akışı belirliyor: Sırada → Hazırlanıyor → Paketleniyor → Hazır.
+>   Anahtar kapalıyken ekran eskisi gibi tek adım. Durak kalemin kendi
+>   sütununda (`hazirlik_at`, `paketleme_at`) — hazır durumundaki kararın
+>   devamı, ayrı tablo açılmadı. Ara duraktaki kalem karttan kalkmıyor,
+>   mercan rozetle duruyor (iki aşçı aynı ürüne baştan başlamasın). Düğmenin
+>   ikonu gidilecek durağı söylüyor: alev, kutu, tik. Göç
+>   `sql/2026-08-31-mutfak-asamalari.sql`. **`pisirme` varsayılanı kapalıya
+>   çekildi ve mevcut istasyonlarda kapatıldı**: anahtar bugüne kadar hiçbir
+>   yerde okunmuyordu, artık akışı belirlediği için çalışan bir mutfağın
+>   ekranına habersiz ikinci tuş çıkmamalı.
+> - **Çoklu istasyon.** Bir cihaz birden çok tezgâha bakabiliyor (adres
+>   `/istasyon/1,2`). Seçim ekranında satır eskisi gibi tek tezgâhı açıyor,
+>   solundaki kutular işaretlenince "2 tezgâhı birlikte aç" çıkıyor — yeni bir
+>   mod değil, mevcut listenin genişlemesi. Kalem artık kendi `istasyonId`'sini
+>   taşıyor: **akış tezgâh bazında** olduğu için (Mutfak'ta aşama açık, Bar'da
+>   kapalı olabiliyor) aynı kartta yan yana farklı düğmeler çıkabiliyor. Toplu
+>   düğme ortak durak sırasından okuyor. Çok tezgâhta ürünün altında tezgâh adı
+>   yazıyor, tek tezgâhta yazmıyor.
+> - **Hazırlık süresi raporu.** Analiz'e **Mutfak** sekmesi (`mutfakSureleri`).
+>   Süre = turun tezgâha düştüğü an → hazır işaretlendiği an. Şeritte hazırlanan
+>   adedi, ortalama, en uzun, gecikme oranı; altında ürün tablosu (İstasyon,
+>   Adet, Ortalama, En uzun, Geciken). Aşaması açık istasyon varsa "Sırada" ve
+>   "Hazırlanma" sütunları ekleniyor — darboğaz mutfakta mı sırada mı, ancak bu
+>   ayrım söylüyor. Para geçmediği için yetkisi `rapor.gun_sonu`: ciroyu
+>   görmeyen tezgâh sorumlusu da bakabiliyor. Rakamın "işaretlenme anını"
+>   ölçtüğü Bilgi kutusunda yazıyor.
+> - **İPTAL: manuel mutfak çıktısı.** Mutfak fişini elle yeniden bastırma
+>   planlanmıştı; 1 Eyl'de iptal edildi. Gerekçe: mutfak siparişi zaten İstasyon
+>   ekranında görüyor, kâğıt kaybolsa da sipariş ekranda duruyor. Kâğıt
+>   yazıcıyla çalışan, ekranı olmayan işletmede anlam kazanır — o zaman
+>   yapılır, fişin üstüne "TEKRAR" basılarak.
+>
+> **31 Ağu 2026: kurye atama ve teslimat takibi de en sona ertelendi.**
+> Acelesi yok; eGZOZ'da paket servis işletilmiyor. Sırası geldiğinde önce
+> Adisyo'da canlı tur, sonra plan.
+>
+> **31 Ağu 2026: QR menü işi en sona ertelendi.** Menü sayfası çalışır durumda;
+> kalan parçalar (kategori/kapak görsellerinin girişi, masadan sipariş ve
+> garson çağırma, masa başına ayrı karekod) Faz 2 bitene kadar beklemede.
+>
+> **31 Ağu 2026: çevrimdışı sıfırdan giriş atlandı.** PIN tarafı 30 Ağu'da
+> kapandı; açık kalan tek şey, o cihazda daha önce hiç giriş yapılmamışsa
+> internetsiz girilememesiydi (`girisYap` → `signInWithPassword` sunucuya
+> gidiyor). Yapılmayacak: kasa günün başında bir kez açılıyor ve o an internet
+> oluyor, kesinti sırasında kapanıp açılan cihaz nadir. Gerekirse PIN'deki
+> desenin aynısı kurulur — cihazda PBKDF2 doğrulayıcı, bağlantı gelince arkada
+> gerçek giriş.
 >
 > **30 Ağu 2026: çevrimdışı PIN ile kişi değiştirme bitti.** Kilitli ekrandan
 > PIN'le geçmek artık internetsiz de çalışıyor. **Sunucudan hiçbir PIN özeti
@@ -65,7 +114,7 @@
 > genişlik fotoğrafın üstünde aynı düzen. Vitrin her satırda iki ürün; açılan
 > kart satırın tamamına yayılıyor.
 >
-> **Ertelendi: kategori ve kapak görsellerinin girişi.** Veritabanında alanlar var
+> **Ertelendi (en sona): kategori ve kapak görsellerinin girişi.** Veritabanında alanlar var
 > (`kategoriler.gorsel`, `kategoriler.aciklama`, `isletme_ayarlari.qr_menu_kapaklar`)
 > ama girecek ekran yok: kategori penceresi bugün bu iki alanı taşıyor ama
 > düzenletmiyor, kapaklar da İşletme Ayarları'nın QR Menü bölümüne eklenecek.
@@ -111,14 +160,11 @@
 > karekodu var. QRall'da alan ve masa başına ayrı QR üretiliyor; o ayrım ancak
 > masadan sipariş gelince anlam kazanıyor, o zaman yapılacak.
 >
-> **Kısmen kapandı (30 Ağu): çevrimdışı giriş ve PIN ile kişi değiştirme.**
-> PIN tarafı bitti, notu yukarıda. Aşağıdaki metin sıfırdan girişi anlatıyor,
-> o hâlâ açık. Cihaz kesinti
-> sırasında kapanıp açılırsa Garso tamamen kilitleniyor; şifre ve PIN sunucuda
-> doğrulanıyor. Gerçek bir açık ama şimdilik sırada değil (9 Eyl kararı).
+> **Kapandı (30–31 Ağu): çevrimdışı giriş ve PIN ile kişi değiştirme.**
+> PIN tarafı bitti, sıfırdan giriş atlandı — ikisinin de notu yukarıda.
 >
-> **Ertelendi: kurye atama ve teslimat takibi.** Faz 2'nin açık kalan tek maddesi.
-> Yeni modül olduğu için önce Adisyo turu gerekiyor (9 Eyl kararı).
+> **Ertelendi (en sona): kurye atama ve teslimat takibi.** Faz 2'nin açık kalan
+> tek modülü. Yeni modül olduğu için önce Adisyo turu gerekiyor (9 Eyl kararı).
 >
 > **10 Eyl 2026: menü zenginleştirmenin iki adımı bitti.**
 > - **Veri katmanı.** `urunler`'e açıklama, hazırlanma dakikası, kalori, gramaj,
@@ -396,13 +442,12 @@
 >   özeti de doğrulanmıyor. Tedarik zinciri riski; mağazaya çıkış işleriyle
 >   birlikte.
 >
-> Sırada bekleyenler: **kurye atama ve teslimat takibi** → **KDS'in kalan
-> parçaları** (pişirme/paketleme aşamaları, mutfak fişi, hazırlık süresi
-> raporu, çoklu istasyon).
+> Faz 2'nin büyük maddeleri kapandı. Geriye kalanlar: **kurye atama** ve
+> **QR menünün kalanı** (ikisi de en sonda), bir de aşağıdaki küçük işler.
 >
-> Offline'ın açık kalan uçları: **çevrimdışı giriş ve PIN ile kişi değiştirme**
-> (artık sıranın başında), **masasız adisyonun çevrimdışı açılması**.
-> Çevrimdışı tahsilat 7 Eyl'de bitti.
+> Offline'ın açık kalan tek ucu: **masasız adisyonun çevrimdışı açılması**.
+> Çevrimdışı tahsilat 7 Eyl'de, PIN ile kişi değiştirme 30 Ağu'da bitti,
+> sıfırdan giriş 31 Ağu'da atlandı.
 >
 > Küçük iş: **Analiz ve Kasa ekranlarına canlı tazeleme** (katman hazır:
 > `useCanli(..., SAKIN)`). Küçük iş: **Analiz'in diğer tablolarına kendi

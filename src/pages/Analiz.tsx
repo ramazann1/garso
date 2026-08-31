@@ -4,6 +4,7 @@ import {
   ArrowDown,
   ArrowUp,
   BarChart3,
+  ChefHat,
   ChevronRight,
   ChevronsUpDown,
   ClipboardList,
@@ -22,6 +23,7 @@ import {
 import Duzen, { analizBolumleri } from "../components/Duzen";
 import AnalizFiltre from "../components/AnalizFiltre";
 import AramaKutusu from "../components/AramaKutusu";
+import Bilgi from "../components/Bilgi";
 import AdisyonDetay from "../components/AdisyonDetay";
 import { yolaGirebilir } from "../rotaYetkileri";
 import { yetkiVar } from "../oturum";
@@ -39,6 +41,7 @@ import {
   analizOzeti,
   analizPersoneli,
   analizUrunleri,
+  mutfakSureleri,
   urunKategorileri,
   tamamiIkram,
   type AnalizAdisyon,
@@ -47,6 +50,8 @@ import {
   type CariHareketSatiri,
   type DenetimSatiri,
   type GiderOzeti,
+  type MutfakSuresiOzeti,
+  type MutfakSuresiSatiri,
   type OdenmezSatiri,
   type PersonelOzeti,
   type PersonelSatiri,
@@ -66,6 +71,7 @@ export default function Analiz() {
   const [giderler, setGiderler] = useState<Masraf[]>([]);
   const [denetim, setDenetim] = useState<DenetimSatiri[]>([]);
   const [cariHareketler, setCariHareketler] = useState<CariHareketSatiri[]>([]);
+  const [mutfak, setMutfak] = useState<MutfakSuresiOzeti | null>(null);
   const [yukleniyor, setYukleniyor] = useState(true);
   const [secili, setSecili] = useState<number | null>(null);
   const [uyari, setUyari] = useState<string | null>(null);
@@ -89,12 +95,15 @@ export default function Analiz() {
       analizGiderleri(filtre),
       analizDenetimi(filtre),
       analizCariHareketleri(filtre),
-    ]).then(([a, g, d, c]) => {
+      // Hazırlık süreleri adisyondan değil turdan çıkıyor; kendi sorgusu var.
+      mutfakSureleri(filtre),
+    ]).then(([a, g, d, c, m]) => {
       if (!gecerli) return;
       setAdisyonlar(a);
       setGiderler(g);
       setDenetim(d);
       setCariHareketler(c);
+      setMutfak(m);
       setYukleniyor(false);
     });
     return () => {
@@ -165,6 +174,8 @@ export default function Analiz() {
           />
         ) : bolum === "urunler" ? (
           <Urunler ozet={urunler} />
+        ) : bolum === "mutfak" ? (
+          <Mutfak ozet={mutfak} />
         ) : bolum === "personel" ? (
           <Personel ozet={personel} />
         ) : bolum === "giderler" ? (
@@ -882,6 +893,161 @@ function UrunSatir({ satir, toplam }: { satir: UrunSatiri; toplam: number }) {
 }
 
 type PersonelAlani = "ad" | "acilan" | "adisyon" | "adet" | "ciro" | "pay" | "ikram" | "iptal";
+
+type MutfakAlani = "ad" | "istasyonAd" | "adet" | "ortalama" | "enUzun" | "geciken";
+
+/** Saniyeyi tezgâh diliyle yazıyor: 45 sn, 6 dk, 1 sa 12 dk. */
+function sureGoster(saniye: number) {
+  if (saniye < 60) return `${saniye} sn`;
+  const dk = Math.round(saniye / 60);
+  if (dk < 60) return `${dk} dk`;
+  return `${Math.floor(dk / 60)} sa ${dk % 60} dk`;
+}
+
+/**
+ * Hazırlık süreleri. Sorusu "nerede tıkanıyoruz": hangi ürün beklettiriyor,
+ * hangi tezgâh yetişemiyor. Para geçmiyor, o yüzden ciroyu görmeyen tezgâh
+ * sorumlusu da bakabiliyor.
+ */
+function Mutfak({ ozet }: { ozet: MutfakSuresiOzeti | null }) {
+  const [sira, setSira] = useState<{ alan: MutfakAlani; artan: boolean }>({
+    alan: "ortalama",
+    artan: false,
+  });
+  const [arama, setArama] = useState("");
+
+  const satirlar = useMemo(() => {
+    const ara = arama.trim().toLocaleLowerCase("tr");
+    const liste = (ozet?.satirlar ?? []).filter(
+      (s) => !ara || s.ad.toLocaleLowerCase("tr").includes(ara)
+    );
+    const yon = sira.artan ? 1 : -1;
+    return liste.sort((a, b) =>
+      sira.alan === "ad" || sira.alan === "istasyonAd"
+        ? String(a[sira.alan]).localeCompare(String(b[sira.alan]), "tr") * yon
+        : (Number(a[sira.alan]) - Number(b[sira.alan])) * yon
+    );
+  }, [ozet, sira, arama]);
+
+  const sirala = (alan: MutfakAlani) =>
+    setSira((s) =>
+      s.alan === alan
+        ? { alan, artan: !s.artan }
+        : { alan, artan: alan === "ad" || alan === "istasyonAd" }
+    );
+
+  if (!ozet || ozet.satirlar.length === 0) {
+    return (
+      <section className="ayar-bolum">
+        <div className="ayar-bos">
+          <ChefHat size={30} />
+          <p>Bu dönemde hazır işaretlenmiş ürün yok.</p>
+        </div>
+      </section>
+    );
+  }
+
+  const gecikmeDk = ayarlar().mutfakGecikmeDk;
+  const gecikmePay = ozet.adet ? Math.round((ozet.geciken / ozet.adet) * 100) : 0;
+  const asamali = ozet.asamaliVar;
+
+  return (
+    <div className="analiz-ozet">
+      <section className="ozet-serit">
+        <div className="serit-satir">
+          <div className="serit-sayi">
+            <span className="serit-etiket">
+              <ChefHat size={15} /> Hazırlanan
+            </span>
+            <strong>{ozet.adet}</strong>
+            <em>ürün hazır işaretlendi</em>
+          </div>
+          <div className="serit-sayi serit-toplam">
+            <span className="serit-etiket">Ortalama süre</span>
+            <strong>{sureGoster(ozet.ortalama)}</strong>
+            <em>sipariş düştükten sonra</em>
+          </div>
+          <div className="serit-sayi">
+            <span className="serit-etiket">En uzun</span>
+            <strong>{sureGoster(ozet.enUzun)}</strong>
+            <em>tek bir üründe</em>
+          </div>
+          <div className="serit-sayi">
+            <span className="serit-etiket">Gecikme</span>
+            <strong>{gecikmeDk > 0 ? `%${gecikmePay}` : "—"}</strong>
+            <em>
+              {gecikmeDk > 0
+                ? `${ozet.geciken} ürün ${gecikmeDk} dakikayı aştı`
+                : "gecikme eşiği tanımlı değil"}
+            </em>
+          </div>
+        </div>
+      </section>
+
+      <Bilgi>
+        Süre, siparişin tezgâha düştüğü an ile hazır işaretlendiği an arasını
+        ölçüyor. Mutfak tuşa geç basarsa ya da biten ürünleri sonradan toplu
+        işaretlerse rakam gerçekte geçen süreden uzun çıkar.
+      </Bilgi>
+
+      <section className="ayar-bolum">
+        <div className="analiz-liste-ust">
+          <h2>
+            <ChefHat size={17} /> {satirlar.length} ürün
+          </h2>
+          <AramaKutusu deger={arama} degistir={setArama} yer="Ürün ara" />
+        </div>
+
+        <div className="tablo-kaydir">
+          <table className="analiz-tablo">
+            <thead>
+              <tr>
+                <SiraBaslik alan="ad" ad="Ürün" sira={sira} sirala={sirala} />
+                <SiraBaslik alan="istasyonAd" ad="İstasyon" sira={sira} sirala={sirala} />
+                <SiraBaslik alan="adet" ad="Adet" sag sira={sira} sirala={sirala} />
+                <SiraBaslik alan="ortalama" ad="Ortalama" sag sira={sira} sirala={sirala} />
+                {/* Sıra/hazırlık ayrımı yalnız aşaması açık istasyonda oluşuyor;
+                    kapalıysa sütunlar boş kalacağına hiç açılmıyor. */}
+                {asamali && <th className="sag">Sırada</th>}
+                {asamali && <th className="sag">Hazırlanma</th>}
+                <SiraBaslik alan="enUzun" ad="En uzun" sag sira={sira} sirala={sirala} />
+                <SiraBaslik alan="geciken" ad="Geciken" sag sira={sira} sirala={sirala} />
+              </tr>
+            </thead>
+            <tbody>
+              {satirlar.length === 0 ? (
+                <tr className="tablo-bos-satir">
+                  <td colSpan={asamali ? 8 : 6}>Aramayla eşleşen ürün yok.</td>
+                </tr>
+              ) : (
+                satirlar.map((s: MutfakSuresiSatiri) => (
+                  <tr key={s.anahtar}>
+                    <td>{s.ad}</td>
+                    <td>{s.istasyonAd}</td>
+                    <td className="sag">{s.adet}</td>
+                    <td className="sag hucre-tutar">{sureGoster(s.ortalama)}</td>
+                    {asamali && (
+                      <td className="sag">
+                        {s.ortalamaBekleme ? sureGoster(s.ortalamaBekleme) : "—"}
+                      </td>
+                    )}
+                    {asamali && (
+                      <td className="sag">
+                        {s.ortalamaHazirlik ? sureGoster(s.ortalamaHazirlik) : "—"}
+                      </td>
+                    )}
+                    <td className="sag">{sureGoster(s.enUzun)}</td>
+                    <td className="sag">{s.geciken || "—"}</td>
+                  </tr>
+                ))
+              )}
+            </tbody>
+          </table>
+        </div>
+      </section>
+    </div>
+  );
+}
 
 function Personel({ ozet }: { ozet: PersonelOzeti }) {
   const [sira, setSira] = useState<{ alan: PersonelAlani; artan: boolean }>({

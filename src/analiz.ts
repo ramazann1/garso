@@ -6,6 +6,7 @@ import { denetimGetir, denetimYaz } from "./denetim";
 export type { DenetimSatiri } from "./denetim";
 import { kisaAd } from "./personel";
 import { supabase } from "./supabase";
+import { istasyonlariGetir, urunIstasyonlari } from "./yazicilar";
 import type { SepetKalemi } from "./types";
 
 /**
@@ -977,4 +978,135 @@ export async function analizCariHareketleri(f: AnalizFiltre): Promise<CariHareke
 export function analizGiderleri(f: AnalizFiltre) {
   const { bas, bit } = donemAraligi(f);
   return masraflariGetir(bas.toISOString(), bit.toISOString());
+}
+
+export type MutfakSuresiSatiri = {
+  anahtar: string;
+  ad: string;
+  istasyonAd: string;
+  adet: number;
+  /** Saniye cinsinden; ekranda dakikaya çevriliyor. */
+  ortalama: number;
+  enUzun: number;
+  /** Aşama açıksa toplam sürenin iki parçası — kapalıysa sıfır kalıyor. */
+  ortalamaBekleme: number;
+  ortalamaHazirlik: number;
+  geciken: number;
+};
+
+export type MutfakSuresiOzeti = {
+  satirlar: MutfakSuresiSatiri[];
+  adet: number;
+  ortalama: number;
+  enUzun: number;
+  geciken: number;
+  /** Sıra/hazırlık ayrımı yalnız aşama açık olan istasyonlarda oluşuyor. */
+  asamaliVar: boolean;
+};
+
+/**
+ * Hazırlık süresi dökümü.
+ *
+ * Süre, turun mutfağa düştüğü an ile kalemin hazır işaretlendiği an arası.
+ * Ölçtüğü şey "yemek kaç dakikada pişti" değil, "tezgâh kaç dakika sonra
+ * hazır dedi" — mutfak tuşa basmayı unutursa ya da hepsini sonradan toplu
+ * işaretlerse rakam gerçeğin üstünde çıkar. Ekranda bu uyarı yazıyor.
+ *
+ * Aşama açık istasyonda süre ikiye ayrılıyor: sırada bekleme (tur düştü,
+ * hazırlığa alındı) ve hazırlanma (hazırlığa alındı, hazır oldu). Darboğazın
+ * mutfakta mı yoksa sıranın kendisinde mi olduğunu ancak bu ayrım söylüyor.
+ */
+export async function mutfakSureleri(f: AnalizFiltre): Promise<MutfakSuresiOzeti> {
+  const { bas, bit } = donemAraligi(f);
+  const gecikmeSn = (ayarlar().mutfakGecikmeDk || 0) * 60;
+
+  const [{ data }, istasyonlar, harita] = await Promise.all([
+    supabase
+      .from("turlar")
+      .select(
+        `olusturma,
+         adisyon_kalemleri (urun_id, ad, durum, hazirlik_at, hazir_at)`
+      )
+      .gte("olusturma", bas.toISOString())
+      .lt("olusturma", bit.toISOString())
+      .limit(2000),
+    istasyonlariGetir(),
+    urunIstasyonlari(),
+  ]);
+
+  const istasyonAdi = new Map(istasyonlar.map((i) => [i.id, i.ad]));
+  const satirlar = new Map<string, MutfakSuresiSatiri & { toplam: number; bekleme: number; beklemeAdet: number }>();
+  let asamaliVar = false;
+
+  for (const t of ((data as any[]) ?? [])) {
+    const dusme = new Date(t.olusturma).getTime();
+    for (const k of ((t.adisyon_kalemleri as any[]) ?? [])) {
+      // Hazır işaretlenmemiş ve iptal edilmiş kalemin süresi yok.
+      if (!k.hazir_at || (k.durum ?? "normal") === "iptal") continue;
+      const sure = Math.max(0, Math.round((new Date(k.hazir_at).getTime() - dusme) / 1000));
+
+      const anahtar = k.urun_id ? `u${k.urun_id}` : `a${k.ad}`;
+      const satir =
+        satirlar.get(anahtar) ??
+        {
+          anahtar,
+          ad: k.ad,
+          istasyonAd: istasyonAdi.get(harita.get(k.urun_id) as number) ?? "—",
+          adet: 0,
+          ortalama: 0,
+          enUzun: 0,
+          ortalamaBekleme: 0,
+          ortalamaHazirlik: 0,
+          geciken: 0,
+          toplam: 0,
+          bekleme: 0,
+          beklemeAdet: 0,
+        };
+
+      satir.adet += 1;
+      satir.toplam += sure;
+      satir.enUzun = Math.max(satir.enUzun, sure);
+      if (gecikmeSn > 0 && sure >= gecikmeSn) satir.geciken += 1;
+
+      if (k.hazirlik_at) {
+        asamaliVar = true;
+        satir.bekleme += Math.max(0, Math.round((new Date(k.hazirlik_at).getTime() - dusme) / 1000));
+        satir.beklemeAdet += 1;
+      }
+
+      satirlar.set(anahtar, satir);
+    }
+  }
+
+  let adet = 0;
+  let toplam = 0;
+  let enUzun = 0;
+  let geciken = 0;
+  const liste: MutfakSuresiSatiri[] = [];
+
+  for (const s of satirlar.values()) {
+    s.ortalama = Math.round(s.toplam / s.adet);
+    if (s.beklemeAdet) {
+      s.ortalamaBekleme = Math.round(s.bekleme / s.beklemeAdet);
+      s.ortalamaHazirlik = Math.max(0, s.ortalama - s.ortalamaBekleme);
+    }
+    adet += s.adet;
+    toplam += s.toplam;
+    enUzun = Math.max(enUzun, s.enUzun);
+    geciken += s.geciken;
+    const { toplam: _t, bekleme: _b, beklemeAdet: _ba, ...temiz } = s;
+    liste.push(temiz);
+  }
+
+  // En uzun süren üstte: raporun sorusu "nerede tıkanıyoruz".
+  liste.sort((a, b) => b.ortalama - a.ortalama);
+
+  return {
+    satirlar: liste,
+    adet,
+    ortalama: adet ? Math.round(toplam / adet) : 0,
+    enUzun,
+    geciken,
+    asamaliVar,
+  };
 }

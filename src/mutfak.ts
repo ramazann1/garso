@@ -13,16 +13,68 @@ import { acikOturum } from "./oturum";
 import { urunIstasyonlari } from "./yazicilar";
 import type { AdisyonTipi } from "./adisyonlar";
 
+/**
+ * Kalemin geçebileceği duraklar. Hangilerinin kullanıldığını istasyonun
+ * anahtarları söylüyor; "hazir" her istasyonda var, diğer ikisi isteğe bağlı.
+ */
+export type Asama = "hazirlik" | "paketleme" | "hazir";
+
+export const ASAMA_ADI: Record<Asama, { gecmis: string; simdi: string; dugme: string }> = {
+  hazirlik: { gecmis: "Hazırlığa alındı", simdi: "Hazırlanıyor", dugme: "Hazırlığa al" },
+  paketleme: { gecmis: "Paketlemeye alındı", simdi: "Paketleniyor", dugme: "Paketle" },
+  hazir: { gecmis: "Hazır", simdi: "Hazır", dugme: "Hazır" },
+};
+
+const SUTUN: Record<Asama, { zaman: string; kisi: string }> = {
+  hazirlik: { zaman: "hazirlik_at", kisi: "hazirlik_kisi" },
+  paketleme: { zaman: "paketleme_at", kisi: "paketleme_kisi" },
+  hazir: { zaman: "hazir_at", kisi: "hazir_kisi" },
+};
+
 export type MutfakKalemi = {
   id: number;
+  /** Kalemin hazırlandığı tezgâh. Bir ekran birden çok tezgâha bakabildiği
+      için aşama akışı kalemin kendi istasyonundan okunuyor: Mutfak'ta
+      "Hazırlanıyor" açıkken Bar'da kapalı olabiliyor. */
+  istasyonId: number;
   ad: string;
   porsiyon?: string;
   secimler: string[];
   adet: number;
   not?: string;
+  /** Aşamaya girildiği an; boşsa o durağa henüz uğranmamış. */
+  hazirlikAt?: string;
+  paketlemeAt?: string;
   /** Dolu ise kalem hazırlanmış; ekranda "hazırlananlar" tarafına geçiyor. */
   hazirAt?: string;
 };
+
+/** İstasyonun akışı. Anahtarların ikisi de kapalıysa tek durak kalıyor. */
+export function istasyonAsamalari(istasyon: { pisirme: boolean; paketleme: boolean }): Asama[] {
+  return [
+    ...(istasyon.pisirme ? (["hazirlik"] as const) : []),
+    ...(istasyon.paketleme ? (["paketleme"] as const) : []),
+    "hazir",
+  ];
+}
+
+function asamaZamani(kalem: MutfakKalemi, asama: Asama) {
+  if (asama === "hazirlik") return kalem.hazirlikAt;
+  if (asama === "paketleme") return kalem.paketlemeAt;
+  return kalem.hazirAt;
+}
+
+/** Kalemin bulunduğu durak — hiçbirine girilmemişse null ("sırada"). */
+export function bulunanAsama(kalem: MutfakKalemi, asamalar: Asama[]): Asama | null {
+  let sonuncu: Asama | null = null;
+  for (const a of asamalar) if (asamaZamani(kalem, a)) sonuncu = a;
+  return sonuncu;
+}
+
+/** Düğmeye basılınca gidilecek durak; kalem hazırsa gidecek yer yok. */
+export function siradakiAsama(kalem: MutfakKalemi, asamalar: Asama[]): Asama | null {
+  return asamalar.find((a) => !asamaZamani(kalem, a)) ?? null;
+}
 
 /** Bir tur = mutfağa tek seferde düşen sipariş; ekranda tek kart. */
 export type MutfakKarti = {
@@ -44,7 +96,8 @@ const ALANLAR = `id, siparis_no, olusturma,
        garson:personel!turlar_garson_id_fkey (ad),
        adisyon:adisyonlar!inner (adisyon_no, masa_ad, tip, ad, kisi_sayisi, not_metni, durum,
                                  masa:masalar (ad)),
-       adisyon_kalemleri (id, urun_id, ad, porsiyon, secimler, adet, durum, not_metni, hazir_at)`;
+       adisyon_kalemleri (id, urun_id, ad, porsiyon, secimler, adet, durum, not_metni,
+                          hazirlik_at, paketleme_at, hazir_at)`;
 
 /**
  * Ekrana düşecek kartlar. `hazirlananlar` false ise tezgâhta bekleyenler,
@@ -52,7 +105,7 @@ const ALANLAR = `id, siparis_no, olusturma,
  * kalemin hazır olup olmadığı.
  */
 export async function kartlariGetir(
-  istasyonId: number,
+  istasyonIdler: number[],
   hazirlananlar = false
 ): Promise<MutfakKarti[]> {
   const [{ data }, harita] = await Promise.all([
@@ -72,16 +125,19 @@ export async function kartlariGetir(
       .filter((k) => (k.durum ?? "normal") !== "iptal")
       // İstasyonu olmayan ürün hiçbir tezgâha düşmüyor: kola için mutfağın
       // ekranında satır çıkmasın.
-      .filter((k) => k.urun_id && harita.get(k.urun_id) === istasyonId)
+      .filter((k) => k.urun_id && istasyonIdler.includes(harita.get(k.urun_id) as number))
       .filter((k) => (hazirlananlar ? k.hazir_at : !k.hazir_at))
       .map(
         (k): MutfakKalemi => ({
           id: k.id,
+          istasyonId: harita.get(k.urun_id) as number,
           ad: k.ad,
           porsiyon: k.porsiyon ?? undefined,
           secimler: Array.isArray(k.secimler) ? k.secimler : [],
           adet: Number(k.adet),
           not: k.not_metni ?? undefined,
+          hazirlikAt: k.hazirlik_at ?? undefined,
+          paketlemeAt: k.paketleme_at ?? undefined,
           hazirAt: k.hazir_at ?? undefined,
         })
       );
@@ -110,26 +166,28 @@ export async function kartlariGetir(
   return hazirlananlar ? kartlar : kartlar.reverse();
 }
 
-/** Hazır işaretleme. Tek kalem de olabilir, kartın tamamı da. */
-export async function hazirYap(kalemIdler: number[]) {
+/** Aşamaya alma. Tek kalem de olabilir, kartın tamamı da. */
+export async function asamayaAl(kalemIdler: number[], asama: Asama) {
   if (!kalemIdler.length) return;
+  const sutun = SUTUN[asama];
   const { error } = await supabase
     .from("adisyon_kalemleri")
-    .update({ hazir_at: new Date().toISOString(), hazir_kisi: acikOturum()?.id ?? null })
+    .update({ [sutun.zaman]: new Date().toISOString(), [sutun.kisi]: acikOturum()?.id ?? null })
     .in("id", kalemIdler);
-  if (error) throw new Error("Kalem hazır işaretlenemedi.");
+  if (error) throw new Error("Kalem işaretlenemedi.");
 }
 
 /**
- * Geri alma. Mutfakta hazır düğmesine onay koymuyoruz — eldivenli elle çalışan
- * biri her seferinde iki kez dokunmak istemiyor. Yanlışlıkla basılanın karşılığı
- * onay değil, bu.
+ * Geri alma: kalem bir durak geriye düşüyor. Mutfakta düğmeye onay koymuyoruz —
+ * eldivenli elle çalışan biri her seferinde iki kez dokunmak istemiyor.
+ * Yanlışlıkla basılanın karşılığı onay değil, bu.
  */
-export async function hazirGeriAl(kalemIdler: number[]) {
+export async function asamadanCik(kalemIdler: number[], asama: Asama) {
   if (!kalemIdler.length) return;
+  const sutun = SUTUN[asama];
   const { error } = await supabase
     .from("adisyon_kalemleri")
-    .update({ hazir_at: null, hazir_kisi: null })
+    .update({ [sutun.zaman]: null, [sutun.kisi]: null })
     .in("id", kalemIdler);
   if (error) throw new Error("Kalem geri alınamadı.");
 }

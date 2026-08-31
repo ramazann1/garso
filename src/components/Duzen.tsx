@@ -64,6 +64,7 @@ export const analizBolumleri: Bolum[] = [
   { yol: "/analiz/adisyonlar", ad: "Adisyonlar" },
   { yol: "/analiz/urunler", ad: "Ürünler" },
   { yol: "/analiz/personel", ad: "Personel" },
+  { yol: "/analiz/mutfak", ad: "Mutfak" },
   { yol: "/analiz/giderler", ad: "Giderler" },
   { yol: "/analiz/acik-hesap", ad: "Açık Hesap" },
   { yol: "/analiz/odenmezler", ad: "Ödenmezler" },
