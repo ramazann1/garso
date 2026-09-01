@@ -1460,6 +1460,24 @@ export default function IsletmeAyarlari() {
               Kullanmadığınız tipi silmeden gizleyebilirsiniz.
             </Bilgi>
 
+            <div className="ayar-liste">
+              <AyarSatiri
+                ad="Yazarkasa (ÖKC)"
+                ara={ara}
+                ipucu="İşletmede yazarkasa kullanılmıyorsa kapatın: ÖKC ödeme tipleri hiçbir ödeme ekranında listelenmez, tipleri tek tek gizlemeniz gerekmez. Tanımlarınız silinmez, yeniden açınca aynı şekilde geri gelir."
+              >
+                <AyarAnahtari
+                  acik={genel.okcAcik}
+                  degistir={(v) =>
+                    genelDegistir(
+                      { okcAcik: v },
+                      v ? "Yazarkasa tipleri açıldı" : "Yazarkasa tipleri kapatıldı"
+                    )
+                  }
+                />
+              </AyarSatiri>
+            </div>
+
             {odemeTipleri.length === 0 ? (
               <div className="ayar-bos">
                 <Wallet size={30} />

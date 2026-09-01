@@ -53,8 +53,60 @@
 > başlık/kapat/Tamam ile duruyor, Escape kapatıyor. `＋` ve `—` düz karakterleri
 > `Plus` / `Ban` ikonu oldu. Çember ortak bileşen — düzeltme her yerde geçerli.
 >
+> **Tahsilat penceresi yenilendi (2 Eyl 2026).** Önce Adisyo'nun ödeme
+> ekranında derin tur atıldı (canlı masada ₺0,10 nakit alınıp silindi; ÖKC
+> anahtarı geçici kapatıldı, tur sonunda geri açıldı). **Tek cümlelik ders:
+> Adisyo ödeme ekranında hiç modal açmıyor** — indirim, bahşiş, parçalı ödeme
+> hepsi aynı üç sütunun kip değiştirmesi.
+> Bizde yapılan: sağdan kayan 420px'lik panel gitti, **ürün penceresiyle aynı
+> kabuk** (`.up-fon` / `.up-modal`, ortada, fon bulanık, `scale .97→1`).
+> Eylemler alttan **üst şeride** çıktı (`Kaydet · Adisyonu Kapat / Eksik Kapat`).
+> Gövde **üç eşit sütun**: Ürünler | Alınan ödemeler + tutar dökümü + numpad |
+> Ödeme tipi. Alınan ödemeler listesi soldan ortaya taşındı (Adisyo'daki yeri).
+> Numpad 4 sütun oldu: rakamlar solda, sağda kendi eylem kolonu
+> `Tümü / 1/n / İndirim`; "Hesabı böl" başlığı ve 1/2-1/3-1/4 çip satırı kalktı,
+> **1/n tuşun üstünde açılan listeye** döndü. Ürün seçilince uyarı penceresi
+> yerine listenin altında **mercan yönlendirme şeridi** çıkıyor.
+> **Bahşiş modal olmaktan çıkıp sekme oldu** (ödeme tipleriyle aynı sütunun 2.
+> sekmesi): serbest tutar + "Üstünü tamamla" kartları. Kalandan fazla girilip
+> tipe basılırsa o sekmeye geçip fark ön dolu geliyor, tek tuşla tahsil ediliyor.
+> Açık hesapta bahşiş artık kaybolmuyor.
+> **İndirim modalına dokunulmadı** — Ramazan mevcut hâlini beğeniyor.
+> Sınıflar `th-` önekli. 980px altında pencere tam ekrana yayılıyor, sütunlar
+> alt alta iniyor.
+>
+> **Ödeme tipi kartları yeniden çizildi (2 Eyl 2026).** Dolu renkli ince
+> düğmelerdi; onlarca tip yan yana gelince alacalı bir duvar oluyordu. Artık
+> beyaz kart, ince çerçeve, **ikon üstte renkli halka içinde**, ad altta ortalı.
+> İşletmenin seçtiği renk silinmedi, halkaya taşındı. Bileşen ortak —
+> Hızlı Öde ve Ödeme Tipi Düzelt de yenilendi.
+>
+> **`.kapat` düğmesinin kuralı yokmuş (2 Eyl 2026).** Hızlı Öde kendi kuralını
+> yazmış, Müşteri Seçici açıkta kalıp tarayıcının kalın kare düğmesini
+> göstermiş. Tek genel kural yazıldı (`.kapat`, `.th-kapat`).
+>
 > **Kalan:** ekranlar tek tek gezilip köşe/gölge/geçiş belirteçlerine
-> geçirilecek (renk tamam, ölçek henüz yalnız ürün penceresinde).
+> geçirilecek (renk tamam; ölçek ürün penceresi, renk çemberi ve tahsilat
+> penceresinde uygulandı).
+
+> **Yazarkasa (ÖKC) ana anahtarı eklendi (2 Eyl 2026).** İşletme Ayarları →
+> Ödeme Tipleri'nin başında. Kapalıyken ÖKC sınıfı ödeme tipleri hiçbir ödeme
+> ekranında listelenmiyor, tek grup kalınca başlıklar da kendiliğinden
+> kayboluyor. **Karar: kapsam işletme bazında** (cihaz bazında değil) — Ramazan
+> seçti. Tanımlar silinmiyor. Varsayılan açık.
+> `isletme_ayarlari.okc_acik` → `sql/2026-09-02-okc-anahtari.sql`.
+
+> **Tur hatası düzeltildi (2 Eyl 2026).** İki ayrı sorun:
+> **(a)** Kayıtlı bir kalemin adedi artırılınca (2 powerbank → 5) ne yeni tur
+> açılıyor ne mutfak fişi basılıyordu; yalnız `adet` alanı güncelleniyordu.
+> Kodda adet **azalması** ele alınmış (tezgâha iptal fişi), **artışı**
+> unutulmuştu. Artık eski satır eski adediyle turunda kalıyor, **fark yeni turun
+> kalemi olarak açılıyor** — tezgâha yalnız artan kadar fiş gidiyor, tur geçmişi
+> ve hazırlık süresi doğrulanıyor. Artan satır **indirimsiz** açılıyor (indirim
+> eski satıra verilmişti, kopyalansa iki satıra birden düşerdi).
+> **(b)** 1. tur başlığı hiç yazmıyordu: `turSayisi > 1` şartı vardı, "tek
+> turluk adisyonda başlık gereksiz gürültü" kararıydı. **Karar değişti** —
+> ilk turdan itibaren `1. tur · saat · garson` yazılıyor.
 
 > **Sıra 1 Eyl 2026'da değişti.** Üç büyük madde — **masasız adisyonun
 > çevrimdışı açılması**, **QR menünün kalanı** ve **kurye atama** — en sona
@@ -62,10 +114,15 @@
 > menü çalışır durumda, çevrimdışının kalan ucu tek bir akış). Önce elde biriken
 > küçük işler temizlendi; dördü de 1 Eyl akşamı kapandı. Kalan sıra:
 >
-> 1. **Görsel dilin yayılması** — Ramazan beğenmediği başka modallar olduğunu
->    söyledi; sıradaki seans onları tek tek gezerek başlıyor. Ardından bütün
->    ekranlar köşe/gölge/geçiş belirteçlerine geçirilecek. Renk süpürmesi bitti,
->    ölçek henüz yalnız ürün penceresinde ve renk çemberinde uygulanmış durumda.
+> 1. **Görsel dilin yayılması — beğenilmeyen modallar** (2 Eyl 2026 seansında
+>    başlandı, devam ediyor). Tahsilat penceresi bitti (yukarıda). **Sıradaki
+>    seans kaldığı yerden: Ramazan'ın beğenmediği diğer pencereler tek tek
+>    gezilecek.** Henüz elden geçmemiş olanlar: Adisyon Detay, Kalem Paneli,
+>    Hızlı Öde, Misafir Sayısı, Masa Seçim, Ödeme Tipi Düzelt, Aktarım Onayı,
+>    Eksik Kapat, Toplu Düzenle, Sıralama, Kampanya Seçim, Müşteri Detay/Seçici,
+>    Onay Modal, Bildirim, Köprü İndir, Kilit Ekranı.
+>    **İndirim modalına dokunulmayacak** — Ramazan beğeniyor (2 Eyl 2026).
+>    Ardından bütün ekranlar köşe/gölge/geçiş belirteçlerine geçirilecek.
 >    **Stok bu iş bitene kadar bekliyor** — Ramazan görüntüyü öne aldı.
 > 2. **Stok** — malzeme, reçete, otomatik düşüm, kritik stok uyarısı, maliyet/kârlılık
 >    **Karar (1 Eyl 2026):** Garso hazır malzeme listesiyle gelmez. Her işletme

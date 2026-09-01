@@ -1,6 +1,7 @@
+import type { CSSProperties } from "react";
 import { OdemeIkon } from "../odemeIkon";
-import { yaziRengi } from "../renk";
 import { yetkiVar } from "../oturum";
+import { ayarlar } from "../isletmeAyarlari";
 import type { OdemeTipi } from "../odemeTipleri";
 
 /**
@@ -21,7 +22,11 @@ export default function OdemeTipDugmeleri({
   // olmayan kişi bu tipleri hiç görmüyor. Denetim tek yerde: düğmeleri çizen
   // bileşen burası, tahsilat ekranlarının hepsi buradan geçiyor.
   const acik = yetkiVar("odeme.acik_hesap");
-  const gorunen = acik ? tipler : tipler.filter((t) => !t.acikHesap);
+  const yetkili = acik ? tipler : tipler.filter((t) => !t.acikHesap);
+  // Yazarkasa kullanılmayan işletmede ÖKC tipleri hiç listelenmiyor; tipleri
+  // tek tek kapatmak yerine tek anahtar hepsini kaldırıyor.
+  const okcKullanilir = ayarlar().okcAcik;
+  const gorunen = okcKullanilir ? yetkili : yetkili.filter((t) => t.sinif !== "okc");
   const okc = gorunen.filter((t) => t.sinif === "okc");
   const klasik = gorunen.filter((t) => t.sinif !== "okc");
   const gruplu = okc.length > 0 && klasik.length > 0;
@@ -32,12 +37,14 @@ export default function OdemeTipDugmeleri({
         <button
           key={id}
           className="odeme-tip-btn"
-          style={{ background: renk, color: yaziRengi(renk) }}
+          style={{ "--tip-renk": renk } as CSSProperties}
           disabled={pasif}
           onClick={() => onSec(ad)}
         >
-          <OdemeIkon ad={ad} />
-          {ad}
+          <span className="odeme-tip-ikon">
+            <OdemeIkon ad={ad} size={24} />
+          </span>
+          <span className="odeme-tip-ad">{ad}</span>
         </button>
       ))}
     </div>

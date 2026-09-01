@@ -48,6 +48,8 @@ export type IsletmeAyarlari = {
   servisAcik: boolean;
   kuver: ServisTanimi;
   garsoniye: ServisTanimi;
+  /** Yazarkasa kullanılmıyorsa ÖKC ödeme tipleri hiçbir ödeme ekranında görünmez. */
+  okcAcik: boolean;
   /** QR menü müşteriye açık mı; kapalıyken karekod menü yerine uyarı gösteriyor. */
   qrMenuAcik: boolean;
   /** Menü adresindeki kod (/m/<kod>); ilk açılışta sunucu üretiyor. */
@@ -75,6 +77,7 @@ const VARSAYILAN: IsletmeAyarlari = {
   servisAcik: false,
   kuver: { otomatik: true, ad: "Kuver", tip: "tutar", deger: 0 },
   garsoniye: { otomatik: true, ad: "Garsoniye", tip: "yuzde", deger: 0 },
+  okcAcik: true,
   qrMenuAcik: false,
   qrMenuKod: "",
   qrMenuAdres: "",
@@ -131,6 +134,7 @@ async function ayarlariOku(): Promise<IsletmeAyarlari> {
     servisAcik: s?.servis_acik ?? VARSAYILAN.servisAcik,
     kuver: servisTanimi(s, "kuver", VARSAYILAN.kuver),
     garsoniye: servisTanimi(s, "garsoniye", VARSAYILAN.garsoniye),
+    okcAcik: s?.okc_acik ?? VARSAYILAN.okcAcik,
     qrMenuAcik: s?.qr_menu_acik ?? VARSAYILAN.qrMenuAcik,
     qrMenuKod: s?.qr_menu_kod ?? VARSAYILAN.qrMenuKod,
     qrMenuAdres: s?.qr_menu_adres ?? VARSAYILAN.qrMenuAdres,
@@ -172,6 +176,7 @@ export async function ayarlariKaydet(degisen: Partial<IsletmeAyarlari>) {
       garsoniye_ad: yeni.garsoniye.ad,
       garsoniye_tip: yeni.garsoniye.tip,
       garsoniye_deger: yeni.garsoniye.deger,
+      okc_acik: yeni.okcAcik,
       qr_menu_acik: yeni.qrMenuAcik,
       // Kod boşsa sütun boş kalıyor: boş metin tekil indekste çakışır.
       qr_menu_kod: yeni.qrMenuKod || null,

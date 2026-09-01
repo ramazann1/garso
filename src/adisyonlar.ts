@@ -1087,16 +1087,42 @@ async function kalemleriYaz(
     iptalEdilenler.push(kalemeCevir(eski));
   }
 
+  // Kayıtlı bir kalemin adedi artırıldıysa (iki powerbank beş oldu) artan üç
+  // adet sonradan istenmiş demektir: eski satırın adedi olduğu gibi kalıyor,
+  // fark yeni turun kalemi olarak açılıyor. Böylece tezgâh yalnız artan kadar
+  // hazırlıyor ve "hangi turda ne söylendi" kaydı gerçeğe uyuyor.
+  const artanlar: SepetKalemi[] = [];
+  // Artırılan kalemin kayda giden (eski) adedi; dönen sepet de bunu göstersin.
+  const eskiAdetler = new Map<number, number>();
+
   const guncellemeler: Promise<unknown>[] = [];
   for (const k of veri.sepet) {
     if (!k.id || k.id < 0) continue;
+
+    // Artan adet yeni tura ayrıldığında bu satır eski adediyle kalıyor.
+    let kaydedilecekAdet = k.adet;
 
     const oncekiDurum = oncekiDurumlar.get(k.id) ?? "normal";
     if (oncekiDurum === "normal" && (k.durum ?? "normal") === "iptal") {
       iptalEdilenler.push(k);
     } else if (oncekiDurum === "normal" && (k.durum ?? "normal") === "normal") {
-      const azalan = Number(oncekiKalemler.get(k.id)?.adet ?? k.adet) - k.adet;
+      const onceki = Number(oncekiKalemler.get(k.id)?.adet ?? k.adet);
+      const azalan = onceki - k.adet;
       if (azalan > 0) iptalEdilenler.push({ ...k, adet: azalan });
+      else if (azalan < 0) {
+        // İndirim eski satıra verilmişti; yeni turun kalemi indirimsiz açılıyor
+        // ki tutar iki satıra birden düşmesin.
+        artanlar.push({
+          ...k,
+          id: undefined,
+          adet: -azalan,
+          indirim: undefined,
+          indirimTanimId: undefined,
+          indirimAd: undefined,
+        });
+        kaydedilecekAdet = onceki;
+        eskiAdetler.set(k.id, onceki);
+      }
     }
 
     const denetim = durumDegisimi(
@@ -1107,7 +1133,7 @@ async function kalemleriYaz(
     if (denetim) denetimler.push(denetim);
 
     const satir = {
-      adet: k.adet,
+      adet: kaydedilecekAdet,
       fiyat: k.fiyat,
       durum: k.durum ?? "normal",
       not_metni: k.not ?? null,
@@ -1125,7 +1151,9 @@ async function kalemleriYaz(
   if (guncellemeler.length) await Promise.all(guncellemeler);
 
   // Yeni kalemler bu kaydın turuna girer; geçici kimlikleri gerçeğiyle eşleşir.
-  const yeniler = veri.sepet.filter((k) => !k.id || k.id < 0);
+  // Adedi artırılan kalemlerin farkı da buraya katılıyor: tezgâh açısından
+  // sonradan istenen üç powerbank ile yeni girilen ürün arasında fark yok.
+  const yeniler = [...veri.sepet.filter((k) => !k.id || k.id < 0), ...artanlar];
   // "2 salebin biri ikram" satırı ikiye böldüğü için işlem yeni bir kalem
   // olarak geliyor; defterde görünmesi gereken hâli bu satır.
   for (const k of yeniler) {
@@ -1133,8 +1161,12 @@ async function kalemleriYaz(
     if (denetim) denetimler.push(denetim);
   }
   const kimlikEsi = new Map<number, number>();
+  // Bu kayıtta açılan turun sırası; artan kalemler dönen sepette bu turun
+  // altında görünsün diye dışarıda tutuluyor.
+  let acilanTur = 0;
   if (yeniler.length) {
     const sira = turlar.reduce((e, t) => Math.max(e, t.sira), 0) + 1;
+    acilanTur = sira;
     const { data: tur } = await supabase
       .from("turlar")
       .insert({ adisyon_id: adisyonId, sira })
@@ -1338,7 +1370,23 @@ async function kalemleriYaz(
   // Ekran aynı sayfada ikinci kez kaydedebiliyor; "gördüklerim" listesi yeni
   // kimliklerle tazeleniyor, yoksa az önce eklenen kalem bir sonraki kayıtta
   // yabancı sayılıp silinemez hâle geliyordu.
-  const yeniKalemIdler = veri.sepet
+  // Adedi artırılan kalem ikiye ayrıldı: eski satır eski adediyle kalıyor,
+  // fark yeni turun kalemi olarak listeye giriyor.
+  const sonSepet: SepetKalemi[] = artanlar.length
+    ? [
+        ...veri.sepet.map((k) =>
+          k.id && eskiAdetler.has(k.id) ? { ...k, adet: eskiAdetler.get(k.id)! } : k
+        ),
+        ...artanlar.map((k) => ({
+          ...k,
+          turSira: acilanTur,
+          turSaat: new Date().toISOString(),
+          turGarson: kisaAd(acikOturum()?.ad ?? "") || veri.garson,
+        })),
+      ]
+    : veri.sepet;
+
+  const yeniKalemIdler = sonSepet
     .map((k) => k.id)
     .filter((id): id is number => !!id && id > 0);
   const yeniTahsilatIdler = yazilanTahsilatlar
@@ -1353,6 +1401,7 @@ async function kalemleriYaz(
   return {
     ...veri,
     id: adisyonId,
+    sepet: sonSepet,
     tahsilatlar: yazilanTahsilatlar,
     silinenTahsilatlar: undefined,
     bilinenIdler: yeniKalemIdler,

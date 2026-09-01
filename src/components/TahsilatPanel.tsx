@@ -1,5 +1,5 @@
 import { useEffect, useState } from "react";
-import { Check, CircleCheckBig, Delete, HandCoins, Percent, Save, X } from "lucide-react";
+import { Check, CircleCheckBig, Delete, HandCoins, Percent, Save, Split, X } from "lucide-react";
 import { OdemeIkon } from "../odemeIkon";
 import IndirimModal from "./IndirimModal";
 import type { IndirimKaynagi } from "../indirimler";
@@ -71,14 +71,22 @@ export default function TahsilatPanel({ kalemler, toplam, araToplam, indirim, se
   const [odemeTipleri, setOdemeTipleri] = useState<OdemeTipi[]>([]);
   const [indirimAcik, setIndirimAcik] = useState(false);
   const [uyari, setUyari] = useState<string | null>(null);
-  // Kalandan fazla girilen tutar onaya düşer: üstü bahşiş mi, yanlış giriş mi?
-  const [bahsisSorusu, setBahsisSorusu] = useState<{ tip: string; bahsis: number } | null>(null);
+  // Bahşiş ödeme tipleriyle aynı sütunda, ikinci sekmede duruyor. Alınacak
+  // bahşiş burada bekletilir, tahsilat kaydedilirken üstüne yazılır.
+  const [sekme, setSekme] = useState<"odeme" | "bahsis">("odeme");
+  const [bahsis, setBahsis] = useState(0);
+  const [bahsisGirdi, setBahsisGirdi] = useState("");
+  // Kalandan fazla girilip ödeme tipine basıldıysa o tip burada bekler:
+  // bahşiş onaylandığı anda tahsilat aynı tiple kapanıyor.
+  const [bekleyenTip, setBekleyenTip] = useState<string | null>(null);
   // Açık hesap tipinde borcun kime yazılacağı soruluyor; tahsilat seçim
   // penceresi kapanana kadar bekliyor.
   const [cariSorusu, setCariSorusu] = useState<{ tip: string; tutar: number } | null>(null);
   // Kaydedilmiş tahsilatın silinmesi sebep soruyor; sıradaki satırın yeri.
   const [silmeSorusu, setSilmeSorusu] = useState<number | null>(null);
   const [eksikAcik, setEksikAcik] = useState(false);
+  // Hesabı kaça böleceği numpadin yanında açılan küçük listeden seçiliyor.
+  const [boleAcik, setBoleAcik] = useState(false);
 
   const tahsilatiCikar = (i: number, sebep?: string) => {
     const silinen = tahsilatlar[i];
@@ -227,14 +235,20 @@ export default function TahsilatPanel({ kalemler, toplam, araToplam, indirim, se
   const odemeAl = (tip: string) => {
     const tutar = girilen ? Number(girilen) : kalan;
     if (tutar <= 0) return;
-    if (tutar > kalan) { setBahsisSorusu({ tip, bahsis: tutar - kalan }); return; }
+    // Kalandan fazlası bahşiş sekmesine düşüyor: üstü ne kadar, tipi hazır.
+    if (tutar > kalan) {
+      setBekleyenTip(tip);
+      setBahsisGirdi(String(kurus(tutar - kalan)));
+      setSekme("bahsis");
+      return;
+    }
     // Açık hesap kasaya para getirmiyor, birinin borcuna yazılıyor: kime
     // yazıldığı sorulmadan tahsilat işlenmiyor.
     if (odemeTipleri.find((t) => t.ad === tip)?.acikHesap) {
       setCariSorusu({ tip, tutar });
       return;
     }
-    tahsilatIsle(tip, tutar);
+    tahsilatIsle(tip, tutar, bahsis || undefined);
   };
 
   // Bahşiş kalanı azaltmaz; tahsilata kalanın kendisi yazılır, üstü ayrı alanda
@@ -248,24 +262,96 @@ export default function TahsilatPanel({ kalemler, toplam, araToplam, indirim, se
     setTahsilatlar(yeni);
     setSecilen({});
     setGirilen("");
+    setBahsis(0);
+    setBahsisGirdi("");
+    setBekleyenTip(null);
+    setSekme("odeme");
     onKaydet(yeni);
   };
+
+  /**
+   * Bahşiş sekmesindeki onay. Bir ödeme tipi bekliyorsa (kalandan fazla
+   * girilmişti) tahsilat aynı anda kapanıyor; beklemiyorsa bahşiş kenarda
+   * duruyor, sıradaki ödeme tipine basıldığında üstüne yazılıyor.
+   */
+  const bahsisOnayla = () => {
+    const tutar = kurus(Number(bahsisGirdi) || 0);
+    if (tutar < 0) return;
+    if (bekleyenTip) {
+      const tip = bekleyenTip;
+      if (odemeTipleri.find((t) => t.ad === tip)?.acikHesap) {
+        setBekleyenTip(null);
+        setSekme("odeme");
+        setCariSorusu({ tip, tutar: kalan });
+        return;
+      }
+      tahsilatIsle(tip, kalan, tutar || undefined);
+      return;
+    }
+    setBahsis(tutar);
+    setSekme("odeme");
+  };
+
+  // "Üstünü tamamla" önerileri: kalan tutarın bir üst yuvarlak rakamları.
+  const bahsisOnerileri = (() => {
+    const basamaklar = [10, 50, 100];
+    const liste: number[] = [];
+    for (const b of basamaklar) {
+      const ust = Math.ceil((kalan + 0.01) / b) * b;
+      const fark = kurus(ust - kalan);
+      if (fark > 0 && !liste.includes(ust)) liste.push(ust);
+    }
+    return liste.slice(0, 3);
+  })();
 
   // Kalan sıfırlansa bile adisyon kendi kendine kapanmaz; kapatma kararı
   // kullanıcınındır, panel açık kalır.
   const odemeBitti = kalan <= 0;
 
   return (
-    <div className="tahsilat-fon" onClick={onKapat}>
-      <aside className="tahsilat-panel genis" onClick={(e) => e.stopPropagation()}>
-        <header className="tahsilat-ust">
-          <h2>Tahsilat — Toplam ₺{toplam} / Kalan ₺{kalan}</h2>
-          <button className="kapat" onClick={onKapat}><X size={20} /></button>
+    <div className="up-fon" onClick={onKapat}>
+      <div className="up-modal th-modal" onClick={(e) => e.stopPropagation()}>
+        <header className="th-ust">
+          <div className="th-kimlik">
+            <h2>Tahsilat</h2>
+            <p>
+              Toplam <strong>₺{toplam}</strong>
+              <span className="th-ayrac">·</span>
+              Kalan <strong className={kalan <= 0 ? "th-kalan bitti" : "th-kalan"}>₺{kalan}</strong>
+            </p>
+          </div>
+
+          {/* Hesap kapansa bile masa oturmaya devam ediyor olabilir; kapatmak
+              zorunlu değil, ödeme kaydedilip adisyon açık bırakılabiliyor. */}
+          <div className="th-eylemler">
+            <button className="th-eylem" onClick={() => { onKaydet(tahsilatlar); onKapat(); }}>
+              <Save size={17} />
+              Kaydet
+            </button>
+            {odemeBitti ? (
+              <button className="th-eylem birincil" onClick={() => onOdendi(tahsilatlar)}>
+                <CircleCheckBig size={17} />
+                Adisyonu Kapat
+              </button>
+            ) : (
+              // Parası eksik kalan hesap da kapatılabiliyor ama bu ayrı bir
+              // karar: borç birine yazılıyor, kayıt düşüyor, yetki istiyor.
+              yetkiVar("odeme.eksik_kapat") && (
+                <button className="th-eylem" onClick={() => setEksikAcik(true)}>
+                  <HandCoins size={17} />
+                  Eksik Kapat
+                </button>
+              )
+            )}
+            <button className="th-kapat" aria-label="Kapat" onClick={onKapat}>
+              <X size={19} />
+            </button>
+          </div>
         </header>
 
-        <div className="tahsilat-iki-sutun">
-          <div className="tahsilat-sol">
-            <p className="sutun-baslik">Ürünler</p>
+        <div className="th-sutunlar">
+          <section className="th-sutun th-urunler">
+            <p className="th-sutun-baslik">Ürünler</p>
             <div className="kalem-sec-liste">
               {kalemler.map((k) => {
                 const pasif = !odenebilir(k);
@@ -307,9 +393,23 @@ export default function TahsilatPanel({ kalemler, toplam, araToplam, indirim, se
               })}
             </div>
 
+            {/* Ürün seçiliyken sıradaki adım ödeme tipine basmak; bunu ayrı bir
+                uyarı penceresiyle değil, listenin altındaki şeritle söylüyoruz. */}
+            {secimVar && (
+              <div className="th-yonlendirme">
+                <span>{payYazi(Object.values(secilen).reduce((t, a) => t + a, 0))} ürün seçili · ₺{seciliTutar(secilen)}</span>
+                <button onClick={() => { setSecilen({}); setGirilen(""); }}>
+                  <X size={15} />
+                  Seçimi bırak
+                </button>
+              </div>
+            )}
+          </section>
+
+          <section className="th-sutun th-orta">
             {(tahsilatlar ?? []).length > 0 && (
               <div className="tahsilat-gecmis">
-                <p className="gecmis-baslik">Alınan Ödemeler</p>
+                <p className="th-sutun-baslik">Alınan Ödemeler</p>
                 {tahsilatlar.map((o, i) => (
                   <div key={i} className="gecmis-satir">
                     <span className="gecmis-tip">
@@ -338,9 +438,7 @@ export default function TahsilatPanel({ kalemler, toplam, araToplam, indirim, se
                 ))}
               </div>
             )}
-          </div>
 
-          <div className="tahsilat-sag">
             <div className="tahsilat-tutarlar">
               {indirim > 0 && (
                 <div className="tutar-satir indirim">
@@ -376,63 +474,142 @@ export default function TahsilatPanel({ kalemler, toplam, araToplam, indirim, se
                 value={girilen}
                 onChange={(e) => { setSecilen({}); setGirilen(e.target.value); }}
               />
+              {/* Rakamlar solda üç sütun, hesabı yöneten tuşlar sağda kendi
+                  kolonunda: bölme ve indirim artık ayrı başlık istemiyor. */}
               <div className="numpad-grid">
-                {["7","8","9","4","5","6","1","2","3","Tümü","0","⌫"].map((t) => (
-                  <button
-                    key={t}
-                    className={t === "Tümü" ? "numpad-tus tum" : "numpad-tus"}
-                    onClick={() => numpadTus(t)}
-                  >
-                    {t === "⌫" ? <Delete size={20} /> : t}
+                <div className="numpad-rakamlar">
+                  {["7","8","9","4","5","6","1","2","3",".","0"].map((t) => (
+                    <button key={t} className="numpad-tus" onClick={() => numpadTus(t)}>
+                      {t}
+                    </button>
+                  ))}
+                  <button className="numpad-tus" aria-label="Sil" onClick={() => numpadTus("⌫")}>
+                    <Delete size={20} />
                   </button>
-                ))}
-              </div>
-              <p className="bolme-baslik">
-                {Object.keys(secilen).length > 0 ? "Seçilen ürünü böl" : "Hesabı böl"}
-              </p>
-              <div className="bolme-kisayol">
-                {[2, 3, 4].map((n) => (
-                  <button key={n} onClick={() => boleSec(n)}>
-                    1/{n}
+                </div>
+
+                <div className="numpad-eylem">
+                  <button className="numpad-tus eylem" onClick={() => numpadTus("Tümü")}>
+                    Tümü
                   </button>
-                ))}
-                {indirimYapabilir() && (
-                  <button className="indirim-kisayol" onClick={() => setIndirimAcik(true)}>
-                    <Percent size={15} />
-                    {secimVar ? "Ürüne indirim" : "İndirim"}
-                  </button>
-                )}
+
+                  <div className="th-bolme">
+                    <button
+                      className={boleAcik ? "numpad-tus eylem acik" : "numpad-tus eylem"}
+                      onClick={() => setBoleAcik((a) => !a)}
+                    >
+                      <Split size={16} />
+                      1/n
+                    </button>
+                    {boleAcik && (
+                      <div className="th-bolme-liste">
+                        <p>{secimVar ? "Seçilen ürünü böl" : "Hesabı böl"}</p>
+                        {[2, 3, 4, 5, 6].map((n) => (
+                          <button key={n} onClick={() => { boleSec(n); setBoleAcik(false); }}>
+                            1/{n}
+                          </button>
+                        ))}
+                      </div>
+                    )}
+                  </div>
+
+                  {indirimYapabilir() && (
+                    <button className="numpad-tus eylem" onClick={() => setIndirimAcik(true)}>
+                      <Percent size={16} />
+                      {secimVar ? "Ürüne" : "İndirim"}
+                    </button>
+                  )}
+                </div>
               </div>
             </div>
+          </section>
 
-            <OdemeTipDugmeleri tipler={odemeTipleri} onSec={odemeAl} />
-
-            {/* Hesap kapansa bile masa oturmaya devam ediyor olabilir; kapatmak
-                zorunlu değil, ödeme kaydedilip adisyon açık bırakılabiliyor. */}
-            <div className="tahsilat-alt-butonlar">
-              <button className="tahsilat-kaydet" onClick={() => { onKaydet(tahsilatlar); onKapat(); }}>
-                <Save size={18} />
-                Kaydet
+          <section className="th-sutun th-odeme">
+            <div className="th-sekmeler">
+              <button
+                className={sekme === "odeme" ? "th-sekme acik" : "th-sekme"}
+                onClick={() => setSekme("odeme")}
+              >
+                Ödeme Tipi
               </button>
-              {odemeBitti ? (
-                <button className="tahsilat-kapat-btn" onClick={() => onOdendi(tahsilatlar)}>
-                  <CircleCheckBig size={19} />
-                  Adisyonu Kapat
-                </button>
-              ) : (
-                // Parası eksik kalan hesap da kapatılabiliyor ama bu ayrı bir
-                // karar: borç birine yazılıyor, kayıt düşüyor, yetki istiyor.
-                yetkiVar("odeme.eksik_kapat") && (
-                  <button className="tahsilat-eksik-btn" onClick={() => setEksikAcik(true)}>
-                    <HandCoins size={19} />
-                    Eksik Kapat
-                  </button>
-                )
-              )}
+              <button
+                className={sekme === "bahsis" ? "th-sekme acik" : "th-sekme"}
+                onClick={() => setSekme("bahsis")}
+              >
+                <HandCoins size={16} />
+                Bahşiş
+                {bahsis > 0 && <em className="th-sekme-rozet">₺{bahsis}</em>}
+              </button>
             </div>
-          </div>
+
+            {sekme === "odeme" ? (
+              <>
+                {bahsis > 0 && (
+                  <div className="th-bahsis-serit">
+                    <span>Bu ödemeye ₺{bahsis} bahşiş eklenecek</span>
+                    <button onClick={() => { setBahsis(0); setBahsisGirdi(""); }}>
+                      <X size={15} />
+                      Kaldır
+                    </button>
+                  </div>
+                )}
+                <OdemeTipDugmeleri tipler={odemeTipleri} onSec={odemeAl} />
+              </>
+            ) : (
+              <div className="th-bahsis">
+                {bekleyenTip && (
+                  <p className="th-bahsis-not">
+                    Girilen tutar kalandan fazla. Üstü <strong>{bekleyenTip}</strong> tahsilatına
+                    bahşiş olarak yazılacak.
+                  </p>
+                )}
+
+                <label className="th-bahsis-alan">
+                  <span>Bahşiş tutarı</span>
+                  <input
+                    type="number"
+                    inputMode="decimal"
+                    placeholder="₺0"
+                    value={bahsisGirdi}
+                    onChange={(e) => setBahsisGirdi(e.target.value)}
+                  />
+                </label>
+
+                {bahsisOnerileri.length > 0 && (
+                  <>
+                    <p className="th-sutun-baslik">Üstünü tamamla</p>
+                    <div className="th-bahsis-onerileri">
+                      {bahsisOnerileri.map((ust) => (
+                        <button key={ust} onClick={() => setBahsisGirdi(String(kurus(ust - kalan)))}>
+                          <strong>₺{ust}</strong>
+                          <span>+₺{kurus(ust - kalan)}</span>
+                        </button>
+                      ))}
+                    </div>
+                  </>
+                )}
+
+                <div className="th-bahsis-aksiyon">
+                  <button
+                    className="th-eylem"
+                    onClick={() => {
+                      setSekme("odeme");
+                      setBekleyenTip(null);
+                      setBahsisGirdi(bahsis > 0 ? String(bahsis) : "");
+                    }}
+                  >
+                    Vazgeç
+                  </button>
+                  <button className="th-eylem birincil" onClick={bahsisOnayla}>
+                    <Check size={17} />
+                    {bekleyenTip ? `${bekleyenTip} ile tahsil et` : "Bahşişi ekle"}
+                  </button>
+                </div>
+              </div>
+            )}
+          </section>
         </div>
-      </aside>
+      </div>
 
       {indirimAcik && (
         <IndirimModal
@@ -448,22 +625,10 @@ export default function TahsilatPanel({ kalemler, toplam, araToplam, indirim, se
         />
       )}
 
-      {bahsisSorusu && (
-        <OnayModal
-          mesaj={`Girilen tutar kalandan ₺${bahsisSorusu.bahsis} fazla. Üstü bahşiş olarak yazılsın mı?`}
-          onayMetni="Bahşiş yaz"
-          onOnay={() => {
-            tahsilatIsle(bahsisSorusu.tip, kalan, bahsisSorusu.bahsis);
-            setBahsisSorusu(null);
-          }}
-          onKapat={() => setBahsisSorusu(null)}
-        />
-      )}
-
       {cariSorusu && (
         <MusteriSecici
           onSec={(m) => {
-            tahsilatIsle(cariSorusu.tip, cariSorusu.tutar, undefined, m.id);
+            tahsilatIsle(cariSorusu.tip, cariSorusu.tutar, bahsis || undefined, m.id);
             setCariSorusu(null);
           }}
           onKapat={() => setCariSorusu(null)}

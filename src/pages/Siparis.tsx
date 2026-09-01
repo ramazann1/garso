@@ -455,8 +455,6 @@ export default function Siparis() {
     return m;
   }, {});
 
-  // Kaydedilmemiş kalemlerin turu yok; onlar listenin sonunda "Yeni" başlığı alır.
-  const turSayisi = new Set(sepet.map((k) => k.turSira ?? "yeni")).size;
   // Henüz kaydedilmemiş kalemler listenin başında durur — garson yazdığı şeyi
   // aramasın. Kaydedince kendi turuna, yani listenin sonuna geçiyorlar.
   const gosterilen = [
@@ -761,10 +759,11 @@ export default function Siparis() {
             {!yukleniyor && sepet.length === 0 && <p className="bos">Henüz ürün yok</p>}
             {gosterilen.map((k, sira) => {
               // Kalemler tur tur girildi; sepette araya turun başlığı konuyor.
-              // Tek turluk adisyonda başlık gereksiz gürültü, gösterilmiyor.
+              // Tek turluk adisyonda da yazılıyor: siparişin saati ve kimin
+              // aldığı ilk turdan itibaren görünsün.
               const oncekiTur = sira > 0 ? gosterilen[sira - 1].turSira : undefined;
               const turBasligi =
-                turSayisi > 1 && k.turSira !== oncekiTur ? turEtiketi(k) : null;
+                sira === 0 || k.turSira !== oncekiTur ? turEtiketi(k) : null;
               const detay = [
                 k.porsiyon,
                 ...(k.secimler ?? []),
