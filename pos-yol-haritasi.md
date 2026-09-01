@@ -1195,3 +1195,64 @@ para çekmecesi, ÖKC (seri port) ve CallerID aynı programdan geçiyor.
 10. **"Çıktı alındı" olayı sipariş geçmişine düşecek** — 11. bölümdeki madde 7'de
     yazıcı işine bırakılmıştı, bu modülle kapanıyor. → Faz 2
 
+
+## 13. STOK MODÜLÜ — DERİN TUR (1 Eyl 2026)
+
+Adisyo'da stok ekranları tek tek gezildi. **En önemli bulgu: Adisyo'da hammadde
+diye bir kavram yok.** eGZOZ'da görülen "HAMMADDE" kategorisi Adisyo'nun tasarımı
+değil — Ramazan'ın ürün tablosunu zorlayarak kendine uydurduğu çare. Krema, tuz,
+karabiber hepsi normal ürün; satış ekranında gizli, fiyatları ₺0.
+
+Bu çarenin doğurduğu sıkıntılar (Garso'nun neden ayrılacağının gerekçesi):
+birim gerçek ölçü değil porsiyon adı ("Tam" yazıyor, Kg olması gerekirdi), alış
+fiyatı girecek yer yok (maliyet zinciri boş, kârlılık hesaplanamıyor), malzeme
+satış ürünüyle aynı listede (sipariş ekranı, raporlar, Excel hep karışıyor),
+stok sürekli eksiye gidiyor.
+
+### 12.1 Ürün kartındaki iki ayrı anahtar
+- **Reçeteli ürün kullan** — *porsiyon* bazında. Tablo: `Reçeteli Ürün · Reçete
+  Tipi · Miktar · Çıkar`. **Reçete tipi üçlüsü: Normal / Çıkarılabilir /
+  Opsiyonel.** Miktarın yanında birim yazmıyor; malzemenin kendi birimi geçerli.
+- **Stok takibi yap** — *ürün* bazında. Altında **Stok Havuzu Kullan** anahtarı,
+  sonra her **gelir merkezi** (satış kanalı) için ayrı *Stok Miktarı* ve
+  *Kritik Stok Miktarı*.
+- Reçete açılınca **Maliyet Tutarı kilitleniyor**: "Maliyet reçeteden otomatik
+  hesaplanır."
+
+### 12.2 Reçeteler iç içe geçiyor
+"KREMALI MANTARLI SOS" hem HAMMADDE kategorisinde, hem kendi reçetesi var
+(KREMA 1 · MANTAR 0,4 · TEREYAĞI 0,01), hem kendi stoğu tutuluyor. Yani yarı
+mamul = reçetesi olan hammadde. Garso'da da malzeme reçeteli olabilmeli.
+
+### 12.3 İki stok işlemi, tek tablo
+- **Yeni Stok Girişi** (`/app/stock/0/3`): girilen sayı **eklenir**. Başlıkta
+  *Fatura Tarihi* + *Açıklama*.
+- **Stok Sayımı** (`/app/stock/0/1`): girilen sayı **yerine yazılır**. Başlıkta
+  *İşlem Tarihi* + *Açıklama*.
+- İkisi de aynı tablo: `Ürün Bilgisi (kod-ad) · Stok Miktarı · Kritik Stok
+  Miktarı · Birim Adı · [giriş kutusu] · Yeni Miktar`. Yeni Miktar anında
+  hesaplanıyor. Üstte arama, **"Değişiklikleri gör"**, **"Kritik seviyenin
+  altındakileri göster"**. Tablo kendi kutusunda kayıyor. Tek *İşlemleri Kaydet*.
+- **Alış fiyatı/tedarikçi alanı yok.** Bu ekran yalnız miktar tutuyor.
+
+### 12.4 Stok hareket defteri
+Stok Durum Raporu → satır sonundaki **Detay** ikonu → ürünün hareket geçmişi:
+`Yapılan İşlem · İşlem Tarihi · **Eski → Değişim → Yeni** · Toplam Tutar ·
+İşlemi Yapan · Gelir Merkezi · Açıklama`. Her satış bir satır; öncesi ve sonrası
+birlikte yazılıyor (değişmez defter deseni, bizim tahsilat kaydımızla aynı ruh).
+
+### 12.5 Zayi
+Ayrı ekran (`/app/restaurant-wastages`). Ekle penceresi: Ürün · Miktar ·
+**Maliyet tutarı (elle giriliyor)** · Zayi Tarihi · **Zayi nedeni (serbest
+metin)** · **Sorumlu Kişi** · Satış Kanalı. Liste: Ürün · Zayi Nedeni · Adet ·
+Zayi Tarihi · Eklenme Tarihi · Sorumlu Kişi · Maliyet Tutarı + Toplam satırı.
+Üstte "Sorumluları Düzenle". Zayi nedeni serbest metin olduğu için rapor
+gruplanamıyor — Garso'da **seçilebilir neden listesi** olmalı.
+
+### 12.6 Garso'ya alınacaklar / ayrılacaklar
+**Alınacak:** reçete tipi üçlüsü, giriş/sayım ikilisi, "Yeni Miktar" anında
+hesaplama, eski→değişim→yeni defteri, kritik seviye filtresi, iç içe reçete.
+**Ayrılacak:** malzeme ayrı tablo (ürün değil), gerçek ölçü birimi + çevrim,
+alış fiyatı ve ağırlıklı ortalama maliyet, zayi nedeni seçmeli liste,
+stok eksiye düşerken uyarı.
+

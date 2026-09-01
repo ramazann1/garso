@@ -1,4 +1,5 @@
-import { useState } from "react";
+import { useEffect, useState } from "react";
+import { Ban, Plus, X } from "lucide-react";
 
 export const renkler = [
   "#e8b4b4",
@@ -82,6 +83,17 @@ export default function RenkSecici({
     degistir(hslToHex(yeni));
   };
 
+  // Çember dar bir yerde (ürün penceresinin sol rafı gibi) açıldığında taşıyordu;
+  // artık ekranın ortasında kendi penceresinde duruyor. Escape kapatıyor.
+  useEffect(() => {
+    if (!acik) return;
+    const dinle = (e: KeyboardEvent) => {
+      if (e.key === "Escape") setAcik(false);
+    };
+    window.addEventListener("keydown", dinle);
+    return () => window.removeEventListener("keydown", dinle);
+  }, [acik]);
+
   const secili = ozel ?? hslToHex(hsl);
   const aci = ((hsl.h - 90) * Math.PI) / 180;
   const uzaklik = hsl.s / 2; // yüzde cinsinden yarıçapın yarısı
@@ -94,7 +106,7 @@ export default function RenkSecici({
           onClick={() => degistir(undefined)}
           title="Renksiz"
         >
-          —
+          <Ban size={14} />
         </button>
       )}
 
@@ -116,56 +128,71 @@ export default function RenkSecici({
         onClick={() => setAcik(!acik)}
         title="Kendi rengini seç"
       >
-        {ozel ? "" : "＋"}
+        {ozel ? null : <Plus size={14} />}
       </button>
 
       {acik && (
-        <div className="cember-alan">
-          <div
-            className="renk-cember"
-            onPointerDown={(e) => {
-              e.currentTarget.setPointerCapture(e.pointerId);
-              cemberdenSec(e);
-            }}
-            onPointerMove={(e) => {
-              if (e.buttons) cemberdenSec(e);
-            }}
-          >
-            <span
-              className="cember-nokta"
-              style={{
-                left: `${50 + uzaklik * Math.cos(aci)}%`,
-                top: `${50 + uzaklik * Math.sin(aci)}%`,
-              }}
-            />
-          </div>
+        <div className="cember-fon" onClick={() => setAcik(false)}>
+          <div className="cember-pencere" onClick={(e) => e.stopPropagation()}>
+            <header className="cember-ust">
+              <h3>Kendi rengini seç</h3>
+              <button className="cember-kapat" onClick={() => setAcik(false)} title="Kapat">
+                <X size={18} />
+              </button>
+            </header>
 
-          <div className="cember-sag">
-            <span className="cember-onizleme" style={{ background: secili }} />
+            <div className="cember-alan">
+              <div
+                className="renk-cember"
+                onPointerDown={(e) => {
+                  e.currentTarget.setPointerCapture(e.pointerId);
+                  cemberdenSec(e);
+                }}
+                onPointerMove={(e) => {
+                  if (e.buttons) cemberdenSec(e);
+                }}
+              >
+                <span
+                  className="cember-nokta"
+                  style={{
+                    left: `${50 + uzaklik * Math.cos(aci)}%`,
+                    top: `${50 + uzaklik * Math.sin(aci)}%`,
+                  }}
+                />
+              </div>
 
-            <label className="aciklik">
-              <span>Açıklık</span>
-              <input
-                type="range"
-                min={25}
-                max={92}
-                value={Math.round(hsl.l)}
-                onChange={(e) => acikligiDegistir(Number(e.target.value))}
-              />
-            </label>
+              <div className="cember-sag">
+                <span className="cember-onizleme" style={{ background: secili }} />
 
-            <input
-              className="hex-giris"
-              value={secili}
-              onChange={(e) => {
-                const temiz = "#" + e.target.value.replace(/[^0-9a-fA-F]/g, "").slice(0, 6);
-                if (gecerliHex(temiz)) {
-                  setHsl(hexToHsl(temiz));
-                  degistir(temiz);
-                }
-              }}
-              spellCheck={false}
-            />
+                <label className="aciklik">
+                  <span>Açıklık</span>
+                  <input
+                    type="range"
+                    min={25}
+                    max={92}
+                    value={Math.round(hsl.l)}
+                    onChange={(e) => acikligiDegistir(Number(e.target.value))}
+                  />
+                </label>
+
+                <input
+                  className="hex-giris"
+                  value={secili}
+                  onChange={(e) => {
+                    const temiz = "#" + e.target.value.replace(/[^0-9a-fA-F]/g, "").slice(0, 6);
+                    if (gecerliHex(temiz)) {
+                      setHsl(hexToHsl(temiz));
+                      degistir(temiz);
+                    }
+                  }}
+                  spellCheck={false}
+                />
+              </div>
+            </div>
+
+            <footer className="cember-alt">
+              <button className="up-tus kaydet" onClick={() => setAcik(false)}>Tamam</button>
+            </footer>
           </div>
         </div>
       )}

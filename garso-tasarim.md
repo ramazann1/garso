@@ -1,7 +1,60 @@
-﻿# GARSO — Teknik Tasarım: Veri Modeli & Ekran Haritası
+# GARSO — Teknik Tasarım: Veri Modeli & Ekran Haritası
 *Restoran ve cafe'ler için bulut tabanlı satış ve işletme yönetim sistemi.*
 
 ## 0. SIRADAKİ İŞ (1 Eyl 2026 akşamı güncellendi)
+
+> **Karar (1 Eyl 2026): görsel dil yenileniyor, zemin krem değil soğuk gri-mavi.**
+> Ramazan mevcut görünümü "ilkel" buldu. Sebep renk değil, **tasarım dilinin
+> olmayışı**: 6 renk değişkenine karşılık 189 ayrı hex kodu (593 kullanım),
+> 429 köşe yuvarlatma **12 farklı değerde**, 97 ayrı gölge tanımı ve yalnız
+> 73 geçiş. Göz bu dağınıklığı "özensiz" diye okuyor.
+> Dört zemin önizlemesi hazırlanıp karşılaştırıldı (soğuk gri-mavi / koyu /
+> saf beyaz / bugünkü krem); seçilen **soğuk gri-mavi**. Mercan vurgu kalıyor —
+> kremde mercanla aynı yöne çekip birbirini bastırıyordu, soğuk zeminde canlanıyor.
+> Koyu tema elendi: fiş önizleme, hesap kopyası ve QR menü her zaman beyaz kâğıt.
+>
+> **Belirteç ölçeği (bundan sonra elle sayı yazılmıyor):**
+> köşe `--r-kk:8px` / `--r-or:12px` / `--r-bk:18px` / `--r-tam:999px`,
+> gölge `--g1/--g2/--g3` üç kademe, geçiş tek eğri
+> `--gecis:.18s cubic-bezier(.2,.8,.2,1)` (yavaşı `--gecis-yavas:.26s`).
+> Renkler: `--zemin:#f4f6f9` `--kart:#fff` `--kart-ust:#fbfcfd`
+> `--cizgi:#e3e8ef` `--cizgi-koyu:#d3dae4` `--metin:#161b21` `--soluk:#5a6875`
+> `--mercan:#ff6b45` `--mercan-sis:rgba(255,107,69,.12)` `--yesil:#12b886`.
+>
+> **Ürün düzenleme penceresi yenilendi (1 Eyl 2026).** Yeni dilin ilk
+> uygulaması. Pencere sağdan kaymak yerine **ortada** açılıyor (fon bulanıyor,
+> pencere `scale .97 → 1`). Üç kat iç içe katlanma sıfıra indi: **porsiyonlar
+> sekme** oldu (`★ Tam ✕ | Yarım ✕ | + Porsiyon`, seçilinin bütün alanları
+> açık), **seçenek grupları çipe** döndü ve bağlama ayrı pencereye çıktı,
+> **görünürlük anahtarları solda sabit rafa** taşındı (ürün önizlemesiyle
+> birlikte — ad/birim/fiyat canlı güncelleniyor). Sipariş türü fiyatı kapalı
+> geliyor, dolu üründe kendiliğinden açılıyor. `★ ☆ + −` düz karakterleri
+> `Star/Plus/Minus/Trash2` ikonlarıyla değişti. Sınıflar `up-` önekli:
+> `.urun-panel`'i KalemPaneli de kullanıyor, ona dokunulmadı.
+>
+> **Renk süpürmesi yapıldı (1 Eyl 2026).** Elle tek tek değil, kuralla:
+> *ton 20-58° arası ve renk yoğunluğu ≤ 0,30* olan her değer, **aynı açıklıkta**
+> soğuk karşılığına (ton 214°) çevrildi. Böylece **70 ayrı krem türevi** ton ile
+> **60 rgba** (eski gölge `rgba(45,52,54)` → `rgba(20,32,48)`, eski mercan
+> `rgba(255,122,89)` → `rgba(255,107,69)`) tek geçişte dönüştü.
+> Ölçü olarak HSL doygunluğu değil **renk yoğunluğu** kullanıldı: beyaza yakın
+> tonlarda HSL doygunluğu yanıltıcı biçimde yükseliyor, `#f6efe6` gibi apaçık
+> krem bir ton %47 çıkıp kuralın dışında kalıyordu.
+> **Dokunulmayanlar:** sarı/altın uyarı renkleri (`#eeaa14`, `#ffd24d`,
+> `#fbc02d`, `#f5b301`, `#e08a1e`), mercan türevi açık tonlar, `RenkSecici`
+> ile `Analiz`'deki paletler (kullanıcının kendi etiketlediği renkler) ve
+> **`qrMenu.css`'teki 5 sıcak ton** — QR menü müşteriye bakan ayrı bir yüzey,
+> orada sıcak durması ayrı bir karar.
+> Kök değişkenler: `--zemin #f4f6f9` `--mercan #ff6b45` `--yesil #12b886`
+> `--metin #161b21` `--soluk #5a6875`.
+>
+> **Renk çemberi kendi penceresine taşındı (1 Eyl 2026).** Düğmenin altında
+> açılıyordu, 236px'lik rafta taşıp altta kalıyordu; artık ekranın ortasında
+> başlık/kapat/Tamam ile duruyor, Escape kapatıyor. `＋` ve `—` düz karakterleri
+> `Plus` / `Ban` ikonu oldu. Çember ortak bileşen — düzeltme her yerde geçerli.
+>
+> **Kalan:** ekranlar tek tek gezilip köşe/gölge/geçiş belirteçlerine
+> geçirilecek (renk tamam, ölçek henüz yalnız ürün penceresinde).
 
 > **Sıra 1 Eyl 2026'da değişti.** Üç büyük madde — **masasız adisyonun
 > çevrimdışı açılması**, **QR menünün kalanı** ve **kurye atama** — en sona
@@ -9,17 +62,47 @@
 > menü çalışır durumda, çevrimdışının kalan ucu tek bir akış). Önce elde biriken
 > küçük işler temizlendi; dördü de 1 Eyl akşamı kapandı. Kalan sıra:
 >
-> 1. **Stok** — reçete, otomatik düşüm, kritik stok uyarısı, maliyet/kârlılık
-> 2. **Gelişmiş raporlar** — saatlik ciro, personel performansı, karşılaştırmalı analiz
-> 3. **Cari / veresiye modülü**
-> 4. **Masasız adisyonun çevrimdışı açılması** — offline'ın açık kalan tek ucu
-> 5. **QR menünün kalanı** — kategori/kapak görselleri, masadan sipariş, garson çağırma, masa başına karekod
-> 6. **Kurye atama ve teslimat takibi** — önce Adisyo'da canlı tur, sonra plan
-> 7. **Sadakat programı** (puan, kampanya)
-> 8. **Çoklu şube** — merkezi menü, şube karşılaştırma
-> 9. **İkon boyut standardı** — bütün ekranlar tek tek gezilecek, en sonda
+> 1. **Görsel dilin yayılması** — Ramazan beğenmediği başka modallar olduğunu
+>    söyledi; sıradaki seans onları tek tek gezerek başlıyor. Ardından bütün
+>    ekranlar köşe/gölge/geçiş belirteçlerine geçirilecek. Renk süpürmesi bitti,
+>    ölçek henüz yalnız ürün penceresinde ve renk çemberinde uygulanmış durumda.
+>    **Stok bu iş bitene kadar bekliyor** — Ramazan görüntüyü öne aldı.
+> 2. **Stok** — malzeme, reçete, otomatik düşüm, kritik stok uyarısı, maliyet/kârlılık
+>    **Karar (1 Eyl 2026):** Garso hazır malzeme listesiyle gelmez. Her işletme
+>    kendi malzemesini kendi girer — hangi malzeme setini kullandığı önceden
+>    bilinemez. Modül boş listeyle açılır; kolaylık gerekirse Excel ile toplu
+>    aktarım sunulur, gömülü katalog değil.
+>    **Karar (1 Eyl 2026):** Malzeme ayrı bir varlıktır, ürün değildir. Adisyo'da
+>    hammadde kavramı hiç yok; eGZOZ'daki "HAMMADDE" kategorisi Ramazan'ın ürün
+>    tablosunu zorlayarak uydurduğu çaredir (birim "Tam" görünüyor, alış fiyatı
+>    girecek yer yok, malzemeler satış ürünleriyle aynı listede duruyor). Garso
+>    burada Adisyo'yu taklit etmez: `malzemeler` kendi tablosu, kendi ölçü birimi
+>    ve alış fiyatıyla durur.
+>    **Adisyo turu yapıldı (1 Eyl 2026)** — bulgular pos-yol-haritasi.md
+>    "13. STOK MODÜLÜ — DERİN TUR" bölümünde. Planlanan sıra:
+>    1. Veri modeli + **Malzemeler** ekranı (tanım; hareket yok)
+>    2. **Stok girişi / sayımı** — alış fiyatıyla birlikte
+>    3. **Reçete** — Menü Stüdyosu'nda porsiyonun altına
+>    4. **Otomatik düşüm** — adisyon kapanınca stok hareketi
+>    5. **Kritik stok uyarısı + maliyet/kârlılık raporu**
+>    Tablolar: `malzemeler` (ad, kod, birim, kritik seviye, mevcut miktar, son
+>    alış fiyatı, ortalama maliyet), `malzeme_gruplari`, `stok_belgeleri` (fiş
+>    başlığı: tip/tarih/açıklama/kim), `stok_hareketleri` (değişmez defter:
+>    malzeme, belge, tip, miktar, önceki, sonraki, birim maliyet, kim, ne zaman),
+>    `recete_satirlari` (porsiyon, malzeme, miktar, tip).
+>    **Miktarlar en küçük birimde tam sayı** tutulur (gram/mililitre/adet) —
+>    para kuruşunda yaptığımızın aynısı, float yuvarlama hatası çıkmasın diye.
+>    Ekranda kg gösterilir, veritabanında gram durur.
+> 3. **Gelişmiş raporlar** — saatlik ciro, personel performansı, karşılaştırmalı analiz
+> 4. **Cari / veresiye modülü**
+> 5. **Masasız adisyonun çevrimdışı açılması** — offline'ın açık kalan tek ucu
+> 6. **QR menünün kalanı** — kategori/kapak görselleri, masadan sipariş, garson çağırma, masa başına karekod
+> 7. **Kurye atama ve teslimat takibi** — önce Adisyo'da canlı tur, sonra plan
+> 8. **Sadakat programı** (puan, kampanya)
+> 9. **Çoklu şube** — merkezi menü, şube karşılaştırma
+> 10. **İkon boyut standardı** — bütün ekranlar tek tek gezilecek, en sonda
 >
-> Ertelenen üçlü (4-6) buraya konuldu: acelesi yok ama stok ve raporlardan
+> Ertelenen üçlü (5-7) buraya konuldu: acelesi yok ama stok ve raporlardan
 > sonra, sadakat ve çoklu şubeden önce. Ardından canlıya çıkış işleri
 > (güvenlik başlıkları, CAPTCHA, exe imzası, mağaza) ve Faz 4 entegrasyonları.
 >

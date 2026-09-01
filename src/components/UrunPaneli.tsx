@@ -1,6 +1,16 @@
 import { useState } from "react";
 import Bilgi from "./Bilgi";
-import { Check, ChevronDown, Plus, X } from "lucide-react";
+import {
+  Check,
+  ChevronDown,
+  CupSoda,
+  Info,
+  Minus,
+  Plus,
+  Star,
+  Trash2,
+  X,
+} from "lucide-react";
 import Anahtar from "./Anahtar";
 import RenkSecici from "./RenkSecici";
 import MenuGorunumu from "./MenuGorunumu";
@@ -61,6 +71,10 @@ const porsiyonYap = (t: PorsiyonTaslak): MenuPorsiyon => ({
   grupIdler: t.grupIdler,
 });
 
+// Sipariş türü fiyatı, açılışta yalnız gerçekten doldurulmuş porsiyonlarda açık
+// gelir; boş bir üründe üç kutu daha göstermenin anlamı yok.
+const turDolu = (t: PorsiyonTaslak) =>
+  Boolean(t.masaFiyat || t.gelalFiyat || t.paketFiyat);
 
 export default function UrunPaneli({
   urun,
@@ -110,7 +124,6 @@ export default function UrunPaneli({
     urun.porsiyonlar.length ? urun.porsiyonlar.map(taslakYap) : [yeniPorsiyon(true)]
   );
   const [kategoriIdler, setKategoriIdler] = useState<number[]>(urun.kategoriIdler);
-  const [acik, setAcik] = useState<string[]>(["porsiyon"]);
   // QR menü alanları tek bir nesnede: hepsi birlikte kaydediliyor, panelin
   // tepesinde yedi ayrı durum değişkeni durmasın.
   const [menuAlan, setMenuAlan] = useState<MenuAlanlari>({
@@ -123,7 +136,17 @@ export default function UrunPaneli({
     tukendi: urun.tukendi,
     medya: urun.medya,
   });
-  const [detayli, setDetayli] = useState<number[]>([]);
+
+  // Porsiyonlar sekme: aynı anda tek porsiyon açık, alanları da katlanmadan
+  // duruyor. Eski panelde üç kat iç içe açılır kapanır vardı.
+  const [secili, setSecili] = useState(0);
+  const [turAcik, setTurAcik] = useState<number[]>(() =>
+    porsiyonlar.map((p, i) => (turDolu(p) ? i : -1)).filter((i) => i >= 0)
+  );
+  // Seçenek grubu bağlama kendi penceresinde: liste uzayınca ürün penceresi
+  // aşağı doğru büyüyordu.
+  const [grupPencere, setGrupPencere] = useState<number | null>(null);
+  const [menuAcik, setMenuAcik] = useState(false);
 
   const varsayilanKdv = kdvler.find((k) => k.varsayilan);
   // Ürün kendi istasyonunu seçmezse kategorisininki geçerli; birden çok
@@ -131,26 +154,12 @@ export default function UrunPaneli({
   const devralinan = istasyonlar.find((i) =>
     kategoriler.some((k) => kategoriIdler.includes(k.id) && k.istasyonId === i.id)
   );
-  // Alt kategoriler panel açılırken kapalı gelir; üstündeki rozet kaç alt
-  // kategorinin seçili olduğunu gösterir, seçim gizli kalmasın diye.
   const anaKategoriler = kategoriler.filter(
     (k) => !k.ustId || !kategoriler.some((x) => x.id === k.ustId)
   );
   const [altAcik, setAltAcik] = useState<number[]>([]);
-  // Seçenek grupları porsiyonun içinde kapalı duruyor; rozet kaç grubun bağlı
-  // olduğunu söylüyor, açmadan da görünüyor.
-  const [grupAcik, setGrupAcik] = useState<number[]>([]);
-  const grupKatla = (i: number) =>
-    setGrupAcik((l) => (l.includes(i) ? l.filter((x) => x !== i) : [...l, i]));
   const altKatla = (id: number) =>
     setAltAcik((l) => (l.includes(id) ? l.filter((x) => x !== id) : [...l, id]));
-
-
-  const katla = (bolum: string) =>
-    setAcik((l) => (l.includes(bolum) ? l.filter((x) => x !== bolum) : [...l, bolum]));
-
-  const detayKatla = (i: number) =>
-    setDetayli((l) => (l.includes(i) ? l.filter((x) => x !== i) : [...l, i]));
 
   const porsiyonDegis = (i: number, degisim: Partial<PorsiyonTaslak>) => {
     setPorsiyonlar((liste) => liste.map((p, j) => (j === i ? { ...p, ...degisim } : p)));
@@ -174,14 +183,24 @@ export default function UrunPaneli({
     setPorsiyonlar((liste) => liste.map((p, j) => ({ ...p, varsayilan: j === i })));
   };
 
+  const porsiyonEkle = () => {
+    setPorsiyonlar((liste) => [...liste, yeniPorsiyon(false)]);
+    setSecili(porsiyonlar.length);
+  };
+
   const porsiyonSil = (i: number) => {
     setPorsiyonlar((liste) => {
       const kalan = liste.filter((_, j) => j !== i);
       if (kalan.length && !kalan.some((p) => p.varsayilan)) kalan[0].varsayilan = true;
       return kalan;
     });
-    setDetayli((l) => l.filter((x) => x !== i).map((x) => (x > i ? x - 1 : x)));
+    // Sekme kapanınca seçim kaymasın: silinenden sonrakiler bir öne geliyor.
+    setTurAcik((l) => l.filter((x) => x !== i).map((x) => (x > i ? x - 1 : x)));
+    setSecili((s) => (s > i ? s - 1 : Math.min(s, porsiyonlar.length - 2)));
   };
+
+  const turKatla = (i: number) =>
+    setTurAcik((l) => (l.includes(i) ? l.filter((x) => x !== i) : [...l, i]));
 
   const secimDegis = (liste: number[], ayarla: (l: number[]) => void, deger: number) => {
     ayarla(liste.includes(deger) ? liste.filter((x) => x !== deger) : [...liste, deger]);
@@ -210,341 +229,447 @@ export default function UrunPaneli({
     });
   };
 
+  const p = porsiyonlar[secili];
+  const onizlemeFiyat = porsiyonlar.find((x) => x.varsayilan)?.fiyat || p?.fiyat;
+  const onizlemeBirim = porsiyonlar.find((x) => x.varsayilan)?.ad || p?.ad;
+
   return (
-    <div className="panel-fon" onClick={onKapat}>
-      <div className="urun-panel" onClick={(e) => e.stopPropagation()}>
-        <header className="panel-ust">
+    <div className="up-fon" onClick={onKapat}>
+      <div className="up-modal" onClick={(e) => e.stopPropagation()}>
+        <header className="up-ust">
           <h3>{urun.id ? "Ürünü düzenle" : "Yeni ürün"}</h3>
-          <button className="panel-kapat" onClick={onKapat}><X size={19} /></button>
+          <button className="up-kapat" onClick={onKapat} title="Kapat">
+            <X size={19} />
+          </button>
         </header>
 
-        <div className="panel-govde">
-          <div className="alan">
-            <span>Ürün adı</span>
-            <input value={ad} onChange={(e) => setAd(e.target.value)} placeholder="Türk Kahvesi" autoFocus />
-          </div>
+        <div className="up-govde">
+          <aside className="up-raf">
+            <div className="up-onizleme">
+              <div className="up-yuvarlak" style={renk ? { background: renk } : undefined}>
+                <CupSoda size={28} />
+              </div>
+              <div className="up-onizleme-ad">{ad.trim() || "Yeni ürün"}</div>
+              {onizlemeBirim && <div className="up-onizleme-birim">{onizlemeBirim}</div>}
+              <div className="up-onizleme-fiyat">₺{onizlemeFiyat || "0,00"}</div>
+            </div>
 
-          <div className="bolum">
-            <button className="bolum-basi" onClick={() => katla("porsiyon")}>
-              <span>Porsiyonlar ve fiyat</span>
-              <small>{porsiyonlar.length}</small>
-              <ChevronDown size={18} className={acik.includes("porsiyon") ? "bolum-ok donuk" : "bolum-ok"} />
-            </button>
+            <div>
+              <div className="up-raf-basi">Görünürlük</div>
+              <Anahtar
+                etiket="Favori ürün"
+                acik={favori}
+                degistir={setFavori}
+              />
+              <Anahtar
+                etiket="Satış ekranında"
+                acik={satistaGorunur}
+                degistir={setSatistaGorunur}
+              />
+              <Anahtar
+                etiket="Mutfak ekranında"
+                acik={mutfaktaGorunur}
+                degistir={setMutfaktaGorunur}
+              />
+              <Anahtar
+                etiket="Bugün tükendi"
+                acik={menuAlan.tukendi}
+                degistir={(v) => setMenuAlan((m) => ({ ...m, tukendi: v }))}
+              />
+            </div>
 
-            {acik.includes("porsiyon") && (
-              <>
-                <div className="ekle-satir">
-                  <button onClick={() => setPorsiyonlar([...porsiyonlar, yeniPorsiyon(false)])}>
-                    <Plus size={14} /> Porsiyon
-                  </button>
+            <div>
+              <div className="up-raf-basi">Kart rengi</div>
+              <RenkSecici renk={renk} degistir={setRenk} renksizOlur />
+            </div>
+          </aside>
+
+          <div className="up-icerik">
+            <section>
+              <div className="up-blok-basi">Ürün</div>
+              <div className="up-izgara">
+                <div className="up-alan genis">
+                  <label htmlFor="up-ad">Ürün adı</label>
+                  <input
+                    id="up-ad"
+                    value={ad}
+                    onChange={(e) => setAd(e.target.value)}
+                    placeholder="Türk Kahvesi"
+                    autoFocus
+                  />
                 </div>
-                <Bilgi>
-                  {birimler.length
-                    ? "Yıldızlı porsiyon, siparişte varsayılan olarak gelir."
-                    : "Önce Menü Stüdyosu'nun Birimler sekmesinden birim tanımla."}
-                </Bilgi>
-                {porsiyonlar.map((p, i) => (
-                  <div key={i} className="porsiyon">
-                    <div className="satir-alan">
-                      <button
-                        className={p.varsayilan ? "varsayilan-tus aktif" : "varsayilan-tus"}
-                        onClick={() => varsayilanSec(i)}
-                        title="Varsayılan porsiyon"
+                <div className="up-alan">
+                  <label htmlFor="up-kod">Ürün kodu</label>
+                  <input
+                    id="up-kod"
+                    value={kod}
+                    onChange={(e) => setKod(e.target.value)}
+                    placeholder="Zorunlu değil"
+                  />
+                </div>
+                <div className="up-alan">
+                  <label htmlFor="up-kdv">KDV grubu</label>
+                  <select
+                    id="up-kdv"
+                    value={kdvId ?? ""}
+                    onChange={(e) =>
+                      setKdvId(e.target.value ? Number(e.target.value) : undefined)
+                    }
+                    disabled={!kdvler.length}
+                  >
+                    <option value="">
+                      {varsayilanKdv
+                        ? `Varsayılan (${varsayilanKdv.ad} %${varsayilanKdv.oran})`
+                        : "Varsayılan"}
+                    </option>
+                    {kdvler.map((k) => (
+                      <option key={k.id} value={k.id}>
+                        {k.ad} — %{k.oran}
+                      </option>
+                    ))}
+                  </select>
+                </div>
+                {istasyonlar.length > 0 && (
+                  <div className="up-alan genis">
+                    <label htmlFor="up-istasyon">Hazırlandığı istasyon</label>
+                    <select
+                      id="up-istasyon"
+                      value={istasyonId ?? ""}
+                      onChange={(e) =>
+                        setIstasyonId(e.target.value ? Number(e.target.value) : undefined)
+                      }
+                    >
+                      <option value="">
+                        {devralinan
+                          ? `Kategorisine göre (${devralinan.ad})`
+                          : "Kategorisine göre"}
+                      </option>
+                      {istasyonlar.map((i) => (
+                        <option key={i.id} value={i.id}>{i.ad}</option>
+                      ))}
+                    </select>
+                  </div>
+                )}
+              </div>
+            </section>
+
+            <section>
+              <div className="up-blok-basi">
+                Kategoriler
+                <em className="up-sayac">{kategoriIdler.length} seçili</em>
+              </div>
+              <div className="up-kategori-kutu">
+                {anaKategoriler.map((k) => {
+                  const altlar = altKategoriler(kategoriler, k.id);
+                  const seciliAlt = altlar.filter((a) => kategoriIdler.includes(a.id)).length;
+                  return (
+                    <div key={k.id}>
+                      <div className="up-agac-satir">
+                        <button
+                          className={kategoriIdler.includes(k.id) ? "up-agac-ad secili" : "up-agac-ad"}
+                          onClick={() => secimDegis(kategoriIdler, setKategoriIdler, k.id)}
+                        >
+                          <span className="renk-nokta" style={{ background: k.renk }} />
+                          {k.ad}
+                        </button>
+                        {altlar.length > 0 && (
+                          <button className="up-agac-ok" onClick={() => altKatla(k.id)} title="Alt kategoriler">
+                            {seciliAlt > 0 && <em className="up-agac-rozet">{seciliAlt}</em>}
+                            <ChevronDown
+                              size={17}
+                              className={altAcik.includes(k.id) ? "bolum-ok donuk" : "bolum-ok"}
+                            />
+                          </button>
+                        )}
+                      </div>
+                      {altAcik.includes(k.id) &&
+                        altlar.map((a) => (
+                          <button
+                            key={a.id}
+                            className={
+                              kategoriIdler.includes(a.id) ? "up-agac-ad alt secili" : "up-agac-ad alt"
+                            }
+                            onClick={() => secimDegis(kategoriIdler, setKategoriIdler, a.id)}
+                          >
+                            <span className="renk-nokta" style={{ background: a.renk }} />
+                            {a.ad}
+                          </button>
+                        ))}
+                    </div>
+                  );
+                })}
+              </div>
+            </section>
+
+            <section>
+              <div className="up-blok-basi">Porsiyon ve fiyat</div>
+
+              {!birimler.length && (
+                <Bilgi>Önce Menü Stüdyosu'nun Birimler sekmesinden birim tanımla.</Bilgi>
+              )}
+
+              <div className="up-porsiyon-sekme">
+                {porsiyonlar.map((t, i) => (
+                  <button
+                    key={i}
+                    className={i === secili ? "up-psek secili" : "up-psek"}
+                    onClick={() => setSecili(i)}
+                  >
+                    {t.varsayilan && <Star size={13} className="up-yildiz" fill="currentColor" />}
+                    {t.ad || "Porsiyon"}
+                    {porsiyonlar.length > 1 && (
+                      <span
+                        className="up-psek-sil"
+                        title="Porsiyonu sil"
+                        onClick={(e) => {
+                          e.stopPropagation();
+                          porsiyonSil(i);
+                        }}
                       >
-                        {p.varsayilan ? "★" : "☆"}
-                      </button>
+                        <X size={12} />
+                      </span>
+                    )}
+                  </button>
+                ))}
+                <button className="up-psek-ekle" onClick={porsiyonEkle}>
+                  <Plus size={14} /> Porsiyon
+                </button>
+              </div>
+
+              {p && (
+                <div className="up-porsiyon-kutu">
+                  <div className="up-izgara uc">
+                    <div className="up-alan">
+                      <label htmlFor="up-birim">Birim</label>
                       <select
+                        id="up-birim"
                         value={p.birimId ?? ""}
-                        onChange={(e) => birimSec(i, Number(e.target.value))}
+                        onChange={(e) => birimSec(secili, Number(e.target.value))}
                       >
                         <option value="" disabled>Birim seç</option>
                         {birimler.map((b) => (
                           <option key={b.id} value={b.id}>{b.ad}</option>
                         ))}
                       </select>
-                      <input
-                        className="kisa"
-                        value={p.fiyat}
-                        onChange={(e) => porsiyonDegis(i, { fiyat: paraYaz(e.target.value) })}
-                        placeholder="₺"
-                        inputMode="decimal"
-                      />
-                      <button className="satir-sil" onClick={() => porsiyonSil(i)} disabled={porsiyonlar.length === 1}>
-                        <X size={15} />
-                      </button>
                     </div>
-
-                    <button className="detay-tus" onClick={() => detayKatla(i)}>
-                      {detayli.includes(i)
-                        ? "− Detayı gizle"
-                        : "+ Maliyet, barkod, seçenekler, sipariş türü fiyatı"}
-                      {!detayli.includes(i) && p.grupIdler.length > 0 && (
-                        <em className="detay-rozet">{p.grupIdler.length} seçenek</em>
-                      )}
-                    </button>
-
-                    {detayli.includes(i) && (
-                      <div className="porsiyon-detay">
-                        <div className="detay-satir">
-                          <label>
-                            <span>Maliyet</span>
-                            <input
-                              value={p.maliyet}
-                              onChange={(e) => porsiyonDegis(i, { maliyet: paraYaz(e.target.value) })}
-                              placeholder="₺"
-                              inputMode="decimal"
-                            />
-                          </label>
-                          <label className="genis">
-                            <span>Barkod</span>
-                            <input
-                              value={p.barkod}
-                              onChange={(e) => porsiyonDegis(i, { barkod: e.target.value })}
-                              placeholder="—"
-                            />
-                          </label>
-                        </div>
-
-                        <Bilgi>
-                          Sipariş türüne göre fiyat. Boş bıraktığın türde yukarıdaki tek fiyat geçerli olur.
-                        </Bilgi>
-                        <div className="detay-satir">
-                          <label>
-                            <span>Masa</span>
-                            <input
-                              value={p.masaFiyat}
-                              onChange={(e) => porsiyonDegis(i, { masaFiyat: paraYaz(e.target.value) })}
-                              placeholder={`₺${p.fiyat || 0}`}
-                              inputMode="decimal"
-                            />
-                          </label>
-                          <label>
-                            <span>Gel Al</span>
-                            <input
-                              value={p.gelalFiyat}
-                              onChange={(e) => porsiyonDegis(i, { gelalFiyat: paraYaz(e.target.value) })}
-                              placeholder={`₺${p.fiyat || 0}`}
-                              inputMode="decimal"
-                            />
-                          </label>
-                          <label>
-                            <span>Paket</span>
-                            <input
-                              value={p.paketFiyat}
-                              onChange={(e) => porsiyonDegis(i, { paketFiyat: paraYaz(e.target.value) })}
-                              placeholder={`₺${p.fiyat || 0}`}
-                              inputMode="decimal"
-                            />
-                          </label>
-                        </div>
-
-                        <div className="bolum">
-                          <button className="bolum-basi" onClick={() => grupKatla(i)}>
-                            <span>Seçenek grupları</span>
-                            <small>{p.grupIdler.length} seçili</small>
-                            <ChevronDown
-                              size={18}
-                              className={grupAcik.includes(i) ? "bolum-ok donuk" : "bolum-ok"}
-                            />
-                          </button>
-
-                          {grupAcik.includes(i) && (
-                            <>
-                              <Bilgi>
-                                Seçenek grupları bu porsiyona bağlanır — "Tam" ve "Yarım"
-                                farklı seçenek taşıyabilir.
-                              </Bilgi>
-                              {gruplar.length === 0 ? (
-                                <Bilgi>Henüz seçenek grubu yok.</Bilgi>
-                              ) : (
-                                <div className="grup-secim">
-                                  {gruplar.map((g) => {
-                                    const secili = p.grupIdler.includes(g.id);
-                                    return (
-                                      <button
-                                        key={g.id}
-                                        className={secili ? "secili" : undefined}
-                                        onClick={() => grupDegis(i, g.id)}
-                                      >
-                                        <span className="grup-secim-im">
-                                          {secili && <Check size={14} />}
-                                        </span>
-                                        <span className="grup-secim-ad">{g.ad}</span>
-                                        <small>
-                                          {g.tekli ? "tekli" : "çoklu"} · {g.liste.length} seçenek
-                                        </small>
-                                      </button>
-                                    );
-                                  })}
-                                </div>
-                              )}
-                            </>
-                          )}
-                        </div>
+                    <div className="up-alan">
+                      <label htmlFor="up-fiyat">Fiyat</label>
+                      <div className="up-sonek">
+                        <input
+                          id="up-fiyat"
+                          value={p.fiyat}
+                          onChange={(e) => porsiyonDegis(secili, { fiyat: paraYaz(e.target.value) })}
+                          placeholder="0,00"
+                          inputMode="decimal"
+                        />
+                        <em>₺</em>
                       </div>
+                    </div>
+                    <div className="up-alan">
+                      <label htmlFor="up-maliyet">Maliyet</label>
+                      <div className="up-sonek">
+                        <input
+                          id="up-maliyet"
+                          value={p.maliyet}
+                          onChange={(e) => porsiyonDegis(secili, { maliyet: paraYaz(e.target.value) })}
+                          placeholder="—"
+                          inputMode="decimal"
+                        />
+                        <em>₺</em>
+                      </div>
+                    </div>
+                    <div className="up-alan genis">
+                      <label htmlFor="up-barkod">Barkod</label>
+                      <input
+                        id="up-barkod"
+                        value={p.barkod}
+                        onChange={(e) => porsiyonDegis(secili, { barkod: e.target.value })}
+                        placeholder="—"
+                      />
+                    </div>
+                  </div>
+
+                  <div className="up-varsayilan-satir">
+                    <button
+                      className={p.varsayilan ? "up-varsayilan aktif" : "up-varsayilan"}
+                      onClick={() => varsayilanSec(secili)}
+                      disabled={p.varsayilan}
+                    >
+                      <Star size={14} fill={p.varsayilan ? "currentColor" : "none"} />
+                      {p.varsayilan ? "Varsayılan porsiyon" : "Varsayılan yap"}
+                    </button>
+                    <small>Siparişte önce bu porsiyon gelir.</small>
+                  </div>
+
+                  <div className="up-katlanir">
+                    <button className="up-katlanir-basi" onClick={() => turKatla(secili)}>
+                      {turAcik.includes(secili) ? <Minus size={15} /> : <Plus size={15} />}
+                      <span>Sipariş türüne göre farklı fiyat</span>
+                      <small>Masa · Gel Al · Paket</small>
+                    </button>
+                    {turAcik.includes(secili) && (
+                      <>
+                        <Bilgi>
+                          Boş bıraktığın türde yukarıdaki tek fiyat geçerli olur.
+                        </Bilgi>
+                        <div className="up-izgara uc">
+                          <div className="up-alan">
+                            <label htmlFor="up-masa">Masa</label>
+                            <div className="up-sonek">
+                              <input
+                                id="up-masa"
+                                value={p.masaFiyat}
+                                onChange={(e) => porsiyonDegis(secili, { masaFiyat: paraYaz(e.target.value) })}
+                                placeholder={p.fiyat || "0,00"}
+                                inputMode="decimal"
+                              />
+                              <em>₺</em>
+                            </div>
+                          </div>
+                          <div className="up-alan">
+                            <label htmlFor="up-gelal">Gel Al</label>
+                            <div className="up-sonek">
+                              <input
+                                id="up-gelal"
+                                value={p.gelalFiyat}
+                                onChange={(e) => porsiyonDegis(secili, { gelalFiyat: paraYaz(e.target.value) })}
+                                placeholder={p.fiyat || "0,00"}
+                                inputMode="decimal"
+                              />
+                              <em>₺</em>
+                            </div>
+                          </div>
+                          <div className="up-alan">
+                            <label htmlFor="up-paket">Paket</label>
+                            <div className="up-sonek">
+                              <input
+                                id="up-paket"
+                                value={p.paketFiyat}
+                                onChange={(e) => porsiyonDegis(secili, { paketFiyat: paraYaz(e.target.value) })}
+                                placeholder={p.fiyat || "0,00"}
+                                inputMode="decimal"
+                              />
+                              <em>₺</em>
+                            </div>
+                          </div>
+                        </div>
+                      </>
                     )}
                   </div>
-                ))}
-              </>
-            )}
+
+                  <div>
+                    <div className="up-raf-basi">Seçenek grupları</div>
+                    <div className="up-cipler">
+                      {p.grupIdler.map((id) => {
+                        const g = gruplar.find((x) => x.id === id);
+                        if (!g) return null;
+                        return (
+                          <span key={id} className="up-cip">
+                            <b>{g.ad}</b>
+                            <small>{g.tekli ? "tekli" : "çoklu"} · {g.liste.length} seçenek</small>
+                            <button
+                              className="up-cip-sil"
+                              onClick={() => grupDegis(secili, id)}
+                              title="Bağlantıyı kaldır"
+                            >
+                              <X size={12} />
+                            </button>
+                          </span>
+                        );
+                      })}
+                      <button className="up-cip-ekle" onClick={() => setGrupPencere(secili)}>
+                        <Plus size={13} /> Grup bağla
+                      </button>
+                    </div>
+                  </div>
+                </div>
+              )}
+            </section>
+
+            <section>
+              <button className="up-katlanir-basi tek" onClick={() => setMenuAcik(!menuAcik)}>
+                {menuAcik ? <Minus size={15} /> : <Plus size={15} />}
+                <span>QR menü görünümü</span>
+                <small>
+                  {menuAlan.medya.length
+                    ? `${menuAlan.medya.length} görsel`
+                    : menuAlan.aciklama
+                      ? "açıklama var"
+                      : "boş"}
+                </small>
+              </button>
+              {!menuAcik && (
+                <div className="up-bilgi">
+                  <Info size={15} />
+                  <span>
+                    Açıklama, görsel, alerjen ve kalori bilgisi burada. Yalnız karekodlu
+                    menüde görünür, satış ekranını etkilemez.
+                  </span>
+                </div>
+              )}
+              {menuAcik && (
+                <MenuGorunumu
+                  deger={menuAlan}
+                  degistir={(d) => setMenuAlan((m) => ({ ...m, ...d }))}
+                  onUyari={onUyari}
+                />
+              )}
+            </section>
           </div>
+        </div>
 
-          <div className="bolum">
-            <button className="bolum-basi" onClick={() => katla("kategori")}>
-              <span>Kategoriler</span>
-              <small>{kategoriIdler.length} seçili</small>
-              <ChevronDown size={18} className={acik.includes("kategori") ? "bolum-ok donuk" : "bolum-ok"} />
+        <footer className="up-alt">
+          {urun.id && onSil && (
+            <button className="up-tus sil" onClick={onSil}>
+              <Trash2 size={15} /> Ürünü sil
             </button>
+          )}
+          <button className="up-tus vazgec" onClick={onKapat}>Vazgeç</button>
+          <button className="up-tus kaydet" disabled={!gecerli} onClick={kaydet}>Kaydet</button>
+        </footer>
+      </div>
 
-            {acik.includes("kategori") && (
-              <>
-                <Bilgi>Ürün birden fazla kategoride görünebilir.</Bilgi>
-                <div className="kategori-agac">
-                  {anaKategoriler.map((k) => {
-                    const altlar = altKategoriler(kategoriler, k.id);
-                    const seciliAlt = altlar.filter((a) => kategoriIdler.includes(a.id)).length;
+      {grupPencere !== null && (
+        <div className="up-fon ust" onClick={() => setGrupPencere(null)}>
+          <div className="up-grup-pencere" onClick={(e) => e.stopPropagation()}>
+            <header className="up-ust">
+              <h3>Seçenek grupları</h3>
+              <button className="up-kapat" onClick={() => setGrupPencere(null)} title="Kapat">
+                <X size={19} />
+              </button>
+            </header>
+            <div className="up-grup-govde">
+              <Bilgi>
+                Seçilen gruplar yalnız bu porsiyona bağlanır — "Tam" ve "Yarım"
+                farklı seçenek taşıyabilir.
+              </Bilgi>
+              {gruplar.length === 0 ? (
+                <Bilgi>Henüz seçenek grubu yok.</Bilgi>
+              ) : (
+                <div className="up-grup-izgara">
+                  {gruplar.map((g) => {
+                    const sec = porsiyonlar[grupPencere].grupIdler.includes(g.id);
                     return (
-                      <div key={k.id}>
-                        <div className="agac-satir">
-                          <button
-                            className={kategoriIdler.includes(k.id) ? "agac-ad secili" : "agac-ad"}
-                            onClick={() => secimDegis(kategoriIdler, setKategoriIdler, k.id)}
-                          >
-                            <span className="renk-nokta" style={{ background: k.renk }} />
-                            {k.ad}
-                          </button>
-                          {altlar.length > 0 && (
-                            <button
-                              className="agac-ok"
-                              onClick={() => altKatla(k.id)}
-                              title="Alt kategoriler"
-                            >
-                              {seciliAlt > 0 && <em className="agac-rozet">{seciliAlt}</em>}
-                              <ChevronDown size={18} className={altAcik.includes(k.id) ? "bolum-ok donuk" : "bolum-ok"} />
-                            </button>
-                          )}
-                        </div>
-
-                        {altAcik.includes(k.id) &&
-                          altlar.map((a) => (
-                            <button
-                              key={a.id}
-                              className={
-                                kategoriIdler.includes(a.id) ? "agac-ad alt secili" : "agac-ad alt"
-                              }
-                              onClick={() => secimDegis(kategoriIdler, setKategoriIdler, a.id)}
-                            >
-                              <span className="renk-nokta" style={{ background: a.renk }} />
-                              {a.ad}
-                            </button>
-                          ))}
-                      </div>
+                      <button
+                        key={g.id}
+                        className={sec ? "up-grup-kart secili" : "up-grup-kart"}
+                        onClick={() => grupDegis(grupPencere, g.id)}
+                      >
+                        <span className="up-grup-ad">{g.ad}</span>
+                        <small>{g.tekli ? "tekli" : "çoklu"} · {g.liste.length} seçenek</small>
+                        <span className="up-grup-im">{sec && <Check size={14} />}</span>
+                      </button>
                     );
                   })}
                 </div>
-              </>
-            )}
-          </div>
-
-          <div className="alan">
-            <span>Ürün kodu</span>
-            <input value={kod} onChange={(e) => setKod(e.target.value)} placeholder="Zorunlu değil" />
-          </div>
-
-          <div className="alan">
-            <span>KDV grubu</span>
-            <select
-              value={kdvId ?? ""}
-              onChange={(e) => setKdvId(e.target.value ? Number(e.target.value) : undefined)}
-              disabled={!kdvler.length}
-            >
-              <option value="">
-                {varsayilanKdv
-                  ? `Varsayılan (${varsayilanKdv.ad} %${varsayilanKdv.oran})`
-                  : "Varsayılan"}
-              </option>
-              {kdvler.map((k) => (
-                <option key={k.id} value={k.id}>
-                  {k.ad} — %{k.oran}
-                </option>
-              ))}
-            </select>
-          </div>
-
-          {istasyonlar.length > 0 && (
-            <div className="alan">
-              <span>Hazırlandığı istasyon</span>
-              <select
-                value={istasyonId ?? ""}
-                onChange={(e) =>
-                  setIstasyonId(e.target.value ? Number(e.target.value) : undefined)
-                }
-              >
-                <option value="">
-                  {devralinan
-                    ? `Kategorisine göre (${devralinan.ad})`
-                    : "Kategorisine göre"}
-                </option>
-                {istasyonlar.map((i) => (
-                  <option key={i.id} value={i.id}>{i.ad}</option>
-                ))}
-              </select>
+              )}
             </div>
-          )}
-
-          <div className="bolum">
-            <button className="bolum-basi" onClick={() => katla("menu")}>
-              <span>QR menü görünümü</span>
-              <small>{menuAlan.medya.length || (menuAlan.aciklama ? "•" : "")}</small>
-              <ChevronDown size={18} className={acik.includes("menu") ? "bolum-ok donuk" : "bolum-ok"} />
-            </button>
-
-            {acik.includes("menu") && (
-              <MenuGorunumu
-                deger={menuAlan}
-                degistir={(d) => setMenuAlan((m) => ({ ...m, ...d }))}
-                onUyari={onUyari}
-              />
-            )}
+            <footer className="up-alt">
+              <button className="up-tus kaydet" onClick={() => setGrupPencere(null)}>Tamam</button>
+            </footer>
           </div>
-
-          <div className="alan">
-            <span>Kart rengi</span>
-            <RenkSecici renk={renk} degistir={setRenk} renksizOlur />
-          </div>
-
-          <button className={favori ? "favori-tus aktif" : "favori-tus"} onClick={() => setFavori(!favori)}>
-            {favori ? "★ Favori üründe" : "☆ Favorilere ekle"}
-          </button>
-
-          <Anahtar
-            etiket="Satış ekranında göster"
-            ipucu="Kapalıysa sipariş ekranında çıkmaz"
-            acik={satistaGorunur}
-            degistir={setSatistaGorunur}
-          />
-          <Anahtar
-            etiket="Mutfak ekranında göster"
-            acik={mutfaktaGorunur}
-            degistir={setMutfaktaGorunur}
-          />
-          <Anahtar
-            etiket="Bugün tükendi"
-            ipucu="QR menüde durur ama alınamaz görünür"
-            acik={menuAlan.tukendi}
-            degistir={(v) => setMenuAlan((m) => ({ ...m, tukendi: v }))}
-          />
-
         </div>
-
-        <footer className="modal-aksiyonlar">
-          {urun.id && onSil && (
-            <button className="sil-buton" onClick={onSil}>Ürünü sil</button>
-          )}
-          <button className="iptal" onClick={onKapat}>Vazgeç</button>
-          <button className="uygula" disabled={!gecerli} onClick={kaydet}>Kaydet</button>
-        </footer>
-      </div>
+      )}
     </div>
   );
 }
