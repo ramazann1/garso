@@ -98,9 +98,9 @@ export default function AdisyonDetay({
   };
 
   return (
-    <div className="detay-fon" onClick={onKapat}>
-      <div className="detay-pencere" onClick={(e) => e.stopPropagation()}>
-        <header className="detay-ust">
+    <div className="up-fon" onClick={onKapat}>
+      <div className="up-modal detay-pencere" onClick={(e) => e.stopPropagation()}>
+        <header className="up-ust detay-ust">
           <h3>
             Adisyon #{detay?.no ?? "…"}
             {detay && (
@@ -146,7 +146,7 @@ export default function AdisyonDetay({
                 )}
               </>
             )}
-            <button className="panel-kapat" onClick={onKapat}>
+            <button className="up-kapat" onClick={onKapat}>
               <X size={19} />
             </button>
           </div>

@@ -102,6 +102,7 @@ export default function TahsilatPanel({ kalemler, toplam, araToplam, indirim, se
 
   const odenen = (tahsilatlar ?? []).reduce((t, o) => t + o.tutar, 0);
   const bahsisToplam = (tahsilatlar ?? []).reduce((t, o) => t + (o.bahsis ?? 0), 0);
+
   const kalan = toplam - odenen;
 
   // Ödenen adetler kalem kimliğine göre tutulur; sepetten satır silinse bile
@@ -118,7 +119,7 @@ export default function TahsilatPanel({ kalemler, toplam, araToplam, indirim, se
 
   const numpadTus = (v: string) => {
     if (v === "⌫") { setGirilen((g) => g.slice(0, -1)); return; }
-    if (v === "Tümü") { setGirilen(String(kalan)); return; }
+    if (v === "Tümü") { setGirilen(String(alinacak)); return; }
     setGirilen((g) => g + v);
   };
 
@@ -126,6 +127,15 @@ export default function TahsilatPanel({ kalemler, toplam, araToplam, indirim, se
   const odenebilir = (k: SepetKalemi) => (k.durum ?? "normal") === "normal";
 
   const kurus = (t: number) => Math.round(t * 100) / 100;
+
+  // Bahşiş sekmesinde yazılan tutar onay beklemeden dökümde ve sekme rozetinde
+  // görünüyor; kullanıcı ne yazdığını anında görsün diye.
+  const bekleyenBahsis = sekme === "bahsis" ? kurus(Number(bahsisGirdi) || 0) : bahsis;
+
+  // Bahşiş adisyonun borcu değil: kalan olduğu gibi duruyor, kasadan alınacak
+  // para ayrı satırda yazıyor.
+  const alinacak = kurus(kalan + bekleyenBahsis);
+
   const secimVar = Object.keys(secilen).length > 0;
 
   /**
@@ -233,22 +243,27 @@ export default function TahsilatPanel({ kalemler, toplam, araToplam, indirim, se
   };
 
   const odemeAl = (tip: string) => {
-    const tutar = girilen ? Number(girilen) : kalan;
+    // Boş bırakılırsa bahşiş dahil tamamı alınıyor; girilen tutar zaten bahşişi
+    // içerdiği için "kalandan fazla" akışı burada tetiklenmiyor.
+    const tutar = girilen ? Number(girilen) : alinacak;
     if (tutar <= 0) return;
     // Kalandan fazlası bahşiş sekmesine düşüyor: üstü ne kadar, tipi hazır.
-    if (tutar > kalan) {
+    if (tutar > alinacak) {
       setBekleyenTip(tip);
       setBahsisGirdi(String(kurus(tutar - kalan)));
       setSekme("bahsis");
       return;
     }
+    // Girilen tutarın bahşiş payı adisyona yazılmıyor: hesaba borcu kadarı,
+    // üstü bahşiş alanına gidiyor.
+    const hesaba = kurus(tutar - bahsis);
     // Açık hesap kasaya para getirmiyor, birinin borcuna yazılıyor: kime
     // yazıldığı sorulmadan tahsilat işlenmiyor.
     if (odemeTipleri.find((t) => t.ad === tip)?.acikHesap) {
-      setCariSorusu({ tip, tutar });
+      setCariSorusu({ tip, tutar: hesaba });
       return;
     }
-    tahsilatIsle(tip, tutar, bahsis || undefined);
+    tahsilatIsle(tip, hesaba, bahsis || undefined);
   };
 
   // Bahşiş kalanı azaltmaz; tahsilata kalanın kendisi yazılır, üstü ayrı alanda
@@ -291,18 +306,6 @@ export default function TahsilatPanel({ kalemler, toplam, araToplam, indirim, se
     setBahsis(tutar);
     setSekme("odeme");
   };
-
-  // "Üstünü tamamla" önerileri: kalan tutarın bir üst yuvarlak rakamları.
-  const bahsisOnerileri = (() => {
-    const basamaklar = [10, 50, 100];
-    const liste: number[] = [];
-    for (const b of basamaklar) {
-      const ust = Math.ceil((kalan + 0.01) / b) * b;
-      const fark = kurus(ust - kalan);
-      if (fark > 0 && !liste.includes(ust)) liste.push(ust);
-    }
-    return liste.slice(0, 3);
-  })();
 
   // Kalan sıfırlansa bile adisyon kendi kendine kapanmaz; kapatma kararı
   // kullanıcınındır, panel açık kalır.
@@ -456,21 +459,26 @@ export default function TahsilatPanel({ kalemler, toplam, araToplam, indirim, se
                   <span>Ödenen</span><span>₺{odenen}</span>
                 </div>
               )}
-              {bahsisToplam > 0 && (
+              {bahsisToplam + bekleyenBahsis > 0 && (
                 <div className="tutar-satir bahsis">
-                  <span>Bahşiş</span><span>₺{bahsisToplam}</span>
+                  <span>Bahşiş</span><span>₺{bahsisToplam + bekleyenBahsis}</span>
                 </div>
               )}
               <div className="tutar-satir kalan-satir">
                 <span>Kalan</span><strong>₺{kalan}</strong>
               </div>
+              {bekleyenBahsis > 0 && (
+                <div className="tutar-satir alinacak">
+                  <span>Alınacak</span><strong>₺{alinacak}</strong>
+                </div>
+              )}
             </div>
 
             <div className="odeme-numpad">
               <input
                 className="numpad-ekran"
                 type="number"
-                placeholder={`₺${kalan}`}
+                placeholder={`₺${alinacak}`}
                 value={girilen}
                 onChange={(e) => { setSecilen({}); setGirilen(e.target.value); }}
               />
@@ -538,7 +546,7 @@ export default function TahsilatPanel({ kalemler, toplam, araToplam, indirim, se
               >
                 <HandCoins size={16} />
                 Bahşiş
-                {bahsis > 0 && <em className="th-sekme-rozet">₺{bahsis}</em>}
+                {bekleyenBahsis > 0 && <em className="th-sekme-rozet">₺{bekleyenBahsis}</em>}
               </button>
             </div>
 
@@ -574,20 +582,6 @@ export default function TahsilatPanel({ kalemler, toplam, araToplam, indirim, se
                     onChange={(e) => setBahsisGirdi(e.target.value)}
                   />
                 </label>
-
-                {bahsisOnerileri.length > 0 && (
-                  <>
-                    <p className="th-sutun-baslik">Üstünü tamamla</p>
-                    <div className="th-bahsis-onerileri">
-                      {bahsisOnerileri.map((ust) => (
-                        <button key={ust} onClick={() => setBahsisGirdi(String(kurus(ust - kalan)))}>
-                          <strong>₺{ust}</strong>
-                          <span>+₺{kurus(ust - kalan)}</span>
-                        </button>
-                      ))}
-                    </div>
-                  </>
-                )}
 
                 <div className="th-bahsis-aksiyon">
                   <button

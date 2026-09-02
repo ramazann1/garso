@@ -504,7 +504,7 @@ export default function MobilMasalar() {
           masa={islemMasasi}
           ozet={adisyonlar[islemMasasi.id]}
           onKapat={() => setIslemMasasi(null)}
-          onOde={() => git(`/mobil/adisyon/${islemMasasi.id}`)}
+          onOde={() => git(`/mobil/siparis/${islemMasasi.id}?tahsilat=1`)}
           onHizli={() => hizliOdeAc(islemMasasi)}
           onYazdir={() => fisYazdir(islemMasasi)}
           onTasi={(tip) => {

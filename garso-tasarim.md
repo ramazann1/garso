@@ -85,9 +85,51 @@
 > yazmış, Müşteri Seçici açıkta kalıp tarayıcının kalın kare düğmesini
 > göstermiş. Tek genel kural yazıldı (`.kapat`, `.th-kapat`).
 >
+> **Adisyon Detay ortak kabuğa geçti (2 Eyl 2026 akşamı).** Kendi 40 satırlık
+> \`.detay-fon\`/\`.detay-pencere\` kabuğunu yazmıştı: fon bulanmıyor, açılış
+> başka eğride, köşe/gölge elle. Artık ürün ve tahsilat pencereleriyle aynı
+> \`.up-fon\`/\`.up-modal\`/\`.up-ust\`/\`.up-kapat\`. Bu ekrana özgü tek fark kaldı:
+> üç sütun sığsın diye \`max-width: 1060px\`. İçerideki elle yazılmış köşe ve
+> çizgi renkleri belirteçlere bağlandı.
+>
 > **Kalan:** ekranlar tek tek gezilip köşe/gölge/geçiş belirteçlerine
-> geçirilecek (renk tamam; ölçek ürün penceresi, renk çemberi ve tahsilat
-> penceresinde uygulandı).
+> geçirilecek (renk tamam; ölçek ürün penceresi, renk çemberi, tahsilat
+> penceresi ve Adisyon Detay uygulandı).
+
+> **Bahşiş canlı yansıyor, "Alınacak" satırı eklendi (2 Eyl 2026 akşamı).**
+> Bahşiş sekmesine yazılan rakam onay bekliyordu: "Bahşişi ekle"ye basana kadar
+> ekranda hiçbir iz yoktu, bozuk sanılıyordu. Artık yazıldığı anda sekme
+> rozetinde ve tutar dökümünde görünüyor (\`bekleyenBahsis\`).
+> **"Üstünü tamamla" kartları kaldırıldı** — kartın büyük yazısı hesap tutarıydı
+> (₺270 gibi), adisyonla karışıyordu (Ramazan).
+> **Karar: bahşiş kalanı artırmaz.** Kalan adisyonun borcu; bahşiş ciroya değil
+> kendi alanına yazılıyor, yoksa KDV ve ciro şişer. Ama kasadan alınacak para
+> ekranda yazmıyordu: \`Kalan ₺100 / Bahşiş ₺10 / Alınacak ₺110\`. Numpad'in yer
+> tutan rakamı ve "Tümü" tuşu da Alınacak'ı veriyor. Ödeme işlenirken tutar
+> ikiye ayrılıyor: bahşiş payı düşülüp gerisi adisyona yazılıyor
+> (\`odemeAl\` içinde \`hesaba\`).
+> **Bahşiş tuş takımına bağlanmayacak** — denendi, geri alındı; mobilde de elle
+> yazılıyor (Ramazan).
+
+> **Mobil tahsilat masaüstüyle aynı bileşene taşındı (2 Eyl 2026 akşamı).**
+> Mobilde ayrı bir ödeme akışı vardı: *Tutar gir* perdesi → numpad sayfası →
+> *Devam* → ödeme tipi sayfası; üstüne bahşiş onayı, cari sorusu ve eksik
+> kapatma ayrı modallardı. Ürün seçerek parçalı ödeme, 1/n bölme, ürüne indirim
+> ve tahsilat silme mobilde hiç yoktu.
+> \`TahsilatPanel\` zaten 980px altı için yazılmıştı; ikinci bir ödeme ekranı
+> tutmak yerine **mobil de aynı bileşeni açıyor**. \`mobil/Adisyon.tsx\` (622
+> satır) ve \`/mobil/adisyon/:masaId\` rotası silindi.
+> **Karar: ödeme sipariş ekranından alınıyor** — masaüstündeki desenin aynısı.
+> Masalar → Öde artık \`/mobil/siparis/:id?tahsilat=1\` ile gidiyor, pencere
+> kendiliğinden açılıyor; masaya basıp bir de düğmeye basmak gereksiz duraktı
+> (Ramazan). Yeni \`tahsilatYaz\` çevrimdışı kuyruğu koruyor.
+> **Ödeme yetkisi olmayanda "Öde" düğmesi hiç çıkmıyor** — eskiden "Hesap" yazıp
+> o ekrana götürüyordu; hesap dökümü zaten sepet sayfasında.
+> Telefon için CSS: sütun sırası **tutar → ödeme tipi → ürünler** (uzun ürün
+> listesi tutarı aşağı itiyordu), numpad tuşları 52px, kalem satırları 48px.
+> **Bulunan hata:** 980px kuralında sütunların taşmasına izin verilmiş ama grid
+> satır yüksekliği pencereyi üçe bölüyordu — içerik hücreden taşıp alttakinin
+> üstüne biniyordu. \`grid-auto-rows: max-content\` eksikti.
 
 > **Yazarkasa (ÖKC) ana anahtarı eklendi (2 Eyl 2026).** İşletme Ayarları →
 > Ödeme Tipleri'nin başında. Kapalıyken ÖKC sınıfı ödeme tipleri hiçbir ödeme
@@ -114,17 +156,34 @@
 > menü çalışır durumda, çevrimdışının kalan ucu tek bir akış). Önce elde biriken
 > küçük işler temizlendi; dördü de 1 Eyl akşamı kapandı. Kalan sıra:
 >
-> 1. **Görsel dilin yayılması — beğenilmeyen modallar** (2 Eyl 2026 seansında
+> 0. **ÖNCE BU — sipariş ekranında alınan ödemeler görünmüyor** (2 Eyl 2026,
+>    Ramazan bildirdi, kod yazıldı ama çalışmıyor). Adisyon alt sayfasının
+>    dökümüne "her ödeme + Kalan" satırları eklendi (`mobil/Siparis.tsx`,
+>    `m-dokum-satir odendi` / `kalan`) fakat ekranda hiç çıkmıyor.
+>    **Şüpheli:** satırlar `(servisTutar.toplam > 0 || (servisVar() &&
+>    servisYetkisi) || indirim > 0 || ozet.kdv > 0)` koşullu bloğun İÇİNDE —
+>    bu şart tutmayan hesapta bütün döküm gizleniyor. Ödeme satırları o şarttan
+>    bağımsız olmalı. İkinci şüpheli: `tahsilatYaz` sonrası `setTahsilatlar`
+>    listeyi geri yazmıyor olabilir. Seansa bunu deneyerek başla.
+>
+>    **Ayrıca karar:** bahşiş tutarı tuş takımına bağlanmayacak, elle
+>    yazılıyor — denendi, geri alındı (Ramazan: "mobilde elle yazılabilir").
+> 1. **Mobil tahsilat penceresinde kaydırmayı azaltmak** (2 Eyl 2026 akşamı
+>    çıktı). Pencere telefonda çalışıyor ama sütunlar alt alta inince şerit çok
+>    uzuyor: tutar girmek, ödeme tipine basmak ve ürün seçmek arasında sürekli
+>    aşağı-yukarı gidiliyor. Ramazanın gözlemi. Çözüm aranacak — sekme, kat ya
+>    da yapışkan bölüm; karar verilmedi.
+> 2. **Görsel dilin yayılması — beğenilmeyen modallar** (2 Eyl 2026 seansında
 >    başlandı, devam ediyor). Tahsilat penceresi bitti (yukarıda). **Sıradaki
 >    seans kaldığı yerden: Ramazan'ın beğenmediği diğer pencereler tek tek
->    gezilecek.** Henüz elden geçmemiş olanlar: Adisyon Detay, Kalem Paneli,
+>    gezilecek.** Henüz elden geçmemiş olanlar: Kalem Paneli,
 >    Hızlı Öde, Misafir Sayısı, Masa Seçim, Ödeme Tipi Düzelt, Aktarım Onayı,
 >    Eksik Kapat, Toplu Düzenle, Sıralama, Kampanya Seçim, Müşteri Detay/Seçici,
 >    Onay Modal, Bildirim, Köprü İndir, Kilit Ekranı.
 >    **İndirim modalına dokunulmayacak** — Ramazan beğeniyor (2 Eyl 2026).
 >    Ardından bütün ekranlar köşe/gölge/geçiş belirteçlerine geçirilecek.
 >    **Stok bu iş bitene kadar bekliyor** — Ramazan görüntüyü öne aldı.
-> 2. **Stok** — malzeme, reçete, otomatik düşüm, kritik stok uyarısı, maliyet/kârlılık
+> 3. **Stok** — malzeme, reçete, otomatik düşüm, kritik stok uyarısı, maliyet/kârlılık
 >    **Karar (1 Eyl 2026):** Garso hazır malzeme listesiyle gelmez. Her işletme
 >    kendi malzemesini kendi girer — hangi malzeme setini kullandığı önceden
 >    bilinemez. Modül boş listeyle açılır; kolaylık gerekirse Excel ile toplu
@@ -150,14 +209,14 @@
 >    **Miktarlar en küçük birimde tam sayı** tutulur (gram/mililitre/adet) —
 >    para kuruşunda yaptığımızın aynısı, float yuvarlama hatası çıkmasın diye.
 >    Ekranda kg gösterilir, veritabanında gram durur.
-> 3. **Gelişmiş raporlar** — saatlik ciro, personel performansı, karşılaştırmalı analiz
-> 4. **Cari / veresiye modülü**
-> 5. **Masasız adisyonun çevrimdışı açılması** — offline'ın açık kalan tek ucu
-> 6. **QR menünün kalanı** — kategori/kapak görselleri, masadan sipariş, garson çağırma, masa başına karekod
-> 7. **Kurye atama ve teslimat takibi** — önce Adisyo'da canlı tur, sonra plan
-> 8. **Sadakat programı** (puan, kampanya)
-> 9. **Çoklu şube** — merkezi menü, şube karşılaştırma
-> 10. **İkon boyut standardı** — bütün ekranlar tek tek gezilecek, en sonda
+> 4. **Gelişmiş raporlar** — saatlik ciro, personel performansı, karşılaştırmalı analiz
+> 5. **Cari / veresiye modülü**
+> 6. **Masasız adisyonun çevrimdışı açılması** — offline'ın açık kalan tek ucu
+> 7. **QR menünün kalanı** — kategori/kapak görselleri, masadan sipariş, garson çağırma, masa başına karekod
+> 8. **Kurye atama ve teslimat takibi** — önce Adisyo'da canlı tur, sonra plan
+> 9. **Sadakat programı** (puan, kampanya)
+> 10. **Çoklu şube** — merkezi menü, şube karşılaştırma
+> 11. **İkon boyut standardı** — bütün ekranlar tek tek gezilecek, en sonda
 >
 > Ertelenen üçlü (5-7) buraya konuldu: acelesi yok ama stok ve raporlardan
 > sonra, sadakat ve çoklu şubeden önce. Ardından canlıya çıkış işleri

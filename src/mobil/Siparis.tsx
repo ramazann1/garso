@@ -1,6 +1,6 @@
 import { useEffect, useMemo, useRef, useState } from "react";
 import type { CSSProperties } from "react";
-import { useNavigate, useParams } from "react-router-dom";
+import { useNavigate, useParams, useSearchParams } from "react-router-dom";
 import {
   ArrowLeft,
   ArrowRightLeft,
@@ -25,6 +25,7 @@ import {
   X,
 } from "lucide-react";
 import UrunSecim from "../components/UrunSecim";
+import TahsilatPanel from "../components/TahsilatPanel";
 import KalemIslemleri, { kalemiUygula } from "./KalemIslemleri";
 import OnayModal from "../components/OnayModal";
 import AltSayfa from "./AltSayfa";
@@ -46,7 +47,8 @@ import {
   yeniKalemId,
 } from "../adisyonlar";
 import type { AdisyonVerisi } from "../adisyonlar";
-import { servisEtiketi, servisTutarlari, servisVar } from "../servis";
+import { servisEtiketi, servisSatirlari, servisTutarlari, servisVar } from "../servis";
+import { kdvDokumu } from "../kdv";
 import { adisyonFisiYaz } from "../yazicilar";
 import { bekleyenKayit, kuyrugaEkle } from "../kuyruk";
 import { useMasayiTut } from "../mesguliyet";
@@ -91,13 +93,14 @@ function tekDokunus(u: MenuUrun, gruplar: MenuSecenekGrubu[]) {
  *
  * Masaüstü Siparis.tsx'in dar hâli değil, garsonun akışı: ürüne dokunmak
  * doğrudan ekliyor (aynı ürüne tekrar dokunmak adedi artırıyor), sepet altta
- * hep görünüyor ve tek ana düğme var — Gönder. Ödeme burada değil, adisyonun
- * kendi ekranında; masada sipariş almakla hesap kapatmak ayrı anlar.
+ * hep görünüyor ve tek ana düğme var — Gönder. Ödeme kendi penceresinde
+ * açılıyor: bilgisayardaki tahsilat penceresinin aynısı.
  */
 export default function MobilSiparis() {
   const { masaId: param } = useParams();
   const masaId = Number(param);
   const git = useNavigate();
+  const [adres] = useSearchParams();
 
   const [masaAdi, setMasaAdi] = useState("");
   const [kategoriler, setKategoriler] = useState<MenuKategori[]>([]);
@@ -124,6 +127,12 @@ export default function MobilSiparis() {
     garsoniyeUygula?: boolean | null;
   }>({});
   const [yukleniyor, setYukleniyor] = useState(true);
+
+  // Tahsilat bilgisayardakiyle aynı pencerede alınıyor. Masalar ekranından
+  // "Öde" denince adres ?tahsilat=1 ile geliyor, pencere kendiliğinden açılıyor.
+  const [tahsilatAcik, setTahsilatAcik] = useState(false);
+  // Pencerede silinen tahsilatların sebebi burada birikip kaydetmeyle gidiyor.
+  const silinenTahsilatlar = useRef<{ id: number; sebep?: string }[]>([]);
 
   const [secimUrunu, setSecimUrunu] = useState<MenuUrun | null>(null);
   const [sepetAcik, setSepetAcik] = useState(false);
@@ -213,6 +222,9 @@ export default function MobilSiparis() {
       setServis({ kuverUygula: veri.kuverUygula, garsoniyeUygula: veri.garsoniyeUygula });
       baslangicImza.current = JSON.stringify(veri.sepet);
       if (ayarlar().kisiSayisiZorunlu && !veri.kisiSayisi) setKisiSorusu(true);
+      // Masalar ekranından "Öde" ile gelindiyse hesap okunur okunmaz pencere
+      // açılıyor: masaya basıp bir de düğmeye basmak gereksiz bir durak.
+      if (adres.get("tahsilat") === "1" && yetkiVar("odeme.al")) setTahsilatAcik(true);
       setYukleniyor(false);
     });
   }, [masaId]);
@@ -351,6 +363,14 @@ export default function MobilSiparis() {
   const servisTutar = servisTutarlari(servisGirdisi(adisyon, Math.max(0, ozet.araToplam - indirim)));
   // Servis bedelini kaldırmak parayı azaltıyor; her garsona açık değil.
   const servisYetkisi = yetkiVar("siparis.servis");
+  // Hesabı görmek ayrı, para almak ayrı: yetkisi olmayana ödeme düğmesi hiç
+  // çıkmıyor, hesap dökümünü sepet sayfasından okuyor.
+  const odemeAlabilir = yetkiVar("odeme.al");
+  const servisListesi = servisSatirlari(servisGirdisi(adisyon, Math.max(0, ozet.araToplam - indirim)));
+  const kdvSatirlari = kdvDokumu(
+    sepet.filter((k) => (k.durum ?? "normal") === "normal"),
+    indirim
+  );
   // Şeritte gönderilmemiş kalemlerin tamamı duruyor; garson o tura ne girdiğini
   // pencere açmadan görüyor.
   const bekleyenler = sepet.filter((k) => k.turSira == null && k.durum !== "iptal");
@@ -408,6 +428,51 @@ export default function MobilSiparis() {
       git("/mobil/masalar");
     } catch (e) {
       setUyari(e instanceof Error ? e.message : "İşlem yapılamadı.");
+    }
+  };
+
+  /**
+   * Tahsilat penceresinden gelen kaydı diske yazar. Sipariş göndermekten farkı
+   * ekranda kalması: hesabın parçası alınıp pencere açık kalabiliyor. Bağlantı
+   * yoksa kayıt kuyruğa giriyor, para kaybolmuyor.
+   */
+  const tahsilatYaz = async (
+    yeniTahsilatlar: Tahsilat[],
+    kapat = false,
+    eksik?: AdisyonVerisi["eksik"]
+  ) => {
+    const silinenler = silinenTahsilatlar.current;
+    silinenTahsilatlar.current = [];
+    const veri: AdisyonVerisi = {
+      ...adisyon,
+      tahsilatlar: yeniTahsilatlar,
+      eksik,
+      ...(silinenler.length ? { silinenTahsilatlar: silinenler } : {}),
+    };
+
+    const kuyruga = () => {
+      kuyrugaEkle({ tip: "masa", masaId, masaAdi, veri, kapat });
+      setTahsilatlar(yeniTahsilatlar);
+    };
+
+    if (!baglantiVar()) {
+      kuyruga();
+      return true;
+    }
+
+    try {
+      const kayitli = await adisyonKaydet(masaId, veri, kapat);
+      // Yeni ödemeler kayıtta kimlik kazanıyor; ekran onları geri almazsa aynı
+      // pencereden alınan ikinci ödeme birincisini bir daha yazardı.
+      if (!kapat) setTahsilatlar(kayitli.tahsilatlar);
+      return true;
+    } catch (e) {
+      if (baglantiHatasi(e) || !baglantiVar()) {
+        kuyruga();
+        return true;
+      }
+      setUyari(e instanceof Error ? e.message : "Kaydedilemedi.");
+      return false;
     }
   };
 
@@ -586,10 +651,10 @@ export default function MobilSiparis() {
               Gönder
             </button>
           ) : (
-            sepet.length > 0 && (
-              <button className="m-gonder" onClick={() => git(`/mobil/adisyon/${masaId}`)}>
+            sepet.length > 0 && odemeAlabilir && (
+              <button className="m-gonder" onClick={() => setTahsilatAcik(true)}>
                 <Wallet size={18} />
-                {yetkiVar("odeme.al") ? "Öde" : "Hesap"}
+                Öde
               </button>
             )
           )}
@@ -739,6 +804,25 @@ export default function MobilSiparis() {
                         <span>{paraGoster(ozet.kdv)}</span>
                       </div>
                     )}
+                    {/* Bu hesaptan alınmış ödemeler: "ne kadar tahsil edilmiş"
+                        sorusu için tahsilat penceresini açmak gerekmiyor. */}
+                    {tahsilatlar.length > 0 && (
+                      <>
+                        {tahsilatlar.map((o, i) => (
+                          <div key={i} className="m-dokum-satir odendi">
+                            <span>{o.tip}</span>
+                            <span>
+                              {paraGoster(o.tutar)}
+                              {o.bahsis ? <em> +{paraGoster(o.bahsis)} bahşiş</em> : null}
+                            </span>
+                          </div>
+                        ))}
+                        <div className="m-dokum-satir kalan">
+                          <span>Kalan</span>
+                          <span>{paraGoster(Math.max(0, ozet.kalan))}</span>
+                        </div>
+                      </>
+                    )}
                   </>
                 )}
               </div>
@@ -761,10 +845,10 @@ export default function MobilSiparis() {
                     Gönder
                   </button>
                 ) : (
-                  sepet.length > 0 && (
-                    <button className="m-dugme" onClick={() => git(`/mobil/adisyon/${masaId}`)}>
+                  sepet.length > 0 && odemeAlabilir && (
+                    <button className="m-dugme" onClick={() => setTahsilatAcik(true)}>
                       <Wallet size={18} />
-                      {yetkiVar("odeme.al") ? "Öde" : "Hesap"}
+                      Öde
                     </button>
                   )
                 )}
@@ -840,6 +924,7 @@ export default function MobilSiparis() {
                   </span>
                   Adisyonu gör
                 </button>
+                {odemeAlabilir && (
                 <button
                   className="m-islem m-islem-ode"
                   onClick={() => {
@@ -848,14 +933,16 @@ export default function MobilSiparis() {
                       setUyari("Önce siparişi gönder, sonra hesabı kapat.");
                       return;
                     }
-                    git(`/mobil/adisyon/${masaId}`);
+                    setIslemlerAcik(false);
+                    setTahsilatAcik(true);
                   }}
                 >
                   <span className="m-islem-ikon">
                     <Wallet size={19} />
                   </span>
-                  {yetkiVar("odeme.al") ? "Öde" : "Hesap"}
+                  Öde
                 </button>
+                )}
 
                 {yetkiVar("siparis.fis_yazdir") && (
                   <button className="m-islem m-islem-yazdir" onClick={fisYazdir}>
@@ -982,6 +1069,39 @@ export default function MobilSiparis() {
               baslangicImza.current = JSON.stringify(guncel.sepet);
             } catch (e) {
               setUyari(e instanceof Error ? e.message : "Kalem taşınamadı.");
+            }
+          }}
+        />
+      )}
+
+      {tahsilatAcik && (
+        <TahsilatPanel
+          kalemler={sepet}
+          toplam={ozet.toplam}
+          araToplam={ozet.araToplam}
+          indirim={indirim}
+          servis={servisListesi}
+          kdvSatirlari={kdvSatirlari}
+          kayitliTahsilatlar={tahsilatlar}
+          musteri={bilgi.musteriAd || bilgi.ad}
+          onKapat={() => setTahsilatAcik(false)}
+          onKaydet={(t) => tahsilatYaz(t)}
+          onSil={(id, sebep) => silinenTahsilatlar.current.push({ id, sebep })}
+          onIndirimDegis={(tutar) => setIndirim(tutar)}
+          onKalemIndirim={(paylar, kaynak) =>
+            setSepet((s) =>
+              s.map((k) =>
+                k.id != null && paylar[k.id] != null
+                  ? { ...k, indirim: paylar[k.id], indirimTanimId: kaynak?.id, indirimAd: kaynak?.ad }
+                  : k
+              )
+            )
+          }
+          onOdendi={async (t, eksik) => {
+            setTahsilatAcik(false);
+            if (await tahsilatYaz(t, true, eksik)) {
+              kilitKaldir();
+              git("/mobil/masalar");
             }
           }}
         />

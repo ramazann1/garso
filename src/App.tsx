@@ -23,7 +23,6 @@ import QrMenu from "./pages/QrMenu";
 import MobilKabuk, { acikSekmeler } from "./mobil/MobilKabuk";
 import MobilMasalar from "./mobil/Masalar";
 import MobilSiparis from "./mobil/Siparis";
-import MobilAdisyon from "./mobil/Adisyon";
 import MobilSatis from "./mobil/Satis";
 import MobilIstasyon from "./mobil/Istasyon";
 import Ben from "./mobil/Ben";
@@ -128,7 +127,6 @@ function App() {
         {/* Sipariş ekranı kabuksuz: sepet şeridi altta, sekme çubuğu onun yerini almasın. */}
         <Route path="/mobil/siparis/:masaId" element={<MobilSiparis />} />
         {/* Hesabın kendi ekranı: ödeme sipariş almaktan ayrı bir an. */}
-        <Route path="/mobil/adisyon/:masaId" element={<MobilAdisyon />} />
         <Route path="/mobil/mutfak" element={<MobilKabuk><MobilIstasyon /></MobilKabuk>} />
         <Route path="/mobil/satis" element={<MobilKabuk><MobilSatis /></MobilKabuk>} />
         <Route path="/mobil/ben" element={<MobilKabuk><Ben /></MobilKabuk>} />

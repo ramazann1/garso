@@ -1260,6 +1260,14 @@ body {
   color: var(--metin);
   font-weight: 600;
 }
+
+/* Bahşişle birlikte kasadan alınacak para. Kalan'ın altında, mercan:
+   ödeme tipine basıldığında bu tutar tahsil ediliyor. */
+.tutar-satir.alinacak {
+  margin-top: 2px;
+  color: var(--mercan);
+  font-weight: 700;
+}
 .kdv-ozet {
   display: flex;
   justify-content: space-between;
@@ -1681,34 +1689,6 @@ body {
 
 .th-bahsis-alan input:focus { outline: none; border-color: var(--mercan); }
 
-.th-bahsis-onerileri {
-  display: grid;
-  grid-template-columns: repeat(auto-fit, minmax(96px, 1fr));
-  gap: 8px;
-}
-
-.th-bahsis-onerileri button {
-  display: flex;
-  flex-direction: column;
-  align-items: center;
-  gap: 3px;
-  padding: 12px 8px;
-  border: 1px solid var(--cizgi);
-  border-radius: var(--r-or);
-  background: var(--kart);
-  font-family: inherit;
-  cursor: pointer;
-  transition: border-color var(--gecis), background var(--gecis);
-}
-
-.th-bahsis-onerileri button:hover {
-  border-color: var(--mercan);
-  background: var(--mercan-sis);
-}
-
-.th-bahsis-onerileri strong { font-size: 17px; color: var(--metin); }
-.th-bahsis-onerileri span { font-size: 13px; color: var(--mercan); font-weight: 600; }
-
 .th-bahsis-aksiyon {
   display: flex;
   gap: 8px;
@@ -1724,12 +1704,20 @@ body {
   .th-modal { max-width: none; border-radius: 0; border: none; }
   .up-fon:has(> .th-modal) { padding: 0; }
 
+  /* Satır yüksekliği içeriğe göre: pencereye bölünen eşit satırlarda uzun
+     sütun kendi hücresinden taşıp bir alttakinin üstüne biniyordu. Kaydırma
+     sütunların değil, şeridin kendisinin işi. */
   .th-sutunlar {
     grid-template-columns: 1fr;
+    grid-auto-rows: max-content;
     overflow-y: auto;
   }
 
   .th-sutun { overflow: visible; }
+  /* Numpadi sütunun dibine iten kural masaüstü içindi; alt alta dizilince
+     tuş takımıyla ödeme tipleri arasında boşluk bırakıyor. */
+  .th-orta { justify-content: flex-start; }
+  .th-orta .odeme-numpad { margin-top: 0; }
   .th-sutun + .th-sutun {
     border-left: none;
     border-top: 1px solid var(--cizgi);
@@ -1737,6 +1725,34 @@ body {
 
   .th-ust { position: sticky; top: 0; z-index: 3; }
   .th-eylem { padding: 10px 12px; }
+}
+
+/* Telefon: aynı pencere, parmakla kullanılan hâli. Sütunlar alt alta inerken
+   ürün listesi en üste geliyordu — uzun listede tutar ve ödeme tipi ekranın
+   çok altında kalıyor. Sıra işin akışına göre: önce tutar, sonra tip, ürün
+   seçimi en altta (parçalı ödeme her hesapta gerekmiyor). */
+@media (max-width: 600px) {
+  .th-orta { order: 1; }
+  .th-odeme { order: 2; }
+  .th-urunler { order: 3; }
+
+  /* Ayırıcı çizgi DOM sırasına göre çiziliyordu; görsel sıra değişince ilk
+     sütun çizgili, sonuncusu çizgisiz kalıyor. */
+  .th-sutun { border-top: 1px solid var(--cizgi); }
+  .th-orta { border-top: none; }
+
+  /* Dokunma hedefleri: fare imleciyle 34px yetiyor, parmakla yetmiyor. */
+  .numpad-tus { min-height: 52px; font-size: 19px; }
+  .numpad-ekran { font-size: 28px; padding: 16px; }
+  .th-sekme { padding: 12px 10px; }
+  .kalem-sec { min-height: 48px; }
+  .th-eylem { min-height: 44px; }
+
+  /* Üst şeritte üç eylem + kapat yan yana sığmıyor. */
+  .th-ust { flex-wrap: wrap; gap: 10px; }
+  .th-kimlik { flex: 1 1 100%; }
+  .th-eylemler { flex: 1 1 100%; }
+  .th-eylemler .th-eylem { flex: 1; justify-content: center; }
 }
 
 .numpad-ekran {
@@ -9707,44 +9723,12 @@ body {
 
 /* ---- Adisyon detay penceresi ---- */
 
-.detay-fon {
-  position: fixed;
-  inset: 0;
-  z-index: 45;
-  display: flex;
-  align-items: center;
-  justify-content: center;
-  padding: 28px;
-  background: rgba(20, 32, 48, 0.3);
-  animation: fon-gir 0.22s ease;
-}
-
+/* Pencere kabuğu ortak (.up-fon / .up-modal). Burada yalnız bu ekranın farkı:
+   üç sütun sığsın diye daha geniş. */
 .detay-pencere {
-  display: flex;
-  flex-direction: column;
-  width: min(1060px, 100%);
-  max-height: 100%;
-  border-radius: 22px;
-  background: var(--kart);
-  box-shadow: 0 22px 60px rgba(20, 32, 48, 0.22);
-  overflow: hidden;
-  animation: detay-gir 0.24s cubic-bezier(0.22, 0.92, 0.28, 1);
+  max-width: 1060px;
 }
 
-@keyframes detay-gir {
-  from {
-    opacity: 0;
-    transform: translateY(14px) scale(0.99);
-  }
-}
-
-.detay-ust {
-  display: flex;
-  align-items: center;
-  gap: 16px;
-  padding: 16px 20px;
-  border-bottom: 1px solid #dde4ee;
-}
 
 .detay-ust h3 {
   display: flex;
@@ -9757,8 +9741,8 @@ body {
 
 .detay-rozet {
   padding: 3px 10px;
-  border-radius: 999px;
-  background: #e2e9f2;
+  border-radius: var(--r-tam);
+  background: var(--kart-ust);
   color: var(--soluk);
   font-size: 13px;
   font-weight: 600;
@@ -9780,13 +9764,14 @@ body {
   align-items: center;
   gap: 7px;
   padding: 9px 15px;
-  border: 1px solid #d4dce6;
-  border-radius: 11px;
+  border: 1px solid var(--cizgi-koyu);
+  border-radius: var(--r-or);
   background: var(--kart);
   color: var(--metin);
   font-size: 14px;
   font-weight: 600;
   cursor: pointer;
+  transition: border-color var(--gecis), color var(--gecis), background var(--gecis);
 }
 
 .detay-dugme:hover {
@@ -9796,7 +9781,7 @@ body {
 
 .detay-dugme.acik {
   border-color: var(--mercan);
-  background: #fff1ec;
+  background: var(--mercan-sis);
   color: #c1503a;
 }
 
@@ -9831,8 +9816,8 @@ body {
 }
 
 .detay-sutun.orta {
-  border-left: 1px solid #dde4ee;
-  border-right: 1px solid #dde4ee;
+  border-left: 1px solid var(--cizgi);
+  border-right: 1px solid var(--cizgi);
 }
 
 .detay-sutun h4 {
@@ -9854,7 +9839,7 @@ body {
   justify-content: space-between;
   gap: 12px;
   padding: 8px 0;
-  border-bottom: 1px solid #e9eef5;
+  border-bottom: 1px solid var(--cizgi);
 }
 
 .detay-bilgi > div:last-child {
@@ -9886,7 +9871,7 @@ body {
   gap: 12px;
   align-items: baseline;
   padding: 10px 0;
-  border-bottom: 1px solid #e9eef5;
+  border-bottom: 1px solid var(--cizgi);
 }
 
 .detay-kalemler li.iptal .kalem-ad strong {
@@ -9952,7 +9937,7 @@ body {
   align-items: baseline;
   gap: 12px;
   padding: 10px 0;
-  border-bottom: 1px solid #e9eef5;
+  border-bottom: 1px solid var(--cizgi);
 }
 
 .detay-tahsilatlar span {
@@ -9987,8 +9972,8 @@ body {
   gap: 3px;
   margin-top: 12px;
   padding: 11px 13px;
-  border-radius: 10px;
-  background: #fdeeeb;
+  border-radius: var(--r-or);
+  background: var(--mercan-sis);
 }
 
 .detay-eksik-ust {
@@ -10019,22 +10004,23 @@ body {
   width: 28px;
   height: 28px;
   border: none;
-  border-radius: 8px;
+  border-radius: var(--r-kk);
   background: transparent;
   color: var(--soluk);
   cursor: pointer;
   flex: none;
+  transition: background var(--gecis), color var(--gecis);
 }
 
 .tahsilat-duzelt:hover {
-  background: #fdeeeb;
+  background: var(--mercan-sis);
   color: var(--mercan);
 }
 
 .detay-dokum {
   margin-top: 16px;
   padding-top: 14px;
-  border-top: 1px solid #d6dfea;
+  border-top: 1px solid var(--cizgi-koyu);
 }
 
 .detay-dokum > div {
@@ -10056,7 +10042,7 @@ body {
 .detay-dokum .dokum-toplam {
   margin-top: 6px;
   padding-top: 10px;
-  border-top: 1px solid #dde4ee;
+  border-top: 1px solid var(--cizgi);
   font-size: 16px;
 }
 
@@ -10092,7 +10078,7 @@ body {
   top: 30px;
   bottom: 0;
   width: 1.5px;
-  background: #dde4ee;
+  background: var(--cizgi);
 }
 
 .cizelge-saat {
@@ -10110,7 +10096,7 @@ body {
   width: 28px;
   height: 28px;
   border-radius: 50%;
-  background: #fff1ec;
+  background: var(--mercan-sis);
   color: var(--mercan);
 }
 
@@ -12809,6 +12795,19 @@ body {
 
 .m-dokum-satir.toplam strong {
   font-size: 17px;
+}
+
+/* Alınmış ödemeler dökümün altında: hesabın ne kadarı kapandı, ne kaldı. */
+.m-dokum-satir.odendi { color: var(--yesil); }
+.m-dokum-satir.odendi em { font-style: normal; color: var(--soluk); }
+
+.m-dokum-satir.kalan {
+  padding-top: 8px;
+  margin-top: 4px;
+  border-top: 1px solid var(--cizgi);
+  color: var(--mercan);
+  font-size: 15px;
+  font-weight: 600;
 }
 
 .m-odenenler {
