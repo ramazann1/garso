@@ -87,6 +87,10 @@ export default function TahsilatPanel({ kalemler, toplam, araToplam, indirim, se
   const [eksikAcik, setEksikAcik] = useState(false);
   // Hesabı kaça böleceği numpadin yanında açılan küçük listeden seçiliyor.
   const [boleAcik, setBoleAcik] = useState(false);
+  // Telefonda üç sütun alt alta inince şerit uzuyordu: dar ekranda pencere iki
+  // sekmeye ayrılıyor. Olağan akış (tutar gir, tipe bas) "Ödeme" sekmesinde
+  // birlikte duruyor, ürün seçerek parçalı ödeme ayrı sekmede.
+  const [mobilSekme, setMobilSekme] = useState<"odeme" | "urunler">("odeme");
 
   const tahsilatiCikar = (i: number, sebep?: string) => {
     const silinen = tahsilatlar[i];
@@ -352,7 +356,24 @@ export default function TahsilatPanel({ kalemler, toplam, araToplam, indirim, se
           </div>
         </header>
 
-        <div className="th-sutunlar">
+        {/* Yalnız dar ekranda görünüyor; masaüstünde üç sütun yan yana duruyor. */}
+        <div className="th-sekmeler th-mob-sekmeler">
+          <button
+            className={mobilSekme === "odeme" ? "th-sekme acik" : "th-sekme"}
+            onClick={() => setMobilSekme("odeme")}
+          >
+            Ödeme
+          </button>
+          <button
+            className={mobilSekme === "urunler" ? "th-sekme acik" : "th-sekme"}
+            onClick={() => setMobilSekme("urunler")}
+          >
+            Ürünler
+            {secimVar && <em className="th-sekme-rozet">{Object.keys(secilen).length}</em>}
+          </button>
+        </div>
+
+        <div className={`th-sutunlar mob-${mobilSekme}`}>
           <section className="th-sutun th-urunler">
             <p className="th-sutun-baslik">Ürünler</p>
             <div className="kalem-sec-liste">

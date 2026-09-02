@@ -28,18 +28,19 @@ import {
   adisyonOzeti,
   masaBirlestir,
   masaTasi,
+  servisGirdisi,
   tumAdisyonlar,
   type MasaOzeti,
   yeniTahsilat,
 } from "../adisyonlar";
 import type { AdisyonVerisi } from "../adisyonlar";
+import type { IndirimKaynagi } from "../indirimler";
+import { servisSatirlari } from "../servis";
 import { adisyonFisiYaz } from "../yazicilar";
 import { yetkiVar } from "../oturum";
 import OnayModal from "../components/OnayModal";
 import AltSayfa from "./AltSayfa";
-import OdemeTipleri from "./OdemeTipleri";
-import MusteriSecici from "../components/MusteriSecici";
-import { odemeTipleriniGetir, type OdemeTipi } from "../odemeTipleri";
+import HizliOde from "../components/HizliOde";
 import { bekleyenMasalar, cevrimdisiHesap, kopyaMasalari, kuyrugaEkle, useKuyruk } from "../kuyruk";
 import { hesapKopyasiSil, kopyaSaati } from "../hesapKopyasi";
 import { baglantiHatasi, baglantiVar, sureSinirli, useBaglanti } from "../baglanti";
@@ -108,8 +109,6 @@ export default function MobilMasalar() {
   const [ikramSorusu, setIkramSorusu] = useState<{ masa: Masa; adisyonId: number } | null>(null);
   // İkramın kime yazıldığı soruluyor; liste ekran açılırken bir kez okunuyor.
   const [odenmezler, setOdenmezler] = useState<Odenmez[]>([]);
-  const [cariSorusu, setCariSorusu] = useState<string | null>(null);
-  const [odemeTipleri, setOdemeTipleri] = useState<OdemeTipi[]>([]);
   const [uyari, setUyari] = useState<string | null>(null);
   const [, setTik] = useState(0);
 
@@ -143,7 +142,6 @@ export default function MobilMasalar() {
   }, [seciliBolge]);
 
   useEffect(() => {
-    odemeTipleriniGetir().then(setOdemeTipleri);
     odenmezleriGetir().then(setOdenmezler);
   }, []);
 
@@ -265,32 +263,28 @@ export default function MobilMasalar() {
     }
   };
 
-  // Hızlı Öde: kalanın tamamı tek dokunuşla tahsil edilip hesap kapanıyor.
-  // Bölme, kısmi tahsilat ve bahşiş adisyon ekranının işi.
-  const hizliTahsil = async (tip: string, musteriId?: number) => {
+  // Hızlı Öde masaüstüyle aynı pencere: kısmi tutar, indirim, para üstü ve
+  // "öde, açık kalsın" telefonda da var. Bölme ve ürün seçimi sipariş
+  // ekranındaki tahsilat penceresinin işi.
+  const hizliTahsil = async (
+    tip: string,
+    tutar: number,
+    kapat: boolean,
+    bahsis?: number,
+    musteriId?: number
+  ) => {
     if (!hizliMasa) return;
     const { masa, veri } = hizliMasa;
-
-    // Açık hesap kasaya para getirmiyor, birinin borcuna yazılıyor: kime
-    // yazıldığı sorulmadan hesap kapanmaz.
-    const tipi = odemeTipleri.find((t) => t.ad === tip);
-    if (tipi?.acikHesap && !musteriId) {
-      setCariSorusu(tip);
-      return;
-    }
-
-    const kalan = Math.round(adisyonOzeti(veri).kalan * 100) / 100;
-    setCariSorusu(null);
     setHizliMasa(null);
 
     const tam = {
       ...veri,
-      tahsilatlar: [...veri.tahsilatlar, yeniTahsilat({ tip, tutar: kalan, musteriId })],
+      tahsilatlar: [...veri.tahsilatlar, yeniTahsilat({ tip, tutar, bahsis, musteriId })],
     };
     // Bağlantı yoksa ödeme kuyrukta bekliyor; masa cihazda boşalıyor.
     const kuyruga = async () => {
-      kuyrugaEkle({ tip: "masa", masaId: masa.id, masaAdi: masa.ad, veri: tam, kapat: true });
-      hesapKopyasiSil({ tip: "masa", masaId: masa.id });
+      kuyrugaEkle({ tip: "masa", masaId: masa.id, masaAdi: masa.ad, veri: tam, kapat });
+      if (kapat) hesapKopyasiSil({ tip: "masa", masaId: masa.id });
       await oku();
     };
 
@@ -299,7 +293,7 @@ export default function MobilMasalar() {
       return;
     }
     try {
-      await adisyonKaydet(masa.id, tam, true);
+      await adisyonKaydet(masa.id, tam, kapat);
       await oku();
     } catch (e) {
       if (baglantiHatasi(e) || !baglantiVar()) {
@@ -307,6 +301,21 @@ export default function MobilMasalar() {
         return;
       }
       setUyari(e instanceof Error ? e.message : "Ödeme kaydedilemedi.");
+    }
+  };
+
+  // İndirim pencerede verilir verilmez diske yazılıyor: pencere kapatılsa bile
+  // masa kartındaki tutar doğru kalsın.
+  const hizliIndirim = async (tutar: number, kaynak?: IndirimKaynagi) => {
+    if (!hizliMasa) return;
+    const { masa, veri } = hizliMasa;
+    const yeni = { ...veri, indirim: tutar, indirimTanim: kaynak };
+    setHizliMasa({ masa, veri: yeni });
+    try {
+      await adisyonKaydet(masa.id, yeni);
+      await oku();
+    } catch (e) {
+      setUyari(e instanceof Error ? e.message : "İndirim kaydedilemedi.");
     }
   };
 
@@ -348,22 +357,19 @@ export default function MobilMasalar() {
             // sipariş vermeyen masa mor, tahsilatı başlamış masa sarı, olağan
             // dolu masa yeşil. Masaüstüyle aynı dil.
             const odenen = acik?.odenen ?? 0;
-            const kalan = acik ? acik.kalan || acik.tutar : 0;
+            // Kalan sıfırsa sıfırdır: "kalan || tutar" yazıldığı için ödenmiş
+            // masa tutarına düşüp gri yerine sarı kalıyordu, kasadakiyle aynı
+            // masa iki cihazda iki renk görünüyordu.
+            const kalan = acik ? acik.kalan ?? acik.tutar : 0;
             const odendi = !!acik && acik.tutar > 0 && odenen > 0 && kalan <= 0;
+            // Durum sınıfları kasadaki kartla aynı biçimde veriliyor: hepsi
+            // birden eklenip hangisinin baskın olduğuna CSS karar veriyor.
             const sinif = [
               "m-masa",
               acik ? "dolu" : "",
-              acik
-                ? odendi
-                  ? "odendi"
-                  : acik.fisBasildi
-                    ? "fisli"
-                    : durgunMu(acik)
-                      ? "durgun"
-                      : odenen > 0
-                        ? "kismi"
-                        : ""
-                : "",
+              acik && durgunMu(acik) ? "durgun" : "",
+              acik?.fisBasildi ? "fisli" : "",
+              odendi ? "odendi" : odenen > 0 ? "kismi" : "",
               mesgul ? "mesgul" : "",
               secimModu ? (secilebilir(m) ? "secilebilir" : "kapali") : "",
               secimModu?.hedef === m.id ? "secili" : "",
@@ -429,8 +435,9 @@ export default function MobilMasalar() {
                         seçebiliyor. */}
                     {acik.garson && <span className="m-masa-garson">{acik.garson}</span>}
 
-                    {/* Hesabı kapanan masada rakam yerine durum yazıyor: kalan
-                        sıfır olduğu için tutar göstermek yanıltıyordu. Hesap
+                    {/* Karttaki rakam hesabın toplamı: masanın büyüklüğü
+                        sorulan şey, kalan sipariş ekranındaki bantta yazıyor.
+                        Hesabı kapanan masada rakam yerine durum yazıyor. Hesap
                         fişi basılmışsa yazıcı işareti tutarın sağına düşüyor;
                         masaya yeni ürün girilirse işaret kendiliğinden kalkıyor. */}
                     <span className="m-masa-tutar">
@@ -440,7 +447,7 @@ export default function MobilMasalar() {
                           Ödendi
                         </>
                       ) : (
-                        paraGoster(kalan)
+                        paraGoster(acik.tutar)
                       )}
                     </span>
 
@@ -522,23 +529,25 @@ export default function MobilMasalar() {
         />
       )}
 
-      {/* Müşteri sorulurken tip sayfası kapanıyor: iki sayfa üst üste
-          durunca hangisine dokunulduğu belirsizleşiyordu. */}
-      {hizliMasa && !cariSorusu && (
-        <OdemeTipleri
-          baslik={`${hizliMasa.masa.ad} · Hızlı Öde`}
-          tutar={Math.round(adisyonOzeti(hizliMasa.veri).kalan * 100) / 100}
-          onSec={hizliTahsil}
-          onKapat={() => setHizliMasa(null)}
-        />
-      )}
-
-      {cariSorusu && (
-        <MusteriSecici
-          onSec={(m) => hizliTahsil(cariSorusu, m.id)}
-          onKapat={() => setCariSorusu(null)}
-        />
-      )}
+      {hizliMasa && (() => {
+        const { araToplam, toplam, odenen, kalan } = adisyonOzeti(hizliMasa.veri);
+        return (
+          <HizliOde
+            baslik={hizliMasa.masa.ad}
+            araToplam={araToplam}
+            indirim={hizliMasa.veri.indirim}
+            servis={servisSatirlari(
+              servisGirdisi(hizliMasa.veri, Math.max(0, araToplam - hizliMasa.veri.indirim))
+            )}
+            toplam={toplam}
+            odenen={odenen}
+            kalan={kalan}
+            onIndirimDegis={hizliIndirim}
+            onSec={hizliTahsil}
+            onKapat={() => setHizliMasa(null)}
+          />
+        );
+      })()}
 
       {iptalSorusu && (
         <OnayModal

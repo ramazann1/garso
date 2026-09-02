@@ -1,7 +1,7 @@
 # GARSO — Teknik Tasarım: Veri Modeli & Ekran Haritası
 *Restoran ve cafe'ler için bulut tabanlı satış ve işletme yönetim sistemi.*
 
-## 0. SIRADAKİ İŞ (1 Eyl 2026 akşamı güncellendi)
+## 0. SIRADAKİ İŞ (2 Eyl 2026 akşamı güncellendi)
 
 > **Karar (1 Eyl 2026): görsel dil yenileniyor, zemin krem değil soğuk gri-mavi.**
 > Ramazan mevcut görünümü "ilkel" buldu. Sebep renk değil, **tasarım dilinin
@@ -150,40 +150,72 @@
 > turluk adisyonda başlık gereksiz gürültü" kararıydı. **Karar değişti** —
 > ilk turdan itibaren `1. tur · saat · garson` yazılıyor.
 
+> **Sipariş ekranında ödeme bandı (2 Eyl 2026 akşamı).** Alınan ödemeler
+> adisyon alt sayfasında hiç görünmüyordu: satırlar ara toplam/indirim/servis/KDV
+> koşullu bloğun İÇİNE yazılmış, sade hesapta o şart tutmayınca bütün döküm
+> gizleniyordu. Satırlar bloğun dışına alındı. **Ramazan'ın isteği: bilgi
+> adisyonu açmadan görünsün** — sepet şeridine sıkıştırmak yetmedi, ürün
+> ekranının altında **kendi bandı** açıldı (`.m-serit-odeme`):
+> `✓ ₺100,00 ödendi · Kalan ₺566,00`, yeşil ve mercan. Bekleyen ürün çipleri
+> bandın üstünde duruyor — sıradaki iş o. **Mobil masa kartındaki rakam kalan
+> değil hesabın toplamı** (Ramazan); kalanı bant söylüyor.
+
+> **Mobil tahsilat penceresi iki sekmeye ayrıldı (2 Eyl 2026 akşamı).** 980px
+> altında üç sütun alt alta inince şerit uzuyor, tutar girmekle ödeme tipine
+> basmak arasında sürekli kaydırma gerekiyordu. Artık **Ödeme** (alınan ödemeler
+> + döküm + numpad + ödeme tipleri bir arada) ve **Ürünler** (parçalı ödeme için
+> seçim; sekmede kaç ürün seçildiği mercan rozette) sekmeleri var. Masaüstü
+> değişmedi. Karar: olağan akış tek ekranda kalsın, ayrılan taraf her hesapta
+> gerekmeyen ürün seçimi olsun. Sınıflar `.th-mob-sekmeler` / `.mob-odeme` /
+> `.mob-urunler`.
+
+> **Hızlı Öde yenilendi (2 Eyl 2026 akşamı).** Önce Adisyo'da tur atıldı.
+> **Adisyo'nun Hızlı Öde'si tek soruluk:** başlıkta tutar, tek açılır liste
+> (`Öde` / `Öde & Kapat` / `Öde & Yazdır` / `Öde, Yazdır ve Kapat`) ve ödeme
+> tipi ızgarası; tutar kutusu, indirim, bahşiş, döküm yok — kısmi tahsilat
+> isteyen tam ödeme ekranına gidiyor. Giriş yolu masa kartının üç noktası:
+> yedi kartlık hızlı işlemler penceresi (Öde, Hızlı Öde, İptal, Yazdır, Masayı
+> Değiştir, Masaları Birleştir, Adisyon Aktar).
+> **Bizde tutar kutusu, indirim ve para üstü kalıyor** — Ramazan: tutar
+> değişebiliyor.
+> Yapılanlar: **para biçimi hatası düzeltildi** — tutarlar `₺{toplam}` diye ham
+> basılıyordu (`₺1880`), `paraGoster` yalnız para üstünde kullanılmış;
+> "ilkel" görünmenin ana sebebi buydu. Pencere ortak kabuğa geçti
+> (`.up-fon`/`.up-modal`/`.up-ust`/`.up-kapat`), alttaki gri açıklama cümlesi
+> **Bilgi kutusu** oldu, elle yazılmış köşe/gölge/çizgi değerleri belirteçlere
+> bağlandı, telefonda pencere tam ekrana yayılıyor.
+> **Mobil de aynı bileşeni açıyor** — `mobil/OdemeTipleri.tsx` (82 satır)
+> silindi; telefonda da kısmi tutar, indirim, para üstü ve "öde, açık kalsın"
+> var.
+
+> **Masa kartı renkleri iki cihazda eşitlendi (2 Eyl 2026 akşamı).** Renk
+> tanımları zaten aynıydı, **verilme koşulları** farklıydı: **(a)** mobilde
+> `acik.kalan || acik.tutar` yazılmış — kalan sıfırken tutara düşüyor, ödenmiş
+> masa kasada gri telefonda sarı görünüyordu (`??` oldu); **(b)** mobil durum
+> sınıfını if-zinciriyle tek tek seçiyordu, kasa hepsini birden verip kararı
+> CSS'e bırakıyor — durgun + kısmi ödemeli masa kasada mor, telefonda sarıydı.
+> Mobil kasadaki mantığa geçti, CSS sırası da eşitlendi (kısmi → durgun →
+> fişli → ödendi).
+> **Kural oldu (CLAUDE.md): masaüstünde yapılan değişiklik mobilde de yapılır**,
+> Ramazan ayrıca söylemez. Aynı iş için iki ekran tutulmaz; mümkünse mobil
+> masaüstündeki bileşeni açar, fark yalnız CSS'te kalır.
+
 > **Sıra 1 Eyl 2026'da değişti.** Üç büyük madde — **masasız adisyonun
 > çevrimdışı açılması**, **QR menünün kalanı** ve **kurye atama** — en sona
 > alındı. Gerekçe: üçü de acele değil (eGZOZ'da paket servis işletilmiyor, QR
 > menü çalışır durumda, çevrimdışının kalan ucu tek bir akış). Önce elde biriken
 > küçük işler temizlendi; dördü de 1 Eyl akşamı kapandı. Kalan sıra:
 >
-> 0. **ÖNCE BU — sipariş ekranında alınan ödemeler görünmüyor** (2 Eyl 2026,
->    Ramazan bildirdi, kod yazıldı ama çalışmıyor). Adisyon alt sayfasının
->    dökümüne "her ödeme + Kalan" satırları eklendi (`mobil/Siparis.tsx`,
->    `m-dokum-satir odendi` / `kalan`) fakat ekranda hiç çıkmıyor.
->    **Şüpheli:** satırlar `(servisTutar.toplam > 0 || (servisVar() &&
->    servisYetkisi) || indirim > 0 || ozet.kdv > 0)` koşullu bloğun İÇİNDE —
->    bu şart tutmayan hesapta bütün döküm gizleniyor. Ödeme satırları o şarttan
->    bağımsız olmalı. İkinci şüpheli: `tahsilatYaz` sonrası `setTahsilatlar`
->    listeyi geri yazmıyor olabilir. Seansa bunu deneyerek başla.
->
->    **Ayrıca karar:** bahşiş tutarı tuş takımına bağlanmayacak, elle
->    yazılıyor — denendi, geri alındı (Ramazan: "mobilde elle yazılabilir").
-> 1. **Mobil tahsilat penceresinde kaydırmayı azaltmak** (2 Eyl 2026 akşamı
->    çıktı). Pencere telefonda çalışıyor ama sütunlar alt alta inince şerit çok
->    uzuyor: tutar girmek, ödeme tipine basmak ve ürün seçmek arasında sürekli
->    aşağı-yukarı gidiliyor. Ramazanın gözlemi. Çözüm aranacak — sekme, kat ya
->    da yapışkan bölüm; karar verilmedi.
-> 2. **Görsel dilin yayılması — beğenilmeyen modallar** (2 Eyl 2026 seansında
->    başlandı, devam ediyor). Tahsilat penceresi bitti (yukarıda). **Sıradaki
->    seans kaldığı yerden: Ramazan'ın beğenmediği diğer pencereler tek tek
->    gezilecek.** Henüz elden geçmemiş olanlar: Kalem Paneli,
->    Hızlı Öde, Misafir Sayısı, Masa Seçim, Ödeme Tipi Düzelt, Aktarım Onayı,
+> 0. **Görsel dilin yayılması — beğenilmeyen pencereler** (2 Eyl 2026 seansında
+>    başlandı, devam ediyor). Tahsilat penceresi ve Hızlı Öde bitti (aşağıda).
+>    **Sıradaki seans kaldığı yerden: Kalem Paneli.** Henüz elden geçmemişler:
+>    Kalem Paneli, Misafir Sayısı, Masa Seçim, Ödeme Tipi Düzelt, Aktarım Onayı,
 >    Eksik Kapat, Toplu Düzenle, Sıralama, Kampanya Seçim, Müşteri Detay/Seçici,
 >    Onay Modal, Bildirim, Köprü İndir, Kilit Ekranı.
 >    **İndirim modalına dokunulmayacak** — Ramazan beğeniyor (2 Eyl 2026).
 >    Ardından bütün ekranlar köşe/gölge/geçiş belirteçlerine geçirilecek.
 >    **Stok bu iş bitene kadar bekliyor** — Ramazan görüntüyü öne aldı.
-> 3. **Stok** — malzeme, reçete, otomatik düşüm, kritik stok uyarısı, maliyet/kârlılık
+> 1. **Stok** — malzeme, reçete, otomatik düşüm, kritik stok uyarısı, maliyet/kârlılık
 >    **Karar (1 Eyl 2026):** Garso hazır malzeme listesiyle gelmez. Her işletme
 >    kendi malzemesini kendi girer — hangi malzeme setini kullandığı önceden
 >    bilinemez. Modül boş listeyle açılır; kolaylık gerekirse Excel ile toplu
@@ -209,16 +241,16 @@
 >    **Miktarlar en küçük birimde tam sayı** tutulur (gram/mililitre/adet) —
 >    para kuruşunda yaptığımızın aynısı, float yuvarlama hatası çıkmasın diye.
 >    Ekranda kg gösterilir, veritabanında gram durur.
-> 4. **Gelişmiş raporlar** — saatlik ciro, personel performansı, karşılaştırmalı analiz
-> 5. **Cari / veresiye modülü**
-> 6. **Masasız adisyonun çevrimdışı açılması** — offline'ın açık kalan tek ucu
-> 7. **QR menünün kalanı** — kategori/kapak görselleri, masadan sipariş, garson çağırma, masa başına karekod
-> 8. **Kurye atama ve teslimat takibi** — önce Adisyo'da canlı tur, sonra plan
-> 9. **Sadakat programı** (puan, kampanya)
-> 10. **Çoklu şube** — merkezi menü, şube karşılaştırma
-> 11. **İkon boyut standardı** — bütün ekranlar tek tek gezilecek, en sonda
+> 2. **Gelişmiş raporlar** — saatlik ciro, personel performansı, karşılaştırmalı analiz
+> 3. **Cari / veresiye modülü**
+> 4. **Masasız adisyonun çevrimdışı açılması** — offline'ın açık kalan tek ucu
+> 5. **QR menünün kalanı** — kategori/kapak görselleri, masadan sipariş, garson çağırma, masa başına karekod
+> 6. **Kurye atama ve teslimat takibi** — önce Adisyo'da canlı tur, sonra plan
+> 7. **Sadakat programı** (puan, kampanya)
+> 8. **Çoklu şube** — merkezi menü, şube karşılaştırma
+> 9. **İkon boyut standardı** — bütün ekranlar tek tek gezilecek, en sonda
 >
-> Ertelenen üçlü (5-7) buraya konuldu: acelesi yok ama stok ve raporlardan
+> Ertelenen üçlü (3-5) buraya konuldu: acelesi yok ama stok ve raporlardan
 > sonra, sadakat ve çoklu şubeden önce. Ardından canlıya çıkış işleri
 > (güvenlik başlıkları, CAPTCHA, exe imzası, mağaza) ve Faz 4 entegrasyonları.
 >

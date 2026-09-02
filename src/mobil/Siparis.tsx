@@ -9,6 +9,7 @@ import {
   ChevronDown,
   ChevronRight,
   ChevronUp,
+  CircleCheck,
   CloudOff,
   EllipsisVertical,
   LockKeyhole,
@@ -358,6 +359,7 @@ export default function MobilSiparis() {
     ...servis,
   };
   const ozet = adisyonOzeti(adisyon);
+  const odenen = tahsilatlar.reduce((t, o) => t + o.tutar, 0);
   // Kuver ve garsoniye ürün değil, hesabın kendi bedeli; toplamda görünüp
   // dökümde görünmezse garson farkı nereden çıktı diye kalıyor.
   const servisTutar = servisTutarlari(servisGirdisi(adisyon, Math.max(0, ozet.araToplam - indirim)));
@@ -622,7 +624,8 @@ export default function MobilSiparis() {
           dokunmak zorunda kalmıyor. Şeride dokunmak tam listeyi açıyor. */}
       <div className="m-serit" ref={serit}>
         {/* Gönderilmeyi bekleyen kalemler burada geziniyor: garson pencere
-            açmadan o tura ne girdiğini görüyor, sığmayanı parmakla kaydırıyor. */}
+            açmadan o tura ne girdiğini görüyor, sığmayanı parmakla kaydırıyor.
+            Ödeme bandının üstünde duruyor — sırada olan iş bu. */}
         {bekleyenler.length > 0 && (
           <div className="m-serit-bekleyen">
             {bekleyenler.map((k) => (
@@ -630,6 +633,19 @@ export default function MobilSiparis() {
                 <b>{adetGoster(k.adet)}×</b> {k.ad}
               </span>
             ))}
+          </div>
+        )}
+
+        {/* Bu hesaptan para alınmışsa kendi bandı: sepeti açmadan ne kadarının
+            tahsil edildiği ve kasaya daha ne gireceği okunuyor. */}
+        {odenen > 0 && (
+          <div className="m-serit-odeme">
+            <span className="m-serit-odendi">
+              <CircleCheck size={17} /> {paraGoster(odenen)} ödendi
+            </span>
+            <span className="m-serit-kalan">
+              Kalan <b>{paraGoster(Math.max(0, ozet.kalan))}</b>
+            </span>
           </div>
         )}
 
@@ -804,25 +820,26 @@ export default function MobilSiparis() {
                         <span>{paraGoster(ozet.kdv)}</span>
                       </div>
                     )}
-                    {/* Bu hesaptan alınmış ödemeler: "ne kadar tahsil edilmiş"
-                        sorusu için tahsilat penceresini açmak gerekmiyor. */}
-                    {tahsilatlar.length > 0 && (
-                      <>
-                        {tahsilatlar.map((o, i) => (
-                          <div key={i} className="m-dokum-satir odendi">
-                            <span>{o.tip}</span>
-                            <span>
-                              {paraGoster(o.tutar)}
-                              {o.bahsis ? <em> +{paraGoster(o.bahsis)} bahşiş</em> : null}
-                            </span>
-                          </div>
-                        ))}
-                        <div className="m-dokum-satir kalan">
-                          <span>Kalan</span>
-                          <span>{paraGoster(Math.max(0, ozet.kalan))}</span>
-                        </div>
-                      </>
-                    )}
+                  </>
+                )}
+                {/* Bu hesaptan alınmış ödemeler: "ne kadar tahsil edilmiş"
+                    sorusu için tahsilat penceresini açmak gerekmiyor. Üstteki
+                    döküm hiç çıkmasa da bu satırlar görünür. */}
+                {tahsilatlar.length > 0 && (
+                  <>
+                    {tahsilatlar.map((o, i) => (
+                      <div key={i} className="m-dokum-satir odendi">
+                        <span>{o.tip}</span>
+                        <span>
+                          {paraGoster(o.tutar)}
+                          {o.bahsis ? <em> +{paraGoster(o.bahsis)} bahşiş</em> : null}
+                        </span>
+                      </div>
+                    ))}
+                    <div className="m-dokum-satir kalan">
+                      <span>Kalan</span>
+                      <span>{paraGoster(Math.max(0, ozet.kalan))}</span>
+                    </div>
                   </>
                 )}
               </div>

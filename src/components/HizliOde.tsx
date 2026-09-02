@@ -3,6 +3,7 @@ import { CircleCheckBig, Percent, Wallet, X, Zap } from "lucide-react";
 import IndirimModal from "./IndirimModal";
 import type { IndirimKaynagi } from "../indirimler";
 import OnayModal from "./OnayModal";
+import Bilgi from "./Bilgi";
 import OdemeTipDugmeleri from "./OdemeTipDugmeleri";
 import MusteriSecici from "./MusteriSecici";
 import { indirimYapabilir } from "../oturum";
@@ -103,44 +104,43 @@ export default function HizliOde({
   };
 
   return (
-    <div className="modal-fon" onClick={onKapat}>
-      <div className="hizli-ode" onClick={(e) => e.stopPropagation()}>
-        <header>
-          <h3>
-            <Zap size={18} />
-            Hızlı Öde — {baslik}
-          </h3>
-          <button className="kapat" aria-label="Kapat" onClick={onKapat}>
-            <X size={20} />
+    <div className="up-fon" onClick={onKapat}>
+      <div className="up-modal hizli-ode" onClick={(e) => e.stopPropagation()}>
+        <header className="up-ust">
+          <Zap size={18} className="hizli-simge" />
+          <h3>Hızlı Öde — {baslik}</h3>
+          <button className="up-kapat" aria-label="Kapat" onClick={onKapat}>
+            <X size={19} />
           </button>
         </header>
 
+        <div className="hizli-govde">
         <div className="hizli-tutar">
           <div className="hizli-satir">
             <span>Toplam</span>
-            <span>₺{toplam}</span>
+            <span>{paraGoster(toplam)}</span>
           </div>
           {indirim > 0 && (
             <div className="hizli-satir indirim">
               <span>İndirim</span>
-              <span>−₺{indirim}</span>
+              <span>−{paraGoster(indirim)}</span>
             </div>
           )}
           {(servis ?? []).map((s) => (
             <div key={s.ad} className="hizli-satir">
               <span>{s.ad}</span>
-              <span>₺{s.tutar}</span>
+              <span>{paraGoster(s.tutar)}</span>
             </div>
           ))}
           {odenen > 0 && (
             <div className="hizli-satir odendi">
               <span>Ödenen</span>
-              <span>₺{odenen}</span>
+              <span>{paraGoster(odenen)}</span>
             </div>
           )}
           <div className="hizli-satir kalan">
             <span>Kalan</span>
-            <strong>₺{kalan}</strong>
+            <strong>{paraGoster(kalan)}</strong>
           </div>
         </div>
 
@@ -164,7 +164,7 @@ export default function HizliOde({
         <div className="hizli-giris">
           <input
             type="number"
-            placeholder={`Tahsil edilecek: ₺${kalan}`}
+            placeholder={`Tahsil edilecek: ${paraGoster(kalan)}`}
             value={girilen}
             onChange={(e) => setGirilen(e.target.value)}
           />
@@ -182,18 +182,19 @@ export default function HizliOde({
         {paraUstuVar > 0 && (
           <div className="hizli-para-ustu">
             <span>Para üstü</span>
-            <strong>₺{paraGoster(paraUstuVar)}</strong>
+            <strong>{paraGoster(paraUstuVar)}</strong>
           </div>
         )}
 
-        <p className="hizli-aciklama">
+        <Bilgi>
           {kapat
             ? "Ödeme tipine basınca tutar tahsil edilir; kalan sıfırlanırsa adisyon kapanır."
             : "Ödeme tipine basınca tutar tahsil edilir, adisyon açık kalır."}
-        </p>
+        </Bilgi>
 
         <div className="hizli-tipler">
           <OdemeTipDugmeleri tipler={odemeTipleri} pasif={gonderiliyor} onSec={tahsilEt} />
+        </div>
         </div>
       </div>
 
@@ -212,7 +213,7 @@ export default function HizliOde({
 
       {bahsisSorusu && (
         <OnayModal
-          mesaj={`Girilen tutar kalandan ₺${bahsisSorusu.bahsis} fazla. Üstü bahşiş olarak yazılsın mı?`}
+          mesaj={`Girilen tutar kalandan ${paraGoster(bahsisSorusu.bahsis)} fazla. Üstü bahşiş olarak yazılsın mı?`}
           onayMetni="Bahşiş yaz"
           onOnay={() => {
             gonder(bahsisSorusu.tip, kalan, bahsisSorusu.bahsis);

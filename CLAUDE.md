@@ -44,6 +44,14 @@ Açıklama gerekiyorsa en fazla bir-iki cümle.
   başına test etmez; değişiklik bitince Ramazan'a "şunu dene" diye net adımlar
   söyler, sonucu bekler.
 
+## Masaüstü–mobil eşitliği
+
+Bir ekranda yapılan değişiklik **karşılığı olan mobil ekranda da** yapılır;
+Ramazan ayrıca söylemez. Aynı iş için iki ayrı ekran tutulmaz — mümkünse
+mobil de masaüstündeki bileşeni açar (tahsilat penceresi ve Hızlı Öde böyle
+yapıldı), telefon farkı yalnız CSS'te kalır. Renk, durum ve para biçimi gibi
+kurallar iki yüzeyde birebir aynı sonucu vermelidir.
+
 ## Kod stili
 
 - Temiz, doğal, kendi projesiymiş gibi yazılmış görünmeli.

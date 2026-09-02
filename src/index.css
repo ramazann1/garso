@@ -1573,6 +1573,10 @@ body {
 
 /* Bahşiş, ödeme tipleriyle aynı sütunda ikinci sekmede duruyor; eskiden
    kalandan fazla girilince üste binen bir onay penceresiydi. */
+/* Pencerenin dar ekran sekmeleri; masaüstünde üç sütun yan yana durduğu için
+   gizli. Açılışı 980px kuralında. */
+.th-mob-sekmeler { display: none; }
+
 .th-sekmeler {
   display: flex;
   gap: 4px;
@@ -1725,6 +1729,17 @@ body {
 
   .th-ust { position: sticky; top: 0; z-index: 3; }
   .th-eylem { padding: 10px 12px; }
+
+  /* Dar ekranda pencere iki sekme: olağan akış (tutar + ödeme tipi) bir arada,
+     ürün seçerek parçalı ödeme ayrı. Üç sütun alt alta inince şerit uzuyor,
+     tutar girmekle tipe basmak arasında sürekli kaydırma gerekiyordu. */
+  .th-mob-sekmeler { display: flex; margin: 12px 14px 0; }
+  .mob-odeme .th-urunler { display: none; }
+  .mob-urunler .th-orta,
+  .mob-urunler .th-odeme { display: none; }
+  /* Tek sütun kalınca ayırıcı çizgi tepede boşta duruyor. */
+  .mob-odeme .th-orta,
+  .mob-urunler .th-urunler { border-top: none; }
 }
 
 /* Telefon: aynı pencere, parmakla kullanılan hâli. Sütunlar alt alta inerken
@@ -6085,31 +6100,20 @@ body {
 }
 .sepet-aksiyonlar .hizli-ode-btn:disabled { opacity: 0.4; cursor: default; }
 
-.hizli-ode {
-  background: var(--kart);
-  border-radius: 16px;
-  padding: 22px;
-  width: 380px;
-  max-width: 92vw;
-  box-shadow: 0 8px 32px rgba(0, 0, 0, 0.15);
+/* Ortak pencere kabuğunu kullanıyor (.up-modal): kabuk, başlık ve kapat
+   düğmesi ürün ve tahsilat pencereleriyle aynı. Buraya yalnız genişlik ve
+   gövdenin kendi iç düzeni kalıyor. */
+.hizli-ode { max-width: 440px; }
+
+.hizli-simge { flex: none; color: var(--mercan); }
+
+.hizli-govde {
+  padding: 18px 22px 22px;
+  overflow-y: auto;
 }
-.hizli-ode header {
-  display: flex;
-  justify-content: space-between;
-  align-items: center;
-  margin-bottom: 16px;
-}
-.hizli-ode h3 {
-  margin: 0;
-  font-size: 18px;
-  display: inline-flex;
-  align-items: center;
-  gap: 8px;
-}
-.hizli-ode h3 svg { color: var(--mercan); }
 .hizli-tutar {
-  border: 1px solid #dde4ed;
-  border-radius: 12px;
+  border: 1px solid var(--cizgi-koyu);
+  border-radius: var(--r-or);
   padding: 12px 14px;
 }
 .hizli-satir {
@@ -6233,8 +6237,9 @@ body {
   justify-content: space-between;
   margin-top: 10px;
   padding: 11px 14px;
-  border-radius: 12px;
-  background: #e5ebf3;
+  border-radius: var(--r-or);
+  background: var(--kart-ust);
+  border: 1px solid var(--cizgi);
   font-size: 15px;
 }
 
@@ -6243,10 +6248,17 @@ body {
   color: var(--mercan);
 }
 
-.hizli-aciklama {
-  margin: 12px 0 14px;
-  font-size: 14px;
-  color: var(--soluk);
+/* Açıklama düz paragraf değil Bilgi kutusu; tutarla tipler arasında duruyor. */
+.hizli-govde .bilgi-kutu { margin: 14px 0; }
+
+/* Telefon: pencere tam ekrana yayılıyor, tuşlar parmakla basılacak kadar iri.
+   Hızlı Öde masanın başında açılıyor — kasada değil, elde kullanılıyor. */
+@media (max-width: 600px) {
+  .up-fon:has(> .hizli-ode) { padding: 0; }
+  .hizli-ode { max-width: none; height: 100%; border: none; border-radius: 0; }
+  .hizli-aksiyon button { padding: 13px 9px; }
+  .hizli-giris input,
+  .hizli-giris .hizli-indirim { padding: 14px; font-size: 16px; }
 }
 .odeme-tip-liste {
   display: flex;
@@ -6885,14 +6897,14 @@ body {
   gap: 6px;
   margin-top: 14px;
   padding: 4px;
-  border-radius: 12px;
+  border-radius: var(--r-or);
   background: var(--zemin);
 }
 .hizli-aksiyon button {
   flex: 1;
   padding: 9px;
   border: none;
-  border-radius: 9px;
+  border-radius: var(--r-kk);
   background: none;
   color: var(--soluk);
   font-size: 14px;
@@ -6906,7 +6918,7 @@ body {
 .hizli-aksiyon button.aktif {
   background: var(--kart);
   color: var(--metin);
-  box-shadow: 0 1px 3px rgba(0, 0, 0, 0.12);
+  box-shadow: var(--g1);
 }
 
 .hizli-giris { display: flex; gap: 8px; margin-top: 12px; }
@@ -6914,14 +6926,22 @@ body {
   flex: 1;
   min-width: 0;
   padding: 12px;
-  border: 1px solid #dde4ed;
-  border-radius: 10px;
+  border: 1px solid var(--cizgi-koyu);
+  border-radius: var(--r-kk);
+  background: var(--kart);
+  font-family: inherit;
   font-size: 15px;
+  color: var(--metin);
+}
+
+.hizli-giris input:focus {
+  border-color: var(--mercan);
+  outline: none;
 }
 .hizli-giris .hizli-indirim {
   padding: 12px 14px;
-  border: 1px solid #dde4ed;
-  border-radius: 10px;
+  border: 1px solid var(--cizgi-koyu);
+  border-radius: var(--r-kk);
   background: var(--kart);
   color: var(--metin);
   font-size: 14px;
@@ -11919,16 +11939,19 @@ body {
   color: #1a1a1a;
 }
 
+/* Durum renkleri kasadaki masa kartıyla aynı sırada yazılıyor: bir masaya
+   birden fazla durum uyduğunda hangisinin kazandığı iki ekranda da aynı olsun.
+   Sıra en sakinden en baskına: kısmi ödeme, durgunluk, hesap fişi, ödendi. */
+.m-masa.dolu.kismi {
+  background: linear-gradient(150deg, #ffd24d 0%, #fbc02d 60%, #eeaa14 100%);
+  border-color: #eeaa14;
+}
+
 /* Bir süredir sipariş vermeyen masa. Trafik ışığı üçlüsüne katılmayan ayrı bir
    renk seçildi: sarı ve kırmızıyla karışmıyor, "burada hareket durdu" diyor. */
 .m-masa.dolu.durgun {
   background: linear-gradient(150deg, #b58ae0 0%, #a274d4 60%, #8e5fc4 100%);
   border-color: #8e5fc4;
-}
-
-.m-masa.dolu.kismi {
-  background: linear-gradient(150deg, #ffd24d 0%, #fbc02d 60%, #eeaa14 100%);
-  border-color: #eeaa14;
 }
 
 /* Hesap fişi basılmış masa: müşteri hesabı istedi, ödeme bekleniyor. */
@@ -11938,9 +11961,14 @@ body {
   color: #fff;
 }
 
-.m-masa.dolu.odendi {
+/* İş bitmiş masa her şeyin üstünde gri: fişi de basılmış olsa, durgun da olsa
+   garsonun oradaki tek işi masayı toplamak. */
+.m-masa.dolu.odendi,
+.m-masa.dolu.odendi.durgun,
+.m-masa.dolu.odendi.fisli {
   background: linear-gradient(150deg, #9aa3a6 0%, #8b9497 60%, #77807f 100%);
   border-color: #77807f;
+  color: #1a1a1a;
 }
 
 .m-masa-tutar {
@@ -12249,6 +12277,42 @@ body {
   gap: 10px;
 }
 
+/* Alınan ödemenin bandı: sepet şeridinin üstünde, tam genişlikte. Yeşil taraf
+   kasaya giren para, mercan taraf daha alınacak olan. */
+.m-serit-odeme {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 10px;
+  margin-bottom: 9px;
+  padding: 9px 13px;
+  border: 1px solid var(--cizgi-koyu);
+  border-radius: var(--r-or);
+  background: var(--kart);
+  font-size: 15px;
+}
+
+.m-serit-odendi {
+  display: flex;
+  align-items: center;
+  gap: 6px;
+  color: var(--yesil);
+  font-weight: 600;
+}
+
+.m-serit-kalan {
+  color: var(--metin);
+  font-weight: 500;
+  white-space: nowrap;
+}
+
+.m-serit-kalan b {
+  margin-left: 5px;
+  color: var(--mercan);
+  font-size: 17px;
+  font-weight: 700;
+}
+
 /* Gönderilmeyi bekleyen kalemler: son kalem yerine hepsi görünüyor. Sığmayan
    yana kaymıyor, alt satıra geçiyor — kaydırılan listede garson kaçırdığını
    bilmiyordu, oysa burada asıl soru "hepsi tamam mı". */
@@ -12307,6 +12371,12 @@ body {
 .m-serit-tutar {
   font-size: 16px;
   font-weight: 700;
+}
+
+/* Ödeme alınmış adisyonda şeritteki rakam toplam değil kalan: renk değişince
+   garson yanlış tutarı okumuyor. */
+.m-serit-tutar.kalan {
+  color: var(--mercan);
 }
 
 .m-gonder {
