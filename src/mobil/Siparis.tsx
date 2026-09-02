@@ -27,7 +27,9 @@ import {
 } from "lucide-react";
 import UrunSecim from "../components/UrunSecim";
 import TahsilatPanel from "../components/TahsilatPanel";
-import KalemIslemleri, { kalemiUygula } from "./KalemIslemleri";
+import KalemPaneli from "../components/KalemPaneli";
+import AdisyonBilgi from "../components/AdisyonBilgi";
+import { kalemiUygula } from "./KalemIslemleri";
 import OnayModal from "../components/OnayModal";
 import AltSayfa from "./AltSayfa";
 import { agacUrunleri, menuGetir, porsiyonFiyat, urunKdv } from "../menu";
@@ -59,7 +61,6 @@ import { kilitKaldir, kilitKur } from "../cikisKilidi";
 import { ayarlar } from "../isletmeAyarlari";
 import { yetkiVar } from "../oturum";
 import { adetGoster, paraGoster } from "../para";
-import { yaziRengi } from "../renk";
 import type {
   Bolge,
   MenuKategori,
@@ -360,6 +361,10 @@ export default function MobilSiparis() {
   };
   const ozet = adisyonOzeti(adisyon);
   const odenen = tahsilatlar.reduce((t, o) => t + o.tutar, 0);
+  // Ödemesi işlenmiş kalemler taşınmıyor — kasadaki kuralın aynısı.
+  const odenmisIdler = new Set<number>(
+    tahsilatlar.flatMap((t) => Object.keys(t.kalemler ?? {}).map(Number))
+  );
   // Kuver ve garsoniye ürün değil, hesabın kendi bedeli; toplamda görünüp
   // dökümde görünmezse garson farkı nereden çıktı diye kalıyor.
   const servisTutar = servisTutarlari(servisGirdisi(adisyon, Math.max(0, ozet.araToplam - indirim)));
@@ -565,7 +570,7 @@ export default function MobilSiparis() {
             <button
               key={k.id}
               className={k.id === acikAna?.id ? "m-kategori secili" : "m-kategori"}
-              style={{ background: k.renk, color: yaziRengi(k.renk) }}
+              style={{ "--kat-renk": k.renk } as CSSProperties}
               onClick={() => setSeciliKategori(k.id)}
             >
               {k.ad}
@@ -1018,12 +1023,18 @@ export default function MobilSiparis() {
       {/* Adisyonun kendi bilgileri. Kaydedilen değer ekranda duruyor, diske
           Gönder ile gidiyor — bu ekranda sepet de öyle çalışıyor. */}
       {bilgiAcik && (
-        <AdisyonBilgiSayfasi
-          bilgi={bilgi}
-          masaBasligi={masaBasligi}
+        <AdisyonBilgi
+          baslik={masaBasligi}
+          bilgi={{ ...bilgi, kisiSayisi }}
           onKapat={() => setBilgiAcik(false)}
           onKaydet={(yeni) => {
-            setBilgi(yeni);
+            setBilgi({
+              ad: yeni.ad ?? "",
+              not: yeni.not ?? "",
+              musteriAd: yeni.musteriAd ?? "",
+              musteriTelefon: yeni.musteriTelefon ?? "",
+            });
+            setKisiSayisi(yeni.kisiSayisi || undefined);
             setBilgiAcik(false);
           }}
         />
@@ -1065,13 +1076,21 @@ export default function MobilSiparis() {
       {/* Sepetteki kalemin işlemleri. Değişiklik ekrandaki sepete uygulanıyor,
           diske Gönder ile gidiyor — bu ekranın kuralı bu. */}
       {kalemIslem && (
-        <KalemIslemleri
+        <KalemPaneli
           kalem={kalemIslem}
-          tasinabilir={!!kalemIslem.id && kalemIslem.id > 0}
+          urun={urunler.find((u) => u.id === kalemIslem.urunId || u.ad === kalemIslem.ad)}
+          masaId={masaId}
+          odenmis={odenmisIdler.has(kalemIslem.id ?? 0)}
           onKapat={() => setKalemIslem(null)}
-          onUygula={(yeni) => {
+          onUygula={(yeniler) => {
             setKalemIslem(null);
-            setSepet((s) => kalemiUygula(s, kalemIslem, yeni));
+            setSepet((s) =>
+              // Tek satır döndüyse adet artışı yeni tur açıyor; satır ikiye
+              // bölündüyse (kısmi ikram/iptal) ikisi eskisinin yerine geçiyor.
+              yeniler.length === 1
+                ? kalemiUygula(s, kalemIslem, yeniler[0])
+                : s.flatMap((k) => (k.id === kalemIslem.id ? yeniler : [k])).filter((k) => k.adet > 0)
+            );
           }}
           onTasi={async (hedefMasaId, adet) => {
             const kalemId = kalemIslem.id!;
@@ -1293,90 +1312,6 @@ function MasaHedefi({
               ))}
             </div>
           )}
-        </div>
-      </div>
-    </div>
-  );
-}
-
-type AdisyonBilgisi = { ad: string; not: string; musteriAd: string; musteriTelefon: string };
-
-/**
- * Adisyonun kendi bilgileri — kasadaki AdisyonBilgi panelinin mobil karşılığı.
- * Ürünlerden bağımsız: hesabın adı, mutfağa değil hesaba yazılan notu ve
- * müşterisi. Hepsi isteğe bağlı, sade satışta hiçbiri doldurulmuyor.
- */
-function AdisyonBilgiSayfasi({
-  bilgi,
-  masaBasligi,
-  onKapat,
-  onKaydet,
-}: {
-  bilgi: AdisyonBilgisi;
-  masaBasligi: string;
-  onKapat: () => void;
-  onKaydet: (bilgi: AdisyonBilgisi) => void;
-}) {
-  const [ad, setAd] = useState(bilgi.ad);
-  const [not, setNot] = useState(bilgi.not);
-  const [musteriAd, setMusteriAd] = useState(bilgi.musteriAd);
-  const [musteriTelefon, setMusteriTelefon] = useState(bilgi.musteriTelefon);
-
-  return (
-    <div className="m-perde" onClick={onKapat}>
-      <div className="m-sayfa" onClick={(e) => e.stopPropagation()}>
-        <header className="m-sayfa-ust">
-          <h2>
-            <StickyNote size={18} /> {masaBasligi}
-          </h2>
-          <button className="m-ikon-dugme" onClick={onKapat} aria-label="Kapat">
-            <X size={20} />
-          </button>
-        </header>
-
-        <div className="m-sayfa-icerik m-bilgi-form">
-          <label className="m-alan">
-            <span>Adisyon adı</span>
-            <input
-              value={ad}
-              onChange={(e) => setAd(e.target.value)}
-              placeholder="Örn. Doğum günü"
-            />
-          </label>
-
-          <label className="m-alan">
-            <span>Hesap notu</span>
-            <textarea
-              rows={3}
-              value={not}
-              onChange={(e) => setNot(e.target.value)}
-              placeholder="Fişe ve rapora yazılır"
-            />
-          </label>
-
-          <label className="m-alan">
-            <span>Müşteri adı</span>
-            <input value={musteriAd} onChange={(e) => setMusteriAd(e.target.value)} />
-          </label>
-
-          <label className="m-alan">
-            <span>Telefon</span>
-            <input
-              inputMode="tel"
-              value={musteriTelefon}
-              onChange={(e) => setMusteriTelefon(e.target.value)}
-            />
-          </label>
-        </div>
-
-        <div className="m-sayfa-alt">
-          <button
-            className="m-ode-btn"
-            onClick={() => onKaydet({ ad, not, musteriAd, musteriTelefon })}
-          >
-            <Check size={18} />
-            Tamam
-          </button>
         </div>
       </div>
     </div>

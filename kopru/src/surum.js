@@ -4,4 +4,4 @@
  * olmadığı için sürüm koda yazılı. Elle değiştirilmiyor: ana projedeki
  * `npm.cmd run surum` Garso ile köprünün numarasını birlikte artırıyor.
  */
-export const SURUM = "1.3.14";
+export const SURUM = "1.3.15";

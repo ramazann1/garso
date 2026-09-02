@@ -7,8 +7,10 @@ import {
   ChevronDown,
   CloudOff,
   LockKeyhole,
+  Minus,
   Percent,
   Pencil,
+  Plus,
   ShoppingBag,
   SlidersHorizontal,
   Star,
@@ -593,6 +595,7 @@ export default function Siparis() {
           <ArrowLeft size={17} />
           Salon
         </button>
+        <span className="ust-ayrac" />
         <h1>
           {masasiz ? (
             <>
@@ -662,7 +665,7 @@ export default function Siparis() {
             <div key={k.id} className="kategori-grup">
               <button
                 className={!ozelListe && k.id === secili?.id ? "kategori aktif" : "kategori"}
-                style={{ borderColor: !ozelListe && k.id === secili?.id ? "transparent" : k.renk }}
+                style={{ "--kat-renk": k.renk } as React.CSSProperties}
                 onClick={() => { setOzelListe(null); setSeciliId(k.id); }}
               >
                 {k.ad}
@@ -688,7 +691,7 @@ export default function Siparis() {
                     className={
                       !ozelListe && a.id === secili?.id ? "kategori alt aktif" : "kategori alt"
                     }
-                    style={{ borderColor: !ozelListe && a.id === secili?.id ? "transparent" : a.renk }}
+                    style={{ "--kat-renk": a.renk } as React.CSSProperties}
                     onClick={() => { setOzelListe(null); setSeciliId(a.id); }}
                   >
                     <em className="dal" />
@@ -798,9 +801,10 @@ export default function Siparis() {
                 </span>
                 <button
                   className="cikar"
+                  title="Bir adet azalt"
                   onClick={(e) => { e.stopPropagation(); sepettenCikar(k.id); }}
                 >
-                  −
+                  <Minus size={15} />
                 </button>
               </div>
               </Fragment>
@@ -834,7 +838,10 @@ export default function Siparis() {
                         className="ozet-satir servis-ekle"
                         onClick={() => setServis((s) => ({ ...s, [hangi]: true }))}
                       >
-                        <span>+ {tanim.ad} ekle</span>
+                        <span>
+                          <Plus size={14} />
+                          {tanim.ad} ekle
+                        </span>
                         <span>{servisEtiketi(tanim)}</span>
                       </button>
                     ) : null;
@@ -860,7 +867,7 @@ export default function Siparis() {
                             title={`${tanim.ad} kaldır`}
                             onClick={() => setServis((s) => ({ ...s, [hangi]: false }))}
                           >
-                            ×
+                            <X size={13} />
                           </button>
                         )}
                       </span>

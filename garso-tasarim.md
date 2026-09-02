@@ -1,7 +1,7 @@
 # GARSO — Teknik Tasarım: Veri Modeli & Ekran Haritası
 *Restoran ve cafe'ler için bulut tabanlı satış ve işletme yönetim sistemi.*
 
-## 0. SIRADAKİ İŞ (2 Eyl 2026 akşamı güncellendi)
+## 0. SIRADAKİ İŞ (3 Eyl 2026 güncellendi)
 
 > **Karar (1 Eyl 2026): görsel dil yenileniyor, zemin krem değil soğuk gri-mavi.**
 > Ramazan mevcut görünümü "ilkel" buldu. Sebep renk değil, **tasarım dilinin
@@ -94,7 +94,91 @@
 >
 > **Kalan:** ekranlar tek tek gezilip köşe/gölge/geçiş belirteçlerine
 > geçirilecek (renk tamam; ölçek ürün penceresi, renk çemberi, tahsilat
-> penceresi ve Adisyon Detay uygulandı).
+> penceresi, Adisyon Detay, Kalem Paneli, sipariş ekranı, Adisyon Bilgisi ve
+> onay kabuğu uygulandı).
+
+> **Kalem Paneli yenilendi (3 Eyl 2026).** Önce Adisyo'da kalem detay
+> penceresinde tur atıldı (canlı masada ikram/sil/taşı üçü de açılıp Vazgeç ile
+> çıkıldı, veri değişmedi). **Tek cümlelik ders: Adisyo'da ikram ve taşıma
+> pencere açmıyor, sepet listesi kip değiştiriyor** — üstte renkli yönlendirme
+> şeridi, satırlarda onay dairesi ve satır içinde adet sayacı, altta
+> Vazgeç/İKRAM ET. Ama tutarsız: "Ürünü Sil" pencere üstüne ikinci pencere
+> açıyor. Ayrıca satır toplamı hiç yazmıyor, porsiyon iki ayrı yerde (kalem
+> penceresi + "Çoklu Seçim"), iptal sebebi serbest metin, ürüne indirim yok,
+> tehlikeli eylem diğerleriyle aynı gri.
+> **Karar: kip fikri alındı, çoklu seçim alınmadı.** Garson "şu iki kalemi
+> birden ikram et" demiyor, kaleme basıyor; sepeti ikinci bir moda sokmak
+> gereksiz karmaşa. Kip **pencerenin kendi içinde**: ikram/iptal/taşımaya
+> basınca eylem düğmeleri yerini "Kaç adet?" sayacına, sebep çiplerine ve tek
+> onay düğmesine bırakıyor, başlıkta geri oku çıkıyor.
+> Bizde ayrıca: ortak kabuk (`.up-fon`/`.up-modal`), satır toplamı kendi
+> bandında (indirimliyse eski tutar üstü çizili), gövde iki sütun (solda
+> düzenlenen alanlar, sağda durum değiştiren işler).
+> **Eklenen iki özellik:** ürüne indirim (mevcut IndirimModal, dokunulmadı) ve
+> kaydedilmemiş satırda "Kalemi çıkar" — iptal kaydı açmaya değmiyor.
+> **Mobil aynı bileşeni açıyor:** `mobil/KalemIslemleri.tsx` 334 → 38 satır,
+> yalnız `kalemiUygula` kuralı kaldı. Telefonda artık porsiyon, birim fiyat,
+> kısmi ikram/iptal ve ortak masa seçici de var; `odenmisIdler` mobile de geldi.
+> Sınıflar `kp-` önekli.
+
+> **Katman sırası düzeltildi (3 Eyl 2026).** Mobil alt sayfa `z-index: 60`,
+> ortak pencere kabuğu `40`'taydı: kalem ve tahsilat pencereleri **açılıyor ama
+> alt sayfanın arkasında kalıyordu**. Eski mobil ekran alt sayfayla aynı 60'ı
+> kullandığı için görünmüyordu; ortak bileşene geçince ortaya çıktı.
+> Yeni bant: alt sayfa 60 · `.up-fon` **64** · `.up-fon.ust` **65** ·
+> `.cember-fon` **66** · `.onay-fon` **68**; bildirim 70 ve kilit 80 üstte.
+> Onay penceresi de yükseltilmeliydi, yoksa bu sefer o pencerenin altında kalırdı.
+
+> **Sipariş ekranı yenilendi (3 Eyl 2026).** Ramazan "ilkel" buldu; ölçüldü ve
+> haklıydı — ekranın CSS'i projenin **en eski katmanıydı**: tek belirteç yok,
+> beş ayrı köşe değeri (6/8/10/11/12px), üç `rgba(0,0,0,…)` **siyah** gölge,
+> `#ddd` çerçeve, **sıfır geçiş**. Asıl suçlu: **üç yerde çizgi diye
+> `var(--zemin)` kullanılmış** — zemin zaten arka plan, yani görünmeyen çizgi.
+> Adisyon sütununun "sınırsız" görünmesinin sebebi buydu.
+> Adisyo'nun sipariş ekranında tur atıldı ve **ölçüldü**: üst bar 80px tek şerit
+> (arama barın içinde, 20px punto), adisyon sütunu 450px, kalem satırı 87px,
+> kategoriler yatay ızgara (renk yalnız yazıda + 1,6px alt çizgide), ürün kartı
+> 171×113 `0.8px #e7e7e7` çerçeve ve çok yumuşak gölge, adet göstergesi kartın
+> **sağ kenarında dikey sayaç**.
+> **Alınmayanlar:** kategori ızgarası + sayfalama (2. sayfada ızgara kısalıyor,
+> ürünler zıplıyor; aramada sekmeler açık kalıp sonuçlarla ilgisiz duruyor),
+> dört renkli alt düğme, kart kenarındaki sayaç (komşu kartın üstüne taşıyor).
+> Bizde yapılan: üst bar **130px → 64px tek şerit** (adisyon bilgileri sağa yaslı
+> çipler); kategori şeridi **240 → 190px**, 2px renkli çerçeveli kutular kalktı,
+> **renk solda 3px dikey şeritte**, seçili mercan dolgulu; ürün kartı ince
+> çerçeve + yumuşak gölge + hover kalkma, **ad sola yaslandı** (ortalıydı ve adet
+> rozeti yazının üstüne biniyordu — gerçek hata); adisyon sütunu **360 → 400px**,
+> satırlar 2px dolgudan 10px'e, gerçek ayırıcı çizgi ve hover.
+> **Alt düğmeler tek dile:** Öde üstte tam genişlik mercan dolgulu (tek birincil
+> eylem), altında İndirim ve Hızlı Öde çerçeveli, en altta Kaydet sade.
+> Üç düz karakter ikona döndü (`−` → Minus, `×` → X, `+` → Plus).
+> **Mobil de aynı dili aldı:** kategori çipleri tamamen renk dolguluydu (aynı
+> alacalı duvar), sade çip + sol renk şeridi + seçili mercan oldu.
+
+> **Adisyon Bilgisi penceresi yenilendi (3 Eyl 2026).** Beş satırlık kalıp
+> formdu — etiket, kutu, etiket, kutu; beşi de aynı ağırlıkta. Ortak kabuğa
+> geçti. **Kişi sayısı üstte kendi kartında** (mercan halkalı ikon + "Kuver bu
+> sayıya göre hesaplanır" + iri sayaç): beş alanın içinde en çok kullanılan ve
+> kuverin dayandığı alan o. **Müşteri adı ile telefon yan yana** — ikisi tek
+> bilgi. Her etiket ikonlu.
+> **Mobil kopyası silindi** (`AdisyonBilgiSayfasi`, 76 satır) — üstelik kişi
+> sayısı orada hiç yoktu, ayrı modaldan giriliyordu.
+> Sınıflar `ab-` önekli: **`.ayar-panel` ve `.alan` on iki ekranda ortak,
+> onlara dokunulmadı** — sıradaki pencerelerin işi.
+
+> **Onay penceresi yenilendi (3 Eyl 2026).** Projedeki en çok kullanılan
+> pencere: **23 ekran** açıyor. Kutu tek bir 24px dolgunun içinde yüzüyordu.
+> Artık bölümlü (başlık · cümle · sebepler · alt şerit), alt şerit kendi
+> zemininde ve çizgili. **Sebep çipleri gri kutulardı, seçilebilir değil devre
+> dışı gibi duruyorlardı** — uygulamanın çip diline geçti.
+> **Sönük kırmızı düğme düzeldi:** sebep seçilene kadar kırmızının %45 saydamı
+> basılıyordu, bozuk düğme gibi görünüyordu; beklemedeki düğme artık nötr gri.
+> Simge kare kutudan halkalı daireye döndü.
+> **Karar: alt şerit sınıf eklenerek değil kabuğun içinden hedeflendi**
+> (`.onay-modal .modal-aksiyonlar`) — `.modal-aksiyonlar` on altı ekranda
+> ortak, diğer on üçü etkilenmesin diye. Yan etkisi: **Eksik Kapat ve Ödeme Tipi
+> Düzelt** de aynı kabuğu paylaştığı için bedavaya düzeldi (kabuk, çip ve alt
+> şerit; iç düzenleri hâlâ eski).
 
 > **Bahşiş canlı yansıyor, "Alınacak" satırı eklendi (2 Eyl 2026 akşamı).**
 > Bahşiş sekmesine yazılan rakam onay bekliyordu: "Bahşişi ekle"ye basana kadar
@@ -206,12 +290,16 @@
 > menü çalışır durumda, çevrimdışının kalan ucu tek bir akış). Önce elde biriken
 > küçük işler temizlendi; dördü de 1 Eyl akşamı kapandı. Kalan sıra:
 >
-> 0. **Görsel dilin yayılması — beğenilmeyen pencereler** (2 Eyl 2026 seansında
->    başlandı, devam ediyor). Tahsilat penceresi ve Hızlı Öde bitti (aşağıda).
->    **Sıradaki seans kaldığı yerden: Kalem Paneli.** Henüz elden geçmemişler:
->    Kalem Paneli, Misafir Sayısı, Masa Seçim, Ödeme Tipi Düzelt, Aktarım Onayı,
->    Eksik Kapat, Toplu Düzenle, Sıralama, Kampanya Seçim, Müşteri Detay/Seçici,
->    Onay Modal, Bildirim, Köprü İndir, Kilit Ekranı.
+> 0. **Görsel dilin yayılması — beğenilmeyen ekranlar** (2 Eyl 2026 seansında
+>    başlandı, devam ediyor). Biten: tahsilat penceresi, Hızlı Öde, Adisyon
+>    Detay, **Kalem Paneli**, **sipariş ekranı**, **Adisyon Bilgisi**,
+>    **Onay Modal** (aşağıda).
+>    **Sıradaki seans kaldığı yerden: Masa Seçim.** Henüz elden geçmemişler:
+>    Masa Seçim, Misafir Sayısı, Aktarım Onayı, Toplu Düzenle, Sıralama,
+>    Kampanya Seçim, Müşteri Detay/Seçici, Bildirim, Köprü İndir, Kilit Ekranı.
+>    **Eksik Kapat ile Ödeme Tipi Düzelt yarım:** onay kabuğunu paylaştıkları
+>    için kabuk, çipler ve alt şerit kendiliğinden düzeldi; kendi iç düzenleri
+>    (tutar kutusu, ödeme tipi ızgarası) elden geçmedi.
 >    **İndirim modalına dokunulmayacak** — Ramazan beğeniyor (2 Eyl 2026).
 >    Ardından bütün ekranlar köşe/gölge/geçiş belirteçlerine geçirilecek.
 >    **Stok bu iş bitene kadar bekliyor** — Ramazan görüntüyü öne aldı.
