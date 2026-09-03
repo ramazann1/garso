@@ -45,7 +45,8 @@ import { hesapKopyasiSil, kopyaSaati } from "../hesapKopyasi";
 import { baglantiHatasi, baglantiVar, sureSinirli, useBaglanti } from "../baglanti";
 import { useCanli } from "../canli";
 import { devralabilir, masayiDevral, useMesguliyetler } from "../mesguliyet";
-import { odenmezleriGetir, type Odenmez } from "../odenmezler";
+import { ODENMEZ_ANAHTAR, odenmezleriGetir, type Odenmez } from "../odenmezler";
+import { useTanim } from "../tanimAbonelik";
 import { paraGoster } from "../para";
 import type { Bolge, Masa } from "../types";
 
@@ -113,7 +114,8 @@ export default function MobilMasalar() {
   const [iptalSorusu, setIptalSorusu] = useState<{ masa: Masa; adisyonId: number } | null>(null);
   const [ikramSorusu, setIkramSorusu] = useState<{ masa: Masa; adisyonId: number } | null>(null);
   // İkramın kime yazıldığı soruluyor; liste ekran açılırken bir kez okunuyor.
-  const [odenmezler, setOdenmezler] = useState<Odenmez[]>([]);
+  // Liste sunucuda değişince ekran kendiliğinden yeniliyor.
+  const odenmezler = useTanim<Odenmez[]>(ODENMEZ_ANAHTAR, odenmezleriGetir, []);
   const [uyari, setUyari] = useState<string | null>(null);
   const [, setTik] = useState(0);
 
@@ -145,10 +147,6 @@ export default function MobilMasalar() {
   useEffect(() => {
     if (seciliBolge !== null) localStorage.setItem(BOLGE_ANAHTAR, String(seciliBolge));
   }, [seciliBolge]);
-
-  useEffect(() => {
-    odenmezleriGetir().then(setOdenmezler);
-  }, []);
 
   useEffect(() => {
     oku();

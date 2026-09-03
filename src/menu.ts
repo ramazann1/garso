@@ -1,5 +1,6 @@
 import { supabase } from "./supabase";
 import { hataysaFirlat, onbellekliGetir } from "./onbellek";
+import { tazeleyiciTanit } from "./tanimAbonelik";
 import type {
   MenuBirim,
   MenuKategori,
@@ -134,7 +135,7 @@ const say = (v: any) => (v == null ? undefined : Number(v));
 // Menü kasadaki en kritik okuma: yüklenemezse garson ürün bile seçemiyor.
 // Bağlantı koptuğunda cihazdaki son kopya devreye giriyor (bkz. onbellek.ts).
 export function menuGetir() {
-  return onbellekliGetir("menu", menuOku);
+  return onbellekliGetir("menu", menuOku, true);
 }
 
 /**
@@ -755,3 +756,5 @@ export async function kdvKaydet(liste: KdvSatiri[], silinenler: number[]) {
         .eq("id", k.id);
   }
 }
+
+tazeleyiciTanit("menu", menuOku);

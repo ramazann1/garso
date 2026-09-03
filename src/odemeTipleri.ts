@@ -1,4 +1,5 @@
 import { hataysaFirlat, onbellekliGetir } from "./onbellek";
+import { tazeleyiciTanit } from "./tanimAbonelik";
 import { supabase } from "./supabase";
 
 export type OdemeSinifi = "okc" | "klasik";
@@ -33,13 +34,17 @@ function tipeCevir(s: any): OdemeTipi {
 // Satış ekranları yalnızca açık tipleri görür; ayar ekranı kapalıları da
 // listeler ki işletmeci kullanmadığı tipi silmeden gizleyebilsin.
 export function odemeTipleriniGetir(hepsi = false): Promise<OdemeTipi[]> {
-  return onbellekliGetir(hepsi ? "odeme-tipleri-hepsi" : "odeme-tipleri", async () => {
-    let sorgu = supabase.from("odeme_tipleri").select(ALANLAR);
-    if (!hepsi) sorgu = sorgu.eq("aktif", true);
-    const sonuc = await sorgu.order("sinif").order("sira");
-    hataysaFirlat(sonuc);
-    return ((sonuc.data as any[]) ?? []).map(tipeCevir);
-  });
+  return onbellekliGetir(anahtari(hepsi), () => odemeTipleriniOku(hepsi), true);
+}
+
+const anahtari = (hepsi: boolean) => (hepsi ? "odeme-tipleri-hepsi" : "odeme-tipleri");
+
+async function odemeTipleriniOku(hepsi: boolean): Promise<OdemeTipi[]> {
+  let sorgu = supabase.from("odeme_tipleri").select(ALANLAR);
+  if (!hepsi) sorgu = sorgu.eq("aktif", true);
+  const sonuc = await sorgu.order("sinif").order("sira");
+  hataysaFirlat(sonuc);
+  return ((sonuc.data as any[]) ?? []).map(tipeCevir);
 }
 
 /**
@@ -120,3 +125,6 @@ export async function odemeTipiSil(id: number) {
   if (error) throw new Error(error.message);
   odemeTipiOnbelleginiUnut();
 }
+
+tazeleyiciTanit(anahtari(false), () => odemeTipleriniOku(false));
+tazeleyiciTanit(anahtari(true), () => odemeTipleriniOku(true));

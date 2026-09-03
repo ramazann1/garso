@@ -1,5 +1,6 @@
 import { supabase } from "./supabase";
 import { hataysaFirlat, onbellekliGetir } from "./onbellek";
+import { tazeleyiciTanit } from "./tanimAbonelik";
 import { ayarlar } from "./isletmeAyarlari";
 import type { Bolge, Masa } from "./types";
 
@@ -26,7 +27,7 @@ function masayaCevir(m: any): Masa {
 // masayı seçebilsin. Masaların üstündeki adisyon durumu ayrı okunuyor ve
 // önbelleğe girmiyor — dolu/boş bilgisi bayatlarsa yanlış olur.
 export function bolgeleriGetir(): Promise<Bolge[]> {
-  return onbellekliGetir("bolgeler", bolgeleriOku);
+  return onbellekliGetir("bolgeler", bolgeleriOku, true);
 }
 
 async function bolgeleriOku(): Promise<Bolge[]> {
@@ -176,3 +177,5 @@ export function hedefOnayMesaji(tip: "tasi" | "birlestir", kaynakAd: string, hed
     : `*${kaynakAd}* masasındaki adisyon *${hedefAd}* masasının adisyonuna eklenecek. ` +
       `*${kaynakAd}* boşalacak, iki hesap tek adisyonda toplanacak. Onaylıyor musunuz?`;
 }
+
+tazeleyiciTanit("bolgeler", bolgeleriOku);

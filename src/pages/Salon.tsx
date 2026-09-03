@@ -28,7 +28,8 @@ import MasaKarti from "../components/MasaKarti";
 import MasaPlani, { yerlesimiVar } from "../components/MasaPlani";
 import OnayModal from "../components/OnayModal";
 import HizliOde from "../components/HizliOde";
-import { odenmezleriGetir, type Odenmez } from "../odenmezler";
+import { ODENMEZ_ANAHTAR, odenmezleriGetir, type Odenmez } from "../odenmezler";
+import { useTanim } from "../tanimAbonelik";
 import Duzen from "../components/Duzen";
 import MasasizSiparis from "../components/MasasizSiparis";
 import Kasa from "../components/Kasa";
@@ -170,7 +171,8 @@ export default function Salon() {
   } | null>(null);
   const [uyari, setUyari] = useState<string | null>(null);
   // İkram penceresindeki "kime yazılsın" listesi; ekran açılırken bir kez okunuyor.
-  const [odenmezler, setOdenmezler] = useState<Odenmez[]>([]);
+  // Liste sunucuda değişince ekran kendiliğinden yeniliyor.
+  const odenmezler = useTanim<Odenmez[]>(ODENMEZ_ANAHTAR, odenmezleriGetir, []);
   // Adisyonun tamamına iptal/ikram: ikisi de sebep sorduğu için ayrı pencere.
   const [adisyonIslem, setAdisyonIslem] = useState<
     { tip: "iptal" | "ikram"; masa: Masa; adisyonId: number } | null
@@ -190,10 +192,6 @@ export default function Salon() {
     }
     navigate(`/siparis/${masa.id}`);
   };
-
-  useEffect(() => {
-    odenmezleriGetir().then(setOdenmezler);
-  }, []);
 
   // Seçim kipi pencere değil ama penceredeki alışkanlık sürüyor: Escape çıkarır.
   useEffect(() => {

@@ -15,7 +15,6 @@ import { useEffect, useState } from "react";
  */
 
 const ADRES = import.meta.env.VITE_SUPABASE_URL;
-const ANAHTAR = import.meta.env.VITE_SUPABASE_KEY;
 
 /** Bağlantı varken seyrek yokluyoruz: her yoklama boşa giden bir istek. */
 const ARALIK_ACIK = 30_000;
@@ -42,6 +41,10 @@ function durumYaz(yeni: boolean) {
  * Sunucuya ulaşılıyor mu — en ucuz istek. Cevabın içeriği ilgilendirmiyor,
  * cevap dönmesi yeterli: sunucu konuşuyor demektir.
  *
+ * İsteğe `apikey` başlığı konmuyor: sağlık kapısı anahtar sormuyor, ama başlık
+ * konunca tarayıcı her yoklamadan önce bir de izin isteği (preflight) atıyordu —
+ * otuz saniyede bir yerine iki istek gidiyor, ikisi de sıfır veri getiriyordu.
+ *
  * Adres olarak sağlık kapısı seçildi. REST kapısı kimlik bileti istiyor,
  * yoklamada bilet göndermediğimiz için her otuz saniyede bir 401 dönüyordu.
  * Yoklama açısından fark yoktu ama tarayıcı her 401'i konsola kırmızı hata
@@ -52,7 +55,6 @@ async function yokla() {
   try {
     const durdur = AbortSignal.timeout(BEKLEME_SINIRI);
     await fetch(`${ADRES}/auth/v1/health`, {
-      headers: { apikey: ANAHTAR },
       cache: "no-store",
       signal: durdur,
     });

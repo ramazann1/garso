@@ -1,4 +1,6 @@
 import { supabase } from "./supabase";
+import { hataysaFirlat, onbellekliGetir } from "./onbellek";
+import { tanimTazele, tazeleyiciTanit } from "./tanimAbonelik";
 
 /**
  * Ödenmezler: ikramın ve personel yemeğinin kime yazıldığı.
@@ -16,12 +18,24 @@ export type Odenmez = {
   sira: number;
 };
 
-export async function odenmezleriGetir(hepsi = false): Promise<Odenmez[]> {
+// Seyrek değişen bir tanım ama salon her açılışında sunucudan indiriyordu:
+// menü ve istasyonlarla aynı kapsama alındı, kopyadan anında veriliyor.
+export function odenmezleriGetir(hepsi = false): Promise<Odenmez[]> {
+  return onbellekliGetir(anahtari(hepsi), () => odenmezleriOku(hepsi), true);
+}
+
+/** Ekranların canlı izleme anahtarı (bkz. tanimAbonelik.useTanim). */
+export const ODENMEZ_ANAHTAR = "odenmezler";
+
+const anahtari = (hepsi: boolean) => (hepsi ? "odenmezler-hepsi" : ODENMEZ_ANAHTAR);
+
+async function odenmezleriOku(hepsi: boolean): Promise<Odenmez[]> {
   let sorgu = supabase.from("odenmezler").select("id, ad, unvan, aktif, sira");
   if (!hepsi) sorgu = sorgu.eq("aktif", true);
-  const { data } = await sorgu.order("sira").order("ad");
+  const sonuc = await sorgu.order("sira").order("ad");
+  hataysaFirlat(sonuc);
 
-  return ((data as any[]) ?? []).map((o) => ({
+  return ((sonuc.data as any[]) ?? []).map((o) => ({
     id: o.id,
     ad: o.ad,
     unvan: o.unvan ?? "",
@@ -51,7 +65,12 @@ export async function odenmezKaydet(
       error.code === "23505" ? "Bu ad zaten listede var." : "Ödenmez kaydedilemedi."
     );
   }
+  await tanimlariTazele();
 }
+
+// İki kopya var (açık liste / hepsi); ikisi de tazeleniyor.
+const tanimlariTazele = () =>
+  Promise.all([tanimTazele(anahtari(false)), tanimTazele(anahtari(true))]);
 
 /**
  * Silmek yerine pasife almak doğru yol: geçmiş ikramlar bu satıra bağlı.
@@ -74,11 +93,13 @@ export async function odenmezSil(id: number) {
       .update({ aktif: false })
       .eq("id", id);
     if (error) throw new Error("Ödenmez pasife alınamadı.");
+    await tanimlariTazele();
     return "pasif" as const;
   }
 
   const { error } = await supabase.from("odenmezler").delete().eq("id", id);
   if (error) throw new Error("Ödenmez silinemedi.");
+  await tanimlariTazele();
   return "silindi" as const;
 }
 
@@ -101,6 +122,7 @@ export async function personeldenAktar(): Promise<number> {
 
   const { error } = await supabase.from("odenmezler").insert(yeniler);
   if (error) throw new Error("Personel aktarılamadı.");
+  await tanimlariTazele();
   return yeniler.length;
 }
 
@@ -248,4 +270,9 @@ export async function odenmezPlaniYaz(plan: OdenmezPlani, sonSira: number) {
       .eq("id", g.id);
     if (error) throw new Error(`"${g.ad}" güncellenemedi.`);
   }
+
+  await tanimlariTazele();
 }
+
+tazeleyiciTanit(anahtari(false), () => odenmezleriOku(false));
+tazeleyiciTanit(anahtari(true), () => odenmezleriOku(true));

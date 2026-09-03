@@ -6,10 +6,13 @@ import { acikOturum } from "./oturum";
 /**
  * Seyrek değişen tanım verilerinin cihazdaki kopyası.
  *
- * Kural: **önce sunucu, olmazsa yerel.** Bağlantı varken her okuma sunucudan
- * gelir ve kopya tazelenir; yalnız istek ağ yüzünden düştüğünde cihazdaki
- * kopya kullanılır. Bayat menüden satış riski böyle sınırlanıyor — kopya bir
- * hızlandırma değil, yalnızca kopukluk sigortası.
+ * Kural: **önce kopya, arkada tazele.** Tanım verileri (menü, ayarlar,
+ * bölgeler, ödeme tipleri, istasyonlar) cihazdaki kopyadan anında veriliyor,
+ * sunucu arkadan okunup kopya tazeleniyor. Eskiden her okuma sunucuyu
+ * bekliyordu ve kopya yalnız kopukluk sigortasıydı; ölçümde iki masaya girmek
+ * menüyü iki kez baştan indiriyordu (~5 sn).
+ * Bayat menüden satış riskinin emniyeti canlı abonelik: menü sunucuda
+ * değişince cihazlar haber alıp kopyasını tazeliyor.
  *
  * Canlı veriler (adisyon, sipariş, tahsilat) buraya girmiyor: bir dakika
  * öncesinin masa durumu yanlış bilgidir, yokluğu yanlış bilgiden iyidir.
@@ -103,11 +106,48 @@ function sinirla<T>(is: Promise<T>, ms: number) {
 }
 
 /**
+ * Uçuştaki okumalar. Aynı sorgu havadayken ikinci çağrı yenisini açmasın,
+ * uçuştakini beklesin: iki ekran aynı anda menü isteyince menü iki kez
+ * iniyordu (ölçümde `giris_kuruldu` de ikizlenmişti, ikisi de tam 451 ms).
+ */
+const ucustakiler = new Map<string, Promise<any>>();
+
+function tekil<T>(anahtar: string, is: () => Promise<T>): Promise<T> {
+  const varolan = ucustakiler.get(anahtar);
+  if (varolan) return varolan as Promise<T>;
+  const soz = is().finally(() => ucustakiler.delete(anahtar));
+  ucustakiler.set(anahtar, soz);
+  return soz;
+}
+
+/** Sunucudan okuyup kopyayı tazeler. Tekilleştirme burada uygulanıyor. */
+function sunucudanTazele<T>(anahtar: string, getirici: () => Promise<T>) {
+  return tekil(anahtar, async () => {
+    const veri = await getirici();
+    onbellekYaz(anahtar, veri);
+    return veri;
+  });
+}
+
+/**
  * Sunucudan okur, tazeyi kopyaya yazar. Okuma ağ yüzünden düşerse cihazdaki
  * kopyayı döndürür. Sunucudan gelen başka bir hata (yetki gibi) kopyaya
  * düşürmez — orada sorun bağlantı değil, yanlış veriyle devam etmek yanlış.
+ *
+ * Tanım verilerinde (menü, ayarlar, bölgeler, ödeme tipleri, istasyonlar)
+ * `ondenVer` açık: kopya varsa beklemeden o veriliyor, sunucu arkadan okunup
+ * kopya tazeleniyor. Ölçümde iki masaya girmek menüyü iki kez baştan
+ * indiriyordu (~5 sn); ekranın sunucuyu beklemesi için bir sebep yok.
+ * Arkadaki tazeleme o anki ekrana yansımıyor, bir sonraki açılışta geçerli
+ * oluyor — emniyeti menünün canlı aboneliği.
+ *
+ * Canlı veriler (adisyon, tahsilat, masa doluluğu) buraya hiç girmiyor.
  */
-export async function onbellekliGetir<T>(anahtar: string, getirici: () => Promise<T>): Promise<T> {
+export async function onbellekliGetir<T>(
+  anahtar: string,
+  getirici: () => Promise<T>,
+  ondenVer = false
+): Promise<T> {
   const paket = onbellekOku<T>(anahtar);
 
   // Bağlantının olmadığı zaten biliniyorsa sunucuyu denemenin anlamı yok:
@@ -118,12 +158,20 @@ export async function onbellekliGetir<T>(anahtar: string, getirici: () => Promis
     return paket.veri;
   }
 
+  if (paket && ondenVer) {
+    // Tazeleme arkada koşuyor; düşerse elde zaten kopya var, ekrana hata
+    // taşınmıyor. Yakalanmayan söz uyarısı çıkmasın diye burada susturuluyor.
+    sunucudanTazele(anahtar, getirici).catch(() => {});
+    yerelZamanYaz(null);
+    return paket.veri;
+  }
+
   try {
     // Çevrimdışı bir istek hemen hata vermiyor, cevap bekleyip asılı kalıyor;
     // hatayı beklemek ekranı saniyelerce boş tutuyordu. Elde kopya varsa
     // beklemenin anlamı yok: kısa süre sonra kopyaya geçiliyor.
-    const veri = paket ? await sinirla(getirici(), BEKLEME_SINIRI) : await getirici();
-    onbellekYaz(anahtar, veri);
+    const tazele = () => sunucudanTazele(anahtar, getirici);
+    const veri = paket ? await sinirla(tazele(), BEKLEME_SINIRI) : await tazele();
     yerelZamanYaz(null);
     return veri;
   } catch (hata) {
@@ -134,6 +182,11 @@ export async function onbellekliGetir<T>(anahtar: string, getirici: () => Promis
     yerelZamanYaz(paket.zaman);
     return paket.veri;
   }
+}
+
+/** Kopyayı sunucudan tazeler — canlı abonelik menü değişince bunu çağırıyor. */
+export function onbellegiTazele<T>(anahtar: string, getirici: () => Promise<T>) {
+  return sunucudanTazele(anahtar, getirici).catch(() => {});
 }
 
 /**

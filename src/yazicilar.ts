@@ -3,6 +3,8 @@ import { fisIcerigi, fisPaketi } from "./fis";
 import type { AdisyonVerisi } from "./adisyonlar";
 import type { SepetKalemi } from "./types";
 import { yerelBas } from "./yerelYazdirma";
+import { hataysaFirlat, onbellegiTazele, onbellekliGetir } from "./onbellek";
+import { tazeleyiciTanit } from "./tanimAbonelik";
 
 /** Yazıcının nasıl bağlandığı — ekranlarda bu sırayla listeleniyor. */
 export const BAGLANTILAR = [
@@ -184,13 +186,21 @@ export type FisSablonu = {
   karekodAdres: string;
 };
 
-export async function istasyonlariGetir(): Promise<Istasyon[]> {
-  const { data } = await supabase
+// İstasyon tanımı seyrek değişiyor ama mutfak ekranı her açılışta sunucudan
+// indiriyordu; kopyadan anında veriliyor, sunucu arkadan okunuyor. Kartlar
+// (bekleyen siparişler) canlı veri, onlar önbelleğe hiç girmiyor.
+export function istasyonlariGetir(): Promise<Istasyon[]> {
+  return onbellekliGetir("istasyonlar", istasyonlariOku, true);
+}
+
+async function istasyonlariOku(): Promise<Istasyon[]> {
+  const sonuc = await supabase
     .from("istasyonlar")
     .select("id, ad, sira, pisirme, paketleme")
     .order("sira")
     .order("id");
-  return ((data as any[]) ?? []).map((i) => ({
+  hataysaFirlat(sonuc);
+  return ((sonuc.data as any[]) ?? []).map((i) => ({
     id: i.id,
     ad: i.ad,
     sira: i.sira,
@@ -217,11 +227,13 @@ export async function istasyonKaydet(
       error.code === "23505" ? "Bu istasyon zaten var." : "İstasyon kaydedilemedi."
     );
   }
+  await onbellegiTazele("istasyonlar", istasyonlariOku);
 }
 
 export async function istasyonSil(id: number) {
   const { error } = await supabase.from("istasyonlar").delete().eq("id", id);
   if (error) throw new Error("İstasyon silinemedi.");
+  await onbellegiTazele("istasyonlar", istasyonlariOku);
 }
 
 export async function yazicilariGetir(): Promise<Yazici[]> {
@@ -671,3 +683,5 @@ export async function kuyruktanIptal(id: number) {
     .eq("id", id);
   if (error) throw new Error("Fiş iptal edilemedi.");
 }
+
+tazeleyiciTanit("istasyonlar", istasyonlariOku);

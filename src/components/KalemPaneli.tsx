@@ -8,7 +8,8 @@ import { kalemTutari, tumAdisyonlar, yeniKalemId } from "../adisyonlar";
 import { bolgeleriGetir } from "../masalar";
 import { adetGoster, paraGoster, paraMetin, paraSayi, paraYaz } from "../para";
 import { indirimYapabilir, yetkiVar } from "../oturum";
-import { odenmezleriGetir, type Odenmez } from "../odenmezler";
+import { ODENMEZ_ANAHTAR, odenmezleriGetir, type Odenmez } from "../odenmezler";
+import { useTanim } from "../tanimAbonelik";
 import type { Bolge, MenuUrun, SepetKalemi } from "../types";
 
 type Props = {
@@ -64,7 +65,8 @@ export default function KalemPaneli({
   const [notMetni, setNotMetni] = useState(kalem.not ?? "");
   const [kip, setKip] = useState<Kip | null>(null);
   const [indirimAcik, setIndirimAcik] = useState(false);
-  const [odenmezler, setOdenmezler] = useState<Odenmez[]>([]);
+  // Liste sunucuda değişince ekran kendiliğinden yeniliyor.
+  const odenmezler = useTanim<Odenmez[]>(ODENMEZ_ANAHTAR, odenmezleriGetir, []);
 
   // Kipin kendi soruları: kaç adet işleme girecek, sebebi ne, kime yazılacak.
   const [kipAdet, setKipAdet] = useState(kalem.adet);
@@ -75,10 +77,6 @@ export default function KalemPaneli({
   const [masaSecimAcik, setMasaSecimAcik] = useState(false);
   const [bolgeler, setBolgeler] = useState<Bolge[]>([]);
   const [doluIdler, setDoluIdler] = useState<Set<number>>(new Set());
-
-  useEffect(() => {
-    odenmezleriGetir().then(setOdenmezler);
-  }, []);
 
   const porsiyonlar = urun?.porsiyonlar ?? [];
 

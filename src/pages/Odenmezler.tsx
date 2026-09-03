@@ -133,19 +133,28 @@ export default function Odenmezler() {
 
   const sil = async () => {
     if (!silinecek) return;
-    const sonuc = await odenmezSil(silinecek.id);
-    setSilinecek(null);
-    setPanel(undefined);
-    await tazele();
-    setBildirim(sonuc === "pasif" ? "Pasife alındı" : "Silindi");
+    try {
+      const sonuc = await odenmezSil(silinecek.id);
+      setSilinecek(null);
+      setPanel(undefined);
+      await tazele();
+      setBildirim(sonuc === "pasif" ? "Pasife alındı" : "Silindi");
+    } catch (e) {
+      setSilinecek(null);
+      setHata(e instanceof Error ? e.message : "Silinemedi.");
+    }
   };
 
   const aktar = async () => {
-    const adet = await personeldenAktar();
-    await tazele();
-    setBildirim(
-      adet > 0 ? `${adet} kişi listeye eklendi` : "Eklenecek yeni kişi yok"
-    );
+    try {
+      const adet = await personeldenAktar();
+      await tazele();
+      setBildirim(
+        adet > 0 ? `${adet} kişi listeye eklendi` : "Eklenecek yeni kişi yok"
+      );
+    } catch (e) {
+      setHata(e instanceof Error ? e.message : "Personel aktarılamadı.");
+    }
   };
 
   // Excel kütüphaneleri düğmeye basılınca yükleniyor; program açılışına binmesin.

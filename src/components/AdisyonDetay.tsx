@@ -19,7 +19,8 @@ import OdemeTipDuzelt from "./OdemeTipDuzelt";
 import { adetGoster, paraGoster } from "../para";
 import { yetkiVar } from "../oturum";
 import { adisyonIkram, adisyonIptal } from "../adisyonlar";
-import { odenmezleriGetir, type Odenmez } from "../odenmezler";
+import { ODENMEZ_ANAHTAR, odenmezleriGetir, type Odenmez } from "../odenmezler";
+import { useTanim } from "../tanimAbonelik";
 import {
   adisyonAktifEt,
   adisyonDetayi,
@@ -64,12 +65,9 @@ export default function AdisyonDetay({
   const [islem, setIslem] = useState<"iptal" | "ikram" | null>(null);
   const [duzeltilen, setDuzeltilen] = useState<Detay["tahsilatlar"][number] | null>(null);
   const [hata, setHata] = useState("");
-  const [odenmezler, setOdenmezler] = useState<Odenmez[]>([]);
+  // Liste sunucuda değişince ekran kendiliğinden yeniliyor.
+  const odenmezler = useTanim<Odenmez[]>(ODENMEZ_ANAHTAR, odenmezleriGetir, []);
   const navigate = useNavigate();
-
-  useEffect(() => {
-    odenmezleriGetir().then(setOdenmezler);
-  }, []);
 
   useEffect(() => {
     setYukleniyor(true);

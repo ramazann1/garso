@@ -1,5 +1,6 @@
 import { acikOturum } from "./oturum";
 import { hataysaFirlat, onbellekliGetir } from "./onbellek";
+import { tazeleyiciTanit } from "./tanimAbonelik";
 import { supabase } from "./supabase";
 
 export type ServisTipi = "tutar" | "yuzde";
@@ -107,7 +108,7 @@ const servisTanimi = (s: any, on: string, varsayilan: ServisTanimi): ServisTanim
 // Tablo artık işletme başına tek satır tutuyor; hangi satırın okunacağını
 // satır güvenliği belirliyor, sorguda ayrıca süzmeye gerek yok.
 export async function ayarlariGetir(): Promise<IsletmeAyarlari> {
-  onbellek = await onbellekliGetir("ayarlar", ayarlariOku);
+  onbellek = await onbellekliGetir("ayarlar", ayarlariOku, true);
   return onbellek;
 }
 
@@ -229,3 +230,5 @@ export async function qrMenuKoduUret() {
 export function qrMenuAdresi(kod: string) {
   return `${window.location.origin}/m/${kod}`;
 }
+
+tazeleyiciTanit("ayarlar", ayarlariOku);

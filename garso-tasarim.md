@@ -225,6 +225,60 @@
 > Karar: ayrı bir `ReactNode` mesaj alanı açılmadı — `hedefOnayMesaji` bir `.ts`
 > dosyasında yaşıyor, oraya JSX giremezdi.
 
+> **Hız işi — önbellek kipi değişti (3 Eyl 2026 akşamı).** Ölçüm zaten vardı,
+> dört maddesi de uygulandı, üstüne iki iş daha çıktı.
+> **(1) Yoklamadan `apikey` başlığı çıktı** (`baglanti.ts`). Sağlık kapısı
+> anahtar sormuyor ama başlık konunca tarayıcı her yoklamadan önce bir de izin
+> isteği (preflight) atıyordu. **8 istek / 2.861 ms → 4 istek / 964 ms.**
+> **(2) `onbellekliGetir`'e `ondenVer` kipi.** Eski kural "önce sunucu, olmazsa
+> yerel"di ve kopya yalnız kopukluk sigortasıydı; bağlantı varken cihazdaki
+> kopya hiç kullanılmıyordu. Artık kopya varsa **beklemeden** veriliyor, sunucu
+> arkadan okunup kopya tazeleniyor. İşletme ayarları **3 kez / 1.737 ms →
+> 1 kez / 350 ms.**
+> **(3) İstek tekilleştirme** — aynı sorgu havadayken ikinci çağrı uçuştakini
+> bekliyor (`tekil`).
+> **(4) Tanım tablolarına canlı abonelik** (`tanimAbonelik.ts`): menü bir
+> cihazda değişince diğerlerinin kopyası tazeleniyor, `ondenVer`in emniyet
+> kemeri. Haber kendi yazdığımız için de geliyor. 1,5 sn dizgin var — toplu
+> aktarımda yüzlerce satır tek tazelemeye iniyor.
+> `sql/2026-09-03-tanim-canli.sql` tabloları yayına ekliyor; **yayında olmayan
+> tablo değişince Supabase haber vermiyor**, kopya bayat kalır.
+> **(5) İstasyon listesi ve `odenmezler` önbelleğe alındı** — ikisi de seyrek
+> değişen tanım ama her ekran açılışında sunucudan iniyordu. İstasyon okuması
+> hatayı yutuyordu; kopyaya geçince boş liste kopyanın üstüne yazılacaktı,
+> `hataysaFirlat` eklendi.
+>
+> **Sonradan çıkan iki gerçek eksik:**
+> - **Kopya tazelenince açık ekrana haber gitmiyordu.** Ödenmezlere eklenen ad
+>   sayfa yenilenmeden düşmüyordu (Ramazan). `ondenVer`i anlatırken "arkadaki
+>   tazeleme o anki ekrana yansımıyor" diye kabul edilmişti; pratikte kabul
+>   edilemezmiş. `useTanim` eklendi (`useCanli` ile aynı desen): ekran veriyi
+>   okuyor ve kopya tazelendikçe kendini yeniliyor. Ödenmezleri okuyan dört
+>   ekranda aynı beş satırlık kalıp gitti.
+> - **Ayar ekranı kendi kaydettiğinin eski hâlini okuyordu:** kaydettikten
+>   sonra listeyi yeniden okuyor, kopyadan eski hâli geliyordu. `tanimTazele`
+>   eklendi, dört kaydetme noktası (kaydet, sil/pasife al, personelden aktar,
+>   toplu plan) kopyayı tazeliyor. Habere güvenmek yetmiyor.
+>
+> **Salon'a dokunulmadı — Ramazan'ın kararı.** "Salon geç açılıyor" dedi,
+> ölçüldü: bölgeler kopyadan anında geliyor, ekranı bekleten tek şey
+> `adisyonlar` okuması (kayıtta 2.078 ms). O bilerek önbelleğe girmiyor — masa
+> doluluğu bayatlarsa garson dolu masaya ikinci hesap açar. Hızlandırmanın tek
+> yolu planı doluluğu beklemeden çizmekti; üç seçenek sunuldu (nötr renksiz /
+> beklemede işaretli / dokunma), **Ramazan "bugünkü gibi kalsın" dedi.**
+>
+> **Ölçümün okunuşuna dair not:** kayıttaki ikizlenmelerin çoğu bizim hatamız
+> değil, `main.tsx` **StrictMode** kullanıyor ve React geliştirme kipinde her
+> efekti bilerek iki kez çalıştırıyor. Üretim yapısında olmayacak.
+>
+> **Yolda bulunan iki eski hata:**
+> - **Ödenmez silme hatası yutuluyordu** (`pages/Odenmezler.tsx`): `sil` ve
+>   "Personelden aktar" hiç `try/catch` kullanmıyordu, sunucu hata verince
+>   ekran hiçbir şey söylemiyordu — onay penceresi bile kapanmıyordu. Kaydet'te
+>   vardı, bu ikisinde unutulmuştu.
+> - Hata görünür olunca sebep çıktı: **`odenmez_kullanimda` fonksiyonu
+>   veritabanında yokmuş** (404). Bkz. sıradaki iş listesi, 1. madde.
+
 > **Masa Seçim penceresi yeni dile geçti (3 Eyl 2026).** Kendi kabuğu vardı
 > (`.onay-fon` + `.masa-secim`), elle yazılmış değerlerle: `18px`/`13px`/`9px`
 > köşe, `0 12px 40px rgba(0,0,0,.18)` gölge, `.16s ease` geçiş, `#dde4ed`.
@@ -363,38 +417,24 @@
 > menü çalışır durumda, çevrimdışının kalan ucu tek bir akış). Önce elde biriken
 > küçük işler temizlendi; dördü de 1 Eyl akşamı kapandı. Kalan sıra:
 >
-> 0. **HIZ — ekranlar yavaş açılıyor** (3 Eyl 2026 kararı, sıranın başına
->    alındı). Ramazan: "projemizin çok hızlı olması lazım, Adisyo çok hızlı."
->    **Ölçüldü — HAR kaydı alındı (3 Eyl 2026), 56 Supabase isteği, toplam
->    ~16,5 sn sunucu beklemesi; bunun ~9,6 saniyesi gereksiz.** Döküm:
->    - **Bağlantı yoklaması: 8 istek / 2.861 ms.** `baglanti.ts:54` her 30
->      saniyede `auth/v1/health` soruyor ama isteğe `apikey` başlığı eklendiği
->      için tarayıcı önce OPTIONS (preflight) atıyor — her yoklama **iki**
->      istek, ikisi de sıfır veri getiriyor.
->    - **Menü iki kez baştan okundu: 10 istek / ~5.000 ms.** İki masaya
->      girilince `urunler + secenek_gruplari + birimler + kdv_gruplari +
->      kategoriler` beşi birden iki kez indi.
->    - **İşletme ayarları 3 kez: 1.737 ms.**
->    - **`rpc/giris_kuruldu` 2 kez, ikisi de tam 451 ms** — eşzamanlı ikizleme.
->    **Kök sebep tek:** `onbellekliGetir` bağlantı varken cihazdaki kopyayı
->    **hiç kullanmıyor**, her çağrıda sunucuya gidiyor (kendi yorumunda da
->    "hızlandırma değil, kopukluk sigortası" yazıyor). Menü, ayarlar, bölgeler,
->    ödeme tipleri bu yüzden tekrar tekrar iniyor.
->    **Çürüyen tez:** "sorguyu hafiflet" tek başına işe yaramaz — 0,9 kB'lık
->    `bolgeler` 936 ms, 8,7 kB'lık `urunler` 629 ms sürüyor. Boyutla süre
->    ilgisiz, sorun **istek sayısı ve gecikme**. Menüyü ikiye ayırma ve
->    Supabase bölgesi işi bu yüzden rafa kalktı.
->    **Yapılacaklar (sırayla):**
->    1. Yoklamadan `apikey` başlığını çıkar → preflight biter, istek yarıya iner
->    2. `onbellekliGetir`'e **önce kopyayı ver, arkada tazele** kipi
->    3. **İstek tekilleştirme** — aynı sorgu havadayken ikinci çağrı uçuştakini
->       beklesin (ikizlenmeler biter)
->    4. Menüye canlı abonelik — önbelleğin emniyet kemeri, menü değişince
->       diğer cihazlar haber alsın (şu an aboneliği yok)
->    **Değişmeyecek kural:** adisyon, tahsilat, masa doluluğu önbelleğe girmez.
->    Bir dakika öncesinin masa durumu yanlış bilgidir.
->    **Bitince aynı HAR kaydı tekrar alınıp rakam karşılaştırılacak.**
-> 1. **Görsel dilin yayılması — beğenilmeyen ekranlar** (2 Eyl 2026 seansında
+> 0. **HIZ — açık ekranların tanım verisinden haberdar olması.** Ana iş
+>    3 Eyl 2026'da yapıldı (aşağıda), **`odenmezler` bitti**; aynı kanca
+>    (`useTanim`) menü, işletme ayarları, bölgeler ve ödeme tiplerini okuyan
+>    ekranlara da geçirilecek. Şu an oralarda kopya arkada tazeleniyor ama
+>    **açık duran ekran bunu görmüyor**, bir sonraki açılışta geçerli oluyor.
+>    Ayrıca **HAR kaydı yeniden alınıp rakam karşılaştırılacak** — eldeki kayıt
+>    61 saniyelik ve içinde menü düzenlemesi var, 56 istek / 16,5 sn'lik eski
+>    ölçümle doğrudan kıyaslanamıyor.
+> 1. **`sql/2026-09-06-adisyon-okuma.sql` çalıştırılmamış.** Ödenmez silme
+>    404 verince ortaya çıktı: dosyadaki `odenmez_kullanimda` fonksiyonu
+>    veritabanında yoktu. Fonksiyon `sql/2026-09-03-odenmez-sayim.sql` ile ayrı
+>    alındı, silme çalışıyor. **Ama dosyanın asıl gövdesi — adisyon, tur, kalem
+>    ve tahsilat tablolarının okuma yetkileri (RLS) — muhtemelen hiç
+>    uygulanmadı**, yani "kim hangi adisyonu görebilir" kısıtı şu an yok.
+>    Körlemesine çalıştırılmayacak: önce dosyanın ne yaptığı beraber gözden
+>    geçirilecek, sonra denenecek. Ramazan'ın kuralı geçerli — günlük işe
+>    dokunan güvenlik önlemi kabul edilmiyor.
+> 2. **Görsel dilin yayılması — beğenilmeyen ekranlar** (2 Eyl 2026 seansında
 >    başlandı, devam ediyor). Biten: tahsilat penceresi, Hızlı Öde, Adisyon
 >    Detay, **Kalem Paneli**, **sipariş ekranı**, **Adisyon Bilgisi**,
 >    **Onay Modal**, **Masa Seçim**, **Misafir Sayısı** (aşağıda).
@@ -410,7 +450,7 @@
 >    **İndirim modalına dokunulmayacak** — Ramazan beğeniyor (2 Eyl 2026).
 >    Ardından bütün ekranlar köşe/gölge/geçiş belirteçlerine geçirilecek.
 >    **Stok bu iş bitene kadar bekliyor** — Ramazan görüntüyü öne aldı.
-> 2. **Stok** — malzeme, reçete, otomatik düşüm, kritik stok uyarısı, maliyet/kârlılık
+> 3. **Stok** — malzeme, reçete, otomatik düşüm, kritik stok uyarısı, maliyet/kârlılık
 >    **Karar (1 Eyl 2026):** Garso hazır malzeme listesiyle gelmez. Her işletme
 >    kendi malzemesini kendi girer — hangi malzeme setini kullandığı önceden
 >    bilinemez. Modül boş listeyle açılır; kolaylık gerekirse Excel ile toplu
@@ -436,14 +476,14 @@
 >    **Miktarlar en küçük birimde tam sayı** tutulur (gram/mililitre/adet) —
 >    para kuruşunda yaptığımızın aynısı, float yuvarlama hatası çıkmasın diye.
 >    Ekranda kg gösterilir, veritabanında gram durur.
-> 3. **Gelişmiş raporlar** — saatlik ciro, personel performansı, karşılaştırmalı analiz
-> 4. **Cari / veresiye modülü**
-> 5. **Masasız adisyonun çevrimdışı açılması** — offline'ın açık kalan tek ucu
-> 6. **QR menünün kalanı** — kategori/kapak görselleri, masadan sipariş, garson çağırma, masa başına karekod
-> 7. **Kurye atama ve teslimat takibi** — önce Adisyo'da canlı tur, sonra plan
-> 8. **Sadakat programı** (puan, kampanya)
-> 9. **Çoklu şube** — merkezi menü, şube karşılaştırma
-> 10. **İkon boyut standardı** — bütün ekranlar tek tek gezilecek, en sonda
+> 4. **Gelişmiş raporlar** — saatlik ciro, personel performansı, karşılaştırmalı analiz
+> 5. **Cari / veresiye modülü**
+> 6. **Masasız adisyonun çevrimdışı açılması** — offline'ın açık kalan tek ucu
+> 7. **QR menünün kalanı** — kategori/kapak görselleri, masadan sipariş, garson çağırma, masa başına karekod
+> 8. **Kurye atama ve teslimat takibi** — önce Adisyo'da canlı tur, sonra plan
+> 9. **Sadakat programı** (puan, kampanya)
+> 10. **Çoklu şube** — merkezi menü, şube karşılaştırma
+> 11. **İkon boyut standardı** — bütün ekranlar tek tek gezilecek, en sonda
 >
 > Ertelenen üçlü (3-5) buraya konuldu: acelesi yok ama stok ve raporlardan
 > sonra, sadakat ve çoklu şubeden önce. Ardından canlıya çıkış işleri

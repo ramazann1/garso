@@ -30,6 +30,7 @@ import { useGorunum } from "./mobil/mobilTercih";
 import KilitEkrani from "./components/KilitEkrani";
 import CevrimdisiSerit from "./components/CevrimdisiSerit";
 import { baglantiyiIzle, sureSinirli, useBaglanti } from "./baglanti";
+import { tanimlariIzle } from "./tanimAbonelik";
 import { kuyruguIzle } from "./kuyruk";
 import { bekleyenPinIzle, girisKuruldu, kilitle, oturumuYukle, useOturum } from "./oturum";
 
@@ -43,6 +44,10 @@ function App() {
   // Bağlantı izlemesi program açılır açılmaz başlıyor: giriş ekranındayken de
   // kopukluk görünsün, garson "şifremi mi yanlış girdim" diye uğraşmasın.
   useEffect(baglantiyiIzle, []);
+
+  // Menü, ayarlar, bölgeler gibi tanımlar cihazdaki kopyadan veriliyor; sunucuda
+  // değişince kopyanın haber alması için abonelik açılışta kuruluyor.
+  useEffect(tanimlariIzle, []);
 
   // Bekleyen siparişler bağlantı gelir gelmez gönderiliyor. Program yeniden
   // açılsa da kuyruk cihazda durduğu için kayıp yok.
