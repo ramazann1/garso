@@ -97,6 +97,66 @@
 > penceresi, Adisyon Detay, Kalem Paneli, sipariş ekranı, Adisyon Bilgisi ve
 > onay kabuğu uygulandı).
 
+> **Aktarım Onayı yenilendi (3 Eyl 2026 gecesi).** Kendi kabuğunu yazmıştı
+> (`.modal-fon` + `.aktarim-modal`): fon bulanmıyor, açılış animasyonu yok,
+> köşe 18px elle, gölge `rgba(0,0,0,.18)` **siyah**, kapat düğmesi olarak arama
+> kutusunun `.arama-temizle` sınıfı ödünç alınmış, hiçbir geçiş yok.
+> Ortak kabuğa geçti (`.up-fon`/`.up-modal tam`/`.up-ust`/`.up-kapat`),
+> başlığa mercan halkalı `FileSpreadsheet` ikonu geldi, Escape kapatıyor —
+> **yazma sürerken kapatmıyor**. Açık bölüm artık mercan çerçeve + `--mercan-sis`
+> başlıkla belli oluyor (eski `#ffd9cd` soluk pembeydi, açık olduğu
+> anlaşılmıyordu). Pasif "yaz" düğmesi `opacity: .45` ile sönüyordu — onay
+> penceresinde düzelttiğimiz hatanın aynısı, nötr griye çevrildi.
+> Sınıflar `ak-` önekli: `aktarim-` adı **Aktar sekmesinin kartlarında**
+> (`.aktarim-kart`, `.aktarim-buton`) da kullanılıyor, karışmasın diye.
+
+> **Toplu Düzenle yenilendi (3 Eyl 2026 gecesi).** Önce Adisyo'da tur atıldı
+> (Ürünler → ⋮ → Toplu Ürün İşlemleri; canlı masada ÇEREZ TABAĞI fiyatı
+> 410→411 yapılıp geri alındı, Kaydet'e hiç basılmadı).
+> **Tek cümlelik ders: Adisyo tür fiyatlarını sütun açarak değil, o satırın
+> fiyat hücresini bölerek veriyor** ("Sipariş türüne göre özelleştir" →
+> Masa/Gel Al/Paket, "Tek Fiyat Gir" ile geri).
+> **Adisyo'nun ölçüleri:** satır 66–79px, tablo yazısı 14px / başlık 16px-600,
+> çizgi `0.8px rgba(0,0,0,.05)`, tabloya kalan yer 751px pencerede **389px**,
+> liste 14.640px sanal kaydırma (sayfalama yok).
+> **Almadıklarımız:** (a) her hücrenin üstündeki minik etiket ("Birim",
+> "Fiyat") — `rgba(0,0,0,.54)` ile silik ve sütun başlığının tekrarı; Adisyo
+> bunu **başlık satırı sabit olmadığı için** yapmak zorunda, doğru çözüm etiket
+> değil sabit başlık. (b) Değişikliğin hiç işaretlenmemesi — 411 yazıldı, odak
+> gidince ayırt edilemedi, ne sayaç ne Kaydet'te fark var. (c) 66–79px satır:
+> toplu düzenlemenin anlamı çok satırı bir arada görmek. (d) Fiyat rakamının
+> kırmızı bağlantının üstüne binmesi (gerçek hizalama hatası).
+> **Adisyo'da "hepsine uygula" hiç yok** — bizdeki en güçlü taraf.
+>
+> **Bizde yapılanlar.** Belirteçler: beş ayrı köşe değeri (8/9/10/11/13px) →
+> `--r-kk`/`--r-or`, `#dde4ed`/`#e7edf5`/`#edf2f9` → `--cizgi`/`--cizgi-koyu`,
+> `.15s ease` → `--gecis`. "Hepsine uygula" şeridi **pembe kutuydu**
+> (`#fff6f2` + `#f2d8cd`, projede başka hiçbir yerde olmayan renk) →
+> `--mercan-sis` + mercan çerçeve; rengi korundu çünkü o şerit tek tuşla bütün
+> listeyi değiştiriyor, kapsamı görünmeli. İki yerdeki `opacity: .45` kalktı.
+> `★` düz karakteri gitti, **bütün sütun başlıkları ikonlu**.
+> **Başlık satırı sabitlendi** — Adisyo'nun çözemediği asıl problem.
+> **Yatay kaydırma kaldırıldı (Ramazan'ın isteği), sütun 10'dan 7'ye indi:**
+> kategori kendi sütunu değil ürün adının altında; **Satışta/Mutfakta/Favori
+> üç sütundu, tek "Görünürlük" sütununda üç ikon düğmesi oldu** (açık olan
+> mercan dolgulu). `table-layout: fixed` + genişlikler `th`'lere yazıldı.
+> **Tür fiyatı satırın altındaki kendi şeridinde** (ürün hücresine sığdırmak
+> denendi, hücre şişip tabloyu sağa itiyordu). Şerit mercan çerçeveli, sonunda
+> "Boş bırakılan tür 50 ₺ ile satılır" notu var.
+> **Karar (Ramazan): varsayılan tek fiyat.** Panel kendiliğinden hiç açılmıyor,
+> kullanıcı yandaki tuşla açıyor. Önce "tür fiyatı doluysa aç" denendi ve
+> **bütün tablo açıldı** — menüde masa/gel al/paket fiyatları tek fiyatla
+> birebir aynı yazılmış (50/50/50). Sonra "tek fiyattan farklıysa aç" denendi,
+> o da kaldırıldı. Kalan iz: ayrışan fiyatı olan porsiyonda **tuş mercan
+> renkte** duruyor — kapalı panelde saklı fiyat bilinmezse tek fiyata zam
+> yapılır, satış eski fiyattan devam eder.
+> **Tek fiyata dönünce üç tutar temizleniyor**, temizlik değişiklik sayılıyor.
+> **Yolda çıkan hata:** `.toplu-sar`'a konan `overflow-x` sabit başlığı
+> kırıyordu — gizlense de kaydırılsa da kap kendi kaydırma bağlamını kuruyor.
+> Kaldırıldı, tablo sabit yerleşimle zaten sığıyor.
+> **Dokunulmayanlar:** `varsayilan-tus` (3 ekranda ortak) ve `ms-urunler`/
+> `ms-arama` (13 ekranda ortak). Mobil karşılığı yok, ekran kasaya özgü.
+
 > **Kalem Paneli yenilendi (3 Eyl 2026).** Önce Adisyo'da kalem detay
 > penceresinde tur atıldı (canlı masada ikram/sil/taşı üçü de açılıp Vazgeç ile
 > çıkıldı, veri değişmedi). **Tek cümlelik ders: Adisyo'da ikram ve taşıma
@@ -466,10 +526,11 @@
 > 1. **Görsel dilin yayılması — beğenilmeyen ekranlar** (2 Eyl 2026 seansında
 >    başlandı, devam ediyor). Biten: tahsilat penceresi, Hızlı Öde, Adisyon
 >    Detay, **Kalem Paneli**, **sipariş ekranı**, **Adisyon Bilgisi**,
->    **Onay Modal**, **Masa Seçim**, **Misafir Sayısı** (aşağıda).
->    **Sıradaki: Aktarım Onayı.** Henüz elden geçmemişler:
->    Aktarım Onayı, Toplu Düzenle, Sıralama,
->    Kampanya Seçim, Müşteri Detay/Seçici, Bildirim, Köprü İndir, Kilit Ekranı.
+>    **Onay Modal**, **Masa Seçim**, **Misafir Sayısı**, **Aktarım Onayı**,
+>    **Toplu Düzenle** (aşağıda).
+>    **Sıradaki: Sıralama.** Henüz elden geçmemişler:
+>    Sıralama, Kampanya Seçim, Müşteri Detay/Seçici, Bildirim, Köprü İndir,
+>    Kilit Ekranı.
 >    **Bu seansta çıkan iş:** `mobil/Siparis.tsx` içindeki **`MasaHedefi`**
 >    bileşeni `MasaSecim`'in mobil ikizi — masaüstü–mobil eşitliği gereği
 >    silinip ortak bileşene bağlanmalı (Misafir Sayısı'nda yapılanın aynısı).

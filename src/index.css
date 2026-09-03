@@ -4483,26 +4483,39 @@ body {
 .toplu-kategori {
   flex: 0 0 auto;
   padding: 10px 12px;
-  border: 1px solid #dde4ed;
-  border-radius: 11px;
-  background: var(--zemin);
-  font-size: 13px;
+  border: 1px solid var(--cizgi-koyu);
+  border-radius: var(--r-or);
+  background: var(--kart);
+  font-size: 14px;
   font-family: inherit;
   color: var(--metin);
   cursor: pointer;
+  transition: border-color var(--gecis);
+}
+
+.toplu-kategori:hover {
+  border-color: var(--mercan);
 }
 
 .toplu-tus {
   flex: 0 0 auto;
+  display: inline-flex;
+  align-items: center;
+  gap: 7px;
   padding: 10px 14px;
-  border: 1px solid #dde4ed;
-  border-radius: 11px;
+  border: 1px solid var(--cizgi-koyu);
+  border-radius: var(--r-or);
   background: var(--kart);
-  font-size: 13px;
+  font-size: 14px;
   font-family: inherit;
   color: var(--metin);
   cursor: pointer;
-  transition: background 0.15s ease, color 0.15s ease, border-color 0.15s ease;
+  transition: background var(--gecis), color var(--gecis), border-color var(--gecis);
+}
+
+.toplu-tus:hover {
+  border-color: var(--mercan);
+  color: var(--mercan);
 }
 
 .toplu-tus.aktif {
@@ -4511,6 +4524,8 @@ body {
   color: #fff;
 }
 
+/* Bir hamlede bütün listeyi değiştiren şerit — kendi rengiyle duruyor ki
+   yanlışlıkla basılan tuşun kapsamı görünsün. */
 .toplu-hepsi {
   display: flex;
   align-items: center;
@@ -4518,13 +4533,13 @@ body {
   gap: 8px 18px;
   margin-bottom: 12px;
   padding: 12px 14px;
-  border: 1px solid #f2d8cd;
-  border-radius: 13px;
-  background: #fff6f2;
+  border: 1px solid var(--mercan);
+  border-radius: var(--r-or);
+  background: var(--mercan-sis);
 }
 
 .toplu-hepsi strong {
-  font-size: 13px;
+  font-size: 14px;
   font-weight: 600;
 }
 
@@ -4532,16 +4547,16 @@ body {
   display: flex;
   align-items: center;
   gap: 7px;
-  font-size: 13px;
-  color: var(--soluk);
+  font-size: 14px;
+  color: var(--metin);
 }
 
 .toplu-hepsi select {
   padding: 7px 10px;
-  border: 1px solid #dde4ed;
-  border-radius: 9px;
+  border: 1px solid var(--cizgi-koyu);
+  border-radius: var(--r-kk);
   background: var(--kart);
-  font-size: 13px;
+  font-size: 14px;
   font-family: inherit;
   color: var(--metin);
   cursor: pointer;
@@ -4551,20 +4566,20 @@ body {
   display: flex;
   align-items: center;
   gap: 6px;
-  font-size: 13px;
-  color: var(--soluk);
+  font-size: 14px;
+  color: var(--metin);
 }
 
 .hepsi-ikili button {
   padding: 6px 12px;
-  border: 1px solid #dde4ed;
-  border-radius: 9px;
+  border: 1px solid var(--cizgi-koyu);
+  border-radius: var(--r-kk);
   background: var(--kart);
-  font-size: 13px;
+  font-size: 14px;
   font-family: inherit;
   color: var(--metin);
   cursor: pointer;
-  transition: background 0.15s ease, border-color 0.15s ease;
+  transition: background var(--gecis), border-color var(--gecis), color var(--gecis);
 }
 
 .hepsi-ikili button:hover:not(:disabled) {
@@ -4572,83 +4587,118 @@ body {
   color: var(--mercan);
 }
 
+/* Pasif düğme solmuyor: silik yazı bozuk düğme gibi duruyor, nötr gri duruyor. */
 .toplu-hepsi button:disabled,
 .toplu-hepsi select:disabled {
-  opacity: 0.45;
+  background: var(--zemin);
+  border-color: var(--cizgi);
+  color: var(--soluk);
   cursor: default;
 }
 
 .toplu-hepsi small {
   flex-basis: 100%;
-  font-size: 13px;
-  color: var(--soluk);
+  font-size: 14px;
+  color: var(--metin);
 }
 
+/* Burada overflow tanımlanmıyor: gizlense de kaydırılsa da kap kendi kaydırma
+   bağlamını kuruyor ve başlık satırının yapışması bozuluyor. Tablo sabit
+   yerleşimle zaten ekrana sığıyor. */
 .toplu-sar {
-  overflow-x: auto;
+  position: relative;
 }
 
 .toplu-tablo {
   width: 100%;
+  table-layout: fixed;
   border-collapse: collapse;
-  font-size: 13px;
+  font-size: 14px;
 }
 
+/* Başlık kaydırırken kaybolmuyor — kaybolsaydı her hücrenin üstüne
+   sütun adını tekrar yazmak gerekirdi. */
 .toplu-tablo th {
-  padding: 8px 8px 10px;
-  border-bottom: 1px solid #dde4ed;
-  font-size: 13px;
+  position: sticky;
+  top: 0;
+  z-index: 2;
+  padding: 10px 8px 12px;
+  background: var(--kart);
+  border-bottom: 1px solid var(--cizgi-koyu);
+  font-size: 14px;
   font-weight: 600;
-  color: var(--soluk);
+  color: var(--metin);
   text-align: center;
   white-space: nowrap;
 }
 
+.toplu-baslik {
+  display: inline-flex;
+  align-items: center;
+  gap: 6px;
+}
+
+.toplu-baslik svg {
+  color: var(--mercan);
+  flex-shrink: 0;
+}
+
 .toplu-tablo th.sol { text-align: left; }
 .toplu-tablo th.sag { text-align: right; }
+.toplu-tablo th.sag .toplu-baslik { flex-direction: row-reverse; }
 
 .toplu-tablo td {
   padding: 4px 6px;
-  border-bottom: 1px solid #e7edf5;
+  border-bottom: 1px solid var(--cizgi);
   vertical-align: middle;
 }
 
+.toplu-tablo tbody tr:hover td {
+  background: var(--kart-ust);
+}
+
 .toplu-tablo tr.ek-porsiyon td {
-  border-bottom-color: #edf2f9;
+  border-bottom-color: var(--cizgi);
 }
 
 .toplu-tablo input {
   width: 100%;
   padding: 8px 9px;
   border: 1px solid transparent;
-  border-radius: 8px;
+  border-radius: var(--r-kk);
   background: var(--zemin);
-  font-size: 13px;
+  font-size: 14px;
   font-family: inherit;
   color: var(--metin);
-  transition: border-color 0.15s ease, box-shadow 0.15s ease, background 0.15s ease;
+  transition: border-color var(--gecis), box-shadow var(--gecis), background var(--gecis);
 }
 
 .toplu-tablo input:focus {
   outline: none;
   background: var(--kart);
   border-color: var(--mercan);
-  box-shadow: 0 0 0 3px rgba(255, 107, 69, 0.16);
+  box-shadow: 0 0 0 3px var(--mercan-sis);
 }
 
 /* Dokunulan hücre kaydedilene kadar işaretli kalır. */
 .toplu-tablo input.degisti {
   border-color: var(--mercan);
-  background: #fff3ef;
+  background: var(--mercan-sis);
   font-weight: 600;
 }
 
-.toplu-ad { min-width: 190px; }
-.toplu-kod { width: 110px; }
-.toplu-kdv { width: 132px; }
+/* Sabit yerleşimde ölçüyü başlık satırı belirliyor; adı kalan yer alıyor. */
+.toplu-tablo th.s-kod { width: 108px; }
+.toplu-tablo th.s-kdv { width: 132px; }
+.toplu-tablo th.s-porsiyon { width: 128px; }
+.toplu-tablo th.s-para { width: 126px; }
+.toplu-tablo th.s-imler { width: 136px; }
 
+/* Kategori kendi sütunuydu; ekrana sığması için ürünün altına indi —
+   düzenlenen bir alan değil, kimlik bilgisi. */
 .toplu-kategori-ad {
-  max-width: 180px;
+  display: block;
+  margin: 3px 0 0 9px;
   overflow: hidden;
   text-overflow: ellipsis;
   white-space: nowrap;
@@ -4665,56 +4715,147 @@ body {
   font-style: italic;
 }
 
-.toplu-para {
-  width: 96px;
-}
-
 .toplu-para input {
   text-align: right;
   font-variant-numeric: tabular-nums;
 }
 
-.toplu-anahtar-hucre,
-.toplu-favori {
-  width: 62px;
-  text-align: center;
+.toplu-fiyat {
+  display: flex;
+  align-items: center;
+  gap: 4px;
 }
 
-.toplu-anahtar {
-  display: inline-flex;
-  padding: 0;
+/* Sipariş türü fiyatı ürünlerin azında var; sütun açmak yerine o satırın
+   fiyat hücresi ikiye ayrılıyor. */
+.toplu-tur-tus {
+  display: grid;
+  place-items: center;
+  flex: 0 0 28px;
+  height: 28px;
   border: none;
+  border-radius: var(--r-kk);
   background: none;
+  color: var(--soluk);
   cursor: pointer;
+  transition: background var(--gecis), color var(--gecis);
 }
 
-.toplu-anahtar .anahtar {
-  flex: 0 0 40px;
+.toplu-tur-tus:hover,
+.toplu-tur-tus.acik {
+  background: var(--mercan-sis);
+  color: var(--mercan);
 }
 
-.toplu-anahtar.acik .anahtar {
+/* Panel kapalıyken de türe göre ayrı fiyat olduğu belli olsun — bilinmezse
+   tek fiyata zam yapılır, satış eski fiyattan devam eder. */
+.toplu-tur-tus.dolu {
+  color: var(--mercan);
+}
+
+/* Tür fiyatları ürünün altındaki kendi şeridinde; sütun ölçüleri oynamıyor. */
+.toplu-tur-satir td {
+  padding: 0 6px 10px;
+  border-bottom: 1px solid var(--cizgi);
+}
+
+.toplu-tur {
+  display: flex;
+  align-items: flex-end;
+  flex-wrap: wrap;
+  gap: 8px 14px;
+  padding: 10px 12px;
+  border: 1px solid var(--mercan);
+  border-left-width: 3px;
+  border-radius: var(--r-or);
+  background: var(--mercan-sis);
+}
+
+.toplu-tur-ad {
+  display: inline-flex;
+  align-items: center;
+  gap: 6px;
+  padding-bottom: 8px;
+  font-size: 14px;
+  font-weight: 600;
+  color: var(--metin);
+}
+
+.toplu-tur-ad svg {
+  color: var(--mercan);
+}
+
+.toplu-tur-kutu {
+  flex: 0 0 130px;
+}
+
+.toplu-tur-kutu span {
+  display: block;
+  margin-bottom: 3px;
+  font-size: 13px;
+  color: var(--metin);
+}
+
+.toplu-tur-kutu input {
+  padding: 7px 9px;
+  background: var(--kart);
+  text-align: right;
+  font-variant-numeric: tabular-nums;
+}
+
+.toplu-tur-not {
+  padding-bottom: 8px;
+  font-size: 13px;
+  color: var(--soluk);
+}
+
+/* Satışta / Mutfakta / Favori tek sütunda üç işaret. */
+.toplu-imler {
+  text-align: center;
+  white-space: nowrap;
+}
+
+.toplu-im {
+  display: inline-grid;
+  place-items: center;
+  width: 34px;
+  height: 34px;
+  margin: 0 1px;
+  border: 1px solid var(--cizgi);
+  border-radius: var(--r-kk);
+  background: var(--kart);
+  color: var(--soluk);
+  cursor: pointer;
+  transition: background var(--gecis), color var(--gecis), border-color var(--gecis);
+}
+
+.toplu-im:hover {
+  border-color: var(--mercan);
+  color: var(--mercan);
+}
+
+.toplu-im.acik {
+  border-color: var(--mercan);
   background: var(--mercan);
-}
-
-.toplu-anahtar.acik .anahtar::after {
-  transform: translateX(17px);
+  color: #fff;
 }
 
 .toplu-alt {
   position: sticky;
   bottom: 0;
+  z-index: 3;
   display: flex;
   align-items: center;
   gap: 12px;
   margin-top: 16px;
   padding: 14px 0 2px;
-  border-top: 1px solid #e7edf5;
+  border-top: 1px solid var(--cizgi);
   background: var(--kart);
 }
 
 .toplu-durum {
   flex: 1;
-  font-size: 13px;
+  font-size: 14px;
   color: var(--soluk);
 }
 
@@ -4725,17 +4866,25 @@ body {
 
 .toplu-alt .iptal {
   padding: 10px 18px;
-  border: 1px solid #dde4ed;
-  border-radius: 10px;
+  border: 1px solid var(--cizgi-koyu);
+  border-radius: var(--r-kk);
   background: var(--kart);
   font-size: 14px;
   font-family: inherit;
   color: var(--metin);
   cursor: pointer;
+  transition: border-color var(--gecis), color var(--gecis);
+}
+
+.toplu-alt .iptal:hover:not(:disabled) {
+  border-color: var(--mercan);
+  color: var(--mercan);
 }
 
 .toplu-alt button:disabled {
-  opacity: 0.45;
+  background: var(--zemin);
+  border-color: var(--cizgi);
+  color: var(--soluk);
   cursor: default;
 }
 
@@ -4744,27 +4893,28 @@ body {
   min-width: 92px;
   padding: 8px 9px;
   border: 1px solid transparent;
-  border-radius: 8px;
+  border-radius: var(--r-kk);
   background: var(--zemin);
-  font-size: 13px;
+  font-size: 14px;
   font-family: inherit;
   color: var(--metin);
   cursor: pointer;
-  transition: border-color 0.15s ease, box-shadow 0.15s ease, background 0.15s ease;
+  transition: border-color var(--gecis), box-shadow var(--gecis), background var(--gecis);
 }
 
 .toplu-tablo select:focus {
   outline: none;
   background: var(--kart);
   border-color: var(--mercan);
-  box-shadow: 0 0 0 3px rgba(255, 107, 69, 0.16);
+  box-shadow: 0 0 0 3px var(--mercan-sis);
 }
 
 .toplu-tablo select.degisti {
   border-color: var(--mercan);
-  background: #fff3ef;
+  background: var(--mercan-sis);
   font-weight: 600;
 }
+
 
 /* İşlem sonucu bildirimi — kendi kapanır, akışı kesmez. */
 
@@ -4871,21 +5021,6 @@ body {
 
 .aktarim-buton.ikincil:hover {
   background: #f4f7fc;
-}
-
-.ilerleme-cubuk {
-  height: 6px;
-  border-radius: 999px;
-  background: #e7edf5;
-  overflow: hidden;
-}
-
-.ilerleme-cubuk span {
-  display: block;
-  height: 100%;
-  border-radius: 999px;
-  background: var(--mercan);
-  transition: width 0.2s ease;
 }
 
 .ozet-ilerleme small {
@@ -15137,78 +15272,71 @@ body {
 }
 
 /* --- Excel aktarım onayı ------------------------------------------------- */
-/* Özet eskiden sayfanın altında dar bir kartta duruyordu; ürün listeleri oraya
-   sığmıyordu. Pencere ekranın ortasında, listeler kendi kutusunda kayıyor. */
+/* Ortak pencere kabuğunu kullanıyor (.up-fon / .up-modal). Buradaki kurallar
+   yalnız içerik: sayı şeridi, açılır bölümler ve yazma ilerlemesi.
+   Kendi sınıfları ak- önekli — .aktarim- adı Aktar sekmesinin kartlarında. */
 
-.aktarim-modal {
-  display: flex;
-  flex-direction: column;
-  width: min(640px, calc(100vw - 40px));
-  max-height: calc(100vh - 64px);
-  border-radius: 18px;
-  background: var(--kart);
-  box-shadow: 0 18px 48px rgba(0, 0, 0, 0.18);
-  overflow: hidden;
+.ak-modal {
+  max-width: 660px;
 }
 
-.aktarim-modal > header {
-  display: flex;
-  align-items: flex-start;
-  gap: 12px;
-  padding: 20px 22px 16px;
-  border-bottom: 1px solid #e7edf5;
+.ak-im {
+  display: grid;
+  place-items: center;
+  width: 34px;
+  height: 34px;
+  border-radius: var(--r-tam);
+  background: var(--mercan-sis);
+  color: var(--mercan);
 }
 
-.aktarim-modal > header h3 {
-  font-size: 18px;
-  color: var(--metin);
+.ak-baslik {
+  flex: 1;
+  min-width: 0;
 }
 
-.aktarim-modal > header span {
+.ak-baslik span {
   display: block;
-  margin-top: 3px;
-  font-size: 13px;
+  margin-top: 2px;
+  font-size: 14px;
   color: var(--soluk);
   overflow-wrap: anywhere;
 }
 
-.aktarim-modal > header div {
-  flex: 1;
-}
-
-.aktarim-sayilar {
+.ak-sayilar {
   display: flex;
   gap: 10px;
   padding: 16px 22px;
 }
 
-.aktarim-sayilar div {
+.ak-sayilar div {
   flex: 1;
   padding: 12px 8px;
-  border-radius: 12px;
-  background: #f4f7fc;
+  border-radius: var(--r-or);
+  background: var(--kart-ust);
+  border: 1px solid var(--cizgi);
   text-align: center;
 }
 
-.aktarim-sayilar strong {
+.ak-sayilar strong {
   display: block;
   font-size: 22px;
   color: var(--metin);
 }
 
-.aktarim-sayilar span {
-  font-size: 13px;
+.ak-sayilar span {
+  font-size: 14px;
   line-height: 1.4;
   color: var(--soluk);
 }
 
-.aktarim-sayilar .hatali strong {
+.ak-sayilar .hatali strong {
   color: var(--mercan);
 }
 
 /* Bölümler penceredeki kalan yeri paylaşıyor: açık olan uzuyor, kapalılar
    başlık yüksekliğinde kalıyor. */
-.aktarim-bolumler {
+.ak-bolumler {
   flex: 1;
   display: flex;
   flex-direction: column;
@@ -15217,111 +15345,124 @@ body {
   padding: 0 22px 4px;
 }
 
-.aktarim-bolum {
+.ak-bolum {
   display: flex;
   flex-direction: column;
   min-height: 0;
-  border: 1px solid #dee5ef;
-  border-radius: 12px;
+  border: 1px solid var(--cizgi);
+  border-radius: var(--r-or);
   overflow: hidden;
+  transition: border-color var(--gecis);
 }
 
-.aktarim-bolum.acik {
+.ak-bolum.acik {
   flex: 1;
-  border-color: #ffd9cd;
+  border-color: var(--mercan);
 }
 
-.aktarim-bolum > button {
+.ak-bolum > button {
   display: flex;
   align-items: center;
   gap: 8px;
   width: 100%;
   padding: 12px 14px;
   border: none;
-  background: #f4f7fc;
+  background: var(--kart-ust);
   font: inherit;
   font-size: 14px;
   font-weight: 600;
   color: var(--metin);
   text-align: left;
   cursor: pointer;
+  transition: background var(--gecis);
 }
 
-.aktarim-bolum > button svg {
+.ak-bolum > button:hover {
+  background: var(--cizgi);
+}
+
+.ak-bolum.acik > button {
+  background: var(--mercan-sis);
+}
+
+.ak-bolum > button svg {
   color: var(--mercan);
   flex-shrink: 0;
 }
 
-.aktarim-bolum.uyari > button svg {
+.ak-bolum.uyari > button svg {
   color: #c0392b;
 }
 
-.aktarim-govde {
+.ak-govde {
   flex: 1;
   min-height: 0;
   overflow-y: auto;
   padding: 12px 14px;
 }
 
-.aktarim-govde .bilgi-kutu {
+.ak-govde .bilgi-kutu {
   margin-bottom: 10px;
 }
 
-.aktarim-liste {
+.ak-liste {
   list-style: none;
 }
 
-.aktarim-liste li {
+.ak-liste li {
   padding: 9px 12px;
-  border-radius: 10px;
-  background: #f4f7fc;
+  border-radius: var(--r-kk);
+  background: var(--kart-ust);
+  border: 1px solid var(--cizgi);
 }
 
-.aktarim-liste li + li {
+.ak-liste li + li {
   margin-top: 6px;
 }
 
-.aktarim-liste strong {
+.ak-liste strong {
   font-size: 14px;
   color: var(--metin);
 }
 
-.aktarim-farklar {
+.ak-farklar {
   display: flex;
   flex-wrap: wrap;
   gap: 4px 8px;
   margin-top: 5px;
 }
 
-.aktarim-farklar span {
+.ak-farklar span {
   padding: 2px 8px;
-  border-radius: 999px;
+  border-radius: var(--r-tam);
   background: var(--kart);
+  border: 1px solid var(--cizgi);
   font-size: 13px;
   line-height: 1.6;
   color: var(--soluk);
 }
 
-.aktarim-modal > footer {
+.ak-alt {
   display: flex;
   align-items: center;
   gap: 14px;
-  padding: 16px 22px 20px;
-  border-top: 1px solid #e7edf5;
+  padding: 16px 22px;
+  border-top: 1px solid var(--cizgi);
+  background: var(--kart-ust);
 }
 
-.aktarim-modal > footer small {
+.ak-alt small {
   flex: 1;
   font-size: 13px;
   line-height: 1.6;
   color: var(--soluk);
 }
 
-.aktarim-modal > footer .modal-aksiyonlar {
+.ak-alt .modal-aksiyonlar {
   flex-shrink: 0;
 }
 
-.aktarim-modal > footer .iptal {
+.ak-alt .iptal {
   flex: none;
   padding: 10px 18px;
   font: inherit;
@@ -15329,73 +15470,97 @@ body {
   color: var(--metin);
 }
 
-.aktarim-modal > footer .uygula {
+.ak-alt .uygula {
   flex: none;
   padding: 10px 22px;
   font-family: inherit;
 }
 
-.aktarim-modal > footer .uygula:disabled {
-  opacity: 0.45;
+.ak-alt .uygula:disabled {
+  background: var(--cizgi-koyu);
+  color: var(--kart);
   cursor: default;
 }
 
-.aktarim-ilerleme {
+.ak-ilerleme {
   flex: 1;
 }
 
-.aktarim-ilerleme small {
+.ak-cubuk {
+  height: 6px;
+  border-radius: var(--r-tam);
+  background: var(--cizgi);
+  overflow: hidden;
+}
+
+.ak-cubuk span {
+  display: block;
+  height: 100%;
+  border-radius: var(--r-tam);
+  background: var(--mercan);
+  transition: width var(--gecis-yavas);
+}
+
+.ak-ilerleme small {
   display: block;
   margin-top: 6px;
   font-size: 13px;
   color: var(--soluk);
 }
 
-.aktarim-modal.bitti {
-  width: min(400px, calc(100vw - 40px));
+/* Biten iş tek cümlelik haber — burada liste yok, pencere küçülüyor ve
+   telefonda da tam ekrana yayılmıyor. */
+.ak-modal.bitti {
+  max-width: 420px;
 }
 
-.aktarim-sonuc {
+.ak-sonuc {
   padding: 30px 26px 26px;
   text-align: center;
 }
 
-.sonuc-im {
+.ak-sonuc-im {
   display: inline-flex;
   align-items: center;
   justify-content: center;
   width: 52px;
   height: 52px;
   margin-bottom: 14px;
-  border-radius: 50%;
-  background: #eaf7ef;
+  border-radius: var(--r-tam);
+  background: rgba(18, 184, 134, 0.12);
   color: var(--yesil);
 }
 
-.aktarim-sonuc h3 {
-  font-size: 18px;
+.ak-sonuc h3 {
+  font-size: 17px;
   color: var(--metin);
 }
 
-.aktarim-sonuc p {
+.ak-sonuc p {
   margin: 8px 0 20px;
   font-size: 14px;
   line-height: 1.65;
   color: var(--soluk);
 }
 
-.aktarim-sonuc .uygula {
+.ak-tamam {
   width: 100%;
   padding: 12px;
   border: none;
-  border-radius: 10px;
+  border-radius: var(--r-kk);
   background: var(--mercan);
   color: #fff;
   font: inherit;
   font-size: 14px;
   font-weight: 600;
   cursor: pointer;
+  transition: filter var(--gecis);
 }
+
+.ak-tamam:hover {
+  filter: brightness(1.06);
+}
+
 
 /* ============================================================
    ÜRÜN DÜZENLEME PENCERESİ (1 Eyl 2026 — yeni görsel dil)

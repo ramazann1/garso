@@ -1,5 +1,13 @@
 import { useEffect, useRef, useState } from "react";
-import { AlertTriangle, Check, FilePlus2, FolderPlus, Pencil, X } from "lucide-react";
+import {
+  AlertTriangle,
+  Check,
+  FilePlus2,
+  FileSpreadsheet,
+  FolderPlus,
+  Pencil,
+  X,
+} from "lucide-react";
 import Bilgi from "./Bilgi";
 import type { AktarimPlani, AktarimUrunu, KategoriYeri } from "../aktarim";
 
@@ -42,12 +50,19 @@ export default function AktarimOnayi({
 
   const { gecen, bekleyen } = sureSayaci(yapilan, bitti);
 
+  // Yazma sürerken pencere kapanmamalı; Vazgeç de o sırada zaten kilitli.
+  useEffect(() => {
+    const kacis = (e: KeyboardEvent) => e.key === "Escape" && !yaziliyor && onVazgec();
+    document.addEventListener("keydown", kacis);
+    return () => document.removeEventListener("keydown", kacis);
+  }, [yaziliyor, onVazgec]);
+
   if (bitti) {
     return (
-      <div className="modal-fon">
-        <div className="aktarim-modal bitti">
-          <div className="aktarim-sonuc">
-            <span className="sonuc-im">
+      <div className="up-fon">
+        <div className="up-modal ak-modal bitti">
+          <div className="ak-sonuc">
+            <span className="ak-sonuc-im">
               <Check size={26} />
             </span>
             <h3>Menüye yazıldı</h3>
@@ -58,7 +73,7 @@ export default function AktarimOnayi({
                 : ""}
               . Toplam süre {sureMetni(gecen)}.
             </p>
-            <button className="uygula" onClick={onVazgec}>
+            <button className="ak-tamam" onClick={onVazgec}>
               Tamam
             </button>
           </div>
@@ -68,19 +83,22 @@ export default function AktarimOnayi({
   }
 
   return (
-    <div className="modal-fon">
-      <div className="aktarim-modal">
-        <header>
-          <div>
+    <div className="up-fon">
+      <div className="up-modal tam ak-modal">
+        <header className="up-ust">
+          <span className="ak-im">
+            <FileSpreadsheet size={18} />
+          </span>
+          <div className="ak-baslik">
             <h3>Menüye yazılacaklar</h3>
             <span>{dosyaAdi}</span>
           </div>
-          <button className="arama-temizle" onClick={onVazgec} disabled={yaziliyor} title="Vazgeç">
-            <X size={16} />
+          <button className="up-kapat" onClick={onVazgec} disabled={yaziliyor} aria-label="Vazgeç">
+            <X size={19} />
           </button>
         </header>
 
-        <div className="aktarim-sayilar">
+        <div className="ak-sayilar">
           <div>
             <strong>{yeniler.length}</strong>
             <span>yeni ürün</span>
@@ -99,7 +117,7 @@ export default function AktarimOnayi({
           </div>
         </div>
 
-        <div className="aktarim-bolumler">
+        <div className="ak-bolumler">
           {guncellenenler.length > 0 && (
             <Bolum
               ikon={<Pencil size={16} />}
@@ -111,11 +129,11 @@ export default function AktarimOnayi({
                 Bu ürünler menünde zaten var; dosyadaki değerler eskisinin yerine geçecek. Yeni
                 ürün eklediğini sanıyorsan listede adını ara — buradaysa üstüne yazılıyor demektir.
               </Bilgi>
-              <ul className="aktarim-liste">
+              <ul className="ak-liste">
                 {guncellenenler.map((u) => (
                   <li key={u.urun.id ?? u.urun.ad}>
                     <strong>{u.urun.ad}</strong>
-                    <div className="aktarim-farklar">
+                    <div className="ak-farklar">
                       {u.degisiklikler.map((d) => (
                         <span key={d}>{d}</span>
                       ))}
@@ -133,11 +151,11 @@ export default function AktarimOnayi({
               acik={acik === "yeni"}
               onGecis={() => gecis("yeni")}
             >
-              <ul className="aktarim-liste">
+              <ul className="ak-liste">
                 {yeniler.map((u) => (
                   <li key={u.urun.ad}>
                     <strong>{u.urun.ad}</strong>
-                    <div className="aktarim-farklar">
+                    <div className="ak-farklar">
                       <span>{yerleriYaz(u)}</span>
                       <span>{fiyatlariYaz(u)}</span>
                     </div>
@@ -159,11 +177,11 @@ export default function AktarimOnayi({
                 yazmışsın demektir — Vazgeç deyip dosyayı düzelt, yoksa aynı işin ikinci bir
                 kategorisi açılır.
               </Bilgi>
-              <ul className="aktarim-liste">
+              <ul className="ak-liste">
                 {plan.yeniKategoriler.map((y) => (
                   <li key={`${y.ana}-${y.alt}`}>
                     <strong>{y.alt || y.ana}</strong>
-                    <div className="aktarim-farklar">
+                    <div className="ak-farklar">
                       <span>
                         {y.alt ? `Yeni alt kategori — "${y.ana}" altına girecek` : "Yeni ana kategori"}
                       </span>
@@ -182,11 +200,11 @@ export default function AktarimOnayi({
               onGecis={() => gecis("atlanan")}
               uyari
             >
-              <ul className="aktarim-liste">
+              <ul className="ak-liste">
                 {plan.hatalar.map((h) => (
                   <li key={`${h.satir}-${h.mesaj}`}>
                     <strong>{h.satir}. satır</strong>
-                    <div className="aktarim-farklar">
+                    <div className="ak-farklar">
                       <span>{h.mesaj}</span>
                     </div>
                   </li>
@@ -196,10 +214,10 @@ export default function AktarimOnayi({
           )}
         </div>
 
-        <footer>
+        <footer className="ak-alt">
           {yaziliyor ? (
-            <div className="aktarim-ilerleme">
-              <div className="ilerleme-cubuk">
+            <div className="ak-ilerleme">
+              <div className="ak-cubuk">
                 <span style={{ width: `${Math.round((yapilan / toplamAdim) * 100)}%` }} />
               </div>
               <small>
@@ -282,12 +300,12 @@ function Bolum({
   children: React.ReactNode;
 }) {
   return (
-    <section className={`aktarim-bolum${acik ? " acik" : ""}${uyari ? " uyari" : ""}`}>
+    <section className={`ak-bolum${acik ? " acik" : ""}${uyari ? " uyari" : ""}`}>
       <button onClick={onGecis}>
         {ikon}
         <span>{baslik}</span>
       </button>
-      {acik && <div className="aktarim-govde">{children}</div>}
+      {acik && <div className="ak-govde">{children}</div>}
     </section>
   );
 }

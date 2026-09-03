@@ -1,5 +1,19 @@
 import { useEffect, useMemo, useState } from "react";
-import { X } from "lucide-react";
+import {
+  ChefHat,
+  Eye,
+  Hash,
+  Package,
+  Percent,
+  Scale,
+  ShoppingCart,
+  SplitSquareHorizontal,
+  Star,
+  Tag,
+  Undo2,
+  Wallet,
+  X,
+} from "lucide-react";
 import Bilgi from "./Bilgi";
 import { kategoriUrunleri } from "../menu";
 import { paraMetin, paraSayi, paraYaz } from "../para";
@@ -50,6 +64,20 @@ const taslakYap = (urunler: MenuUrun[]): UrunTaslak[] =>
       })),
     }));
 
+/**
+ * Porsiyonun tek fiyatından ayrışan bir sipariş türü fiyatı var mı. Panel
+ * kendiliğinden açılmıyor — tablo tek fiyatla duruyor, bu yalnız fiyat
+ * tuşunun işaretli görünmesi için: kapalı panelde saklı bir fiyat olduğu
+ * bilinmezse yanlış zam yapılır.
+ */
+const turAyrisiyor = (p: PorsiyonTaslak) => {
+  const tek = paraSayi(p.fiyat) ?? 0;
+  return [p.masaFiyat, p.gelalFiyat, p.paketFiyat].some((v) => {
+    const sayi = paraSayi(v);
+    return sayi !== undefined && sayi !== null && sayi !== tek;
+  });
+};
+
 const urunFarki = (t: UrunTaslak, a: MenuUrun) =>
   t.ad.trim() !== a.ad ||
   t.kod.trim() !== (a.kod ?? "") ||
@@ -89,11 +117,18 @@ export default function TopluDuzenle({
   const [arama, setArama] = useState("");
   const [kategoriId, setKategoriId] = useState<number | "tumu">("tumu");
   const [adaGore, setAdaGore] = useState(false);
-  const [turFiyat, setTurFiyat] = useState(false);
   const [hepsiAcik, setHepsiAcik] = useState(false);
+  // Tablo her zaman tek fiyatla açılıyor; tür fiyatı panelini kullanıcı açar.
+  const [turAcik, setTurAcik] = useState(() => new Set<string>());
 
   // Kaydetten sonra menü yeniden okunuyor; taslak da kaydedilmiş haline döner.
-  useEffect(() => setTaslak(taslakYap(urunler)), [urunler]);
+  useEffect(() => {
+    setTaslak(taslakYap(urunler));
+    setTurAcik(new Set());
+  }, [urunler]);
+
+  // Tür fiyatı satırı tabloyu baştan sona kaplıyor; sütun sayısı KDV'ye göre değişiyor.
+  const sutunSayisi = 6 + (kdvler.length ? 1 : 0);
 
   const asil = useMemo(() => new Map(urunler.filter((u) => u.id).map((u) => [u.id!, u])), [urunler]);
 
@@ -246,16 +281,140 @@ export default function TopluDuzenle({
     </td>
   );
 
-  const anahtar = (acik: boolean, degistir: () => void, baslik: string, satirSayisi: number) => (
-    <td className="toplu-anahtar-hucre" rowSpan={satirSayisi}>
-      <button
-        className={acik ? "toplu-anahtar acik" : "toplu-anahtar"}
-        onClick={degistir}
-        title={baslik}
-      >
-        <em className="anahtar" />
-      </button>
-    </td>
+  // Sipariş türü fiyatı ürünlerin çok azında var; üç sütunu bütün tabloya
+  // açmak yerine yalnız o satırın fiyat hücresi ikiye ayrılıyor.
+  const turDegistir = (id: number, sira: number) => {
+    const anah = id + "-" + sira;
+    setTurAcik((eski) => {
+      const yeni = new Set(eski);
+      if (yeni.has(anah)) {
+        yeni.delete(anah);
+        // Tek fiyata dönen porsiyonda türe özel tutarlar kalmamalı, yoksa
+        // görünmeyen bir fiyat satışa girer.
+        porsiyonDegis(id, sira, { masaFiyat: "", gelalFiyat: "", paketFiyat: "" });
+      } else yeni.add(anah);
+      return yeni;
+    });
+  };
+
+  const turKutusu = (
+    baslik: string,
+    deger: string,
+    degisti: boolean,
+    yerTutucu: string,
+    yaz: (v: string) => void
+  ) => (
+    <label className="toplu-tur-kutu">
+      <span>{baslik}</span>
+      <input
+        className={degisti ? "degisti" : ""}
+        value={deger}
+        onChange={(e) => yaz(paraYaz(e.target.value))}
+        placeholder={yerTutucu}
+        inputMode="decimal"
+      />
+    </label>
+  );
+
+  const fiyatHucresi = (
+    id: number,
+    sira: number,
+    p: PorsiyonTaslak,
+    fark: (alan: keyof MenuPorsiyon, deger: string, sifir?: boolean) => boolean
+  ) => {
+    const acik = turAcik.has(id + "-" + sira);
+    const dolu = !acik && turAyrisiyor(p);
+
+    return (
+      <td className="toplu-para">
+        <div className="toplu-fiyat">
+          <input
+            className={fark("fiyat", p.fiyat, true) ? "degisti" : ""}
+            value={p.fiyat}
+            onChange={(e) => porsiyonDegis(id, sira, { fiyat: paraYaz(e.target.value) })}
+            placeholder="₺"
+            inputMode="decimal"
+          />
+          <button
+            className={"toplu-tur-tus" + (acik ? " acik" : dolu ? " dolu" : "")}
+            onClick={() => turDegistir(id, sira)}
+            title={
+              acik
+                ? "Tek fiyata dön"
+                : dolu
+                  ? "Sipariş türüne göre ayrı fiyatı var"
+                  : "Sipariş türüne göre ayrı fiyat"
+            }
+          >
+            {acik ? <Undo2 size={15} /> : <SplitSquareHorizontal size={15} />}
+          </button>
+        </div>
+      </td>
+    );
+  };
+
+  /**
+   * Tür fiyatları kendi alt satırında. Fiyat hücresinin içine sıkıştırılmıştı;
+   * hücre genişleyince tablo sağa taşıp yatay kaydırma açıyordu. Alt satır tam
+   * genişlikte, sütun ölçüleri hiç oynamıyor.
+   */
+  const turSatiri = (
+    t: UrunTaslak,
+    p: PorsiyonTaslak,
+    sira: number,
+    sutunSayisi: number,
+    fark: (alan: keyof MenuPorsiyon, deger: string, sifir?: boolean) => boolean
+  ) => {
+    const tekFiyat = p.fiyat || "0";
+
+    return (
+      <tr key={`tur-${t.id}-${sira}`} className="toplu-tur-satir">
+        <td colSpan={sutunSayisi}>
+          <div className="toplu-tur">
+            <span className="toplu-tur-ad">
+              <SplitSquareHorizontal size={14} />
+              Sipariş türüne göre fiyat
+            </span>
+            {turKutusu("Masa", p.masaFiyat, fark("masaFiyat", p.masaFiyat), tekFiyat, (v) =>
+              porsiyonDegis(t.id, sira, { masaFiyat: v })
+            )}
+            {turKutusu("Gel Al", p.gelalFiyat, fark("gelalFiyat", p.gelalFiyat), tekFiyat, (v) =>
+              porsiyonDegis(t.id, sira, { gelalFiyat: v })
+            )}
+            {turKutusu("Paket", p.paketFiyat, fark("paketFiyat", p.paketFiyat), tekFiyat, (v) =>
+              porsiyonDegis(t.id, sira, { paketFiyat: v })
+            )}
+            <span className="toplu-tur-not">Boş bırakılan tür {tekFiyat} ₺ ile satılır.</span>
+          </div>
+        </td>
+      </tr>
+    );
+  };
+
+  const basligi = (ikon: React.ReactNode, ad: string) => (
+    <span className="toplu-baslik">
+      {ikon}
+      {ad}
+    </span>
+  );
+
+  // Satışta / Mutfakta / Favori üç ayrı sütundu; üçü de tek işaretlik bilgi
+  // olduğu için tek sütunda üç ikon düğmesine indi, tablo ekrana sığdı.
+  const gorunurlukTusu = (
+    acik: boolean,
+    degistir: () => void,
+    baslik: string,
+    ikon: React.ReactNode
+  ) => (
+    <button
+      className={acik ? "toplu-im acik" : "toplu-im"}
+      onClick={degistir}
+      title={baslik}
+      aria-label={baslik}
+      aria-pressed={acik}
+    >
+      {ikon}
+    </button>
   );
 
   return (
@@ -304,14 +463,6 @@ export default function TopluDuzenle({
           title="Ürünleri A-Z sırala"
         >
           A-Z
-        </button>
-
-        <button
-          className={turFiyat ? "toplu-tus aktif" : "toplu-tus"}
-          onClick={() => setTurFiyat(!turFiyat)}
-          title="Masa / Gel Al / Paket fiyat sütunlarını göster"
-        >
-          Tür fiyatları
         </button>
 
         <button
@@ -373,23 +524,15 @@ export default function TopluDuzenle({
         <table className="toplu-tablo">
           <thead>
             <tr>
-              <th className="sol">Ürün</th>
-              <th>Kod</th>
-              {kategoriId === "tumu" && <th>Kategori</th>}
-              {!!kdvler.length && <th>KDV</th>}
-              <th>Porsiyon</th>
-              <th className="sag">Fiyat</th>
-              <th className="sag">Maliyet</th>
-              {turFiyat && (
-                <>
-                  <th className="sag">Masa</th>
-                  <th className="sag">Gel Al</th>
-                  <th className="sag">Paket</th>
-                </>
+              <th className="sol">{basligi(<Package size={15} />, "Ürün")}</th>
+              <th className="s-kod">{basligi(<Hash size={15} />, "Kod")}</th>
+              {!!kdvler.length && (
+                <th className="s-kdv">{basligi(<Percent size={15} />, "KDV")}</th>
               )}
-              <th>Satışta</th>
-              <th>Mutfakta</th>
-              <th>★</th>
+              <th className="s-porsiyon">{basligi(<Scale size={15} />, "Porsiyon")}</th>
+              <th className="s-para sag">{basligi(<Tag size={15} />, "Fiyat")}</th>
+              <th className="s-para sag">{basligi(<Wallet size={15} />, "Maliyet")}</th>
+              <th className="s-imler">{basligi(<Eye size={15} />, "Görünürlük")}</th>
             </tr>
           </thead>
 
@@ -406,6 +549,7 @@ export default function TopluDuzenle({
                       value={t.ad}
                       onChange={(e) => urunDegis(t.id, { ad: e.target.value })}
                     />
+                    <span className="toplu-kategori-ad">{kategoriAdlari(a) || "Kategorisiz"}</span>
                   </td>
                   <td className="toplu-kod" rowSpan={satirSayisi}>
                     <input
@@ -415,11 +559,6 @@ export default function TopluDuzenle({
                       placeholder="—"
                     />
                   </td>
-                  {kategoriId === "tumu" && (
-                    <td className="toplu-kategori-ad" rowSpan={satirSayisi}>
-                      {kategoriAdlari(a) || "—"}
-                    </td>
-                  )}
                   {!!kdvler.length && (
                     <td className="toplu-kdv" rowSpan={satirSayisi}>
                       <select
@@ -444,36 +583,33 @@ export default function TopluDuzenle({
               );
 
               const urunAnahtarlari = (
-                <>
-                  {anahtar(
+                <td className="toplu-imler" rowSpan={satirSayisi}>
+                  {gorunurlukTusu(
                     t.satistaGorunur,
                     () => urunDegis(t.id, { satistaGorunur: !t.satistaGorunur }),
                     "Satış ekranında göster",
-                    satirSayisi
+                    <ShoppingCart size={16} />
                   )}
-                  {anahtar(
+                  {gorunurlukTusu(
                     t.mutfaktaGorunur,
                     () => urunDegis(t.id, { mutfaktaGorunur: !t.mutfaktaGorunur }),
                     "Mutfak ekranında göster",
-                    satirSayisi
+                    <ChefHat size={16} />
                   )}
-                  <td className="toplu-favori" rowSpan={satirSayisi}>
-                    <button
-                      className={t.favori ? "varsayilan-tus aktif" : "varsayilan-tus"}
-                      onClick={() => urunDegis(t.id, { favori: !t.favori })}
-                      title="Favori ürün"
-                    >
-                      {t.favori ? "★" : "☆"}
-                    </button>
-                  </td>
-                </>
+                  {gorunurlukTusu(
+                    t.favori,
+                    () => urunDegis(t.id, { favori: !t.favori }),
+                    "Favori ürün",
+                    <Star size={16} fill={t.favori ? "currentColor" : "none"} />
+                  )}
+                </td>
               );
 
               if (!t.porsiyonlar.length) {
                 return (
                   <tr key={t.id}>
                     {urunHucreleri}
-                    <td className="toplu-porsiyon yok" colSpan={turFiyat ? 6 : 3}>
+                    <td className="toplu-porsiyon yok" colSpan={3}>
                       porsiyon yok
                     </td>
                     {urunAnahtarlari}
@@ -481,13 +617,11 @@ export default function TopluDuzenle({
                 );
               }
 
-              return t.porsiyonlar.map((p, i) => {
+              return t.porsiyonlar.flatMap((p, i) => {
                 const ap = a.porsiyonlar.find((x) => x.id === p.id);
                 const fark = (alan: keyof MenuPorsiyon, deger: string, sifir = false) =>
                   !!ap && (sifir ? (paraSayi(deger) ?? 0) : paraSayi(deger)) !== ap[alan];
-                const tekFiyat = p.fiyat || "0";
-
-                return (
+                const satir = (
                   <tr key={p.id ?? `${t.id}-${i}`} className={i ? "ek-porsiyon" : undefined}>
                     {i === 0 && urunHucreleri}
                     <td className="toplu-porsiyon">
@@ -504,28 +638,17 @@ export default function TopluDuzenle({
                         ))}
                       </select>
                     </td>
-                    {paraHucre(p.fiyat, fark("fiyat", p.fiyat, true), "₺", (v) =>
-                      porsiyonDegis(t.id, i, { fiyat: v })
-                    )}
+                    {fiyatHucresi(t.id, i, p, fark)}
                     {paraHucre(p.maliyet, fark("maliyet", p.maliyet), "—", (v) =>
                       porsiyonDegis(t.id, i, { maliyet: v })
-                    )}
-                    {turFiyat && (
-                      <>
-                        {paraHucre(p.masaFiyat, fark("masaFiyat", p.masaFiyat), tekFiyat, (v) =>
-                          porsiyonDegis(t.id, i, { masaFiyat: v })
-                        )}
-                        {paraHucre(p.gelalFiyat, fark("gelalFiyat", p.gelalFiyat), tekFiyat, (v) =>
-                          porsiyonDegis(t.id, i, { gelalFiyat: v })
-                        )}
-                        {paraHucre(p.paketFiyat, fark("paketFiyat", p.paketFiyat), tekFiyat, (v) =>
-                          porsiyonDegis(t.id, i, { paketFiyat: v })
-                        )}
-                      </>
                     )}
                     {i === 0 && urunAnahtarlari}
                   </tr>
                 );
+
+                return turAcik.has(t.id + "-" + i)
+                  ? [satir, turSatiri(t, p, i, sutunSayisi, fark)]
+                  : [satir];
               });
             })}
           </tbody>
