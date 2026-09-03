@@ -1,7 +1,8 @@
-import { useEffect, useState } from "react";
+import { useState } from "react";
 import { Pencil, X } from "lucide-react";
 import OdemeTipDugmeleri from "./OdemeTipDugmeleri";
-import { odemeTipleriniGetir } from "../odemeTipleri";
+import { ODEME_TIPI_ANAHTAR, odemeTipleriniGetir } from "../odemeTipleri";
+import { useTanim } from "../tanimAbonelik";
 import type { OdemeTipi } from "../odemeTipleri";
 import { paraGoster } from "../para";
 
@@ -30,14 +31,10 @@ export default function OdemeTipDuzelt({
   onKaydet: (yeniTip: string, sebep: string) => void;
   onKapat: () => void;
 }) {
-  const [tipler, setTipler] = useState<OdemeTipi[]>([]);
+  const tipler = useTanim<OdemeTipi[]>(ODEME_TIPI_ANAHTAR, odemeTipleriniGetir, []);
   const [yeniTip, setYeniTip] = useState("");
   const [secili, setSecili] = useState("");
   const [serbest, setSerbest] = useState("");
-
-  useEffect(() => {
-    odemeTipleriniGetir().then(setTipler);
-  }, []);
 
   const sebep = secili === "diger" ? serbest.trim() : secili;
   const kaydedilebilir = !!yeniTip && yeniTip !== tip && !!sebep;

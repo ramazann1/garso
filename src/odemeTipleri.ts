@@ -37,7 +37,10 @@ export function odemeTipleriniGetir(hepsi = false): Promise<OdemeTipi[]> {
   return onbellekliGetir(anahtari(hepsi), () => odemeTipleriniOku(hepsi), true);
 }
 
-const anahtari = (hepsi: boolean) => (hepsi ? "odeme-tipleri-hepsi" : "odeme-tipleri");
+/** Ekranların canlı izleme anahtarı (bkz. tanimAbonelik.useTanim). */
+export const ODEME_TIPI_ANAHTAR = "odeme-tipleri";
+
+const anahtari = (hepsi: boolean) => (hepsi ? "odeme-tipleri-hepsi" : ODEME_TIPI_ANAHTAR);
 
 async function odemeTipleriniOku(hepsi: boolean): Promise<OdemeTipi[]> {
   let sorgu = supabase.from("odeme_tipleri").select(ALANLAR);

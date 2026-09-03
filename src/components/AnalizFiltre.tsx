@@ -2,9 +2,10 @@ import { useEffect, useState } from "react";
 import { CalendarDays, Filter, SlidersHorizontal, X } from "lucide-react";
 import { ayarlar } from "../isletmeAyarlari";
 import { vardiyaGecmisi, type VardiyaOzeti } from "../kasa";
-import { bolgeleriGetir } from "../masalar";
-import { odemeTipleriniGetir } from "../odemeTipleri";
+import { BOLGE_ANAHTAR, bolgeleriGetir } from "../masalar";
+import { ODEME_TIPI_ANAHTAR, odemeTipleriniGetir, type OdemeTipi } from "../odemeTipleri";
 import { kisaAd, personeliGetir } from "../personel";
+import { useTanim } from "../tanimAbonelik";
 import {
   BOS_FILTRE,
   DONEMLER,
@@ -35,15 +36,13 @@ export default function AnalizFiltre({
   degistir: (f: Filtre) => void;
 }) {
   const [panelAcik, setPanelAcik] = useState(false);
-  const [bolgeler, setBolgeler] = useState<Bolge[]>([]);
+  const bolgeler = useTanim<Bolge[]>(BOLGE_ANAHTAR, bolgeleriGetir, []);
   const [kisiler, setKisiler] = useState<{ id: number; ad: string }[]>([]);
-  const [odemeler, setOdemeler] = useState<string[]>([]);
+  const odemeTipleri = useTanim<OdemeTipi[]>(ODEME_TIPI_ANAHTAR, odemeTipleriniGetir, []);
   const [vardiyalar, setVardiyalar] = useState<VardiyaOzeti[]>([]);
 
   useEffect(() => {
-    bolgeleriGetir().then(setBolgeler);
     personeliGetir().then((p) => setKisiler(p.map((k) => ({ id: k.id, ad: kisaAd(k.ad) }))));
-    odemeTipleriniGetir().then((t) => setOdemeler(t.map((o) => o.ad)));
     if (ayarlar().kasaTakibi) vardiyaGecmisi(30).then(setVardiyalar);
   }, []);
 
@@ -289,7 +288,7 @@ export default function AnalizFiltre({
                   onChange={(e) => yaz({ odemeTipi: e.target.value || null })}
                 >
                   <option value="">Hepsi</option>
-                  {odemeler.map((o) => (
+                  {odemeTipleri.map(({ ad: o }) => (
                     <option key={o} value={o}>
                       {o}
                     </option>

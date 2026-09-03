@@ -17,7 +17,8 @@ import {
   UtensilsCrossed,
 } from "lucide-react";
 import { ayarlar } from "../isletmeAyarlari";
-import { istasyonlariGetir } from "../yazicilar";
+import { ISTASYON_ANAHTAR, istasyonlariGetir } from "../yazicilar";
+import { useTanim } from "../tanimAbonelik";
 import {
   ASAMA_ADI,
   asamadanCik,
@@ -90,11 +91,7 @@ function adrestenIdler(deger?: string) {
 export default function Istasyon() {
   const { istasyonId } = useParams();
   const navigate = useNavigate();
-  const [istasyonlar, setIstasyonlar] = useState<Istasyon[]>([]);
-
-  useEffect(() => {
-    istasyonlariGetir().then(setIstasyonlar);
-  }, []);
+  const istasyonlar = useTanim<Istasyon[]>(ISTASYON_ANAHTAR, istasyonlariGetir, []);
 
   const idler = adrestenIdler(istasyonId);
   const secililer = istasyonlar.filter((i) => idler.includes(i.id));

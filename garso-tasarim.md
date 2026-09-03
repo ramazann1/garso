@@ -1,7 +1,7 @@
 # GARSO — Teknik Tasarım: Veri Modeli & Ekran Haritası
 *Restoran ve cafe'ler için bulut tabanlı satış ve işletme yönetim sistemi.*
 
-## 0. SIRADAKİ İŞ (3 Eyl 2026 akşamı güncellendi)
+## 0. SIRADAKİ İŞ (3 Eyl 2026 gecesi güncellendi)
 
 > **Karar (1 Eyl 2026): görsel dil yenileniyor, zemin krem değil soğuk gri-mavi.**
 > Ramazan mevcut görünümü "ilkel" buldu. Sebep renk değil, **tasarım dilinin
@@ -279,6 +279,52 @@
 > - Hata görünür olunca sebep çıktı: **`odenmez_kullanimda` fonksiyonu
 >   veritabanında yokmuş** (404). Bkz. sıradaki iş listesi, 1. madde.
 
+> **Açık ekranlar tanım verisinden haberdar oldu (3 Eyl 2026 akşamı).**
+> `useTanim` yalnız ödenmezlere bağlanmıştı; kalan tanımlara da yayıldı.
+> Menü gibi tek okumadan beş ayrı duruma dağılan ekranlarda o kanca işe
+> yaramıyordu (veriyi döndürüyor, dağıtmıyor) — kardeşi **`useTanimEtkisi`**
+> yazıldı: ekranın kendi okuma işini alıyor, kopya tazelendikçe tekrarlıyor.
+> `useTanim` de artık onun üstünde duruyor, abonelik kodu tek yerde.
+> Bağlananlar: **ödeme tipleri** (TahsilatPanel, Hızlı Öde, Ödeme Tipi Düzelt,
+> Analiz filtresi), **menü** (kasa + mobil sipariş ekranı), **istasyonlar**
+> (kasa + mobil mutfak ekranı), **bölge/masa tanımı** (Salon + mobil Masalar).
+> Anahtarlar modüllerden dışa verildi (`MENU_ANAHTAR`, `BOLGE_ANAHTAR`,
+> `ISTASYON_ANAHTAR`, `ODEME_TIPI_ANAHTAR`) — ekranlarda elle string yazılmıyor.
+> **Sipariş ekranında seçili kategori korunuyor:** menü tazelenince kategori
+> hâlâ listedeyse seçili kalıyor, silinmişse başa dönülüyor.
+> **Salon ve mobil Masalar'da boş liste yazılmıyor** — kopya okunamadığında
+> ekrandaki plan silinmemeli. Doluluk buradan gelmiyor, o canlı okumanın işi.
+> Kapsam dışı bırakılanlar: kalem panelindeki ve mobil siparişteki masa
+> seçicileri (bölgeyi yalnız pencere açıkken okuyorlar) ve Personel ekranı.
+> **Ad çakışması:** `mobil/Masalar.tsx` `BOLGE_ANAHTAR` adını "son seçilen
+> bölge" localStorage anahtarı için kullanıyormuş, o `SECILI_BOLGE_ANAHTAR` oldu.
+> **HAR karşılaştırması yapılmadı** — Ramazan "hız fena değil" dedi, madde kapandı.
+
+> **`sql/2026-09-06-adisyon-okuma.sql` çalıştırıldı (3 Eyl 2026 akşamı).**
+> Ramazan daha önce çalıştırdığını düşünüyordu; iki yerden kontrol edildi ve
+> çalışmadığı görüldü — önce fonksiyonlar dışarıdan sorularak (`adisyon_okunur`,
+> `adisyon_okunur_id`, `turun_adisyonu` üçü de 404), sonra Supabase panelinde
+> gözle (Functions listesinde yoklar, `adisyonlar` hâlâ tek `_isletme`
+> politikasıyla duruyor). Yalnız `odenmez_kullanimda` vardı, o 3 Eyl'de ayrı
+> alınmıştı. **404 tek başına kanıt değil** — şema önbelleği eskiyse de aynı
+> hatayı verir, bu yüzden panele bakıldı.
+> Çalıştırıldıktan sonra doğrulandı: üç fonksiyon yerinde, `adisyonlar` ve
+> `adisyon_kalemleri` politikaları dörde bölünmüş (ekle/güncelle/oku/sil).
+> Artık kapanmış adisyonu görmek ayrı yetki istiyor; açık adisyon günlük iş
+> yetkileriyle okunuyor, kimse duvara çarpmıyor.
+
+> **"Adisyonu kapat" yetkiye bağlandı (3 Eyl 2026 akşamı).** SQL denenirken
+> çıktı: garson hesabı ödenmiş masanın üç nokta menüsünde "Adisyonu kapat"ı
+> görüyordu. Kodda bilinçli bir not vardı — "parayı alma işi yetkiye bağlı,
+> hesabı ödenmiş masayı kapatmak değil" — ama **karar değişti**: kapatmak para
+> almak değil, yine de adisyonu kapanmışlara taşıyor ve geri açmak ayrı yetki
+> istiyor. Artık `odeme.al` soruluyor; yetkisi olmayan ne Hızlı Öde ne kapatma
+> görüyor. Üç seçenek sunuldu (bugünkü gibi / `odeme.al` / kendi yetkisi),
+> Ramazan `odeme.al` dedi.
+> **Mobilde değişiklik gerekmedi** — telefonda ödenmiş masa için ayrı kapatma
+> satırı hiç yokmuş, kapatma tahsilat penceresinin içinde ve o pencere zaten
+> `odeme.al` istiyor. Değişiklik iki yüzeyi eşitledi.
+
 > **Masa Seçim penceresi yeni dile geçti (3 Eyl 2026).** Kendi kabuğu vardı
 > (`.onay-fon` + `.masa-secim`), elle yazılmış değerlerle: `18px`/`13px`/`9px`
 > köşe, `0 12px 40px rgba(0,0,0,.18)` gölge, `.16s ease` geçiş, `#dde4ed`.
@@ -417,24 +463,7 @@
 > menü çalışır durumda, çevrimdışının kalan ucu tek bir akış). Önce elde biriken
 > küçük işler temizlendi; dördü de 1 Eyl akşamı kapandı. Kalan sıra:
 >
-> 0. **HIZ — açık ekranların tanım verisinden haberdar olması.** Ana iş
->    3 Eyl 2026'da yapıldı (aşağıda), **`odenmezler` bitti**; aynı kanca
->    (`useTanim`) menü, işletme ayarları, bölgeler ve ödeme tiplerini okuyan
->    ekranlara da geçirilecek. Şu an oralarda kopya arkada tazeleniyor ama
->    **açık duran ekran bunu görmüyor**, bir sonraki açılışta geçerli oluyor.
->    Ayrıca **HAR kaydı yeniden alınıp rakam karşılaştırılacak** — eldeki kayıt
->    61 saniyelik ve içinde menü düzenlemesi var, 56 istek / 16,5 sn'lik eski
->    ölçümle doğrudan kıyaslanamıyor.
-> 1. **`sql/2026-09-06-adisyon-okuma.sql` çalıştırılmamış.** Ödenmez silme
->    404 verince ortaya çıktı: dosyadaki `odenmez_kullanimda` fonksiyonu
->    veritabanında yoktu. Fonksiyon `sql/2026-09-03-odenmez-sayim.sql` ile ayrı
->    alındı, silme çalışıyor. **Ama dosyanın asıl gövdesi — adisyon, tur, kalem
->    ve tahsilat tablolarının okuma yetkileri (RLS) — muhtemelen hiç
->    uygulanmadı**, yani "kim hangi adisyonu görebilir" kısıtı şu an yok.
->    Körlemesine çalıştırılmayacak: önce dosyanın ne yaptığı beraber gözden
->    geçirilecek, sonra denenecek. Ramazan'ın kuralı geçerli — günlük işe
->    dokunan güvenlik önlemi kabul edilmiyor.
-> 2. **Görsel dilin yayılması — beğenilmeyen ekranlar** (2 Eyl 2026 seansında
+> 1. **Görsel dilin yayılması — beğenilmeyen ekranlar** (2 Eyl 2026 seansında
 >    başlandı, devam ediyor). Biten: tahsilat penceresi, Hızlı Öde, Adisyon
 >    Detay, **Kalem Paneli**, **sipariş ekranı**, **Adisyon Bilgisi**,
 >    **Onay Modal**, **Masa Seçim**, **Misafir Sayısı** (aşağıda).
@@ -450,7 +479,7 @@
 >    **İndirim modalına dokunulmayacak** — Ramazan beğeniyor (2 Eyl 2026).
 >    Ardından bütün ekranlar köşe/gölge/geçiş belirteçlerine geçirilecek.
 >    **Stok bu iş bitene kadar bekliyor** — Ramazan görüntüyü öne aldı.
-> 3. **Stok** — malzeme, reçete, otomatik düşüm, kritik stok uyarısı, maliyet/kârlılık
+> 2. **Stok** — malzeme, reçete, otomatik düşüm, kritik stok uyarısı, maliyet/kârlılık
 >    **Karar (1 Eyl 2026):** Garso hazır malzeme listesiyle gelmez. Her işletme
 >    kendi malzemesini kendi girer — hangi malzeme setini kullandığı önceden
 >    bilinemez. Modül boş listeyle açılır; kolaylık gerekirse Excel ile toplu
@@ -476,16 +505,21 @@
 >    **Miktarlar en küçük birimde tam sayı** tutulur (gram/mililitre/adet) —
 >    para kuruşunda yaptığımızın aynısı, float yuvarlama hatası çıkmasın diye.
 >    Ekranda kg gösterilir, veritabanında gram durur.
-> 4. **Gelişmiş raporlar** — saatlik ciro, personel performansı, karşılaştırmalı analiz
-> 5. **Cari / veresiye modülü**
-> 6. **Masasız adisyonun çevrimdışı açılması** — offline'ın açık kalan tek ucu
-> 7. **QR menünün kalanı** — kategori/kapak görselleri, masadan sipariş, garson çağırma, masa başına karekod
-> 8. **Kurye atama ve teslimat takibi** — önce Adisyo'da canlı tur, sonra plan
-> 9. **Sadakat programı** (puan, kampanya)
-> 10. **Çoklu şube** — merkezi menü, şube karşılaştırma
+> 3. **Gelişmiş raporlar** — saatlik ciro, personel performansı, karşılaştırmalı analiz
+> 4. **Cari / veresiye modülü**
+> 5. **Masasız adisyonun çevrimdışı açılması** — offline'ın açık kalan tek ucu
+> 6. **QR menünün kalanı** — kategori/kapak görselleri, masadan sipariş, garson çağırma, masa başına karekod
+> 7. **Kurye atama ve teslimat takibi** — önce Adisyo'da canlı tur, sonra plan
+> 8. **Sadakat programı** (puan, kampanya)
+> 9. **Çoklu şube** — merkezi menü, şube karşılaştırma
+> 10. **`adisyonlar_eski` tablosu** — veritabanında unutulmuş bir yedek duruyor
+>     (3 Eyl 2026'da Supabase panelinde görüldü). API'ye kapalı ve içinde satır
+>     kuralı yok, yani bugün zararsız; ama biri kapıyı açarsa korumasız kalır.
+>     İçi açılıp bakılacak: gerçekten eski yedekse silinecek, veri duruyorsa
+>     dokunulmayacak.
 > 11. **İkon boyut standardı** — bütün ekranlar tek tek gezilecek, en sonda
 >
-> Ertelenen üçlü (3-5) buraya konuldu: acelesi yok ama stok ve raporlardan
+> Ertelenen üçlü (2-4) buraya konuldu: acelesi yok ama stok ve raporlardan
 > sonra, sadakat ve çoklu şubeden önce. Ardından canlıya çıkış işleri
 > (güvenlik başlıkları, CAPTCHA, exe imzası, mağaza) ve Faz 4 entegrasyonları.
 >

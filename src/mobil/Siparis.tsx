@@ -32,7 +32,8 @@ import MisafirSayisi from "../components/MisafirSayisi";
 import { kalemiUygula } from "./KalemIslemleri";
 import OnayModal from "../components/OnayModal";
 import AltSayfa from "./AltSayfa";
-import { agacUrunleri, menuGetir, porsiyonFiyat, urunKdv } from "../menu";
+import { MENU_ANAHTAR, agacUrunleri, menuGetir, porsiyonFiyat, urunKdv } from "../menu";
+import { useTanimEtkisi } from "../tanimAbonelik";
 import { bolgeleriGetir, masaGetir } from "../masalar";
 import {
   CEVRIMDISI_ADISYON,
@@ -181,17 +182,24 @@ export default function MobilSiparis() {
     return kilitKaldir;
   }, [kirli]);
 
-  useEffect(() => {
+  // Menü başka cihazda düzenlenince kopya tazeleniyor; ekran o haberi burada
+  // alıyor. Seçili kategori hâlâ duruyorsa korunuyor, silinmişse başa dönülüyor.
+  useTanimEtkisi(MENU_ANAHTAR, (gecerliMi) => {
     menuGetir().then((veri) => {
+      if (!gecerliMi()) return;
       // Satışta gizlenen kategori ve ürünler sipariş ekranına hiç girmiyor.
       const acik = veri.kategoriler.filter((k) => k.satistaGorunur);
       setKategoriler(acik);
       setUrunler(veri.urunler.filter((u) => u.satistaGorunur));
       setGruplar(veri.gruplar);
       setKdvler(veri.kdvler);
-      setSeciliKategori(acik.find((k) => !k.ustId)?.id ?? acik[0]?.id ?? null);
+      setSeciliKategori((s) =>
+        s && acik.some((k) => k.id === s)
+          ? s
+          : acik.find((k) => !k.ustId)?.id ?? acik[0]?.id ?? null
+      );
     });
-  }, []);
+  });
 
   useEffect(() => {
     masaGetir(masaId).then((m) => setMasaAdi(m?.ad ?? ""));

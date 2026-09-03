@@ -134,8 +134,11 @@ const say = (v: any) => (v == null ? undefined : Number(v));
 
 // Menü kasadaki en kritik okuma: yüklenemezse garson ürün bile seçemiyor.
 // Bağlantı koptuğunda cihazdaki son kopya devreye giriyor (bkz. onbellek.ts).
+/** Ekranların canlı izleme anahtarı (bkz. tanimAbonelik.useTanimEtkisi). */
+export const MENU_ANAHTAR = "menu";
+
 export function menuGetir() {
-  return onbellekliGetir("menu", menuOku, true);
+  return onbellekliGetir(MENU_ANAHTAR, menuOku, true);
 }
 
 /**
@@ -757,4 +760,4 @@ export async function kdvKaydet(liste: KdvSatiri[], silinenler: number[]) {
   }
 }
 
-tazeleyiciTanit("menu", menuOku);
+tazeleyiciTanit(MENU_ANAHTAR, menuOku);

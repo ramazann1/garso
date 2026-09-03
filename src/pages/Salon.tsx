@@ -29,7 +29,7 @@ import MasaPlani, { yerlesimiVar } from "../components/MasaPlani";
 import OnayModal from "../components/OnayModal";
 import HizliOde from "../components/HizliOde";
 import { ODENMEZ_ANAHTAR, odenmezleriGetir, type Odenmez } from "../odenmezler";
-import { useTanim } from "../tanimAbonelik";
+import { useTanim, useTanimEtkisi } from "../tanimAbonelik";
 import Duzen from "../components/Duzen";
 import MasasizSiparis from "../components/MasasizSiparis";
 import Kasa from "../components/Kasa";
@@ -57,7 +57,7 @@ import {
 import { servisSatirlari } from "../servis";
 import type { AdisyonVerisi, MasaOzeti, MasasizAdisyon } from "../adisyonlar";
 import { adisyonFisiYaz } from "../yazicilar";
-import { bolgeleriGetir, durgunMu, hedefOnayMesaji } from "../masalar";
+import { BOLGE_ANAHTAR, bolgeleriGetir, durgunMu, hedefOnayMesaji } from "../masalar";
 import type { Bolge, Masa } from "../types";
 
 type Acik = MasaOzeti;
@@ -146,6 +146,17 @@ function sekmeOku(): number | "tumu" | "masasiz" | null {
 export default function Salon() {
   const navigate = useNavigate();
   const [bolgeler, setBolgeler] = useState<Bolge[]>([]);
+
+  // Masa/bölge tanımı başka cihazda değişince kopya tazeleniyor; plan açıkken
+  // de yeni masa görünsün diye haberi burada alıyoruz. Adisyon durumu buradan
+  // gelmiyor — o canlı okumanın işi. Boş liste yazılmıyor: kopya okunamadığında
+  // ekrandaki plan silinmemeli.
+  useTanimEtkisi(BOLGE_ANAHTAR, (gecerliMi) => {
+    bolgeleriGetir().then((liste) => {
+      if (gecerliMi() && liste.length) setBolgeler(liste);
+    });
+  });
+
   const [adisyonlar, setAdisyonlar] = useState<Record<number, Acik>>({});
   // Sekme tarayıcıda saklanıyor: masaya girip dönünce veya sayfa yenilenince
   // garson kendini başka bölgede bulmasın.
@@ -439,24 +450,26 @@ export default function Salon() {
     const acik = adisyonlar[masa.id];
     const odendi = !!acik && acik.tutar > 0 && acik.odenen > 0 && acik.kalan <= 0;
     return [
-      // Parayı alma işi yetkiye bağlı; hesabı ödenmiş masayı kapatmak değil.
-      ...(odendi
-        ? [
-            {
-              ad: "Adisyonu kapat",
-              ikon: <CircleCheckBig size={16} />,
-              onSec: () => kapatmaSor(masa),
-            },
-          ]
-        : yetkiVar("odeme.al")
+      // Hesabı ödenmiş masada kapatma, ödenmemişte Hızlı Öde çıkıyor; ikisi de
+      // `odeme.al` istiyor. Kapatmak para almak değil ama adisyonu kapanmışlara
+      // taşıyor, geri açmak ayrı yetki — parayla ilgili işler tek yetkide duruyor.
+      ...(yetkiVar("odeme.al")
+        ? odendi
           ? [
+              {
+                ad: "Adisyonu kapat",
+                ikon: <CircleCheckBig size={16} />,
+                onSec: () => kapatmaSor(masa),
+              },
+            ]
+          : [
               {
                 ad: "Hızlı Öde",
                 ikon: <Zap size={16} />,
                 onSec: () => hizliOdeAc(masa),
               },
             ]
-          : []),
+        : []),
       // Taşıma ve birleştirme yetkiye bağlı; yetkisi olmayan bu satırları hiç
       // görmüyor, üç nokta menüsü onun için kısalıyor.
       ...(yetkiVar("siparis.tasi")

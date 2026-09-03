@@ -14,7 +14,8 @@ import {
   Undo2,
   UtensilsCrossed,
 } from "lucide-react";
-import { istasyonlariGetir } from "../yazicilar";
+import { ISTASYON_ANAHTAR, istasyonlariGetir } from "../yazicilar";
+import { useTanimEtkisi } from "../tanimAbonelik";
 import type { Istasyon } from "../yazicilar";
 import {
   ASAMA_ADI,
@@ -90,8 +91,9 @@ export default function MobilIstasyon() {
   const [isaretli, setIsaretli] = useState<number[]>([]);
   const [yukleniyor, setYukleniyor] = useState(true);
 
-  useEffect(() => {
+  useTanimEtkisi(ISTASYON_ANAHTAR, (gecerliMi) => {
     istasyonlariGetir().then((liste) => {
+      if (!gecerliMi()) return;
       setIstasyonlar(liste);
       // Tek tezgâhı olan işletmede seçtirmenin anlamı yok.
       setSeciliIdler((s) => {
@@ -100,7 +102,7 @@ export default function MobilIstasyon() {
       });
       setYukleniyor(false);
     });
-  }, []);
+  });
 
   useEffect(() => {
     if (seciliIdler.length) {

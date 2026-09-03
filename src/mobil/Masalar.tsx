@@ -18,7 +18,7 @@ import {
   X,
   Zap,
 } from "lucide-react";
-import { bolgeleriGetir, durgunMu, hedefOnayMesaji } from "../masalar";
+import { BOLGE_ANAHTAR, bolgeleriGetir, durgunMu, hedefOnayMesaji } from "../masalar";
 import {
   adisyonGetir,
   adisyonIkram,
@@ -46,7 +46,7 @@ import { baglantiHatasi, baglantiVar, sureSinirli, useBaglanti } from "../baglan
 import { useCanli } from "../canli";
 import { devralabilir, masayiDevral, useMesguliyetler } from "../mesguliyet";
 import { ODENMEZ_ANAHTAR, odenmezleriGetir, type Odenmez } from "../odenmezler";
-import { useTanim } from "../tanimAbonelik";
+import { useTanim, useTanimEtkisi } from "../tanimAbonelik";
 import { paraGoster } from "../para";
 import type { Bolge, Masa } from "../types";
 
@@ -80,16 +80,27 @@ function sure(acilis?: string) {
  */
 // Seçili bölge cihazda kalıyor: garson bahçeden sipariş gönderdiğinde masalara
 // dönerken yine bahçeyi buluyor, her seferinde ilk bölgeden aramıyor.
-const BOLGE_ANAHTAR = "mobil.bolge";
+const SECILI_BOLGE_ANAHTAR = "mobil.bolge";
 
 function bolgeOku(): number | null {
-  const id = Number(localStorage.getItem(BOLGE_ANAHTAR));
+  const id = Number(localStorage.getItem(SECILI_BOLGE_ANAHTAR));
   return Number.isFinite(id) && id > 0 ? id : null;
 }
 
 export default function MobilMasalar() {
   const git = useNavigate();
   const [bolgeler, setBolgeler] = useState<Bolge[]>([]);
+
+  // Masa/bölge tanımı başka cihazda değişince kopya tazeleniyor; plan açıkken
+  // de yeni masa görünsün diye haberi burada alıyoruz. Adisyon durumu buradan
+  // gelmiyor — o canlı okumanın işi. Boş liste yazılmıyor: kopya okunamadığında
+  // ekrandaki plan silinmemeli.
+  useTanimEtkisi(BOLGE_ANAHTAR, (gecerliMi) => {
+    bolgeleriGetir().then((liste) => {
+      if (gecerliMi() && liste.length) setBolgeler(liste);
+    });
+  });
+
   const [adisyonlar, setAdisyonlar] = useState<Record<number, MasaOzeti>>({});
   const [seciliBolge, setSeciliBolge] = useState<number | null>(bolgeOku);
   const [mesgulSorusu, setMesgulSorusu] = useState<{ masa: Masa; ad: string } | null>(null);
@@ -145,7 +156,7 @@ export default function MobilMasalar() {
   };
 
   useEffect(() => {
-    if (seciliBolge !== null) localStorage.setItem(BOLGE_ANAHTAR, String(seciliBolge));
+    if (seciliBolge !== null) localStorage.setItem(SECILI_BOLGE_ANAHTAR, String(seciliBolge));
   }, [seciliBolge]);
 
   useEffect(() => {

@@ -20,7 +20,8 @@ import {
   X,
   Zap,
 } from "lucide-react";
-import { menuGetir, agacUrunleri, altKategoriler, porsiyonFiyat, urunKdv } from "../menu";
+import { MENU_ANAHTAR, menuGetir, agacUrunleri, altKategoriler, porsiyonFiyat, urunKdv } from "../menu";
+import { useTanimEtkisi } from "../tanimAbonelik";
 import {
   CEVRIMDISI_ADISYON,
   adisyonGetir,
@@ -296,8 +297,11 @@ export default function Siparis() {
     }
   };
 
-  useEffect(() => {
+  // Menü başka cihazda düzenlenince kopya tazeleniyor; ekran o haberi burada
+  // alıyor. Seçili kategori hâlâ duruyorsa korunuyor, silinmişse başa dönülüyor.
+  useTanimEtkisi(MENU_ANAHTAR, (gecerliMi) => {
     menuGetir().then((veri) => {
+      if (!gecerliMi()) return;
       // Satışta gizlenen kategori ve ürünler sipariş ekranına hiç girmiyor.
       const acikKategoriler = veri.kategoriler.filter((k) => k.satistaGorunur);
       setKategoriler(acikKategoriler);
@@ -305,10 +309,14 @@ export default function Siparis() {
       setTumUrunler(veri.urunler);
       setGruplar(veri.gruplar);
       setKdvler(veri.kdvler);
-      setSeciliId(acikKategoriler.find((k) => !k.ustId)?.id ?? acikKategoriler[0]?.id ?? null);
+      setSeciliId((s) =>
+        s && acikKategoriler.some((k) => k.id === s)
+          ? s
+          : acikKategoriler.find((k) => !k.ustId)?.id ?? acikKategoriler[0]?.id ?? null
+      );
       setMenuYukleniyor(false);
     });
-  }, []);
+  });
 
   useEffect(() => {
     if (masasiz) return;

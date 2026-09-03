@@ -26,8 +26,11 @@ function masayaCevir(m: any): Masa {
 // Bölge ve masa tanımları da kopukluğa dayanıklı: Salon açılabilsin, garson
 // masayı seçebilsin. Masaların üstündeki adisyon durumu ayrı okunuyor ve
 // önbelleğe girmiyor — dolu/boş bilgisi bayatlarsa yanlış olur.
+/** Ekranların canlı izleme anahtarı (bkz. tanimAbonelik.useTanim). */
+export const BOLGE_ANAHTAR = "bolgeler";
+
 export function bolgeleriGetir(): Promise<Bolge[]> {
-  return onbellekliGetir("bolgeler", bolgeleriOku, true);
+  return onbellekliGetir(BOLGE_ANAHTAR, bolgeleriOku, true);
 }
 
 async function bolgeleriOku(): Promise<Bolge[]> {
@@ -178,4 +181,4 @@ export function hedefOnayMesaji(tip: "tasi" | "birlestir", kaynakAd: string, hed
       `*${kaynakAd}* boşalacak, iki hesap tek adisyonda toplanacak. Onaylıyor musunuz?`;
 }
 
-tazeleyiciTanit("bolgeler", bolgeleriOku);
+tazeleyiciTanit(BOLGE_ANAHTAR, bolgeleriOku);

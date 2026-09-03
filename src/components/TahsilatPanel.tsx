@@ -1,4 +1,4 @@
-import { useEffect, useState } from "react";
+import { useState } from "react";
 import { Check, CircleCheckBig, Delete, HandCoins, Percent, Save, Split, X } from "lucide-react";
 import { OdemeIkon } from "../odemeIkon";
 import IndirimModal from "./IndirimModal";
@@ -11,7 +11,8 @@ import MusteriSecici from "./MusteriSecici";
 import { adetGoster } from "../para";
 import { kalemTutari, yeniTahsilat } from "../adisyonlar";
 import { indirimYapabilir, yetkiVar } from "../oturum";
-import { odemeTipleriniGetir } from "../odemeTipleri";
+import { ODEME_TIPI_ANAHTAR, odemeTipleriniGetir } from "../odemeTipleri";
+import { useTanim } from "../tanimAbonelik";
 import type { OdemeTipi } from "../odemeTipleri";
 import type { KdvSatiri } from "../kdv";
 import type { SepetKalemi, Tahsilat } from "../types";
@@ -68,7 +69,7 @@ export default function TahsilatPanel({ kalemler, toplam, araToplam, indirim, se
   const [tahsilatlar, setTahsilatlar] = useState<Tahsilat[]>(kayitliTahsilatlar ?? []);
   const [girilen, setGirilen] = useState("");
   const [secilen, setSecilen] = useState<Record<number, number>>({});
-  const [odemeTipleri, setOdemeTipleri] = useState<OdemeTipi[]>([]);
+  const odemeTipleri = useTanim<OdemeTipi[]>(ODEME_TIPI_ANAHTAR, odemeTipleriniGetir, []);
   const [indirimAcik, setIndirimAcik] = useState(false);
   const [uyari, setUyari] = useState<string | null>(null);
   // Bahşiş ödeme tipleriyle aynı sütunda, ikinci sekmede duruyor. Alınacak
@@ -99,10 +100,6 @@ export default function TahsilatPanel({ kalemler, toplam, araToplam, indirim, se
     if (silinen?.id) onSil(silinen.id, sebep);
     onKaydet(yeni);
   };
-
-  useEffect(() => {
-    odemeTipleriniGetir().then(setOdemeTipleri);
-  }, []);
 
   const odenen = (tahsilatlar ?? []).reduce((t, o) => t + o.tutar, 0);
   const bahsisToplam = (tahsilatlar ?? []).reduce((t, o) => t + (o.bahsis ?? 0), 0);

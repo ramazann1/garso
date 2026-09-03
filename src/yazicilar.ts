@@ -189,8 +189,11 @@ export type FisSablonu = {
 // İstasyon tanımı seyrek değişiyor ama mutfak ekranı her açılışta sunucudan
 // indiriyordu; kopyadan anında veriliyor, sunucu arkadan okunuyor. Kartlar
 // (bekleyen siparişler) canlı veri, onlar önbelleğe hiç girmiyor.
+/** Ekranların canlı izleme anahtarı (bkz. tanimAbonelik.useTanim). */
+export const ISTASYON_ANAHTAR = "istasyonlar";
+
 export function istasyonlariGetir(): Promise<Istasyon[]> {
-  return onbellekliGetir("istasyonlar", istasyonlariOku, true);
+  return onbellekliGetir(ISTASYON_ANAHTAR, istasyonlariOku, true);
 }
 
 async function istasyonlariOku(): Promise<Istasyon[]> {
@@ -684,4 +687,4 @@ export async function kuyruktanIptal(id: number) {
   if (error) throw new Error("Fiş iptal edilemedi.");
 }
 
-tazeleyiciTanit("istasyonlar", istasyonlariOku);
+tazeleyiciTanit(ISTASYON_ANAHTAR, istasyonlariOku);

@@ -1,4 +1,4 @@
-import { useEffect, useState } from "react";
+import { useEffect, useRef, useState } from "react";
 import type { RealtimeChannel } from "@supabase/supabase-js";
 import { supabase } from "./supabase";
 import { onbellegiTazele } from "./onbellek";
@@ -59,19 +59,19 @@ function duyur(anahtar: string) {
 }
 
 /**
- * Tanım verisini okur ve kopya tazelendikçe kendini yeniler. Okuma fonksiyonu
- * her çizimde yeniden üretilebildiği için bağımlılık olarak anahtar kullanılıyor.
+ * Kopya tazelendikçe verilen işi yeniden çalıştırır. Menü gibi tek okumadan
+ * birkaç ayrı duruma dağılan ekranlar için: `useTanim` veriyi döndürüyor,
+ * bu ise ekranın kendi okuma işini tekrarlıyor.
+ *
+ * İşe `gecerliMi` veriliyor — okuma sürerken ekran kapanmış olabilir.
  */
-export function useTanim<T>(anahtar: string, getir: () => Promise<T>, baslangic: T): T {
-  const [veri, setVeri] = useState<T>(baslangic);
+export function useTanimEtkisi(anahtar: string, calistir: (gecerliMi: () => boolean) => void) {
+  const is = useRef(calistir);
+  is.current = calistir;
 
   useEffect(() => {
     let gecerli = true;
-    const oku = () => {
-      getir().then((y) => {
-        if (gecerli) setVeri(y);
-      });
-    };
+    const oku = () => is.current(() => gecerli);
 
     let kume = izleyiciler.get(anahtar);
     if (!kume) {
@@ -86,8 +86,21 @@ export function useTanim<T>(anahtar: string, getir: () => Promise<T>, baslangic:
       kume.delete(oku);
       if (kume.size === 0) izleyiciler.delete(anahtar);
     };
-    // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [anahtar]);
+}
+
+/**
+ * Tanım verisini okur ve kopya tazelendikçe kendini yeniler. Okuma fonksiyonu
+ * her çizimde yeniden üretilebildiği için bağımlılık olarak anahtar kullanılıyor.
+ */
+export function useTanim<T>(anahtar: string, getir: () => Promise<T>, baslangic: T): T {
+  const [veri, setVeri] = useState<T>(baslangic);
+
+  useTanimEtkisi(anahtar, (gecerliMi) => {
+    getir().then((y) => {
+      if (gecerliMi()) setVeri(y);
+    });
+  });
 
   return veri;
 }

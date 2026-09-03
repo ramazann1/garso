@@ -9,7 +9,8 @@ import MusteriSecici from "./MusteriSecici";
 import { indirimYapabilir } from "../oturum";
 import { ayarlar } from "../isletmeAyarlari";
 import { paraGoster } from "../para";
-import { odemeTipleriniGetir } from "../odemeTipleri";
+import { ODEME_TIPI_ANAHTAR, odemeTipleriniGetir } from "../odemeTipleri";
+import { useTanim } from "../tanimAbonelik";
 import type { OdemeTipi } from "../odemeTipleri";
 
 type Props = {
@@ -49,7 +50,7 @@ export default function HizliOde({
   onSec,
   onKapat,
 }: Props) {
-  const [odemeTipleri, setOdemeTipleri] = useState<OdemeTipi[]>([]);
+  const odemeTipleri = useTanim<OdemeTipi[]>(ODEME_TIPI_ANAHTAR, odemeTipleriniGetir, []);
   const [girilen, setGirilen] = useState("");
   // Varsayılan "öde ve kapat"; hesabı kapatmadan tahsilat işlemek isteyen
   // (masa oturmaya devam ediyor) diğer seçeneğe geçiyor.
@@ -62,10 +63,6 @@ export default function HizliOde({
   // Açık hesap tipine basıldığında borcun kime yazılacağı soruluyor; tutar
   // seçim penceresi kapanana kadar burada bekliyor.
   const [cariSorusu, setCariSorusu] = useState<{ tip: string; tutar: number } | null>(null);
-
-  useEffect(() => {
-    odemeTipleriniGetir().then(setOdemeTipleri);
-  }, []);
 
   useEffect(() => {
     const kacisTusu = (e: KeyboardEvent) => e.key === "Escape" && onKapat();
