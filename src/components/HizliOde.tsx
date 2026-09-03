@@ -105,7 +105,7 @@ export default function HizliOde({
 
   return (
     <div className="up-fon" onClick={onKapat}>
-      <div className="up-modal hizli-ode" onClick={(e) => e.stopPropagation()}>
+      <div className="up-modal tam hizli-ode" onClick={(e) => e.stopPropagation()}>
         <header className="up-ust">
           <Zap size={18} className="hizli-simge" />
           <h3>Hızlı Öde — {baslik}</h3>

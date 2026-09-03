@@ -99,7 +99,7 @@ export default function AdisyonDetay({
 
   return (
     <div className="up-fon" onClick={onKapat}>
-      <div className="up-modal detay-pencere" onClick={(e) => e.stopPropagation()}>
+      <div className="up-modal tam detay-pencere" onClick={(e) => e.stopPropagation()}>
         <header className="up-ust detay-ust">
           <h3>
             Adisyon #{detay?.no ?? "…"}

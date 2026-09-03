@@ -167,6 +167,12 @@ body {
   opacity: 1;
 }
 
+/* Seçim kipinde hedef olamayan boş masa "Adisyon aç" demiyor: o an
+   yapılabilecek iş taşımak, masa da zaten tıklanamıyor. */
+.masa-kart.bos.secim-kilitli:hover .masa-ac {
+  opacity: 0;
+}
+
 /* Dolu masa dolgun mercan: salonun neresinde hesap açık, kapıdan bakınca belli.
    İçerik alta yaslı — üstteki bant üç nokta düğmesine kalıyor, garson adı ile
    süre onun altına iniyor. */
@@ -2674,6 +2680,13 @@ body {
   color: var(--metin);
   line-height: 1.55;
   white-space: pre-line;
+}
+
+/* Masa adı, tutar gibi kararı belirleyen bilgi cümlenin içinde kaybolmasın:
+   kalın ve tam koyu tonda. */
+.onay-modal p strong {
+  font-weight: 600;
+  color: var(--metin);
 }
 
 /* Başlıksız pencerede ilk şey cümlenin kendisi; üst boşluğu o alıyor. */
@@ -5409,115 +5422,6 @@ body {
   color: var(--mercan);
 }
 
-.masa-secim {
-  width: 560px;
-  max-width: calc(100vw - 32px);
-  max-height: calc(100vh - 64px);
-  overflow-y: auto;
-  padding: 22px;
-  border-radius: 18px;
-  background: var(--kart);
-  box-shadow: 0 12px 40px rgba(0, 0, 0, 0.18);
-}
-
-.masa-secim header {
-  display: flex;
-  align-items: center;
-  justify-content: space-between;
-  gap: 12px;
-  margin-bottom: 14px;
-}
-
-.masa-secim h3 {
-  font-size: 19px;
-  font-weight: 600;
-}
-
-.masa-secim-kapat {
-  display: flex;
-  align-items: center;
-  justify-content: center;
-  width: 32px;
-  height: 32px;
-  border: none;
-  border-radius: 9px;
-  background: var(--zemin);
-  color: var(--metin);
-  cursor: pointer;
-}
-
-.masa-secim-kapat:hover {
-  background: #dde5ef;
-}
-
-.masa-secim-bolge {
-  margin-top: 18px;
-}
-
-.masa-secim-bolge h4 {
-  font-size: 15px;
-  font-weight: 600;
-  color: var(--metin);
-  margin-bottom: 9px;
-}
-
-.masa-secim-grid {
-  display: grid;
-  grid-template-columns: repeat(auto-fill, minmax(118px, 1fr));
-  gap: 9px;
-}
-
-.masa-secim-kart {
-  display: flex;
-  flex-direction: column;
-  gap: 3px;
-  padding: 12px 13px;
-  border: 1px solid #dde4ed;
-  border-radius: 13px;
-  background: var(--kart);
-  text-align: left;
-  cursor: pointer;
-  transition: border-color 0.16s ease, background 0.16s ease;
-}
-
-.masa-secim-kart:hover {
-  border-color: var(--mercan);
-  background: #fff5f1;
-}
-
-.masa-secim-ad {
-  font-size: 15px;
-  font-weight: 600;
-  color: var(--metin);
-}
-
-/* Seçilemeyen masa silikleştirilmiyor — kilit işaretiyle ve çizgili zeminle
-   belirtiliyor ki yazısı okunur kalsın. */
-.masa-secim-kart.kilitli {
-  background: var(--zemin);
-  border-style: dashed;
-  cursor: not-allowed;
-}
-
-.masa-secim-durum {
-  display: inline-flex;
-  align-items: center;
-  gap: 4px;
-  font-size: 13px;
-  font-weight: 500;
-  color: var(--soluk);
-}
-
-.masa-secim-bos {
-  margin-top: 18px;
-  padding: 18px;
-  border-radius: 13px;
-  background: var(--zemin);
-  font-size: 14px;
-  color: var(--metin);
-  text-align: center;
-}
-
 /* ============================================================
    KALEM PANELİ (2 Eyl 2026 — yeni görsel dil)
    Ortak pencere kabuğunu kullanıyor (.up-fon / .up-modal).
@@ -6507,106 +6411,6 @@ body {
   padding-top: 8px;
 }
 .hizli-satir.kalan strong { color: var(--mercan); font-size: 20px; }
-/* Misafir sayısı sorusu: masaya girildiği anda çıkan tek soruluk pencere.
-   Rakamlar iri ve kare — kasa dokunmatikse parmakla basılıyor. */
-.misafir-modal {
-  width: min(360px, 92vw);
-  padding: 24px;
-  border-radius: 16px;
-  background: var(--kart);
-  box-shadow: 0 8px 32px rgba(0, 0, 0, 0.15);
-}
-
-.misafir-modal .modal-baslik {
-  margin: 0;
-  font-size: 18px;
-  color: var(--mercan);
-}
-
-.misafir-tuslar {
-  display: grid;
-  grid-template-columns: repeat(4, 1fr);
-  gap: 9px;
-  margin: 18px 0 10px;
-}
-
-.misafir-tuslar button {
-  aspect-ratio: 1;
-  border: 1px solid #dde4ed;
-  border-radius: 14px;
-  background: var(--zemin);
-  font-family: inherit;
-  font-size: 21px;
-  font-weight: 600;
-  color: var(--metin);
-  cursor: pointer;
-  transition: background 0.12s ease, color 0.12s ease, border-color 0.12s ease;
-}
-
-.misafir-tuslar button:hover {
-  border-color: var(--mercan);
-  background: var(--mercan);
-  color: #fff;
-}
-
-.misafir-diger {
-  display: flex;
-  gap: 9px;
-}
-
-.misafir-diger input {
-  flex: 1;
-  min-width: 0;
-  padding: 12px 14px;
-  border: 1px solid #dde4ed;
-  border-radius: 13px;
-  background: var(--kart);
-  font-family: inherit;
-  font-size: 15px;
-  color: var(--metin);
-}
-
-.misafir-diger input:focus {
-  border-color: var(--mercan);
-  outline: none;
-}
-
-.misafir-diger button {
-  display: flex;
-  align-items: center;
-  justify-content: center;
-  width: 50px;
-  border: none;
-  border-radius: 13px;
-  background: var(--mercan);
-  color: #fff;
-  cursor: pointer;
-}
-
-/* Sayı girilmeden onay tuşu iş yapmıyor; silik değil, sakin duruyor. */
-.misafir-diger button:disabled {
-  background: #dee5ef;
-  color: var(--soluk);
-  cursor: default;
-}
-
-.misafir-vazgec {
-  width: 100%;
-  margin-top: 16px;
-  padding: 10px;
-  border: none;
-  border-radius: 11px;
-  background: none;
-  font-family: inherit;
-  font-size: 14px;
-  color: var(--soluk);
-  cursor: pointer;
-}
-
-.misafir-vazgec:hover {
-  color: var(--metin);
-  background: var(--zemin);
-}
 
 /* Para üstü: kasadaki kişinin gözüne çarpsın diye kalan tutarla aynı dilde,
    ama ondan ayrı bir şerit. */
@@ -13156,77 +12960,11 @@ body {
   font-weight: 600;
 }
 
-/* Masaya girişteki ilk pencere bu; başlık ve çıkış mercan duruyor ki garson
-   ne sorulduğunu ve nereden çıkacağını bir bakışta görsün. */
-.m-misafir .m-sayfa-ust h2,
-.m-misafir .m-sayfa-ust .m-ikon-dugme,
+/* Başlık ve çıkış mercan duruyor ki garson ne sorulduğunu ve nereden
+   çıkacağını bir bakışta görsün. */
 .m-adisyon-sayfa .m-sayfa-ust h2,
 .m-adisyon-sayfa .m-sayfa-ust .m-ikon-dugme {
   color: var(--mercan);
-}
-
-/* Misafir sayısı soruluyor: dört sütun, parmak boyunda tuşlar. Tek dokunuşla
-   girilip geçiliyor, masaya girişte her saniye görünüyor. */
-.m-misafir-tuslar {
-  display: grid;
-  grid-template-columns: repeat(4, 1fr);
-  gap: 10px;
-  padding: 16px 16px 12px;
-}
-
-.m-misafir-tuslar button {
-  height: 62px;
-  border: 1px solid #dde4ed;
-  border-radius: 14px;
-  background: var(--kart);
-  color: var(--metin);
-  font-family: inherit;
-  font-size: 22px;
-  font-weight: 600;
-  cursor: pointer;
-}
-
-.m-misafir-tuslar button:active {
-  background: var(--mercan);
-  border-color: var(--mercan);
-  color: #fff;
-}
-
-.m-misafir-diger {
-  display: flex;
-  gap: 10px;
-  padding: 0 16px 18px;
-}
-
-.m-misafir-diger input {
-  flex: 1;
-  min-width: 0;
-  height: 52px;
-  padding: 0 14px;
-  border: 1px solid #dde4ed;
-  border-radius: 14px;
-  background: var(--kart);
-  color: var(--metin);
-  font-family: inherit;
-  font-size: 16px;
-}
-
-.m-misafir-diger button {
-  width: 52px;
-  height: 52px;
-  display: grid;
-  place-items: center;
-  border: none;
-  border-radius: 14px;
-  background: var(--mercan);
-  color: #fff;
-  cursor: pointer;
-}
-
-.m-misafir-diger button:disabled {
-  background: #d4dbe5;
-  color: var(--soluk);
-  cursor: default;
 }
 
 .m-dugme.genis {
@@ -14222,22 +13960,25 @@ body {
   color: var(--soluk);
 }
 
-/* Seçim modu: hedef olamayan masalar geri çekiliyor, seçilen mercan çerçeveli. */
+/* Seçim kipi masaüstüyle aynı kuralı izliyor: seçilebilen masa mercan
+   çerçeve alıyor, seçilemeyen silikleşmiyor — adı ve tutarı okunur kalıyor,
+   yalnız dokunulmaz oluyor. */
+.m-masalar.secim .m-masa.secilebilir {
+  outline: 2px solid var(--mercan);
+  outline-offset: -2px;
+}
+
 .m-masalar.secim .m-masa.kapali {
-  opacity: 0.35;
+  cursor: not-allowed;
 }
 
 .m-masalar.secim .m-masa.kaynak {
   outline: 2px dashed var(--mercan);
   outline-offset: -2px;
-  opacity: 1;
 }
 
-.m-masa.secili {
-  outline: 2px solid var(--mercan);
-  outline-offset: -2px;
-}
-
+/* Yüzen seçim şeridi. Masaüstündeki şeritle aynı dili konuşuyor (mercan,
+   aynı cümle, aynı sayaç); telefonda yeri farklı — başparmağın altında. */
 .m-secim-serit {
   position: fixed;
   left: 12px;
@@ -14246,45 +13987,59 @@ body {
   z-index: 40;
   display: flex;
   flex-direction: column;
-  gap: 10px;
-  padding: 13px 14px;
-  border-radius: 15px;
-  background: var(--metin);
-  color: #fff;
+  gap: 11px;
+  padding: 13px 16px;
+  border: 1px solid var(--cizgi);
+  border-left: 3px solid var(--mercan);
+  border-radius: var(--r-or);
+  background: var(--kart);
+  box-shadow: var(--g3);
+}
+
+.m-secim-serit > span {
+  display: flex;
+  flex-direction: column;
+  gap: 2px;
+}
+
+.m-secim-serit > span strong {
   font-size: 15px;
+  font-weight: 600;
+  color: var(--metin);
+}
+
+.m-secim-serit > span em {
+  font-size: 14px;
+  font-style: normal;
+  color: var(--soluk);
 }
 
 .m-secim-serit > div {
   display: flex;
-  gap: 8px;
+  align-items: center;
+  gap: 10px;
 }
 
-.m-secim-serit button {
+.m-serit-sayac {
   flex: 1;
-  display: flex;
-  align-items: center;
-  justify-content: center;
-  gap: 6px;
-  padding: 11px;
-  border: none;
-  border-radius: 11px;
-  font-size: 15px;
+  font-size: 14px;
   font-weight: 600;
-  cursor: pointer;
+  color: var(--soluk);
+  font-variant-numeric: tabular-nums;
 }
 
 .m-serit-vazgec {
-  background: rgba(255, 255, 255, 0.16);
-  color: #fff;
-}
-
-.m-serit-onay {
-  background: var(--mercan);
-  color: #fff;
-}
-
-.m-serit-onay:disabled {
-  opacity: 0.45;
+  display: inline-flex;
+  align-items: center;
+  gap: 7px;
+  padding: 10px 16px;
+  border: 1px solid var(--cizgi-koyu);
+  border-radius: var(--r-kk);
+  background: var(--kart);
+  font-size: 15px;
+  font-weight: 600;
+  color: var(--metin);
+  cursor: pointer;
 }
 
 /* İşlem listesi: ikon + ad, açıklama yok. */
@@ -16368,11 +16123,17 @@ body {
   border-color: var(--mercan);
 }
 
-/* --- dar ekran --- */
+/* --- dar ekran ---
+   Tam ekrana yalnız "tam" sınıfı olan pencereler yayılıyor: ürün, kalem,
+   tahsilat gibi içinde iş yapılan büyük pencereler. Tek soruluk pencereler
+   (misafir sayısı, masa seçimi, adisyon bilgisi) telefonda da ortada kart
+   kalıyor — küçük bir soruyu tam sayfa sormak gereksiz. */
 @media (max-width: 860px) {
-  .up-fon { padding: 0; }
-  .up-fon.ust { padding: 0; }
-  .up-modal,
+  .up-fon:has(> .tam) { padding: 0; }
+  .up-fon.ust:has(> .tam) { padding: 0; }
+  .up-fon { padding: 14px; }
+  .up-fon.ust { padding: 14px; }
+  .up-modal.tam,
   .up-grup-pencere {
     max-width: 100%;
     height: 100%;
@@ -16756,3 +16517,410 @@ body {
     padding: 12px 16px calc(12px + env(safe-area-inset-bottom));
   }
 }
+
+/* ============================================================
+   SALON — HEDEF MASA SEÇİM KİPİ (3 Eyl 2026)
+   Taşıma ve birleştirmede hedef masa ayrı pencerede aranmıyor;
+   salon planının kendisi seçim kipine giriyor. Şerit sekmelerin
+   üstünde ve sabit: hangi işin ortasında olunduğunu yazıyor ve
+   hiçbir masanın üstünü örtmüyor.
+   ============================================================ */
+
+/* Beyaz kart, solunda mercan dikey şerit: kipte olunduğunu söylüyor ama
+   salonun rengiyle yarışmıyor. Sipariş ekranındaki kategori deseninin aynısı. */
+.ss-serit {
+  position: sticky;
+  top: 0;
+  z-index: 12;
+  display: flex;
+  align-items: center;
+  gap: 14px;
+  margin-bottom: 18px;
+  padding: 13px 18px;
+  border: 1px solid var(--cizgi);
+  border-left: 3px solid var(--mercan);
+  border-radius: var(--r-or);
+  background: var(--kart);
+  box-shadow: var(--g2);
+  animation: ss-serit-gir var(--gecis-yavas);
+}
+
+@keyframes ss-serit-gir {
+  from { opacity: 0; transform: translateY(-6px); }
+}
+
+.ss-im {
+  display: grid;
+  place-items: center;
+  flex-shrink: 0;
+  width: 36px;
+  height: 36px;
+  border-radius: var(--r-tam);
+  background: var(--mercan-sis);
+  color: var(--mercan);
+}
+
+/* İki satır: ne olduğu kalın, ne yapılacağı altında. Alt satır ikincil ama
+   soluk değil — okunur tonda ve 14px'in altına inmiyor. */
+.ss-yazi {
+  flex: 1;
+  min-width: 0;
+  display: flex;
+  flex-direction: column;
+  gap: 2px;
+}
+
+.ss-yazi strong {
+  font-size: 15px;
+  font-weight: 600;
+  color: var(--metin);
+}
+
+.ss-yazi em {
+  font-size: 14px;
+  font-style: normal;
+  color: var(--soluk);
+}
+
+.ss-sayac {
+  flex-shrink: 0;
+  font-size: 14px;
+  font-weight: 600;
+  color: var(--soluk);
+  font-variant-numeric: tabular-nums;
+}
+
+.ss-vazgec {
+  display: inline-flex;
+  align-items: center;
+  gap: 7px;
+  flex-shrink: 0;
+  padding: 9px 15px;
+  border: 1px solid var(--cizgi-koyu);
+  border-radius: var(--r-kk);
+  background: var(--kart);
+  font-size: 15px;
+  font-weight: 500;
+  color: var(--metin);
+  cursor: pointer;
+  transition: border-color var(--gecis), background var(--gecis);
+}
+
+.ss-vazgec:hover {
+  border-color: var(--mercan);
+  background: var(--kart-ust);
+}
+
+/* Seçilebilir masa: kartın kendisi çerçeveleniyor. Küçük bir işaret koymak
+   yetmiyor — uzaktan bakan garson hangi masaların açık olduğunu görmeli. */
+/* Kartın kendi kenarı yok (border: none), o yüzden çerçeve outline ile
+   çiziliyor — mobil ızgaranın seçim kipinde kullandığı yolun aynısı. */
+.masa-kart.secim-uygun {
+  outline: 2px solid var(--mercan);
+  outline-offset: -2px;
+}
+
+.masa-kart.secim-uygun:hover {
+  outline-width: 3px;
+}
+
+/* Seçilemeyen masa silikleşmiyor — adı ve tutarı okunur kalıyor, yalnız
+   dokunulmaz oluyor. Nedenini köşedeki kilit söylüyor. */
+.masa-kart.secim-kilitli {
+  cursor: not-allowed;
+}
+
+.masa-kart.secim-kilitli:hover {
+  transform: none;
+  box-shadow: 0 1px 3px rgba(20, 32, 48, 0.08);
+}
+
+.masa-secilemez {
+  position: absolute;
+  top: 10px;
+  right: 10px;
+  z-index: 3;
+  display: grid;
+  place-items: center;
+  width: 26px;
+  height: 26px;
+  border-radius: var(--r-tam);
+  background: var(--kart);
+  border: 1px solid var(--cizgi-koyu);
+  color: var(--soluk);
+}
+
+@media (max-width: 780px) {
+  .ss-serit {
+    flex-wrap: wrap;
+    gap: 10px;
+  }
+
+  .ss-yazi {
+    flex: 1 1 100%;
+    order: 3;
+  }
+
+  .ss-sayac {
+    margin-left: auto;
+  }
+}
+
+/* Mobil seçim kipinde seçilemeyen masanın kilidi — masaüstündeki
+   .masa-secilemez ile aynı iş, kartın küçük ölçüsüne göre. */
+.m-masa-secilemez {
+  display: grid;
+  place-items: center;
+  flex-shrink: 0;
+  width: 24px;
+  height: 24px;
+  border-radius: var(--r-tam);
+  background: var(--kart);
+  border: 1px solid var(--cizgi-koyu);
+  color: var(--soluk);
+}
+
+/* ============================================================
+   MASA SEÇİM PENCERESİ (3 Eyl 2026 — yeni görsel dil)
+   Salonda hedef masa pencereyle değil planın kendisiyle seçiliyor;
+   bu pencere kalem taşımada kalıyor — sipariş ekranından açıldığı
+   için arkada plan yok. Seçim dili salondakiyle aynı: seçilebilen
+   masa mercan çerçeveli, seçilemeyen silikleşmiyor, kilit alıyor.
+   Ortak kabuk (.up-fon.ust / .up-modal) — Kalem Paneli'nin üstünde
+   açıldığı için "ust".
+   ============================================================ */
+
+.ms-modal {
+  max-width: 620px;
+}
+
+.ms-sayac {
+  flex: none;
+  padding: 4px 11px;
+  border: 1px solid var(--cizgi);
+  border-radius: var(--r-tam);
+  background: var(--kart-ust);
+  font-size: 13px;
+  font-weight: 600;
+  color: var(--soluk);
+  font-variant-numeric: tabular-nums;
+}
+
+/* Başlık sabit kalıyor, uzun masa listesinde yalnız gövde kayıyor. */
+.ms-govde {
+  flex: 1;
+  min-height: 0;
+  overflow-y: auto;
+  padding: 18px 22px 22px;
+}
+
+.ms-bolge {
+  margin-top: 20px;
+}
+
+.ms-bolge h4 {
+  display: flex;
+  align-items: baseline;
+  gap: 9px;
+  margin-bottom: 10px;
+  font-size: 15px;
+  font-weight: 600;
+  color: var(--metin);
+}
+
+.ms-bolge h4 em {
+  font-size: 13px;
+  font-style: normal;
+  font-weight: 500;
+  color: var(--soluk);
+}
+
+.ms-grid {
+  display: grid;
+  grid-template-columns: repeat(auto-fill, minmax(124px, 1fr));
+  gap: 10px;
+}
+
+.ms-kart {
+  display: flex;
+  flex-direction: column;
+  gap: 4px;
+  padding: 12px 14px;
+  border: 1px solid var(--cizgi);
+  border-radius: var(--r-or);
+  background: var(--kart);
+  text-align: left;
+  cursor: pointer;
+  transition: border-color var(--gecis), box-shadow var(--gecis), background var(--gecis);
+}
+
+.ms-kart.uygun {
+  border-color: var(--mercan);
+}
+
+.ms-kart.uygun:hover {
+  background: var(--mercan-sis);
+  box-shadow: var(--g1);
+}
+
+/* Seçilemeyen masa silikleşmiyor — adı okunur kalıyor, yalnız dokunulmaz
+   oluyor. Nedenini kilitli durum satırı söylüyor. */
+.ms-kart.kilitli {
+  background: var(--kart-ust);
+  cursor: not-allowed;
+}
+
+.ms-ad {
+  font-size: 15px;
+  font-weight: 600;
+  color: var(--metin);
+}
+
+.ms-durum {
+  display: inline-flex;
+  align-items: center;
+  gap: 5px;
+  font-size: 13px;
+  font-weight: 500;
+  color: var(--soluk);
+}
+
+.ms-kart.uygun .ms-durum {
+  color: var(--mercan);
+}
+
+.ms-bos {
+  margin-top: 18px;
+  padding: 20px;
+  border: 1px solid var(--cizgi);
+  border-radius: var(--r-or);
+  background: var(--kart-ust);
+  font-size: 14px;
+  color: var(--metin);
+  text-align: center;
+}
+
+
+/* ============================================================
+   MİSAFİR SAYISI (3 Eyl 2026 — yeni görsel dil)
+   Masaya girildiği anda çıkan tek soruluk pencere. Ortak kabuk
+   (.up-fon / .up-modal); telefon da bu pencereyi açıyor, kendi
+   kopyası yok — fark yalnız aşağıdaki dar ekran kuralında.
+   Rakamlar iri ve kare: kasa da telefon da parmakla kullanılıyor.
+   ============================================================ */
+
+.mis-modal {
+  max-width: 400px;
+}
+
+.mis-im {
+  display: grid;
+  place-items: center;
+  flex-shrink: 0;
+  width: 34px;
+  height: 34px;
+  border-radius: var(--r-tam);
+  background: var(--mercan-sis);
+  color: var(--mercan);
+}
+
+.mis-govde {
+  display: flex;
+  flex-direction: column;
+  gap: 11px;
+  padding: 20px 22px;
+}
+
+.mis-tuslar {
+  display: grid;
+  grid-template-columns: repeat(4, 1fr);
+  gap: 10px;
+}
+
+.mis-tuslar button {
+  aspect-ratio: 1;
+  border: 1px solid var(--cizgi);
+  border-radius: var(--r-or);
+  background: var(--kart-ust);
+  font-family: inherit;
+  font-size: 22px;
+  font-weight: 600;
+  color: var(--metin);
+  cursor: pointer;
+  transition: background var(--gecis), color var(--gecis), border-color var(--gecis);
+}
+
+.mis-tuslar button:hover,
+.mis-tuslar button:active {
+  border-color: var(--mercan);
+  background: var(--mercan);
+  color: #fff;
+}
+
+.mis-diger {
+  display: flex;
+  gap: 10px;
+}
+
+.mis-diger input {
+  flex: 1;
+  min-width: 0;
+  padding: 13px 15px;
+  border: 1px solid var(--cizgi);
+  border-radius: var(--r-or);
+  background: var(--kart);
+  font-family: inherit;
+  font-size: 15px;
+  color: var(--metin);
+}
+
+.mis-diger input:focus {
+  border-color: var(--mercan);
+  outline: none;
+}
+
+.mis-diger button {
+  display: grid;
+  place-items: center;
+  flex-shrink: 0;
+  width: 52px;
+  border: none;
+  border-radius: var(--r-or);
+  background: var(--mercan);
+  color: #fff;
+  cursor: pointer;
+  transition: opacity var(--gecis);
+}
+
+.mis-diger button:disabled {
+  background: var(--cizgi-koyu);
+  color: var(--soluk);
+  cursor: default;
+}
+
+/* Vazgeçmek salona dönmek demek: sayı verilmeden bu masada satış
+   yapılamıyor, pencerenin tek çıkışı bu. */
+.mis-alt {
+  padding: 14px 22px;
+  border-top: 1px solid var(--cizgi);
+}
+
+.mis-alt button {
+  width: 100%;
+  padding: 12px;
+  border: 1px solid var(--cizgi-koyu);
+  border-radius: var(--r-kk);
+  background: var(--kart);
+  font-family: inherit;
+  font-size: 15px;
+  font-weight: 500;
+  color: var(--metin);
+  cursor: pointer;
+  transition: border-color var(--gecis), background var(--gecis);
+}
+
+.mis-alt button:hover {
+  border-color: var(--mercan);
+  background: var(--kart-ust);
+}
+

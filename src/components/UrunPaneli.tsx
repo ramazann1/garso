@@ -235,7 +235,7 @@ export default function UrunPaneli({
 
   return (
     <div className="up-fon" onClick={onKapat}>
-      <div className="up-modal" onClick={(e) => e.stopPropagation()}>
+      <div className="up-modal tam" onClick={(e) => e.stopPropagation()}>
         <header className="up-ust">
           <h3>{urun.id ? "Ürünü düzenle" : "Yeni ürün"}</h3>
           <button className="up-kapat" onClick={onKapat} title="Kapat">

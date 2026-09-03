@@ -1,5 +1,16 @@
 import { useState } from "react";
 
+/**
+ * Mesajın içinde *yıldız arasına* alınan parçalar koyu yazılıyor. Masa adı,
+ * tutar gibi kararı belirleyen bilgi cümlenin içinde kaybolmasın diye: "onaylıyor
+ * musunuz" diye sorulan şeyin hangi masa olduğu bir bakışta görünmeli.
+ */
+function vurgula(mesaj: string) {
+  return mesaj.split(/\*(.+?)\*/g).map((parca, i) =>
+    i % 2 === 1 ? <strong key={i}>{parca}</strong> : parca
+  );
+}
+
 type Props = {
   mesaj: string;
   /** Mesajın üstünde duran kısa başlık; ikonla birlikte kullanılıyor. */
@@ -56,7 +67,7 @@ export default function OnayModal({
             <h3>{baslik}</h3>
           </div>
         )}
-        <p>{mesaj}</p>
+        <p>{vurgula(mesaj)}</p>
 
         {sebepler && (
           <div className="onay-sebepler">

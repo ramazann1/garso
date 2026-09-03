@@ -165,3 +165,14 @@ export function durgunMu(ozet?: { sonSiparis?: string; acilis?: string }) {
   if (!an) return false;
   return (Date.now() - new Date(an).getTime()) / 60000 >= esik;
 }
+
+/**
+ * Taşıma ve birleştirme onayında sorulan cümle. İki yüzey de buradan okuyor:
+ * telefonda ve kasada aynı işin aynı sözle sorulması gerekiyor.
+ */
+export function hedefOnayMesaji(tip: "tasi" | "birlestir", kaynakAd: string, hedefAd: string) {
+  return tip === "tasi"
+    ? `*${kaynakAd}* masasındaki adisyon *${hedefAd}* masasına taşınacak. Onaylıyor musunuz?`
+    : `*${kaynakAd}* masasındaki adisyon *${hedefAd}* masasının adisyonuna eklenecek. ` +
+      `*${kaynakAd}* boşalacak, iki hesap tek adisyonda toplanacak. Onaylıyor musunuz?`;
+}

@@ -172,7 +172,7 @@ export default function KalemPaneli({
 
   return (
     <div className="up-fon" onClick={onKapat}>
-      <div className="up-modal kp-modal" onClick={(e) => e.stopPropagation()}>
+      <div className="up-modal tam kp-modal" onClick={(e) => e.stopPropagation()}>
         <header className="up-ust">
           {kip && (
             <button className="kp-geri" onClick={() => setKip(null)} aria-label="Geri">

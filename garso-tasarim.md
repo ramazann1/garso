@@ -1,7 +1,7 @@
 # GARSO — Teknik Tasarım: Veri Modeli & Ekran Haritası
 *Restoran ve cafe'ler için bulut tabanlı satış ve işletme yönetim sistemi.*
 
-## 0. SIRADAKİ İŞ (3 Eyl 2026 güncellendi)
+## 0. SIRADAKİ İŞ (3 Eyl 2026 akşamı güncellendi)
 
 > **Karar (1 Eyl 2026): görsel dil yenileniyor, zemin krem değil soğuk gri-mavi.**
 > Ramazan mevcut görünümü "ilkel" buldu. Sebep renk değil, **tasarım dilinin
@@ -180,6 +180,79 @@
 > Düzelt** de aynı kabuğu paylaştığı için bedavaya düzeldi (kabuk, çip ve alt
 > şerit; iç düzenleri hâlâ eski).
 
+> **Hedef masa seçimi pencereden salon planına taşındı (3 Eyl 2026).** Önce
+> Adisyo'da canlı tur atıldı (Masayı Değiştir ve Masaları Birleştir açılıp
+> İptal ile çıkıldı, hiçbir şey değiştirilmedi). **Tek cümlelik ders: Adisyo
+> hedef masa için pencere açmıyor** — salon planının kendisi seçim kipine
+> giriyor, masa kartları yerinde kalıyor, bölge sekmeleri çalışmaya devam
+> ediyor. Garson masayı ezberlediği yerde buluyor; plan ikinci kez küçültülmüş
+> hâlde çizilmiyor.
+> **Adisyo'da gördüğümüz zayıflıklar ve bizim farkımız:**
+> (a) Adisyo kipte olduğunu hiçbir yere yazmıyor, yalnız kutucuklardan
+> anlaşılıyor → bizde **üstte sabit şerit** ("*B 1* taşınıyor / Adisyonun
+> geçeceği boş masaya dokunun") ve uygun masa sayacı var.
+> (b) Adisyo'nun yüzen İptal/Kaydet çubuğu masaların üstünü örtüyordu (turda
+> B 18'i kapatıyordu) → bizim şerit üstte, hiçbir masayı örtmüyor.
+> (c) Adisyo'da seçim yalnız 20px'lik halkayı dolduruyor, uzaktan görünmüyor →
+> bizde **kartın kendisi mercan çerçeve** alıyor.
+> (d) Adisyo birleştirmede kare (çoklu), taşımada halka (tek) işareti
+> kullanıyor. **Alınmadı** — bizde birleştirme tek hedefli, arayüze anlamsız
+> ikinci işaret girmiyor.
+> (e) Adisyo'da Kaydet doğrudan uyguluyor → bizde masaya basınca **hedefin
+> adıyla onay penceresi** çıkıyor; fazladan adım eklenmedi, mevcut desen korundu.
+> Kaynak ve seçilemeyen masalar **silikleşmiyor**, köşelerinde kilit taşıyor.
+> Escape kipten çıkarıyor; masasız sekmesi kipte gizleniyor (adisyon masasız
+> satışa taşınmıyor). Sınıflar `ss-` önekli, kart tarafı `secim-uygun` /
+> `secim-kilitli`.
+> **Salon'daki `MasaSecim` penceresi kaldırıldı ama bileşen duruyor:** Kalem
+> Paneli'nden "kalemi taşı" denince arkada plan yok, orada pencere şart.
+>
+> **Mobil zaten seçim kipi kullanıyormuş** — pencere masaüstüne özgüymüş, yani
+> bu iş masaüstünü mobile eşitledi. Yolda üç eşitsizlik çıkıp düzeldi:
+> (1) mobilde seçilemeyen masalar `opacity: .35` ile soluyordu — **silik yazı
+> yasağına aykırı**, kaldırıldı, kilit rozetine geçti;
+> (2) birleştirme ikonu iki yüzeyde farklıydı (mobil `Merge`, masaüstü
+> `Combine`) → `Combine`'da birleşti;
+> (3) mobil bir adım fazla soruyordu (hedefe dokun → **Uygula**), masaüstü onay
+> penceresi açıyordu → ikisi de onay penceresine geçti, "Uygula" kalktı.
+> **Onay cümlesi tek yerden geliyor:** `masalar.ts` → `hedefOnayMesaji`.
+
+> **Onay penceresinde vurgu işareti (3 Eyl 2026).** "S 1 masasındaki adisyon
+> S 3 masasına taşınacak" cümlesinde masa adları düz metinde kayboluyordu
+> (Ramazan). `OnayModal` artık mesajdaki `*yıldız arasını*` `<strong>` yapıyor —
+> tek yerde çözüldüğü için **bütün onay pencerelerinde** geçerli. İşaretlenenler:
+> masa adları, devralan kişinin adı, "Paket #12" gibi sipariş kimlikleri.
+> Karar: ayrı bir `ReactNode` mesaj alanı açılmadı — `hedefOnayMesaji` bir `.ts`
+> dosyasında yaşıyor, oraya JSX giremezdi.
+
+> **Masa Seçim penceresi yeni dile geçti (3 Eyl 2026).** Kendi kabuğu vardı
+> (`.onay-fon` + `.masa-secim`), elle yazılmış değerlerle: `18px`/`13px`/`9px`
+> köşe, `0 12px 40px rgba(0,0,0,.18)` gölge, `.16s ease` geçiş, `#dde4ed`.
+> Ortak kabuğa geçti (`.up-fon.ust` / `.up-modal` — Kalem Paneli'nin üstünde
+> açıldığı için "ust"). Başlık sabit, yalnız gövde kayıyor; başlıkta uygun masa
+> sayacı, bölge başlıklarında bölgenin uygun sayısı. Seçim dili salondakiyle
+> aynı: uygun masa mercan çerçeveli ve "→ buraya taşı" yazıyor, seçilemeyen
+> silikleşmiyor. Escape kapatıyor. Sınıflar `ms-` önekli.
+
+> **Misafir Sayısı yenilendi (3 Eyl 2026).** Ortak kabuğa geçti; başlıktaki
+> "Misafir Sayısı ?" (boşluklu soru işareti) **"Misafir sayısı"** oldu, mercan
+> başlık koyuya döndü, ikon mercan halkaya girdi. Rakam tuşları belirteçlere
+> geçip ferahladı, "Daha kalabalık" kutusu ve "Vazgeç, salona dön" kendi alt
+> şeridine indi. Escape salona döndürüyor.
+> **Mobil kopyası silindi** (`MisafirSorusu`, ~60 satır, `mobil/Siparis.tsx`
+> içinde) — telefon da aynı bileşeni açıyor.
+> **Bilgi kutusu eklenmedi** — Ramazan istemedi.
+> Sınıflar `mis-` önekli.
+
+> **Telefonda tam ekran artık sınıfa bağlı (3 Eyl 2026).** `860px` altında
+> **her** `.up-modal` tam ekrana yayılıyordu; tek soruluk pencereler de tam
+> sayfa oluyordu (Ramazan fark etti, "birkaç ekranda daha aynı şey olmuştu").
+> Kural `.up-modal.tam`'a bağlandı. **Tam ekran:** ürün düzenleme, kalem paneli,
+> tahsilat, Hızlı Öde, adisyon detay — içinde iş yapılan, uzun listeli, çok
+> sütunlu pencereler. **Ortada kart:** misafir sayısı, masa seçimi, adisyon
+> bilgisi — tek soru soran pencereler. Ayrım "içinde iş yapılıyor mu" sorusuna
+> göre; yeni pencere eklerken bu sorulacak.
+
 > **Bahşiş canlı yansıyor, "Alınacak" satırı eklendi (2 Eyl 2026 akşamı).**
 > Bahşiş sekmesine yazılan rakam onay bekliyordu: "Bahşişi ekle"ye basana kadar
 > ekranda hiçbir iz yoktu, bozuk sanılıyordu. Artık yazıldığı anda sekme
@@ -290,20 +363,54 @@
 > menü çalışır durumda, çevrimdışının kalan ucu tek bir akış). Önce elde biriken
 > küçük işler temizlendi; dördü de 1 Eyl akşamı kapandı. Kalan sıra:
 >
-> 0. **Görsel dilin yayılması — beğenilmeyen ekranlar** (2 Eyl 2026 seansında
+> 0. **HIZ — ekranlar yavaş açılıyor** (3 Eyl 2026 kararı, sıranın başına
+>    alındı). Ramazan: "projemizin çok hızlı olması lazım, Adisyo çok hızlı."
+>    **Ölçüldü — HAR kaydı alındı (3 Eyl 2026), 56 Supabase isteği, toplam
+>    ~16,5 sn sunucu beklemesi; bunun ~9,6 saniyesi gereksiz.** Döküm:
+>    - **Bağlantı yoklaması: 8 istek / 2.861 ms.** `baglanti.ts:54` her 30
+>      saniyede `auth/v1/health` soruyor ama isteğe `apikey` başlığı eklendiği
+>      için tarayıcı önce OPTIONS (preflight) atıyor — her yoklama **iki**
+>      istek, ikisi de sıfır veri getiriyor.
+>    - **Menü iki kez baştan okundu: 10 istek / ~5.000 ms.** İki masaya
+>      girilince `urunler + secenek_gruplari + birimler + kdv_gruplari +
+>      kategoriler` beşi birden iki kez indi.
+>    - **İşletme ayarları 3 kez: 1.737 ms.**
+>    - **`rpc/giris_kuruldu` 2 kez, ikisi de tam 451 ms** — eşzamanlı ikizleme.
+>    **Kök sebep tek:** `onbellekliGetir` bağlantı varken cihazdaki kopyayı
+>    **hiç kullanmıyor**, her çağrıda sunucuya gidiyor (kendi yorumunda da
+>    "hızlandırma değil, kopukluk sigortası" yazıyor). Menü, ayarlar, bölgeler,
+>    ödeme tipleri bu yüzden tekrar tekrar iniyor.
+>    **Çürüyen tez:** "sorguyu hafiflet" tek başına işe yaramaz — 0,9 kB'lık
+>    `bolgeler` 936 ms, 8,7 kB'lık `urunler` 629 ms sürüyor. Boyutla süre
+>    ilgisiz, sorun **istek sayısı ve gecikme**. Menüyü ikiye ayırma ve
+>    Supabase bölgesi işi bu yüzden rafa kalktı.
+>    **Yapılacaklar (sırayla):**
+>    1. Yoklamadan `apikey` başlığını çıkar → preflight biter, istek yarıya iner
+>    2. `onbellekliGetir`'e **önce kopyayı ver, arkada tazele** kipi
+>    3. **İstek tekilleştirme** — aynı sorgu havadayken ikinci çağrı uçuştakini
+>       beklesin (ikizlenmeler biter)
+>    4. Menüye canlı abonelik — önbelleğin emniyet kemeri, menü değişince
+>       diğer cihazlar haber alsın (şu an aboneliği yok)
+>    **Değişmeyecek kural:** adisyon, tahsilat, masa doluluğu önbelleğe girmez.
+>    Bir dakika öncesinin masa durumu yanlış bilgidir.
+>    **Bitince aynı HAR kaydı tekrar alınıp rakam karşılaştırılacak.**
+> 1. **Görsel dilin yayılması — beğenilmeyen ekranlar** (2 Eyl 2026 seansında
 >    başlandı, devam ediyor). Biten: tahsilat penceresi, Hızlı Öde, Adisyon
 >    Detay, **Kalem Paneli**, **sipariş ekranı**, **Adisyon Bilgisi**,
->    **Onay Modal** (aşağıda).
->    **Sıradaki seans kaldığı yerden: Masa Seçim.** Henüz elden geçmemişler:
->    Masa Seçim, Misafir Sayısı, Aktarım Onayı, Toplu Düzenle, Sıralama,
+>    **Onay Modal**, **Masa Seçim**, **Misafir Sayısı** (aşağıda).
+>    **Sıradaki: Aktarım Onayı.** Henüz elden geçmemişler:
+>    Aktarım Onayı, Toplu Düzenle, Sıralama,
 >    Kampanya Seçim, Müşteri Detay/Seçici, Bildirim, Köprü İndir, Kilit Ekranı.
+>    **Bu seansta çıkan iş:** `mobil/Siparis.tsx` içindeki **`MasaHedefi`**
+>    bileşeni `MasaSecim`'in mobil ikizi — masaüstü–mobil eşitliği gereği
+>    silinip ortak bileşene bağlanmalı (Misafir Sayısı'nda yapılanın aynısı).
 >    **Eksik Kapat ile Ödeme Tipi Düzelt yarım:** onay kabuğunu paylaştıkları
 >    için kabuk, çipler ve alt şerit kendiliğinden düzeldi; kendi iç düzenleri
 >    (tutar kutusu, ödeme tipi ızgarası) elden geçmedi.
 >    **İndirim modalına dokunulmayacak** — Ramazan beğeniyor (2 Eyl 2026).
 >    Ardından bütün ekranlar köşe/gölge/geçiş belirteçlerine geçirilecek.
 >    **Stok bu iş bitene kadar bekliyor** — Ramazan görüntüyü öne aldı.
-> 1. **Stok** — malzeme, reçete, otomatik düşüm, kritik stok uyarısı, maliyet/kârlılık
+> 2. **Stok** — malzeme, reçete, otomatik düşüm, kritik stok uyarısı, maliyet/kârlılık
 >    **Karar (1 Eyl 2026):** Garso hazır malzeme listesiyle gelmez. Her işletme
 >    kendi malzemesini kendi girer — hangi malzeme setini kullandığı önceden
 >    bilinemez. Modül boş listeyle açılır; kolaylık gerekirse Excel ile toplu
@@ -329,14 +436,14 @@
 >    **Miktarlar en küçük birimde tam sayı** tutulur (gram/mililitre/adet) —
 >    para kuruşunda yaptığımızın aynısı, float yuvarlama hatası çıkmasın diye.
 >    Ekranda kg gösterilir, veritabanında gram durur.
-> 2. **Gelişmiş raporlar** — saatlik ciro, personel performansı, karşılaştırmalı analiz
-> 3. **Cari / veresiye modülü**
-> 4. **Masasız adisyonun çevrimdışı açılması** — offline'ın açık kalan tek ucu
-> 5. **QR menünün kalanı** — kategori/kapak görselleri, masadan sipariş, garson çağırma, masa başına karekod
-> 6. **Kurye atama ve teslimat takibi** — önce Adisyo'da canlı tur, sonra plan
-> 7. **Sadakat programı** (puan, kampanya)
-> 8. **Çoklu şube** — merkezi menü, şube karşılaştırma
-> 9. **İkon boyut standardı** — bütün ekranlar tek tek gezilecek, en sonda
+> 3. **Gelişmiş raporlar** — saatlik ciro, personel performansı, karşılaştırmalı analiz
+> 4. **Cari / veresiye modülü**
+> 5. **Masasız adisyonun çevrimdışı açılması** — offline'ın açık kalan tek ucu
+> 6. **QR menünün kalanı** — kategori/kapak görselleri, masadan sipariş, garson çağırma, masa başına karekod
+> 7. **Kurye atama ve teslimat takibi** — önce Adisyo'da canlı tur, sonra plan
+> 8. **Sadakat programı** (puan, kampanya)
+> 9. **Çoklu şube** — merkezi menü, şube karşılaştırma
+> 10. **İkon boyut standardı** — bütün ekranlar tek tek gezilecek, en sonda
 >
 > Ertelenen üçlü (3-5) buraya konuldu: acelesi yok ama stok ve raporlardan
 > sonra, sadakat ve çoklu şubeden önce. Ardından canlıya çıkış işleri

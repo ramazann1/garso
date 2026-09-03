@@ -317,7 +317,7 @@ export default function TahsilatPanel({ kalemler, toplam, araToplam, indirim, se
 
   return (
     <div className="up-fon" onClick={onKapat}>
-      <div className="up-modal th-modal" onClick={(e) => e.stopPropagation()}>
+      <div className="up-modal tam th-modal" onClick={(e) => e.stopPropagation()}>
         <header className="th-ust">
           <div className="th-kimlik">
             <h2>Tahsilat</h2>

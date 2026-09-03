@@ -5,7 +5,6 @@ import {
   ArrowLeft,
   ArrowRightLeft,
   Ban,
-  Check,
   ChevronDown,
   ChevronRight,
   ChevronUp,
@@ -29,6 +28,7 @@ import UrunSecim from "../components/UrunSecim";
 import TahsilatPanel from "../components/TahsilatPanel";
 import KalemPaneli from "../components/KalemPaneli";
 import AdisyonBilgi from "../components/AdisyonBilgi";
+import MisafirSayisi from "../components/MisafirSayisi";
 import { kalemiUygula } from "./KalemIslemleri";
 import OnayModal from "../components/OnayModal";
 import AltSayfa from "./AltSayfa";
@@ -1156,8 +1156,8 @@ export default function MobilSiparis() {
       )}
 
       {kisiSorusu && (
-        <MisafirSorusu
-          onKaydet={(sayi) => {
+        <MisafirSayisi
+          onSec={(sayi) => {
             setKisiSayisi(sayi);
             setKisiSorusu(false);
           }}
@@ -1187,65 +1187,6 @@ export default function MobilSiparis() {
       )}
 
       {uyari && <OnayModal tekTus mesaj={uyari} onKapat={() => setUyari(null)} />}
-    </div>
-  );
-}
-
-/**
- * Misafir sayısı zorunluysa masaya girer girmez soruluyor. Kuver hesabı buna
- * bağlı; sonradan sorulursa tutar bir süre yanlış görünüyor.
- *
- * Kasadaki `MisafirSayisi` ile aynı desen: kalabalık masa nadir olduğu için
- * hazır rakamlar tek dokunuşa yetiyor, daha fazlası alttaki kutuya yazılıyor.
- * Sayaçtan vazgeçildi — altı kişilik masada altı kez bastırıyordu.
- *
- * Sağ üstteki çarpı salona döndürüyor: sayı verilmeden bu masada satış
- * yapılamadığı için garsonun tek çıkışı buydu, yoksa pencerede kilitli kalıyor.
- */
-function MisafirSorusu({
-  onKaydet,
-  onVazgec,
-}: {
-  onKaydet: (sayi: number) => void;
-  onVazgec: () => void;
-}) {
-  const [digeri, setDigeri] = useState("");
-  const sayi = Number(digeri);
-
-  return (
-    <div className="m-perde">
-      <div className="m-sayfa kisa m-misafir">
-        <header className="m-sayfa-ust">
-          <h2>
-            <Users size={18} /> Misafir Sayısı ?
-          </h2>
-          <button className="m-ikon-dugme" onClick={onVazgec} aria-label="Salona dön">
-            <X size={20} />
-          </button>
-        </header>
-
-        <div className="m-misafir-tuslar">
-          {[1, 2, 3, 4, 5, 6, 7, 8].map((n) => (
-            <button key={n} onClick={() => onKaydet(n)}>
-              {n}
-            </button>
-          ))}
-        </div>
-
-        <div className="m-misafir-diger">
-          <input
-            type="number"
-            inputMode="numeric"
-            min={1}
-            placeholder="Daha kalabalık"
-            value={digeri}
-            onChange={(e) => setDigeri(e.target.value)}
-          />
-          <button disabled={!(sayi >= 1)} onClick={() => onKaydet(sayi)} aria-label="Onayla">
-            <Check size={20} />
-          </button>
-        </div>
-      </div>
     </div>
   );
 }

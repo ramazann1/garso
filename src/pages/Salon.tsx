@@ -1,4 +1,5 @@
 import { useEffect, useRef, useState } from "react";
+import type { ReactNode } from "react";
 import { useNavigate } from "react-router-dom";
 import {
   ArrowRightLeft,
@@ -18,12 +19,12 @@ import {
   RotateCw,
   ShoppingBag,
   Trash2,
+  X,
   Zap,
 } from "lucide-react";
 import { bekleyenMasalar, cevrimdisiHesap, kopyaMasalari, kuyrugaEkle, useKuyruk } from "../kuyruk";
 import { hesapKopyasiSil, kopyaSaati } from "../hesapKopyasi";
 import MasaKarti from "../components/MasaKarti";
-import MasaSecim from "../components/MasaSecim";
 import MasaPlani, { yerlesimiVar } from "../components/MasaPlani";
 import OnayModal from "../components/OnayModal";
 import HizliOde from "../components/HizliOde";
@@ -55,7 +56,7 @@ import {
 import { servisSatirlari } from "../servis";
 import type { AdisyonVerisi, MasaOzeti, MasasizAdisyon } from "../adisyonlar";
 import { adisyonFisiYaz } from "../yazicilar";
-import { bolgeleriGetir, durgunMu } from "../masalar";
+import { bolgeleriGetir, durgunMu, hedefOnayMesaji } from "../masalar";
 import type { Bolge, Masa } from "../types";
 
 type Acik = MasaOzeti;
@@ -161,7 +162,12 @@ export default function Salon() {
   const [, setTik] = useState(0);
   // Masa işlemi iki adımda ilerliyor: önce hedef masa seçilir, sonra onaylanır.
   const [islem, setIslem] = useState<{ tip: "tasi" | "birlestir"; masa: Masa } | null>(null);
-  const [onay, setOnay] = useState<{ mesaj: string; onOnay: () => void } | null>(null);
+  const [onay, setOnay] = useState<{
+    mesaj: string;
+    baslik?: string;
+    ikon?: ReactNode;
+    onOnay: () => void;
+  } | null>(null);
   const [uyari, setUyari] = useState<string | null>(null);
   // İkram penceresindeki "kime yazılsın" listesi; ekran açılırken bir kez okunuyor.
   const [odenmezler, setOdenmezler] = useState<Odenmez[]>([]);
@@ -188,6 +194,14 @@ export default function Salon() {
   useEffect(() => {
     odenmezleriGetir().then(setOdenmezler);
   }, []);
+
+  // Seçim kipi pencere değil ama penceredeki alışkanlık sürüyor: Escape çıkarır.
+  useEffect(() => {
+    if (!islem) return;
+    const kacis = (e: KeyboardEvent) => e.key === "Escape" && setIslem(null);
+    document.addEventListener("keydown", kacis);
+    return () => document.removeEventListener("keydown", kacis);
+  }, [islem]);
 
   // `gorunur`: yükleniyor halkası çıksın mı. İlk açılışta ve "Yeniden dene"de
   // çıkıyor — ekranda gösterilecek bir şey yok, beklediğini söylemek gerekiyor.
@@ -310,22 +324,28 @@ export default function Salon() {
       return;
     }
     setOnay({
-      mesaj: `${a.tip === "paket" ? "Paket" : "Gel Al"} #${a.no} siparişi ürünleriyle birlikte silinsin mi?`,
+      mesaj: `*${a.tip === "paket" ? "Paket" : "Gel Al"} #${a.no}* siparişi ürünleriyle birlikte silinsin mi?`,
       onOnay: sil,
     });
   }
 
   // Hedef seçildi: yapılacak işi anlatan onay çıkıyor, "evet" denince uygulanıyor.
+  // Kipe masasız sekmesinden girilirse hedef masa görünmüyor; şerit çıkarken
+  // ekran masaların olduğu yere alınıyor.
+  function secimKipineGir(tip: "tasi" | "birlestir", masa: Masa) {
+    if (seciliId === "masasiz") setSeciliId("tumu");
+    setIslem({ tip, masa });
+  }
+
   function hedefSecildi(hedef: Masa) {
     if (!islem) return;
     const kaynak = islem.masa;
     const tasima = islem.tip === "tasi";
     setIslem(null);
     setOnay({
-      mesaj: tasima
-        ? `${kaynak.ad} masasındaki adisyon ${hedef.ad} masasına taşınacak. Onaylıyor musunuz?`
-        : `${kaynak.ad} masasındaki adisyon ${hedef.ad} masasının adisyonuna eklenecek. ` +
-          `${kaynak.ad} boşalacak, iki hesap tek adisyonda toplanacak. Onaylıyor musunuz?`,
+      baslik: tasima ? "Masayı taşı" : "Adisyonu birleştir",
+      ikon: tasima ? <ArrowRightLeft size={20} /> : <Combine size={20} />,
+      mesaj: hedefOnayMesaji(islem.tip, kaynak.ad, hedef.ad),
       onOnay: async () => {
         setOnay(null);
         try {
@@ -369,7 +389,7 @@ export default function Salon() {
   // hesabı kapatmak.
   function kapatmaSor(masa: Masa) {
     setOnay({
-      mesaj: `${masa.ad} masasının hesabı tamamen ödendi. Adisyon kapatılsın mı?`,
+      mesaj: `*${masa.ad}* masasının hesabı tamamen ödendi. Adisyon kapatılsın mı?`,
       onOnay: async () => {
         setOnay(null);
         // Bağlantı yoksa kapanış kuyruğa giriyor; masa cihazda boşalıyor.
@@ -446,12 +466,12 @@ export default function Salon() {
             {
               ad: "Masayı taşı",
               ikon: <ArrowRightLeft size={16} />,
-              onSec: () => setIslem({ tip: "tasi", masa }),
+              onSec: () => secimKipineGir("tasi", masa),
             },
             {
               ad: "Adisyonu birleştir",
               ikon: <Combine size={16} />,
-              onSec: () => setIslem({ tip: "birlestir", masa }),
+              onSec: () => secimKipineGir("birlestir", masa),
             },
           ]
         : []),
@@ -486,9 +506,18 @@ export default function Salon() {
     ];
   };
 
+  // Taşıma ve birleştirmede hedef masa ayrı bir pencerede aranmıyor; salon
+  // planının kendisi seçim kipine giriyor. Garson masayı ezberlediği yerde
+  // buluyor, plan ikinci kez küçültülmüş hâlde çizilmiyor.
+  const hedefUygun = (masa: Masa) => {
+    if (!islem || masa.id === islem.masa.id) return false;
+    return islem.tip === "birlestir" ? !!adisyonlar[masa.id] : !adisyonlar[masa.id];
+  };
+
   // Masa kartı iki yerde de aynı: ızgarada da planda da bu çıkıyor.
   const kart = (masa: Masa) => {
     const acik = adisyonlar[masa.id];
+    const secim = islem ? (hedefUygun(masa) ? "uygun" : "kilitli") : undefined;
     return (
       <MasaKarti
         masa={masa}
@@ -509,7 +538,8 @@ export default function Salon() {
         }
         aksiyonlar={aksiyonlar(masa)}
         mesgul={mesguliyetler[masa.id]?.ad}
-        onClick={() => masayaGir(masa)}
+        secim={secim}
+        onClick={() => (islem ? hedefSecildi(masa) : masayaGir(masa))}
       />
     );
   };
@@ -521,6 +551,7 @@ export default function Salon() {
   const paketler = masasizlar.filter((a) => a.tip === "paket");
   const gelaller = masasizlar.filter((a) => a.tip === "gelal");
   const listelenen = masasizTip === "paket" ? paketler : gelaller;
+  const uygunSayisi = islem ? tumMasalar.filter(hedefUygun).length : 0;
 
   return (
     <Duzen>
@@ -550,6 +581,36 @@ export default function Salon() {
           </div>
         ) : (
           <>
+            {/* Kip şeridi sekmelerin üstünde ve sabit: hangi işin ortasında
+                olduğunu yazıyor ve hiçbir masanın üstünü örtmüyor. */}
+            {islem && (
+              <div className="ss-serit">
+                <span className="ss-im">
+                  {islem.tip === "tasi" ? <ArrowRightLeft size={17} /> : <Combine size={17} />}
+                </span>
+                <span className="ss-yazi">
+                  <strong>
+                    {islem.masa.ad} {islem.tip === "tasi" ? "taşınıyor" : "birleştiriliyor"}
+                  </strong>
+                  <em>
+                    {islem.tip === "tasi"
+                      ? "Adisyonun geçeceği boş masaya dokunun."
+                      : "Adisyonun ekleneceği açık masaya dokunun."}
+                  </em>
+                </span>
+                <span className="ss-sayac">
+                  {uygunSayisi > 0
+                    ? `${uygunSayisi} masa uygun`
+                    : islem.tip === "tasi"
+                      ? "Boş masa yok"
+                      : "Başka açık masa yok"}
+                </span>
+                <button className="ss-vazgec" onClick={() => setIslem(null)}>
+                  <X size={16} /> Vazgeç
+                </button>
+              </div>
+            )}
+
             <nav className="salon-sekme">
               {bolgeler.map((b) => (
                 <button
@@ -571,7 +632,8 @@ export default function Salon() {
 
               {/* Masaya oturmayan satışlar salonun kendi dilinde: ayrı ekran
                   değil, şeridin sonunda duran sabit bir sekme. */}
-              {masasizVar && (
+              {/* Kipte gizli: adisyon masasız bir satışa taşınmıyor. */}
+              {masasizVar && !islem && (
                 <button
                   className={seciliId === "masasiz" ? "masasiz-sekme aktif" : "masasiz-sekme"}
                   onClick={() => { setSeciliId("masasiz"); setMasasizTip(tekTip); }}
@@ -671,23 +733,6 @@ export default function Salon() {
           </>
         )}
 
-        {islem && (
-          <MasaSecim
-            baslik={islem.tip === "tasi" ? "Masayı taşı" : "Adisyonu birleştir"}
-            aciklama={
-              islem.tip === "tasi"
-                ? `${islem.masa.ad} masasındaki adisyon, seçtiğiniz boş masaya olduğu gibi geçer. Siparişler, notlar ve alınan tahsilatlar korunur.`
-                : `${islem.masa.ad} masasındaki siparişler, seçtiğiniz masanın adisyonuna eklenir. İki hesap tek adisyonda birleşir ve ${islem.masa.ad} boşalır.`
-            }
-            bolgeler={bolgeler}
-            doluIdler={new Set(Object.keys(adisyonlar).map(Number))}
-            secilebilirlik={islem.tip === "birlestir" ? "dolu" : "bos"}
-            haricId={islem.masa.id}
-            onSec={hedefSecildi}
-            onKapat={() => setIslem(null)}
-          />
-        )}
-
         {hizli && (() => {
           const { araToplam, toplam, odenen, kalan } = adisyonOzeti(hizli.veri);
           return (
@@ -784,6 +829,8 @@ export default function Salon() {
 
         {onay && (
           <OnayModal
+            baslik={onay.baslik}
+            ikon={onay.ikon}
             mesaj={onay.mesaj}
             onayMetni="Evet, uygula"
             onOnay={onay.onOnay}
@@ -800,8 +847,8 @@ export default function Salon() {
             tehlikeli={adisyonIslem.tip === "iptal"}
             mesaj={
               adisyonIslem.tip === "iptal"
-                ? `${adisyonIslem.masa.ad} masasındaki adisyon iptal edilecek. Masa boşalır, hesap ciroya yazılmaz; kayıt silinmez, iptal olarak durur.`
-                : `${adisyonIslem.masa.ad} masasındaki ürünlerin tamamı ikrama çevrilecek ve hesap sıfırlanıp kapanacak.`
+                ? `*${adisyonIslem.masa.ad}* masasındaki adisyon iptal edilecek. Masa boşalır, hesap ciroya yazılmaz; kayıt silinmez, iptal olarak durur.`
+                : `*${adisyonIslem.masa.ad}* masasındaki ürünlerin tamamı ikrama çevrilecek ve hesap sıfırlanıp kapanacak.`
             }
             sebepler={
               adisyonIslem.tip === "iptal"
@@ -833,8 +880,8 @@ export default function Salon() {
             tekTus={!devralabilir()}
             mesaj={
               devralabilir()
-                ? `${mesgulSorusu.masa.ad} masasında şu an ${mesgulSorusu.ad} işlem yapıyor. Devralırsan ${mesgulSorusu.ad} masadan çıkarılır.`
-                : `${mesgulSorusu.masa.ad} masasında şu an ${mesgulSorusu.ad} işlem yapıyor. İşi bitince masa serbest kalacak.`
+                ? `*${mesgulSorusu.masa.ad}* masasında şu an *${mesgulSorusu.ad}* işlem yapıyor. Devralırsan *${mesgulSorusu.ad}* masadan çıkarılır.`
+                : `*${mesgulSorusu.masa.ad}* masasında şu an *${mesgulSorusu.ad}* işlem yapıyor. İşi bitince masa serbest kalacak.`
             }
             onayMetni="Devral"
             iptalMetni="Vazgeç"

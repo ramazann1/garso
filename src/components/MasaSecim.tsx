@@ -1,4 +1,5 @@
-import { Lock, X } from "lucide-react";
+import { useEffect } from "react";
+import { ArrowRightLeft, LockKeyhole, X } from "lucide-react";
 import Bilgi from "./Bilgi";
 import type { Bolge, Masa } from "../types";
 
@@ -16,8 +17,11 @@ type Props = {
 };
 
 /**
- * Hedef masa seçici. Seçilemeyen masa silikleştirilmiyor — kilit işaretiyle
- * gösteriliyor ki neden tıklanamadığı okunur kalsın.
+ * Hedef masa seçici. Salonda bu iş pencereyle değil, masa planının kendisiyle
+ * yapılıyor; burada arkada plan olmadığı için pencere kalıyor (kalem taşıma
+ * sipariş ekranından açılıyor). Seçim dili salondakiyle aynı: seçilebilen
+ * masa mercan çerçeve alıyor, seçilemeyen silikleşmiyor — kilit işaretiyle
+ * duruyor ki adı okunur kalsın.
  */
 export default function MasaSecim({
   baslik,
@@ -29,60 +33,83 @@ export default function MasaSecim({
   onSec,
   onKapat,
 }: Props) {
+  useEffect(() => {
+    const kacis = (e: KeyboardEvent) => e.key === "Escape" && onKapat();
+    document.addEventListener("keydown", kacis);
+    return () => document.removeEventListener("keydown", kacis);
+  }, [onKapat]);
+
   const uygun = (m: Masa) =>
     m.id !== haricId &&
     (secilebilirlik === "hepsi" || doluIdler.has(m.id) === (secilebilirlik === "dolu"));
   const uygunSayisi = bolgeler.reduce((t, b) => t + b.masalar.filter(uygun).length, 0);
 
   return (
-    <div className="onay-fon" onClick={onKapat}>
-      <div className="masa-secim" onClick={(e) => e.stopPropagation()}>
-        <header>
+    <div className="up-fon ust" onClick={onKapat}>
+      <div className="up-modal ms-modal" onClick={(e) => e.stopPropagation()}>
+        <header className="up-ust">
           <h3>{baslik}</h3>
-          <button className="masa-secim-kapat" aria-label="Kapat" onClick={onKapat}>
-            <X size={18} />
+          <span className="ms-sayac">
+            {uygunSayisi > 0 ? `${uygunSayisi} masa uygun` : "Uygun masa yok"}
+          </span>
+          <button className="up-kapat" aria-label="Kapat" onClick={onKapat}>
+            <X size={19} />
           </button>
         </header>
 
-        <Bilgi>{aciklama}</Bilgi>
+        <div className="ms-govde">
+          <Bilgi>{aciklama}</Bilgi>
 
-        {uygunSayisi === 0 ? (
-          <p className="masa-secim-bos">
-            {secilebilirlik === "dolu"
-              ? "Birleştirilebilecek başka açık masa yok."
-              : secilebilirlik === "bos"
-                ? "Boş masa yok. Adisyonu taşımak için önce bir masa boşalmalı."
-                : "Seçilebilecek başka masa yok."}
-          </p>
-        ) : (
-          bolgeler
-            .filter((b) => b.masalar.length > 0)
-            .map((bolge) => (
-              <section key={bolge.id} className="masa-secim-bolge">
-                <h4>{bolge.ad}</h4>
-                <div className="masa-secim-grid">
-                  {bolge.masalar.map((m) => {
-                    const secilebilir = uygun(m);
-                    const dolu = doluIdler.has(m.id);
-                    return (
-                      <button
-                        key={m.id}
-                        className={secilebilir ? "masa-secim-kart" : "masa-secim-kart kilitli"}
-                        disabled={!secilebilir}
-                        onClick={() => onSec(m)}
-                      >
-                        <span className="masa-secim-ad">{m.ad}</span>
-                        <span className="masa-secim-durum">
-                          {!secilebilir && <Lock size={12} />}
-                          {m.id === haricId ? "bu masa" : dolu ? "dolu" : "boş"}
-                        </span>
-                      </button>
-                    );
-                  })}
-                </div>
-              </section>
-            ))
-        )}
+          {uygunSayisi === 0 ? (
+            <p className="ms-bos">
+              {secilebilirlik === "dolu"
+                ? "Birleştirilebilecek başka açık masa yok."
+                : secilebilirlik === "bos"
+                  ? "Boş masa yok. Adisyonu taşımak için önce bir masa boşalmalı."
+                  : "Seçilebilecek başka masa yok."}
+            </p>
+          ) : (
+            bolgeler
+              .filter((b) => b.masalar.length > 0)
+              .map((bolge) => (
+                <section key={bolge.id} className="ms-bolge">
+                  <h4>
+                    {bolge.ad}
+                    <em>{bolge.masalar.filter(uygun).length} uygun</em>
+                  </h4>
+                  <div className="ms-grid">
+                    {bolge.masalar.map((m) => {
+                      const secilebilir = uygun(m);
+                      const dolu = doluIdler.has(m.id);
+                      return (
+                        <button
+                          key={m.id}
+                          className={secilebilir ? "ms-kart uygun" : "ms-kart kilitli"}
+                          disabled={!secilebilir}
+                          onClick={() => onSec(m)}
+                        >
+                          <span className="ms-ad">{m.ad}</span>
+                          <span className="ms-durum">
+                            {secilebilir ? (
+                              <>
+                                <ArrowRightLeft size={13} />
+                                {dolu ? "adisyona ekle" : "buraya taşı"}
+                              </>
+                            ) : (
+                              <>
+                                <LockKeyhole size={13} />
+                                {m.id === haricId ? "bu masa" : dolu ? "dolu" : "boş"}
+                              </>
+                            )}
+                          </span>
+                        </button>
+                      );
+                    })}
+                  </div>
+                </section>
+              ))
+          )}
+        </div>
       </div>
     </div>
   );

@@ -3,14 +3,13 @@ import { useNavigate } from "react-router-dom";
 import {
   ArrowRightLeft,
   Ban,
-  Check,
   CircleCheckBig,
+  Combine,
   CloudOff,
   CloudUpload,
   EllipsisVertical,
   Gift,
   LockKeyhole,
-  Merge,
   Plus,
   Printer,
   RotateCw,
@@ -19,7 +18,7 @@ import {
   X,
   Zap,
 } from "lucide-react";
-import { bolgeleriGetir, durgunMu } from "../masalar";
+import { bolgeleriGetir, durgunMu, hedefOnayMesaji } from "../masalar";
 import {
   adisyonGetir,
   adisyonIkram,
@@ -102,7 +101,13 @@ export default function MobilMasalar() {
   const [secimModu, setSecimModu] = useState<{
     tip: "tasi" | "birlestir";
     kaynak: Masa;
-    hedef?: number;
+  } | null>(null);
+  // Hedefe dokunulunca masaüstündeki gibi onay soruluyor; şeritte ayrıca
+  // "Uygula" düğmesi yok, iki yüzeyde de adım sayısı aynı.
+  const [hedefSorusu, setHedefSorusu] = useState<{
+    tip: "tasi" | "birlestir";
+    kaynak: Masa;
+    hedef: Masa;
   } | null>(null);
   const [hizliMasa, setHizliMasa] = useState<{ masa: Masa; veri: AdisyonVerisi } | null>(null);
   const [iptalSorusu, setIptalSorusu] = useState<{ masa: Masa; adisyonId: number } | null>(null);
@@ -193,10 +198,14 @@ export default function MobilMasalar() {
     if (!secimModu || m.id === secimModu.kaynak.id) return false;
     return secimModu.tip === "tasi" ? !adisyonlar[m.id] : !!adisyonlar[m.id];
   };
+  // Sayaç bölgeye değil salonun tamamına bakıyor: hedef başka bölgede olabilir.
+  const uygunSayisi = secimModu
+    ? bolgeler.flatMap((b) => b.masalar).filter(secilebilir).length
+    : 0;
 
   const masayaDokun = (m: Masa) => {
     if (secimModu) {
-      if (secilebilir(m)) setSecimModu({ ...secimModu, hedef: m.id });
+      if (secilebilir(m)) setHedefSorusu({ ...secimModu, hedef: m });
       return;
     }
     // Masada başkası varsa doğrudan girilmiyor; kim olduğu söylenip karar
@@ -219,12 +228,13 @@ export default function MobilMasalar() {
   };
 
   const secimiUygula = async () => {
-    if (!secimModu?.hedef) return;
-    const { tip, kaynak, hedef } = secimModu;
+    if (!hedefSorusu) return;
+    const { tip, kaynak, hedef } = hedefSorusu;
+    setHedefSorusu(null);
     setSecimModu(null);
     try {
-      if (tip === "tasi") await masaTasi(kaynak.id, hedef);
-      else await masaBirlestir(kaynak.id, hedef);
+      if (tip === "tasi") await masaTasi(kaynak.id, hedef.id);
+      else await masaBirlestir(kaynak.id, hedef.id);
       await oku();
     } catch (e) {
       setUyari(e instanceof Error ? e.message : "İşlem yapılamadı.");
@@ -372,7 +382,6 @@ export default function MobilMasalar() {
               odendi ? "odendi" : odenen > 0 ? "kismi" : "",
               mesgul ? "mesgul" : "",
               secimModu ? (secilebilir(m) ? "secilebilir" : "kapali") : "",
-              secimModu?.hedef === m.id ? "secili" : "",
               secimModu?.kaynak.id === m.id ? "kaynak" : "",
             ]
               .filter(Boolean)
@@ -413,7 +422,13 @@ export default function MobilMasalar() {
                       <EllipsisVertical size={16} />
                     </span>
                   )}
-                  {secimModu?.hedef === m.id && <Check size={18} />}
+                  {/* Seçilemeyen masa silikleşmiyor; nedenini köşedeki kilit
+                      söylüyor — masaüstündeki kuralın aynısı. */}
+                  {secimModu && !secilebilir(m) && m.id !== secimModu.kaynak.id && (
+                    <span className="m-masa-secilemez">
+                      <LockKeyhole size={14} />
+                    </span>
+                  )}
                 </span>
 
                 {/* Hesap fişi şeridi masa adının altında ve yeri her kartta
@@ -491,16 +506,25 @@ export default function MobilMasalar() {
       {secimModu && (
         <div className="m-secim-serit">
           <span>
-            {secimModu.kaynak.ad}
-            {secimModu.tip === "tasi" ? " → hangi masaya?" : " → hangi masayla birleşsin?"}
+            <strong>
+              {secimModu.kaynak.ad} {secimModu.tip === "tasi" ? "taşınıyor" : "birleştiriliyor"}
+            </strong>
+            <em>
+              {secimModu.tip === "tasi"
+                ? "Adisyonun geçeceği boş masaya dokunun."
+                : "Adisyonun ekleneceği açık masaya dokunun."}
+            </em>
           </span>
           <div>
+            <span className="m-serit-sayac">
+              {uygunSayisi > 0
+                ? `${uygunSayisi} uygun`
+                : secimModu.tip === "tasi"
+                  ? "Boş masa yok"
+                  : "Açık masa yok"}
+            </span>
             <button className="m-serit-vazgec" onClick={() => setSecimModu(null)}>
-              Vazgeç
-            </button>
-            <button className="m-serit-onay" disabled={!secimModu.hedef} onClick={secimiUygula}>
-              <Check size={17} />
-              Uygula
+              <X size={16} /> Vazgeç
             </button>
           </div>
         </div>
@@ -549,11 +573,26 @@ export default function MobilMasalar() {
         );
       })()}
 
+      {hedefSorusu && (
+        <OnayModal
+          baslik={hedefSorusu.tip === "tasi" ? "Masayı taşı" : "Adisyonu birleştir"}
+          ikon={hedefSorusu.tip === "tasi" ? <ArrowRightLeft size={20} /> : <Combine size={20} />}
+          mesaj={hedefOnayMesaji(
+            hedefSorusu.tip,
+            hedefSorusu.kaynak.ad,
+            hedefSorusu.hedef.ad
+          )}
+          onayMetni="Evet, uygula"
+          onOnay={secimiUygula}
+          onKapat={() => setHedefSorusu(null)}
+        />
+      )}
+
       {iptalSorusu && (
         <OnayModal
           baslik="Adisyonu iptal et"
           ikon={<Ban size={20} />}
-          mesaj={`${iptalSorusu.masa.ad} masasının hesabı iptal edilecek. Ciroya yazılmaz; kayıt silinmez, iptal olarak durur. Sebebi nedir?`}
+          mesaj={`*${iptalSorusu.masa.ad}* masasının hesabı iptal edilecek. Ciroya yazılmaz; kayıt silinmez, iptal olarak durur. Sebebi nedir?`}
           tehlikeli
           sebepler={IPTAL_SEBEPLERI}
           onayMetni="Evet, iptal et"
@@ -575,7 +614,7 @@ export default function MobilMasalar() {
         <OnayModal
           baslik="Adisyonu ikram et"
           ikon={<Gift size={20} />}
-          mesaj={`${ikramSorusu.masa.ad} masasındaki ürünlerin tamamı ikrama çevrilecek, hesap sıfırlanıp kapanacak. Sebebi nedir?`}
+          mesaj={`*${ikramSorusu.masa.ad}* masasındaki ürünlerin tamamı ikrama çevrilecek, hesap sıfırlanıp kapanacak. Sebebi nedir?`}
           sebepler={IKRAM_SEBEPLERI}
           odenmezler={odenmezler}
           onayMetni="Evet, ikram et"
@@ -600,8 +639,8 @@ export default function MobilMasalar() {
           tekTus={!devralabilir()}
           mesaj={
             devralabilir()
-              ? `${mesgulSorusu.masa.ad} masasında şu an ${mesgulSorusu.ad} işlem yapıyor. Devralırsan ${mesgulSorusu.ad} masadan çıkarılır.`
-              : `${mesgulSorusu.masa.ad} masasında şu an ${mesgulSorusu.ad} işlem yapıyor. İşi bitince masa serbest kalacak.`
+              ? `*${mesgulSorusu.masa.ad}* masasında şu an *${mesgulSorusu.ad}* işlem yapıyor. Devralırsan *${mesgulSorusu.ad}* masadan çıkarılır.`
+              : `*${mesgulSorusu.masa.ad}* masasında şu an *${mesgulSorusu.ad}* işlem yapıyor. İşi bitince masa serbest kalacak.`
           }
           onayMetni="Devral"
           iptalMetni="Vazgeç"
@@ -668,7 +707,7 @@ function MasaIslemleri({
           },
           {
             ad: "Masaları birleştir",
-            ikon: <Merge size={19} />,
+            ikon: <Combine size={19} />,
             renk: "tasi",
             sec: () => onTasi("birlestir"),
           },

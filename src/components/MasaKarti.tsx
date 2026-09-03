@@ -1,6 +1,6 @@
 import { useEffect, useRef, useState } from "react";
 import type { ReactNode } from "react";
-import { CircleCheckBig, Clock, CloudOff, CloudUpload, LockKeyhole, MoreVertical, Plus, Printer, Users } from "lucide-react";
+import { ArrowRight, CircleCheckBig, Clock, CloudOff, CloudUpload, LockKeyhole, MoreVertical, Plus, Printer, Users } from "lucide-react";
 import { paraGoster } from "../para";
 import type { Masa, MasaDurumu } from "../types";
 
@@ -16,6 +16,12 @@ type Props = {
   aksiyonlar?: MasaAksiyon[];
   /** Masada şu an işlem yapan başka kişi varsa adı; kart rozet gösteriyor. */
   mesgul?: string;
+  /**
+   * Salon hedef masa seçme kipindeyken doluyor: kart artık adisyona girmiyor,
+   * hedefi seçiyor. "kilitli" masa seçilemez — silikleşmiyor, köşesine kilit
+   * alıyor ki adı ve tutarı okunur kalsın.
+   */
+  secim?: "uygun" | "kilitli";
   onClick?: () => void;
 };
 
@@ -24,7 +30,7 @@ type Props = {
  * dolu masada garson → masa adı → süre ve tutar. Dolu masa mercan zemin ve beyaz
  * yazı alıyor; salonun neresi çalışıyor uzaktan görünsün.
  */
-export default function MasaKarti({ masa, durum, aksiyonlar, mesgul, onClick }: Props) {
+export default function MasaKarti({ masa, durum, aksiyonlar, mesgul, secim, onClick }: Props) {
   const [menuAcik, setMenuAcik] = useState(false);
   const sarmal = useRef<HTMLDivElement>(null);
 
@@ -59,11 +65,15 @@ export default function MasaKarti({ masa, durum, aksiyonlar, mesgul, onClick }: 
     durum?.fisBasildi ? "fisli" : "",
     odendi ? "odendi" : odenen > 0 ? "kismi" : "",
     mesgul ? "mesgul" : "",
+    secim ? `secim-${secim}` : "",
   ]
     .filter(Boolean)
     .join(" ");
 
-  const menuVar = !!durum && !!aksiyonlar?.length;
+  // Seçim kipinde üç nokta menüsü kapanıyor: o an kartın tek bir işi var,
+  // hedef olup olmadığını söylemek.
+  const menuVar = !!durum && !!aksiyonlar?.length && !secim;
+  const kilitli = secim === "kilitli";
 
   return (
     <div className="masa-sarmal" ref={sarmal}>
@@ -75,13 +85,32 @@ export default function MasaKarti({ masa, durum, aksiyonlar, mesgul, onClick }: 
           {mesgul}
         </span>
       )}
+      {/* Seçilemeyen masanın kilidi köşede duruyor; kartın içine girmiyor ki
+          dolu masadaki rakam düzeni bozulmasın. */}
+      {kilitli && (
+        <span className="masa-secilemez">
+          <LockKeyhole size={14} />
+        </span>
+      )}
       {!durum ? (
-        <button className={sinif} onClick={onClick}>
+        <button className={sinif} disabled={kilitli} onClick={onClick}>
           <span className="masa-ad">{masa.ad}</span>
-          <span className="masa-ac"><Plus size={16} /> Adisyon aç</span>
+          {/* Seçim kipinde boş masa adisyon açmıyor, hedef oluyor: alt yazı
+              da o işi söylüyor. Seçilemeyen masada hiç çıkmıyor. */}
+          <span className="masa-ac">
+            {secim === "uygun" ? (
+              <>
+                <ArrowRight size={16} /> Buraya taşı
+              </>
+            ) : (
+              <>
+                <Plus size={16} /> Adisyon aç
+              </>
+            )}
+          </span>
         </button>
       ) : (
-        <button className={sinif} onClick={onClick}>
+        <button className={sinif} disabled={kilitli} onClick={onClick}>
           <span className="masa-ust">
             {durum.garson && <span className="masa-garson">{durum.garson}</span>}
             {/* Hesap fişi basılmışsa kartta yazıcı işareti duruyor; masaya yeni
