@@ -1,4 +1,5 @@
-import { useRef, useState } from "react";
+import { useEffect, useRef, useState } from "react";
+import { ArrowDownAZ, ArrowUpDown, GripVertical, X } from "lucide-react";
 import Bilgi from "./Bilgi";
 
 type Satir = { id: number; ad: string };
@@ -10,7 +11,7 @@ function tasi<T>(liste: T[], nereden: number, nereye: number) {
   return kopya;
 }
 
-// Sıralama ayrı modalda yapılıyor — listedeki tıklama davranışlarıyla (kategori
+// Sıralama ayrı pencerede yapılıyor — listedeki tıklama davranışlarıyla (kategori
 // seçme, ürün paneli açma) çakışmasın diye. Sürükleme pointer olaylarıyla:
 // tarayıcının hazır draggable'ı dokunmatik ekranda çalışmıyor.
 export default function SiralamaModal({
@@ -27,7 +28,24 @@ export default function SiralamaModal({
   const [liste, setListe] = useState(satirlar);
   const [tasinan, setTasinan] = useState<number | null>(null);
   const [kayma, setKayma] = useState(0);
+  const [yazilan, setYazilan] = useState<{ i: number; deger: string } | null>(null);
   const bilgi = useRef({ y: 0, index: 0, adim: 0 });
+
+  // Uzun listede sürüklemek yorucu: numaraya dokunup yeni sırayı yazmak da
+  // aynı işi görüyor. Liste dışı bir sayı yazılırsa en yakın uca çekiliyor.
+  const numarayiUygula = (i: number, deger: string) => {
+    setYazilan(null);
+    const sayi = parseInt(deger, 10);
+    if (!Number.isFinite(sayi)) return;
+    const hedef = Math.min(liste.length - 1, Math.max(0, sayi - 1));
+    if (hedef !== i) setListe((l) => tasi(l, i, hedef));
+  };
+
+  useEffect(() => {
+    const kacis = (e: KeyboardEvent) => e.key === "Escape" && onKapat();
+    document.addEventListener("keydown", kacis);
+    return () => document.removeEventListener("keydown", kacis);
+  }, [onKapat]);
 
   const basla = (e: React.PointerEvent<HTMLDivElement>, i: number) => {
     const el = e.currentTarget;
@@ -71,39 +89,78 @@ export default function SiralamaModal({
   };
 
   return (
-    <div className="modal-fon" onClick={onKapat}>
-      <div className="sirala-modal" onClick={(e) => e.stopPropagation()}>
-        <header className="sirala-ust">
+    <div className="up-fon">
+      <div className="up-modal sr-modal">
+        <header className="up-ust">
+          <span className="sr-im">
+            <ArrowUpDown size={18} />
+          </span>
           <h3>{baslik}</h3>
-          <button className="sirala-az" onClick={alfabetik}>A-Z</button>
+          <button className="sr-az" onClick={alfabetik}>
+            <ArrowDownAZ size={16} />
+            Alfabetik
+          </button>
+          <button className="up-kapat" aria-label="Kapat" onClick={onKapat}>
+            <X size={19} />
+          </button>
         </header>
 
-        <Bilgi>Satırları tutup sürükleyerek sırayı değiştir.</Bilgi>
+        <div className="sr-govde">
+          <Bilgi>
+            Satırı tutup sürükleyin ya da sıra numarasına dokunup yeni sırayı yazın.
+          </Bilgi>
 
-        <div className="sirala-liste">
-          {liste.map((s, i) => (
-            <div
-              key={s.id}
-              className={i === tasinan ? "sirala-satir tasiniyor" : "sirala-satir"}
-              style={i === tasinan ? { transform: `translateY(${gorselKayma}px)` } : undefined}
-              onPointerDown={(e) => basla(e, i)}
-              onPointerMove={hareket}
-              onPointerUp={bitir}
-              onPointerCancel={bitir}
-            >
-              <span className="sirala-tutamac">≡</span>
-              <span className="sirala-no">{i + 1}</span>
-              <span className="sirala-ad">{s.ad}</span>
-            </div>
-          ))}
+          <div className="sr-liste">
+            {liste.map((s, i) => (
+              <div
+                key={s.id}
+                className={i === tasinan ? "sr-satir tasiniyor" : "sr-satir"}
+                style={i === tasinan ? { transform: `translateY(${gorselKayma}px)` } : undefined}
+                onPointerDown={(e) => basla(e, i)}
+                onPointerMove={hareket}
+                onPointerUp={bitir}
+                onPointerCancel={bitir}
+              >
+                {yazilan?.i === i ? (
+                  <input
+                    className="sr-no yazilir"
+                    value={yazilan.deger}
+                    autoFocus
+                    inputMode="numeric"
+                    onPointerDown={(e) => e.stopPropagation()}
+                    onChange={(e) =>
+                      setYazilan({ i, deger: e.target.value.replace(/\D/g, "").slice(0, 3) })
+                    }
+                    onBlur={() => numarayiUygula(i, yazilan.deger)}
+                    onKeyDown={(e) => {
+                      e.stopPropagation();
+                      if (e.key === "Enter") numarayiUygula(i, yazilan.deger);
+                      if (e.key === "Escape") setYazilan(null);
+                    }}
+                  />
+                ) : (
+                  <button
+                    className="sr-no"
+                    title="Sıra numarasını yaz"
+                    onPointerDown={(e) => e.stopPropagation()}
+                    onClick={() => setYazilan({ i, deger: String(i + 1) })}
+                  >
+                    {i + 1}
+                  </button>
+                )}
+                <span className="sr-ad">{s.ad}</span>
+                <GripVertical className="sr-tutamac" size={18} />
+              </div>
+            ))}
+          </div>
         </div>
 
-        <div className="modal-aksiyonlar">
-          <button className="iptal" onClick={onKapat}>Vazgeç</button>
-          <button className="uygula" onClick={() => onKaydet(liste.map((s) => s.id))}>
+        <footer className="sr-alt">
+          <button className="sr-vazgec" onClick={onKapat}>Vazgeç</button>
+          <button className="sr-kaydet" onClick={() => onKaydet(liste.map((s) => s.id))}>
             Kaydet
           </button>
-        </div>
+        </footer>
       </div>
     </div>
   );

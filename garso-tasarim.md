@@ -517,6 +517,45 @@
 > Ramazan ayrıca söylemez. Aynı iş için iki ekran tutulmaz; mümkünse mobil
 > masaüstündeki bileşeni açar, fark yalnız CSS'te kalır.
 
+> **Sıralama penceresi yenilendi (3 Eyl 2026 gecesi).** Önce Adisyo'da tur
+> atıldı (Ürünler → kategorinin ⋮ → Ürünleri Sırala; SICAK İÇECEKLER listesi
+> açılıp İptal ile çıkıldı, sıra değiştirilmedi).
+> **Tek cümlelik ders: burada kopyalanacak yeni davranış yok** — Adisyo da
+> sürükleme, numara, A-Z ve İptal/Kaydet kullanıyor, yani iş tamamen görsel.
+> **Adisyo'nun ölçüleri:** pencere 502px, satır 56px (aralık 62px), köşe 10px,
+> çerçeve `0.8px #ebeef2`, `cursor: grab`, liste 412px'te kendi içinde kayıyor,
+> sağda `unfold_more` tutamacı (dekoratif — sürükleme satırın tamamından).
+> **Alınan tek şey:** sıra numarasının **daire rozet** içine girmesi.
+> **Alınmayanlar:** satır zemininin pencereyle aynı beyaz olması (sınır yalnız
+> 0,8px çizgiden anlaşılıyor, sürüklenebilir olduğu belli olmuyor) ve açıklamanın
+> düz gri cümle olması — bizde `Bilgi` kutusu kuralı var.
+>
+> **Bizde yapılanlar.** Kendi kabuğu vardı (`.modal-fon` + `.sirala-modal`):
+> fon bulanmıyor, köşe 16px elle, gölge `rgba(0,0,0,.15)` **siyah**, açılış
+> başka eğride (`pencere-gir`), çizgiler `#dde4ed`/`#e0e7f1`, geçiş `.15s ease`.
+> Ortak kabuğa geçti (`.up-fon`/`.up-modal`/`.up-ust`/`.up-kapat`), Escape
+> kapatıyor, başlıkta mercan halkalı `ArrowUpDown`. `≡` düz karakteri
+> `GripVertical` oldu ve **sağa** taşındı (solda numarayı içeri itiyordu).
+> "A-Z" düğmesi **"Alfabetik" + `ArrowDownAZ`** hapı oldu. Sürüklenen satır
+> mercan çerçeve + `--g2` gölge alıyor, **numarası mercan dolgulu** — elde olan
+> satır uzaktan belli. Alt şerit kendi zemininde ve çizgili; ortak
+> `.modal-aksiyonlar` sınıfı kullanılmadı, kendi `sr-alt`'ı yazıldı.
+> Pencereye `.tam` **verilmedi** — tek işli kısa pencere, telefonda ortada kart.
+>
+> **Sıra numarasına yazarak taşıma eklendi (Ramazan'ın isteği):** "bazı listeler
+> çok uzun, sürükle sürükle bitmiyor". Numara tıklanınca kutuya dönüyor, rakam
+> yazılıp Enter'a basılınca satır o sıraya gidiyor; Escape yazmaktan vazgeçiriyor
+> (pencereyi kapatmıyor), liste dışı sayı en yakın uca çekiliyor. Numaranın
+> üstünde sürükleme başlamıyor (`stopPropagation`), satırın kalanı hâlâ sürükleniyor.
+> **Adisyo'da bu yok** — uzun listede bizim üstünlüğümüz.
+> Sınıflar `sr-` önekli: `sirala-` adı `.ms-sirala` gibi başka yerlerde geçiyor.
+> Mobil karşılığı yok, pencere Menü Stüdyosu'na özgü.
+>
+> **Yolda çıkan hata (Claude'un):** `index.css` blok değiştirmek için baştan
+> yazıldı; dosya bir an boş kaldı, Vite boş kopyayı aldı ve **sayfada hiç CSS
+> kalmadı**. Dosya sağlamdı, dev server yeniden başlatılınca düzeldi.
+> **Kural: büyük dosyalar baştan yazılmaz, yerinde düzenlenir.**
+
 > **Sıra 1 Eyl 2026'da değişti.** Üç büyük madde — **masasız adisyonun
 > çevrimdışı açılması**, **QR menünün kalanı** ve **kurye atama** — en sona
 > alındı. Gerekçe: üçü de acele değil (eGZOZ'da paket servis işletilmiyor, QR
@@ -527,9 +566,9 @@
 >    başlandı, devam ediyor). Biten: tahsilat penceresi, Hızlı Öde, Adisyon
 >    Detay, **Kalem Paneli**, **sipariş ekranı**, **Adisyon Bilgisi**,
 >    **Onay Modal**, **Masa Seçim**, **Misafir Sayısı**, **Aktarım Onayı**,
->    **Toplu Düzenle** (aşağıda).
->    **Sıradaki: Sıralama.** Henüz elden geçmemişler:
->    Sıralama, Kampanya Seçim, Müşteri Detay/Seçici, Bildirim, Köprü İndir,
+>    **Toplu Düzenle**, **Sıralama** (aşağıda).
+>    **Sıradaki: Kampanya Seçim.** Henüz elden geçmemişler:
+>    Kampanya Seçim, Müşteri Detay/Seçici, Bildirim, Köprü İndir,
 >    Kilit Ekranı.
 >    **Bu seansta çıkan iş:** `mobil/Siparis.tsx` içindeki **`MasaHedefi`**
 >    bileşeni `MasaSecim`'in mobil ikizi — masaüstü–mobil eşitliği gereği
