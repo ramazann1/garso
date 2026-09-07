@@ -18372,3 +18372,23 @@ body {
 .kisi-kilit .bas-harf {
   border-radius: var(--r-or);
 }
+
+/* Kişi satırının yan düğmeleri kapalı menüde görünmüyor ama yerlerinde
+   duruyorlar: menü açılırken birden belirdiklerinde amblemin içinden bir
+   şey çıkıyormuş gibi görünüyordu. Artık yazılarla birlikte beliriyorlar. */
+.kisi-cik,
+.kisi-cikis {
+  opacity: 0;
+  transition: opacity var(--gecis), background var(--gecis), color var(--gecis);
+}
+
+.yan-menu.acik .kisi-cik,
+.yan-menu.acik .kisi-cikis {
+  opacity: 1;
+}
+
+/* Amblem yuvarlak: menüdeki öteki yuvarlak işaretlerle aynı dilde dursun,
+   kapalı menüde köşeli bir kutu gibi okunmasın. */
+.kisi-kilit .bas-harf {
+  border-radius: var(--r-tam);
+}

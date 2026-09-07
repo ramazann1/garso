@@ -407,29 +407,28 @@ export default function Duzen({ children }: { children: React.ReactNode }) {
                 <strong>{kisaAd(oturum.ad)}</strong>
                 <em>{oturum.rolAd}</em>
               </span>
-              {acik && <Lock className="kisi-cik" size={16} />}
+              {/* Kilit ve yan düğmeler hep çiziliyor, kapalı menüde
+                  görünmüyorlar. Menü açılınca birden belirdiklerinde
+                  ambleminin içinden bir şey çıkıyormuş gibi duruyordu. */}
+              <Lock className="kisi-cik" size={16} />
             </button>
             {/* Mobil arayüze geçiş. Ekran genişliğine bakılmıyor: işletmeci
                 kasadan da mobili görmek istiyor — ekranını denemek, garsonun
                 gördüğünü görmek için. Dönüş yolu mobildeki Ben sekmesinde. */}
-            {acik && (
-              <button
-                className="kisi-cikis"
-                onClick={() => gorunumSec("mobil")}
-                title="Mobil görünüme geç"
-              >
-                <Smartphone size={16} />
-              </button>
-            )}
-            {acik && (
-              <button
-                className="kisi-cikis"
-                onClick={() => setOturumSor(true)}
-                title="Oturumu kapat"
-              >
-                <LogOut size={16} />
-              </button>
-            )}
+            <button
+              className="kisi-cikis"
+              onClick={() => gorunumSec("mobil")}
+              title="Mobil görünüme geç"
+            >
+              <Smartphone size={16} />
+            </button>
+            <button
+              className="kisi-cikis"
+              onClick={() => setOturumSor(true)}
+              title="Oturumu kapat"
+            >
+              <LogOut size={16} />
+            </button>
           </div>
         )}
       </aside>
