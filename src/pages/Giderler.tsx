@@ -1,6 +1,5 @@
 import { useEffect, useState } from "react";
 import { Check, Pencil, Plus, Receipt, Tags, Trash2, X } from "lucide-react";
-import Duzen from "../components/Duzen";
 import KasaBasligi from "../components/KasaBasligi";
 import Bilgi from "../components/Bilgi";
 import Bildirim from "../components/Bildirim";
@@ -119,7 +118,7 @@ export default function Giderler() {
     .reduce((t, m) => t + m.tutar, 0);
 
   return (
-    <Duzen>
+    <>
       <div className="sayfa ayar-sayfa">
         <KasaBasligi ara={ara} araDegistir={setAra} araYer="Gider ara" />
 
@@ -256,7 +255,7 @@ export default function Giderler() {
       )}
 
       {bildirim && <Bildirim mesaj={bildirim} onKapat={() => setBildirim("")} />}
-    </Duzen>
+    </>
   );
 }
 

@@ -1,6 +1,7 @@
 import { useEffect, useState } from "react";
-import { HandCoins, Pencil, Scale, X } from "lucide-react";
+import { Check, HandCoins, MapPin, Pencil, Phone, Scale, StickyNote, X } from "lucide-react";
 import AdisyonDetay from "./AdisyonDetay";
+import Bilgi from "./Bilgi";
 import Bildirim from "./Bildirim";
 import { paraGoster, paraSayi, paraYaz } from "../para";
 import { kisaAd } from "../personel";
@@ -52,32 +53,33 @@ function OdemeAl({
   const sayi = paraSayi(tutar) ?? 0;
 
   return (
-    <div className="panel-fon" onClick={onKapat}>
-      <div className="ayar-panel dar" onClick={(e) => e.stopPropagation()}>
-        <header className="panel-ust">
+    <div className="up-fon ust" onClick={onKapat}>
+      <div className="up-modal cd-kucuk" onClick={(e) => e.stopPropagation()}>
+        <header className="up-ust">
+          <span className="cd-im"><HandCoins size={18} /></span>
           <h3>Ödeme al</h3>
-          <button className="panel-kapat" onClick={onKapat}><X size={19} /></button>
+          <button className="up-kapat" aria-label="Kapat" onClick={onKapat}><X size={19} /></button>
         </header>
 
-        <div className="panel-govde">
+        <div className="cd-form">
           <div className="cari-borc-satiri">
             <span>Kalan borç</span>
             <strong>{paraGoster(borc)}</strong>
           </div>
 
-          <div className="alan">
-            <label>Alınan tutar</label>
+          <label className="cd-alan">
+            <span>Alınan tutar</span>
             <input
               value={tutar}
               onChange={(e) => setTutar(paraYaz(e.target.value))}
               inputMode="decimal"
               autoFocus
             />
-          </div>
+          </label>
 
-          <div className="alan">
-            <label>Ödeme tipi</label>
-            <div className="cip-secim">
+          <div className="cd-alan">
+            <span>Ödeme tipi</span>
+            <div className="cd-tipler">
               {tipler.map((t) => (
                 <button
                   key={t.id}
@@ -91,10 +93,10 @@ function OdemeAl({
           </div>
         </div>
 
-        <footer className="modal-aksiyonlar">
-          <button className="iptal" onClick={onKapat}>Vazgeç</button>
-          <button className="uygula" disabled={sayi <= 0} onClick={() => onKaydet(sayi, tip)}>
-            Tahsil et
+        <footer className="cd-alt">
+          <button className="cd-vazgec" onClick={onKapat}>Vazgeç</button>
+          <button className="cd-onay" disabled={sayi <= 0} onClick={() => onKaydet(sayi, tip)}>
+            <HandCoins size={16} /> Tahsil et
           </button>
         </footer>
       </div>
@@ -119,21 +121,22 @@ function BakiyeDuzelt({
   const fark = sayi - bakiye;
 
   return (
-    <div className="panel-fon" onClick={onKapat}>
-      <div className="ayar-panel dar" onClick={(e) => e.stopPropagation()}>
-        <header className="panel-ust">
+    <div className="up-fon ust" onClick={onKapat}>
+      <div className="up-modal cd-kucuk" onClick={(e) => e.stopPropagation()}>
+        <header className="up-ust">
+          <span className="cd-im"><Scale size={18} /></span>
           <h3>Bakiye düzelt</h3>
-          <button className="panel-kapat" onClick={onKapat}><X size={19} /></button>
+          <button className="up-kapat" aria-label="Kapat" onClick={onKapat}><X size={19} /></button>
         </header>
 
-        <div className="panel-govde">
+        <div className="cd-form">
           <div className="cari-borc-satiri">
             <span>Şu anki bakiye</span>
             <strong>{paraGoster(bakiye)}</strong>
           </div>
 
-          <div className="alan">
-            <label>Yeni bakiye</label>
+          <label className="cd-alan">
+            <span>Yeni bakiye</span>
             <input
               value={yeni}
               onChange={(e) => setYeni(paraYaz(e.target.value))}
@@ -141,32 +144,37 @@ function BakiyeDuzelt({
               autoFocus
             />
             {fark !== 0 && (
-              <small className="alan-ipucu">
+              <em className="cd-fark">
                 {fark > 0
                   ? `${paraGoster(fark)} borç eklenecek`
                   : `${paraGoster(-fark)} borç düşülecek`}
-              </small>
+              </em>
             )}
-          </div>
+          </label>
 
-          <div className="alan">
-            <label>Sebep</label>
+          <label className="cd-alan">
+            <span>Sebep</span>
             <input
               value={sebep}
               onChange={(e) => setSebep(e.target.value)}
               placeholder="Neden düzeltiliyor?"
             />
-          </div>
+          </label>
+
+          <Bilgi>
+            Bakiyenin kendisi ezilmiyor; aradaki fark ekstreye ayrı bir düzeltme
+            hareketi olarak yazılıyor.
+          </Bilgi>
         </div>
 
-        <footer className="modal-aksiyonlar">
-          <button className="iptal" onClick={onKapat}>Vazgeç</button>
+        <footer className="cd-alt">
+          <button className="cd-vazgec" onClick={onKapat}>Vazgeç</button>
           <button
-            className="uygula"
+            className="cd-onay"
             disabled={fark === 0 || !sebep.trim()}
             onClick={() => onKaydet(sayi, sebep.trim())}
           >
-            Kaydet
+            <Check size={16} /> Kaydet
           </button>
         </footer>
       </div>
@@ -193,6 +201,7 @@ export default function MusteriDetay({
   const [duzeltme, setDuzeltme] = useState(false);
   const [acikAdisyon, setAcikAdisyon] = useState<number | null>(null);
   const [bildirim, setBildirim] = useState("");
+  const [bildirimTuru, setBildirimTuru] = useState<"basari" | "hata">("basari");
 
   const tahsilatYapabilir = yetkiVar("cari.tahsilat");
 
@@ -227,12 +236,14 @@ export default function MusteriDetay({
     } catch (e) {
       // Ödeme penceresi açık kalıyor: tutar girildiği gibi duruyor, bağlantı
       // gelince yeniden gönderilebilsin.
+      setBildirimTuru("hata");
       setBildirim(hataMesaji(e, "Ödeme kaydedilemedi."));
       return;
     }
     setOdeme(false);
     await tazele();
     onDegisti();
+    setBildirimTuru("basari");
     setBildirim(fisNo ? `Ödeme alındı · Fiş No ${fisNo}` : "Ödeme alındı");
   };
 
@@ -244,8 +255,8 @@ export default function MusteriDetay({
   };
 
   return (
-    <div className="panel-fon" onClick={onKapat}>
-      <div className="cari-detay" onClick={(e) => e.stopPropagation()}>
+    <div className="up-fon" onClick={onKapat}>
+      <div className="up-modal tam cari-detay" onClick={(e) => e.stopPropagation()}>
         <header className="cari-detay-ust">
           {/* Baş harf amblemi: listede sıradan bir satır olan müşteri burada
               kimlik kazanıyor, hangi karta baktığın bir bakışta belli oluyor. */}
@@ -261,18 +272,18 @@ export default function MusteriDetay({
           <div className="cari-detay-aksiyon">
             {tahsilatYapabilir && (
               <>
-                <button className="satir-tus" onClick={() => setOdeme(true)}>
+                <button className="cari-tus one" onClick={() => setOdeme(true)}>
                   <HandCoins size={15} /> Ödeme al
                 </button>
-                <button className="satir-tus" onClick={() => setDuzeltme(true)}>
+                <button className="cari-tus" onClick={() => setDuzeltme(true)}>
                   <Scale size={15} /> Bakiye düzelt
                 </button>
               </>
             )}
-            <button className="satir-tus" onClick={onDuzenle}>
+            <button className="cari-tus" onClick={onDuzenle}>
               <Pencil size={15} /> Düzenle
             </button>
-            <button className="panel-kapat" onClick={onKapat}><X size={19} /></button>
+            <button className="up-kapat" aria-label="Kapat" onClick={onKapat}><X size={19} /></button>
           </div>
         </header>
 
@@ -301,13 +312,13 @@ export default function MusteriDetay({
               <dl className="cari-kunye">
                 {musteri.telefon2 && (
                   <>
-                    <dt>İkinci telefon</dt>
+                    <dt><Phone size={14} /> İkinci telefon</dt>
                     <dd>{musteri.telefon2}</dd>
                   </>
                 )}
                 {musteri.notlar && (
                   <>
-                    <dt>Not</dt>
+                    <dt><StickyNote size={14} /> Not</dt>
                     <dd>{musteri.notlar}</dd>
                   </>
                 )}
@@ -316,7 +327,7 @@ export default function MusteriDetay({
 
             {adresler.length > 0 && (
               <div className="cari-adresler">
-                <h4>Adresler</h4>
+                <h4><MapPin size={14} /> Adresler</h4>
                 {adresler.map((a) => (
                   <p key={a.id}>
                     <strong>{a.baslik}</strong> {a.adres}
@@ -474,7 +485,9 @@ export default function MusteriDetay({
         />
       )}
 
-      {bildirim && <Bildirim mesaj={bildirim} onKapat={() => setBildirim("")} />}
+      {bildirim && (
+        <Bildirim mesaj={bildirim} tur={bildirimTuru} onKapat={() => setBildirim("")} />
+      )}
 
       {duzeltme && (
         <BakiyeDuzelt

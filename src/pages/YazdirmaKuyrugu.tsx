@@ -1,6 +1,5 @@
 import { useEffect, useState } from "react";
 import { Ban, Printer, RotateCw, X } from "lucide-react";
-import Duzen from "../components/Duzen";
 import Bilgi from "../components/Bilgi";
 import AyarBasligi from "../components/AyarBasligi";
 import OnayModal from "../components/OnayModal";
@@ -78,7 +77,7 @@ export default function YazdirmaKuyrugu() {
   };
 
   return (
-    <Duzen>
+    <>
       <div className="sayfa ayar-sayfa">
         <AyarBasligi />
 
@@ -195,6 +194,6 @@ export default function YazdirmaKuyrugu() {
         {bildirim && <Bildirim mesaj={bildirim} onKapat={() => setBildirim("")} />}
         {hata && <OnayModal mesaj={hata} tekTus onKapat={() => setHata("")} />}
       </div>
-    </Duzen>
+    </>
   );
 }

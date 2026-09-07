@@ -1,5 +1,6 @@
 import { useEffect, useState } from "react";
-import { UserRound, X } from "lucide-react";
+import { Search, UserRound, Users, X } from "lucide-react";
+import Bilgi from "./Bilgi";
 import { eslesiyor } from "../arama";
 import { paraGoster } from "../para";
 import { acikHesapMusterileri, musterileriGetir, tamAd, type Musteri } from "../cari";
@@ -35,48 +36,63 @@ export default function MusteriSecici({
     });
   }, [hepsi]);
 
+  useEffect(() => {
+    const kacis = (e: KeyboardEvent) => e.key === "Escape" && onKapat();
+    document.addEventListener("keydown", kacis);
+    return () => document.removeEventListener("keydown", kacis);
+  }, [onKapat]);
+
   const gorunen = liste.filter((m) =>
     eslesiyor(`${tamAd(m)} ${m.telefon} ${m.no}`, ara)
   );
 
   return (
-    <div className="modal-fon" onClick={onKapat}>
-      <div className="musteri-secici" onClick={(e) => e.stopPropagation()}>
-        <header>
+    <div className="up-fon" onClick={onKapat}>
+      <div className="up-modal msc-modal" onClick={(e) => e.stopPropagation()}>
+        <header className="up-ust">
+          <span className="msc-im">
+            <Users size={18} />
+          </span>
           <h3>{baslik}</h3>
-          <button className="kapat" aria-label="Kapat" onClick={onKapat}>
-            <X size={20} />
+          <button className="up-kapat" aria-label="Kapat" onClick={onKapat}>
+            <X size={19} />
           </button>
         </header>
 
-        <input
-          className="musteri-secici-ara"
-          value={ara}
-          onChange={(e) => setAra(e.target.value)}
-          placeholder="Ad veya telefon ara"
-          autoFocus
-        />
+        <div className="msc-ara">
+          <Search size={16} />
+          <input
+            value={ara}
+            onChange={(e) => setAra(e.target.value)}
+            placeholder="Ad veya telefon ara"
+            autoFocus
+          />
+        </div>
 
-        <div className="musteri-secici-liste">
+        <div className="msc-liste">
           {yukleniyor ? (
             <div className="yukleniyor"><div className="cember" /></div>
           ) : liste.length === 0 ? (
-            <p className="cari-bos">
+            <Bilgi>
               {hepsi
                 ? "Kayıtlı müşteri yok. Müşteriler ekranından ekleyebilirsiniz."
                 : "Açık hesap müşterisi yok. Müşteriler ekranından bir müşteri açıp \"Açık hesap müşterisi\" anahtarını açın."}
-            </p>
+            </Bilgi>
           ) : gorunen.length === 0 ? (
-            <p className="cari-bos">Aramaya uyan müşteri yok.</p>
+            <Bilgi>Aramaya uyan müşteri yok.</Bilgi>
           ) : (
             gorunen.map((m) => (
-              <button key={m.id} onClick={() => onSec(m)}>
-                <UserRound size={16} />
-                <span>
+              <button key={m.id} className="msc-satir" onClick={() => onSec(m)}>
+                <span className="msc-amblem">
+                  {tamAd(m).slice(0, 1).toLocaleUpperCase("tr") || <UserRound size={16} />}
+                </span>
+                <span className="msc-ad">
                   {tamAd(m)}
                   <small>{m.telefon || `#${m.no}`}</small>
                 </span>
-                <em className={m.bakiye > 0 ? "borclu" : ""}>{paraGoster(m.bakiye)}</em>
+                <em className={m.bakiye > 0 ? "msc-bakiye borclu" : "msc-bakiye"}>
+                  {paraGoster(m.bakiye)}
+                </em>
               </button>
             ))
           )}

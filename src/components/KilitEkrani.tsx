@@ -1,5 +1,5 @@
 import { useEffect, useState } from "react";
-import { Delete } from "lucide-react";
+import { Delete, LockKeyhole, WifiOff } from "lucide-react";
 import { pinIleAc } from "../oturum";
 import { useBaglanti } from "../baglanti";
 
@@ -47,12 +47,19 @@ export default function KilitEkrani() {
         <span className="giris-marka">
           Garso<i />
         </span>
-        <h1>Ekran kilitli</h1>
-        <span className="giris-alt">
-          {cevrimici
-            ? "Devam etmek için PIN'ini gir"
-            : "Bağlantı yok — bu kasada daha önce PIN'le geçenler devam edebilir"}
+
+        <span className="kilit-im">
+          <LockKeyhole size={22} />
         </span>
+        <h1>Ekran kilitli</h1>
+        <span className="giris-alt">Devam etmek için PIN'ini gir</span>
+
+        {!cevrimici && (
+          <p className="kilit-serit">
+            <WifiOff size={16} />
+            Bağlantı yok — bu kasada daha önce PIN'le geçenler devam edebilir
+          </p>
+        )}
 
         <div className={hata ? "pin-nokta sarsil" : "pin-nokta"}>
           {[0, 1, 2, 3].map((i) => (

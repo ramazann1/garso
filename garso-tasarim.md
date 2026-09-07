@@ -1,7 +1,74 @@
 # GARSO — Teknik Tasarım: Veri Modeli & Ekran Haritası
 *Restoran ve cafe'ler için bulut tabanlı satış ve işletme yönetim sistemi.*
 
-## 0. SIRADAKİ İŞ (3 Eyl 2026 gecesi güncellendi)
+## 0. SIRADAKİ İŞ (7 Eyl 2026 gecesi güncellendi)
+
+> **7 Eyl 2026 — kalan pencereler bitti, gezinme baştan kuruldu.**
+>
+> **Pencereler:** Kampanya Seçim (gruplar kartta, "1/2 seçildi" sayacı, eksik
+> seçim için mercan yönlendirme şeridi), Müşteri Detay (sabit yükseklik —
+> sekme değişince pencere boyu oynuyordu), Müşteri Seçici, Ödeme Al, Bakiye
+> Düzelt, **Müşteri Düzenleme** (yandan kayan ayar panelinden ortak kabuğa),
+> Bildirim, Köprü İndir, Kilit Ekranı. Görsel dil listesindeki pencerelerin
+> hepsi kapandı.
+>
+> **Bildirim tür kazandı** (`basari` / `uyari` / `hata`). Hata mesajları yeşil
+> tikle çıkıyordu — başarı gibi görünüyorlardı. Süre çubuğu ve kapanış
+> animasyonu eklendi; telefonda alt sekme şeridinin üstüne alındı.
+>
+> **Karar: yatay sekme şeridi kalktı, yerine bölüm seçici geldi**
+> (`components/BolumSecici.tsx`). Menü Stüdyosu'nda 7, Ayarlar'da 8, Analiz'de
+> 9 bölüm var; şerit bunu taşımıyordu (ikon + sayı rozeti eklenince taştı).
+> Sayfa başlığı artık düğme: üstte ekranın adı, altında bulunulan bölüm.
+> Tıklayınca bölümler ikonlu kart ızgarasında açılıyor, arama var, Enter
+> götürüyor. **Alt bölümler pencereye girmiyor** — başlığın altında açık şeritte
+> duruyorlar (`.alt-serit`), sık geçiş bir pencere arkasına saklanmamalı.
+>
+> **Sol menü baştan yazıldı.** Satırlar üç öbekte (Gün içinde · Tanımlar ·
+> Yönetim). Aktif satır dolu mercan blok değil, mercan sis + sol kenarda 3px
+> çubuk. Alt başlıklar ikonlu. **Menü artık içeriği itmiyor**: 76px'lik ray
+> sabit, açılınca 300px'e genişleyip üste biniyor, arkası bulanıklaşıyor
+> (Adisyo'daki gibi çekmece, ama ray hep görünür). Salon ve Menü Stüdyosu
+> ikonları Adisyo'nunkiyle aynı düşmüştü — koltuk ve açık menü kitabı oldu.
+> Katlanan listeler `grid-template-rows: 0fr → 1fr` ile açılıp kapanıyor;
+> koşullu çizilseydi kapanış animasyonu elemanla birlikte silinirdi.
+> **Mercan yalnız bulunulan sayfada yanıyor** — başlığın kendi adresi ilk
+> çocuğunun adresiyle aynı olduğu için (Yazıcılar → Yazıcılar) ikisi birden
+> yanıyordu; alt listesi olan satır hiç yanmıyor.
+>
+> **"Ekran zıplıyor" şikâyetinin beş ayrı sebebi vardı, hepsi kapandı:**
+> 1. **Kaydırma çubuğu** — kısa bölümde yok, uzunda var; 15px'lik çubuk
+>    içeriği yana kaydırıyordu. `scrollbar-gutter: stable` (hem sayfada hem
+>    menünün kendi listesinde).
+> 2. **Kabuk genişliği** — ayar ekranlarının onu 880px, yetki ekranları
+>    1100px'di. Dar olan genişletildi (geniş olan daraltılmadı, Ramazan'ın
+>    kararı); Analiz de 1100'e çekildi.
+> 3. **Her sayfa kendi `<Duzen>`'ini kuruyordu** — asıl sebep buydu. Ekran
+>    değişince menü komple sökülüp yeniden kuruluyor, perde yeniden beliriyor,
+>    açık liste yeniden açılıyor, menünün kaydırma konumu sıfırlanıyordu.
+>    App.tsx'te **kabuk rotası** açıldı (`DuzenKabugu` + `Outlet`); 14 sayfadan
+>    `<Duzen>` sarmalı kaldırıldı. Menü bir kez kuruluyor.
+> 4. **Arayüz her açılışta iki kez kuruluyordu** — ayarlar okununca
+>    `BrowserRouter`'ın anahtarı koşulsuz değişiyordu. Artık yalnız ayar
+>    gerçekten değiştiyse yeniden kuruluyor.
+> 5. **Sayfa geçiş solması** (`.sayfa` opacity animasyonu) bölüm değiştirirken
+>    ekranı yanıp söndürüyordu; kaldırıldı (sipariş ekranınınki kaldı).
+>
+> **Yolda çıkan hata (Claude'un):** `index.css`'in ilerisinde aylar önce
+> yazılmış bir `.menu-baglanti.aktif` kuralı duruyordu ve yeni menü tasarımını
+> eziyordu — aktif satır hâlâ dolu mercan blok görünüyor, ok da mercan zeminde
+> eriyip kayboluyordu. **Ders: bir sınıfı yeniden yazmadan önce dosyanın
+> tamamında ara, ilk bulduğun blok tek blok olmayabilir.**
+>
+> **Karar: yazıcı programı henüz yayında değil.** `kopruIndirme.ts` içinde
+> `yayinda: true` yazıyordu ama alan adı hâlâ alınmadı; `false`'a çekildi.
+> Alan adı alınınca adres yazılıp bayrak açılacak, başka dosyaya dokunulmayacak.
+>
+> **Adisyo turu (7 Eyl 2026, canlı):** sol menü üstü örten çekmece (320px,
+> 50px satır, her satır arasında çizgi, aktif satır düz gri blok), üst şerit
+> 64px, **sekme şeridi hiç yok** — Birimler, Özellikler, KDV hepsi ayrı menü
+> satırı. Zemin bembeyaz, kart da beyaz, derinlik yok. Bizim ayrıldığımız
+> yerler: kalıcı ray, öbeklenmiş satırlar, renkli aktif işareti, bölüm seçici.
 
 > **Karar (1 Eyl 2026): görsel dil yenileniyor, zemin krem değil soğuk gri-mavi.**
 > Ramazan mevcut görünümü "ilkel" buldu. Sebep renk değil, **tasarım dilinin
@@ -562,23 +629,25 @@
 > menü çalışır durumda, çevrimdışının kalan ucu tek bir akış). Önce elde biriken
 > küçük işler temizlendi; dördü de 1 Eyl akşamı kapandı. Kalan sıra:
 >
-> 1. **Görsel dilin yayılması — beğenilmeyen ekranlar** (2 Eyl 2026 seansında
->    başlandı, devam ediyor). Biten: tahsilat penceresi, Hızlı Öde, Adisyon
->    Detay, **Kalem Paneli**, **sipariş ekranı**, **Adisyon Bilgisi**,
->    **Onay Modal**, **Masa Seçim**, **Misafir Sayısı**, **Aktarım Onayı**,
->    **Toplu Düzenle**, **Sıralama** (aşağıda).
->    **Sıradaki: Kampanya Seçim.** Henüz elden geçmemişler:
->    Kampanya Seçim, Müşteri Detay/Seçici, Bildirim, Köprü İndir,
->    Kilit Ekranı.
->    **Bu seansta çıkan iş:** `mobil/Siparis.tsx` içindeki **`MasaHedefi`**
->    bileşeni `MasaSecim`'in mobil ikizi — masaüstü–mobil eşitliği gereği
->    silinip ortak bileşene bağlanmalı (Misafir Sayısı'nda yapılanın aynısı).
->    **Eksik Kapat ile Ödeme Tipi Düzelt yarım:** onay kabuğunu paylaştıkları
->    için kabuk, çipler ve alt şerit kendiliğinden düzeldi; kendi iç düzenleri
->    (tutar kutusu, ödeme tipi ızgarası) elden geçmedi.
+> 1. **Görsel dilin yayılması — kalan işler.** Pencerelerin hepsi bitti
+>    (7 Eyl 2026: Kampanya Seçim, Müşteri Detay/Seçici/Düzenleme, Bildirim,
+>    Köprü İndir, Kilit Ekranı). Gezinme de yenilendi (aşağıda). Kalanlar:
+>    a. `mobil/Siparis.tsx` içindeki **`MasaHedefi`** bileşeni `MasaSecim`'in
+>       mobil ikizi — masaüstü–mobil eşitliği gereği silinip ortak bileşene
+>       bağlanmalı (Misafir Sayısı'nda yapılanın aynısı).
+>    b. **Eksik Kapat ile Ödeme Tipi Düzelt yarım:** onay kabuğunu paylaştıkları
+>       için kabuk, çipler ve alt şerit kendiliğinden düzeldi; kendi iç düzenleri
+>       (tutar kutusu, ödeme tipi ızgarası) elden geçmedi.
+>    c. **Ekranların gövdeleri** — pencereler bitti ama liste, kart ve form
+>       gövdeleri hâlâ elle yazılmış köşe, gölge ve hex ile duruyor; belirteçlere
+>       geçecek. Ramazan'ın ifadesiyle "her ekran ilkel görünüyor"; kalan iş
+>       pencerelerde değil ekran gövdelerinde.
+>    d. **Yükleme çemberi** — ekran değişince veri çekilirken çıkan çember
+>       yanıp sönme hissi veriyor. Yazıcılar'da çözüldü (son liste modülde
+>       tutuluyor, çember yalnız ilk açılışta); aynısı diğer ekranlara.
 >    **İndirim modalına dokunulmayacak** — Ramazan beğeniyor (2 Eyl 2026).
->    Ardından bütün ekranlar köşe/gölge/geçiş belirteçlerine geçirilecek.
 >    **Stok bu iş bitene kadar bekliyor** — Ramazan görüntüyü öne aldı.
+>
 > 2. **Stok** — malzeme, reçete, otomatik düşüm, kritik stok uyarısı, maliyet/kârlılık
 >    **Karar (1 Eyl 2026):** Garso hazır malzeme listesiyle gelmez. Her işletme
 >    kendi malzemesini kendi girer — hangi malzeme setini kullandığı önceden

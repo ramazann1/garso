@@ -20,7 +20,8 @@ import {
   Wallet,
   X,
 } from "lucide-react";
-import Duzen, { analizBolumleri } from "../components/Duzen";
+import { analizBolumleri } from "../components/Duzen";
+import BolumSecici from "../components/BolumSecici";
 import AnalizFiltre from "../components/AnalizFiltre";
 import AramaKutusu from "../components/AramaKutusu";
 import Bilgi from "../components/Bilgi";
@@ -140,24 +141,18 @@ export default function Analiz() {
   const odenmezler = useMemo(() => analizOdenmezleri(adisyonlar), [adisyonlar]);
 
   return (
-    <Duzen>
+    <>
       <div className="sayfa analiz-sayfa">
         <header className="menu-baslik">
           <div className="ayar-baslik-ust">
-            <h1>Analiz</h1>
-          </div>
-          <div className="ms-sekmeler">
-            {analizBolumleri
-              .filter((b) => yolaGirebilir(b.yol))
-              .map((b) => (
-                <button
-                  key={b.yol}
-                  className={b.yol === `/analiz/${bolum}` ? "aktif" : ""}
-                  onClick={() => navigate(b.yol)}
-                >
-                  {b.ad}
-                </button>
-              ))}
+            <BolumSecici
+              baslik="Analiz"
+              sekmeler={analizBolumleri
+                .filter((b) => yolaGirebilir(b.yol))
+                .map((b) => ({ kod: b.yol, ad: b.ad, ikon: b.ikon }))}
+              secili={`/analiz/${bolum}`}
+              sec={(yol) => navigate(yol)}
+            />
           </div>
         </header>
 
@@ -219,7 +214,7 @@ export default function Analiz() {
           onDegisti={() => setTazele((s) => s + 1)}
         />
       )}
-    </Duzen>
+    </>
   );
 }
 

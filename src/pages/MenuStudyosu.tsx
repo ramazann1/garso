@@ -1,7 +1,22 @@
 import { useEffect, useState } from "react";
 import { useNavigate, useParams } from "react-router-dom";
-import { ArrowUpDown, ChevronDown, Copy, Pencil, Plus, Star, Trash2, X } from "lucide-react";
-import Duzen from "../components/Duzen";
+import {
+  ArrowUpDown,
+  ArrowLeftRight,
+  ChevronDown,
+  Copy,
+  LayoutGrid,
+  ListChecks,
+  Pencil,
+  Percent,
+  Plus,
+  Ruler,
+  Sparkles,
+  Star,
+  Table,
+  Trash2,
+  X,
+} from "lucide-react";
 import Bilgi from "../components/Bilgi";
 import UrunPaneli from "../components/UrunPaneli";
 import OnayModal from "../components/OnayModal";
@@ -11,6 +26,7 @@ import TopluDuzenle from "../components/TopluDuzenle";
 import KampanyaSekmesi from "../components/KampanyaSekmesi";
 import AktarSekmesi from "../components/AktarSekmesi";
 import Anahtar from "../components/Anahtar";
+import BolumSecici from "../components/BolumSecici";
 import RenkSecici, { renkler } from "../components/RenkSecici";
 import {
   menuGetir,
@@ -547,6 +563,19 @@ function KdvSekmesi({
   );
 }
 
+type Gorunum =
+  | "kategoriler" | "gruplar" | "birimler" | "kdv" | "toplu" | "kampanya" | "aktarim";
+
+const MS_SEKMELER = [
+  { kod: "kategoriler", ad: "Kategori ve Ürünler", ikon: LayoutGrid },
+  { kod: "toplu", ad: "Toplu Düzenle", ikon: Table },
+  { kod: "kampanya", ad: "Kampanyalı Menü", ikon: Sparkles },
+  { kod: "gruplar", ad: "Seçenek Grupları", ikon: ListChecks },
+  { kod: "birimler", ad: "Birimler", ikon: Ruler },
+  { kod: "kdv", ad: "KDV", ikon: Percent },
+  { kod: "aktarim", ad: "İçe/Dışa Aktar", ikon: ArrowLeftRight },
+];
+
 export default function MenuStudyosu() {
   const [kategoriler, setKategoriler] = useState<MenuKategori[]>([]);
   const [urunler, setUrunler] = useState<MenuUrun[]>([]);
@@ -563,8 +592,7 @@ export default function MenuStudyosu() {
   // Görünüm adresten geliyor; sol menüdeki alt başlıklar da aynı yolları açıyor.
   const { bolum } = useParams();
   const navigate = useNavigate();
-  const gorunum = (bolum ?? "kategoriler") as
-    | "kategoriler" | "gruplar" | "birimler" | "kdv" | "toplu" | "kampanya" | "aktarim";
+  const gorunum = (bolum ?? "kategoriler") as Gorunum;
   const [topluDegisiklik, setTopluDegisiklik] = useState(0);
   const [grupPencere, setGrupPencere] = useState<{ grup?: MenuSecenekGrubu } | null>(null);
   const [arama, setArama] = useState("");
@@ -879,33 +907,25 @@ export default function MenuStudyosu() {
   });
 
   return (
-    <Duzen>
+    <>
       <div className="sayfa">
         <header className="menu-baslik">
-          <h1>Menü Stüdyosu</h1>
-          <div className="ms-sekmeler">
-            <button className={gorunum === "kategoriler" ? "aktif" : ""} onClick={() => gorunumDegis("kategoriler")}>
-              Kategori ve Ürünler
-            </button>
-            <button className={gorunum === "toplu" ? "aktif" : ""} onClick={() => gorunumDegis("toplu")}>
-              Toplu Düzenle
-            </button>
-            <button className={gorunum === "kampanya" ? "aktif" : ""} onClick={() => gorunumDegis("kampanya")}>
-              Kampanyalı Menü
-            </button>
-            <button className={gorunum === "gruplar" ? "aktif" : ""} onClick={() => gorunumDegis("gruplar")}>
-              Seçenek Grupları
-            </button>
-            <button className={gorunum === "birimler" ? "aktif" : ""} onClick={() => gorunumDegis("birimler")}>
-              Birimler
-            </button>
-            <button className={gorunum === "kdv" ? "aktif" : ""} onClick={() => gorunumDegis("kdv")}>
-              KDV
-            </button>
-            <button className={gorunum === "aktarim" ? "aktif" : ""} onClick={() => gorunumDegis("aktarim")}>
-              İçe/Dışa Aktar
-            </button>
-          </div>
+          <BolumSecici
+            baslik="Menü Stüdyosu"
+            sekmeler={MS_SEKMELER.map((sk) =>
+              sk.kod === "kategoriler"
+                ? { ...sk, sayi: urunler.length }
+                : sk.kod === "gruplar"
+                  ? { ...sk, sayi: gruplar.length }
+                  : sk.kod === "birimler"
+                    ? { ...sk, sayi: birimler.length }
+                    : sk.kod === "kdv"
+                      ? { ...sk, sayi: kdvler.length }
+                      : sk
+            )}
+            secili={gorunum}
+            sec={(k) => gorunumDegis(k as Gorunum)}
+          />
         </header>
 
         {yukleniyor ? (
@@ -1253,6 +1273,6 @@ export default function MenuStudyosu() {
           onKapat={() => setOnaySor(null)}
         />
       )}
-    </Duzen>
+    </>
   );
 }

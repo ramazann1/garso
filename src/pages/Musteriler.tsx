@@ -1,15 +1,17 @@
 import { useEffect, useRef, useState } from "react";
 import {
+  Check,
   Download,
   MapPin,
   Pencil,
   Plus,
   Trash2,
   Upload,
+  UserRound,
+  UserRoundPlus,
   UsersRound,
   X,
 } from "lucide-react";
-import Duzen from "../components/Duzen";
 import AramaKutusu from "../components/AramaKutusu";
 import Anahtar from "../components/Anahtar";
 import Bilgi from "../components/Bilgi";
@@ -167,14 +169,17 @@ function MusteriPaneli({
   const gecerli = ad.trim().length > 0;
 
   return (
-    <div className="panel-fon" onClick={onKapat}>
-      <div className="ayar-panel" onClick={(e) => e.stopPropagation()}>
-        <header className="panel-ust">
+    <div className="up-fon" onClick={onKapat}>
+      <div className="up-modal mp-modal" onClick={(e) => e.stopPropagation()}>
+        <header className="up-ust">
+          <span className="mp-im">
+            {musteri ? <UserRound size={18} /> : <UserRoundPlus size={18} />}
+          </span>
           <h3>{musteri ? `${tamAd(musteri)} · #${musteri.no}` : "Yeni müşteri"}</h3>
-          <button className="panel-kapat" onClick={onKapat}><X size={19} /></button>
+          <button className="up-kapat" aria-label="Kapat" onClick={onKapat}><X size={19} /></button>
         </header>
 
-        <div className="panel-govde musteri-form">
+        <div className="mp-govde musteri-form">
           <p className="form-baslik">Kimlik</p>
 
           <div className="alan-ikili">
@@ -259,15 +264,15 @@ function MusteriPaneli({
           </div>
         </div>
 
-        <footer className="modal-aksiyonlar">
+        <footer className="mp-alt">
           {onSil && (
-            <button className="sil-buton" onClick={onSil}>
+            <button className="mp-sil" onClick={onSil}>
               <Trash2 size={15} /> Sil
             </button>
           )}
-          <button className="iptal" onClick={onKapat}>Vazgeç</button>
+          <button className="cd-vazgec" onClick={onKapat}>Vazgeç</button>
           <button
-            className="uygula"
+            className="cd-onay"
             disabled={!gecerli}
             onClick={() =>
               onKaydet({
@@ -282,7 +287,7 @@ function MusteriPaneli({
               })
             }
           >
-            Kaydet
+            <Check size={16} /> Kaydet
           </button>
         </footer>
       </div>
@@ -297,6 +302,11 @@ export default function Musteriler() {
   const [detay, setDetay] = useState<Musteri | null>(null);
   const [silinecek, setSilinecek] = useState<Musteri | null>(null);
   const [bildirim, setBildirim] = useState("");
+  const [bildirimTuru, setBildirimTuru] = useState<"basari" | "uyari">("basari");
+
+  // Bittiği söylenen iş ile "olmadı" denen iş aynı yeşil tikle çıkmasın.
+  const bildir = (mesaj: string) => { setBildirimTuru("basari"); setBildirim(mesaj); };
+  const uyar = (mesaj: string) => { setBildirimTuru("uyari"); setBildirim(mesaj); };
   const [ara, setAra] = useState("");
   const [yalnizAcikHesap, setYalnizAcikHesap] = useState(false);
   const [yalnizBorclu, setYalnizBorclu] = useState(false);
@@ -320,7 +330,7 @@ export default function Musteriler() {
     await musteriKaydet(panel?.id ?? null, alanlar);
     setPanel(undefined);
     await tazele();
-    setBildirim("Müşteri kaydedildi");
+    bildir("Müşteri kaydedildi");
   };
 
   const sil = async () => {
@@ -329,7 +339,7 @@ export default function Musteriler() {
     setSilinecek(null);
     setPanel(undefined);
     await tazele();
-    setBildirim(sonuc === "pasif" ? "Müşteri pasife alındı" : "Müşteri silindi");
+    bildir(sonuc === "pasif" ? "Müşteri pasife alındı" : "Müşteri silindi");
   };
 
   // Excel kütüphaneleri düğmeye basılınca yükleniyor; program açılışına binmesin.
@@ -359,7 +369,7 @@ export default function Musteriler() {
     const isVar =
       hazir.yeniler.length || hazir.guncellenecekler.length || hazir.hatalar.length;
     if (!isVar && !hazir.bakiyeUyarilari.length) {
-      setBildirim(
+      uyar(
         hazir.degismeyen ? "Dosyada değişen bir şey yok" : "Dosyada müşteri satırı bulunamadı"
       );
       return;
@@ -375,7 +385,7 @@ export default function Musteriler() {
       const adet = plan.yeniler.length + plan.guncellenecekler.length;
       setPlan(null);
       await tazele();
-      setBildirim(`${adet} müşteri yazıldı`);
+      bildir(`${adet} müşteri yazıldı`);
     } catch (e) {
       setPlan(null);
       setHata(e instanceof Error ? e.message : "Dosya yazılamadı.");
@@ -436,7 +446,7 @@ export default function Musteriler() {
   const borcluSayisi = liste.filter((m) => m.bakiye > 0).length;
 
   return (
-    <Duzen>
+    <>
       <div className="sayfa ayar-sayfa">
         <header className="menu-baslik">
           <div className="ayar-baslik-ust">
@@ -608,7 +618,9 @@ export default function Musteriler() {
       )}
 
       {hata && <OnayModal mesaj={hata} tekTus onKapat={() => setHata("")} />}
-      {bildirim && <Bildirim mesaj={bildirim} onKapat={() => setBildirim("")} />}
-    </Duzen>
+      {bildirim && (
+        <Bildirim mesaj={bildirim} tur={bildirimTuru} onKapat={() => setBildirim("")} />
+      )}
+    </>
   );
 }

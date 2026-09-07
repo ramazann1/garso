@@ -7,7 +7,6 @@ import {
   LockOpen,
   X,
 } from "lucide-react";
-import Duzen from "../components/Duzen";
 import KasaBasligi from "../components/KasaBasligi";
 import Bilgi from "../components/Bilgi";
 import { eslesiyor } from "../arama";
@@ -66,7 +65,7 @@ export default function KasaGecmisi() {
   );
 
   return (
-    <Duzen>
+    <>
       <div className="sayfa ayar-sayfa">
         <KasaBasligi ara={ara} araDegistir={setAra} araYer="Kişi veya tarih ara" />
 
@@ -126,7 +125,7 @@ export default function KasaGecmisi() {
       </div>
 
       {secili && <VardiyaDetay vardiya={secili} onKapat={() => setSecili(null)} />}
-    </Duzen>
+    </>
   );
 }
 

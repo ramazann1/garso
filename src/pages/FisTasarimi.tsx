@@ -10,7 +10,6 @@ import {
   PenLine,
 } from "lucide-react";
 import QRCode from "qrcode";
-import Duzen from "../components/Duzen";
 import AyarBasligi from "../components/AyarBasligi";
 import Anahtar from "../components/Anahtar";
 import Bilgi from "../components/Bilgi";
@@ -354,7 +353,7 @@ export default function FisTasarimi() {
   };
 
   return (
-    <Duzen>
+    <>
       <div className="sayfa ayar-sayfa">
         <AyarBasligi />
 
@@ -547,6 +546,6 @@ export default function FisTasarimi() {
         <OnayModal mesaj={hata} tekTus onayMetni="Tamam" onKapat={() => setHata("")} />
       )}
       {bildirim && <Bildirim mesaj={bildirim} onKapat={() => setBildirim("")} />}
-    </Duzen>
+    </>
   );
 }

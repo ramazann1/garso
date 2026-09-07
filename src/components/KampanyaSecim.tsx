@@ -1,8 +1,15 @@
-import { useState } from "react";
+import { useEffect, useState } from "react";
+import { Check, ChevronRight, LayoutList, Plus, UtensilsCrossed, X } from "lucide-react";
 import { porsiyonFiyat } from "../menu";
+import { paraGoster } from "../para";
 import type { MenuUrun, SiparisTuru } from "../types";
 
-// Kampanyalı menü siparişe girerken: her gruptan izin verilen sayıda seçim.
+/**
+ * Kampanyalı menü siparişe girerken: her gruptan izin verilen sayıda seçim.
+ * Grup başlığındaki sayaç kaç seçim kaldığını söylüyor — garson pencerenin
+ * neresinde eksik olduğunu aramasın diye. Eksik varken Ekle pasif; sebebi
+ * alttaki yönlendirme şeridinde yazıyor.
+ */
 export default function KampanyaSecim({
   urun,
   urunler,
@@ -28,6 +35,12 @@ export default function KampanyaSecim({
       ])
     )
   );
+
+  useEffect(() => {
+    const kacis = (e: KeyboardEvent) => e.key === "Escape" && onKapat();
+    document.addEventListener("keydown", kacis);
+    return () => document.removeEventListener("keydown", kacis);
+  }, [onKapat]);
 
   const sec = (gi: number, si: number) => {
     const grup = urun.menuGruplari[gi];
@@ -68,47 +81,87 @@ export default function KampanyaSecim({
   const eksikler = urun.menuGruplari.filter(
     (g, gi) => (secilenler[gi] ?? []).length < g.secilebilir
   );
+  const toplam = temelFiyat + ekToplam;
 
   return (
-    <div className="perde" onClick={onKapat}>
-      <div className="pencere" onClick={(e) => e.stopPropagation()}>
-        <h3>{urun.ad}</h3>
+    <div className="up-fon" onClick={onKapat}>
+      <div className="up-modal ka-modal" onClick={(e) => e.stopPropagation()}>
+        <header className="up-ust">
+          <span className="ka-im">
+            <UtensilsCrossed size={18} />
+          </span>
+          <h3>{urun.ad}</h3>
+          <button className="up-kapat" aria-label="Kapat" onClick={onKapat}>
+            <X size={19} />
+          </button>
+        </header>
 
-        {urun.menuGruplari.map((g, gi) => (
-          <div className="grup" key={gi}>
-            <span className="grup-ad">
-              {g.baslik}
-              <em className="zorunlu-im">{g.secilebilir} seç</em>
-            </span>
-            <div className="secim-liste">
-              {g.satirlar.map((s, si) => (
-                <button
-                  key={si}
-                  className={(secilenler[gi] ?? []).includes(si) ? "secim aktif" : "secim"}
-                  onClick={() => sec(gi, si)}
-                >
-                  {s.miktar > 1 && `${s.miktar}× `}
-                  {satirAdi(s.urunId, s.porsiyonId)}
-                  {s.ekFiyat > 0 && ` (+₺${s.ekFiyat})`}
-                </button>
-              ))}
-            </div>
-          </div>
-        ))}
+        <div className="ka-govde">
+          {urun.menuGruplari.map((g, gi) => {
+            const secili = secilenler[gi] ?? [];
+            const tamam = secili.length >= g.secilebilir;
+            return (
+              <section className="ka-grup" key={gi}>
+                <div className="ka-grup-ust">
+                  <span className="ka-grup-im">
+                    <LayoutList size={15} />
+                  </span>
+                  <span className="ka-grup-ad">{g.baslik}</span>
+                  <span className={tamam ? "ka-sayac tamam" : "ka-sayac"}>
+                    {tamam && <Check size={13} />}
+                    {secili.length}/{g.secilebilir}
+                  </span>
+                </div>
+
+                <div className="ka-secenekler">
+                  {g.satirlar.map((s, si) => {
+                    const isaretli = secili.includes(si);
+                    return (
+                      <button
+                        key={si}
+                        className={isaretli ? "ka-secenek secili" : "ka-secenek"}
+                        onClick={() => sec(gi, si)}
+                      >
+                        <span className="ka-kutu">{isaretli && <Check size={14} />}</span>
+                        <span className="ka-secenek-ad">
+                          {s.miktar > 1 && <b className="ka-adet">{s.miktar}×</b>}
+                          {satirAdi(s.urunId, s.porsiyonId)}
+                        </span>
+                        {s.ekFiyat > 0 && (
+                          <span className="ka-ek">
+                            <Plus size={12} />
+                            {paraGoster(s.ekFiyat)}
+                          </span>
+                        )}
+                      </button>
+                    );
+                  })}
+                </div>
+              </section>
+            );
+          })}
+        </div>
 
         {eksikler.length > 0 && (
-          <p className="secim-uyari">
-            Seçim tamamlanmalı: {eksikler.map((g) => g.baslik).join(", ")}
-          </p>
+          <div className="ka-yonlendir">
+            <ChevronRight size={16} />
+            <span>Seçim bekleyen grup: {eksikler.map((g) => g.baslik).join(", ")}</span>
+          </div>
         )}
 
-        <button
-          className="kaydet"
-          disabled={eksikler.length > 0}
-          onClick={() => onEkle(temelFiyat + ekToplam, secimAdlari)}
-        >
-          Ekle · ₺{temelFiyat + ekToplam}
-        </button>
+        <footer className="ka-alt">
+          <div className="ka-dokum">
+            <span className="ka-dokum-ad">Menü fiyatı</span>
+            <span className="ka-dokum-tutar">
+              {paraGoster(temelFiyat)}
+              {ekToplam > 0 && <em> + {paraGoster(ekToplam)} ek</em>}
+            </span>
+          </div>
+          <button className="ka-ekle" disabled={eksikler.length > 0} onClick={() => onEkle(toplam, secimAdlari)}>
+            <Plus size={17} />
+            Ekle · {paraGoster(toplam)}
+          </button>
+        </footer>
       </div>
     </div>
   );

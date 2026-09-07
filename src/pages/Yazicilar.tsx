@@ -21,7 +21,6 @@ import {
 import { yetkiVar } from "../oturum";
 import { yaziciHesabiKur, yaziciHesabiniGetir } from "../yaziciHesabi";
 import { koprulariGetir, type KopruCihazi } from "../kopru";
-import Duzen from "../components/Duzen";
 import AyarBasligi from "../components/AyarBasligi";
 import Anahtar from "../components/Anahtar";
 import Bilgi from "../components/Bilgi";
@@ -527,13 +526,22 @@ function KopruHesabi({ onHata }: { onHata: (metin: string) => void }) {
   );
 }
 
+// Ekran sökülüp yeniden kurulduğunda elde kalan son liste.
+let sonYazicilar: Yazici[] | null = null;
+let sonIstasyonlar: Istasyon[] | null = null;
+
 export default function Yazicilar() {
   const { pathname } = useLocation();
   const istasyonBolumu = pathname === "/ayarlar/istasyonlar";
 
-  const [yukleniyor, setYukleniyor] = useState(true);
-  const [yazicilar, setYazicilar] = useState<Yazici[]>([]);
-  const [istasyonlar, setIstasyonlar] = useState<Istasyon[]>([]);
+  // Yazıcılar ve İstasyonlar ayrı adresler ama aynı ekran; adres değişince
+  // React ekranı söküp yeniden kuruyor ve liste sıfırlanıyordu. Bir anlığına
+  // dönen çember çıkıp içerik geri geliyor, ekran yanıp sönmüş gibi
+  // görünüyordu. Son liste modülde duruyor: ekran anında doluyor, tazeleme
+  // arkada yapılıyor.
+  const [yukleniyor, setYukleniyor] = useState(sonYazicilar === null);
+  const [yazicilar, setYazicilar] = useState<Yazici[]>(sonYazicilar ?? []);
+  const [istasyonlar, setIstasyonlar] = useState<Istasyon[]>(sonIstasyonlar ?? []);
   const [bildirim, setBildirim] = useState("");
   const [hata, setHata] = useState("");
 
@@ -547,6 +555,8 @@ export default function Yazicilar() {
 
   const tazele = async () => {
     const [y, i] = await Promise.all([yazicilariGetir(), istasyonlariGetir()]);
+    sonYazicilar = y;
+    sonIstasyonlar = i;
     setYazicilar(y);
     setIstasyonlar(i);
     setYukleniyor(false);
@@ -581,7 +591,7 @@ export default function Yazicilar() {
     yazicilar.filter((y) => y.istasyonlar.includes(id));
 
   return (
-    <Duzen>
+    <>
       <div className="sayfa ayar-sayfa">
         <AyarBasligi />
 
@@ -784,6 +794,6 @@ export default function Yazicilar() {
       )}
 
       {bildirim && <Bildirim mesaj={bildirim} onKapat={() => setBildirim("")} />}
-    </Duzen>
+    </>
   );
 }

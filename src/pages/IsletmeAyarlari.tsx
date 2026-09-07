@@ -21,7 +21,6 @@ import {
   Wallet,
   X,
 } from "lucide-react";
-import Duzen from "../components/Duzen";
 import AyarBasligi from "../components/AyarBasligi";
 import AyarSatiri from "../components/AyarSatiri";
 import AramaKutusu from "../components/AramaKutusu";
@@ -941,7 +940,7 @@ export default function IsletmeAyarlari() {
   };
 
   return (
-    <Duzen>
+    <>
       <div className="sayfa ayar-sayfa">
         <AyarBasligi />
 
@@ -1706,6 +1705,6 @@ export default function IsletmeAyarlari() {
 
       {uyari && <OnayModal mesaj={uyari} tekTus onKapat={() => setUyari(null)} />}
       {bildirim && <Bildirim mesaj={bildirim} onKapat={() => setBildirim(null)} />}
-    </Duzen>
+    </>
   );
 }

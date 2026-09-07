@@ -1,7 +1,6 @@
 import { Fragment, useEffect, useRef, useState } from "react";
 import { useLocation } from "react-router-dom";
 import { Check, KeyRound, Lock, ShieldCheck, UserRound, X } from "lucide-react";
-import Duzen from "../components/Duzen";
 import AyarBasligi from "../components/AyarBasligi";
 import AramaKutusu from "../components/AramaKutusu";
 import Bildirim from "../components/Bildirim";
@@ -200,8 +199,8 @@ export default function YetkilerEkrani() {
   };
 
   return (
-    <Duzen>
-      <div className="sayfa">
+    <>
+      <div className="sayfa ayar-sayfa">
         <AyarBasligi />
 
         <Bilgi>
@@ -341,6 +340,6 @@ export default function YetkilerEkrani() {
       )}
 
       {bildirim && <Bildirim mesaj={bildirim} onKapat={() => setBildirim("")} />}
-    </Duzen>
+    </>
   );
 }

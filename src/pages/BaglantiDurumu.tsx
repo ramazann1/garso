@@ -12,7 +12,6 @@ import {
   XCircle,
   Zap,
 } from "lucide-react";
-import Duzen from "../components/Duzen";
 import AyarBasligi from "../components/AyarBasligi";
 import Bilgi from "../components/Bilgi";
 import Bildirim from "../components/Bildirim";
@@ -127,7 +126,7 @@ export default function BaglantiDurumu() {
   };
 
   return (
-    <Duzen>
+    <>
       <div className="sayfa ayar-sayfa">
         <AyarBasligi />
 
@@ -303,6 +302,6 @@ export default function BaglantiDurumu() {
       )}
       {uyari && <OnayModal mesaj={uyari} tekTus onKapat={() => setUyari("")} />}
       {bildirim && <Bildirim mesaj={bildirim} onKapat={() => setBildirim("")} />}
-    </Duzen>
+    </>
   );
 }

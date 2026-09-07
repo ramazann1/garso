@@ -1,6 +1,7 @@
 import { useLocation, useNavigate } from "react-router-dom";
 import AramaKutusu from "./AramaKutusu";
 import { kasaBolumleri } from "./Duzen";
+import BolumSecici from "./BolumSecici";
 import { yolaGirebilir } from "../rotaYetkileri";
 
 // Kasa ekranlarının ortak başlığı. Ayarlarınkiyle aynı şerit deseni; yetkisi
@@ -20,21 +21,17 @@ export default function KasaBasligi({
   return (
     <header className="menu-baslik">
       <div className="ayar-baslik-ust">
-        <h1>Kasa</h1>
+        <BolumSecici
+          baslik="Kasa"
+          sekmeler={kasaBolumleri
+            .filter((b) => yolaGirebilir(b.yol))
+            .map((b) => ({ kod: b.yol, ad: b.ad, ikon: b.ikon }))}
+          secili={pathname}
+          sec={(yol) => navigate(yol)}
+        />
         {araDegistir && (
           <AramaKutusu deger={ara ?? ""} degistir={araDegistir} yer={araYer} />
         )}
-      </div>
-      <div className="ms-sekmeler">
-        {kasaBolumleri.filter((b) => yolaGirebilir(b.yol)).map((b) => (
-          <button
-            key={b.yol}
-            className={pathname === b.yol ? "aktif" : ""}
-            onClick={() => navigate(b.yol)}
-          >
-            {b.ad}
-          </button>
-        ))}
       </div>
     </header>
   );

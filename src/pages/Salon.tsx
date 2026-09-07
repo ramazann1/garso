@@ -30,7 +30,6 @@ import OnayModal from "../components/OnayModal";
 import HizliOde from "../components/HizliOde";
 import { ODENMEZ_ANAHTAR, odenmezleriGetir, type Odenmez } from "../odenmezler";
 import { useTanim, useTanimEtkisi } from "../tanimAbonelik";
-import Duzen from "../components/Duzen";
 import MasasizSiparis from "../components/MasasizSiparis";
 import Kasa from "../components/Kasa";
 import { yetkiVar } from "../oturum";
@@ -565,7 +564,7 @@ export default function Salon() {
   const uygunSayisi = islem ? tumMasalar.filter(hedefUygun).length : 0;
 
   return (
-    <Duzen>
+    <>
       <div className="sayfa">
         {yukleniyor ? (
           <div className="yukleniyor"><div className="cember" /></div>
@@ -908,6 +907,6 @@ export default function Salon() {
 
         {uyari && <OnayModal mesaj={uyari} tekTus onKapat={() => setUyari(null)} />}
       </div>
-    </Duzen>
+    </>
   );
 }

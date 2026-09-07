@@ -1,5 +1,6 @@
 import { useEffect, useState } from "react";
-import { BrowserRouter, Navigate, Routes, Route, useLocation, useNavigate } from "react-router-dom";
+import { BrowserRouter, Navigate, Outlet, Routes, Route, useLocation, useNavigate } from "react-router-dom";
+import Duzen from "./components/Duzen";
 import { yolaGirebilir } from "./rotaYetkileri";
 import { ayarlar, ayarlariGetir, isletmeKimliginiGetir } from "./isletmeAyarlari";
 import Salon from "./pages/Salon";
@@ -84,9 +85,13 @@ function App() {
   const [ayarTik, setAyarTik] = useState(0);
   useEffect(() => {
     if (!oturum) return;
-    Promise.all([ayarlariGetir(), isletmeKimliginiGetir()]).then(() =>
-      setAyarTik((t) => t + 1)
-    );
+    // Ekranların yeniden kurulması yalnız ayar gerçekten değiştiyse gerekiyor.
+    // Koşulsuz kurulduğunda program her açılışta arayüzü iki kez çiziyordu:
+    // ekran bir kuruluyor, hemen ardından sökülüp yeniden kuruluyordu.
+    const onceki = JSON.stringify(ayarlar());
+    Promise.all([ayarlariGetir(), isletmeKimliginiGetir()]).then(() => {
+      if (JSON.stringify(ayarlar()) !== onceki) setAyarTik((t) => t + 1);
+    });
   }, [oturum?.isletmeId]);
 
   // Boşta kalan kasa kendiliğinden kilitleniyor: tezgâhtan ayrılan garsonun
@@ -125,7 +130,6 @@ function App() {
     <BrowserRouter key={ayarTik}>
       <GorunumKapisi />
       <YetkiKapisi>
-        <Route path="/" element={<Salon />} />
         {/* Mobil arayüz kendi ekranlarıyla; masaüstü sayfaları olduğu gibi kalıyor. */}
         <Route path="/mobil" element={<MobilAcilis />} />
         <Route path="/mobil/masalar" element={<MobilKabuk><MobilMasalar /></MobilKabuk>} />
@@ -141,30 +145,37 @@ function App() {
         {/* İstasyon ekranı yan menüsüz, tam ekran: mutfaktaki tablette kart alanı bölünmesin. */}
         <Route path="/istasyon" element={<Istasyon />} />
         <Route path="/istasyon/:istasyonId" element={<Istasyon />} />
-        <Route path="/menu/:bolum" element={<MenuStudyosu />} />
-        {/* Kasa takibi kapalıysa geçmiş ekranı yok; başlık doğrudan Giderler'i açar. */}
-        <Route
-          path="/kasa"
-          element={
-            <Navigate to={yolaGirebilir("/kasa/gecmis") ? "/kasa/gecmis" : "/kasa/giderler"} replace />
-          }
-        />
-        <Route path="/kasa/gecmis" element={<KasaGecmisi />} />
-        <Route path="/kasa/giderler" element={<Giderler />} />
-        <Route path="/musteriler" element={<Musteriler />} />
-        <Route path="/analiz" element={<Navigate to="/analiz/ozet" replace />} />
-        <Route path="/analiz/:bolum" element={<Analiz />} />
-        <Route path="/ayarlar" element={<Navigate to="/ayarlar/masalar" replace />} />
-        <Route path="/ayarlar/personel" element={<Personel />} />
-        <Route path="/ayarlar/yetkiler" element={<Yetkiler />} />
-        <Route path="/ayarlar/kisi-yetkileri" element={<Yetkiler />} />
-        <Route path="/ayarlar/odenmezler" element={<Odenmezler />} />
-        <Route path="/ayarlar/yazicilar" element={<Yazicilar />} />
-        <Route path="/ayarlar/istasyonlar" element={<Yazicilar />} />
-        <Route path="/ayarlar/fis-tasarimi" element={<FisTasarimi />} />
-        <Route path="/ayarlar/yazdirma-kuyrugu" element={<YazdirmaKuyrugu />} />
-        <Route path="/ayarlar/baglanti-durumu" element={<BaglantiDurumu />} />
-        <Route path="/ayarlar/:bolum" element={<IsletmeAyarlari />} />
+        {/* Yan menü sayfaların üstünde duruyor: her sayfa kendi Duzen'ini
+            kursaydı ekran değiştikçe menü sökülüp yeniden kurulurdu — perde
+            yeniden belirir, alt liste yeniden açılır, kaydırma konumu
+            sıfırlanırdı. Kabuk rotası menüyü yerinde bırakıyor. */}
+        <Route element={<DuzenKabugu />}>
+          <Route path="/" element={<Salon />} />
+          <Route path="/menu/:bolum" element={<MenuStudyosu />} />
+          {/* Kasa takibi kapalıysa geçmiş ekranı yok; başlık doğrudan Giderler'i açar. */}
+          <Route
+            path="/kasa"
+            element={
+              <Navigate to={yolaGirebilir("/kasa/gecmis") ? "/kasa/gecmis" : "/kasa/giderler"} replace />
+            }
+          />
+          <Route path="/kasa/gecmis" element={<KasaGecmisi />} />
+          <Route path="/kasa/giderler" element={<Giderler />} />
+          <Route path="/musteriler" element={<Musteriler />} />
+          <Route path="/analiz" element={<Navigate to="/analiz/ozet" replace />} />
+          <Route path="/analiz/:bolum" element={<Analiz />} />
+          <Route path="/ayarlar" element={<Navigate to="/ayarlar/masalar" replace />} />
+          <Route path="/ayarlar/personel" element={<Personel />} />
+          <Route path="/ayarlar/yetkiler" element={<Yetkiler />} />
+          <Route path="/ayarlar/kisi-yetkileri" element={<Yetkiler />} />
+          <Route path="/ayarlar/odenmezler" element={<Odenmezler />} />
+          <Route path="/ayarlar/yazicilar" element={<Yazicilar />} />
+          <Route path="/ayarlar/istasyonlar" element={<Yazicilar />} />
+          <Route path="/ayarlar/fis-tasarimi" element={<FisTasarimi />} />
+          <Route path="/ayarlar/yazdirma-kuyrugu" element={<YazdirmaKuyrugu />} />
+          <Route path="/ayarlar/baglanti-durumu" element={<BaglantiDurumu />} />
+          <Route path="/ayarlar/:bolum" element={<IsletmeAyarlari />} />
+        </Route>
       </YetkiKapisi>
     </BrowserRouter>
     </Ekran>
@@ -220,6 +231,15 @@ function GorunumKapisi() {
  * ekranların içine tek tek kontrol koyarsak yeni eklenen bir sayfada unutulur.
  * Sayfa hiç kurulmadığı için veri de çekilmiyor.
  */
+/** Yan menüyü taşıyan kabuk: altındaki sayfalar değişirken menü yerinde kalıyor. */
+function DuzenKabugu() {
+  return (
+    <Duzen>
+      <Outlet />
+    </Duzen>
+  );
+}
+
 function YetkiKapisi({ children }: { children: React.ReactNode }) {
   const { pathname } = useLocation();
   if (!yolaGirebilir(pathname)) return <Navigate to="/" replace />;

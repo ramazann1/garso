@@ -10,7 +10,6 @@ import {
   Users,
   X,
 } from "lucide-react";
-import Duzen from "../components/Duzen";
 import AyarBasligi from "../components/AyarBasligi";
 import Anahtar from "../components/Anahtar";
 import Bilgi from "../components/Bilgi";
@@ -105,6 +104,11 @@ export default function Odenmezler() {
   const [panel, setPanel] = useState<Odenmez | null | undefined>(undefined);
   const [silinecek, setSilinecek] = useState<Odenmez | null>(null);
   const [bildirim, setBildirim] = useState("");
+  const [bildirimTuru, setBildirimTuru] = useState<"basari" | "uyari">("basari");
+
+  // Bittiği söylenen iş ile "olmadı" denen iş aynı yeşil tikle çıkmasın.
+  const bildir = (mesaj: string) => { setBildirimTuru("basari"); setBildirim(mesaj); };
+  const uyar = (mesaj: string) => { setBildirimTuru("uyari"); setBildirim(mesaj); };
   const [hata, setHata] = useState("");
   const [ara, setAra] = useState("");
   const [plan, setPlan] = useState<OdenmezPlani | null>(null);
@@ -125,7 +129,7 @@ export default function Odenmezler() {
       await odenmezKaydet(panel?.id ?? null, alanlar, liste.length + 1);
       setPanel(undefined);
       await tazele();
-      setBildirim("Kaydedildi");
+      bildir("Kaydedildi");
     } catch (e) {
       setHata(e instanceof Error ? e.message : "Kaydedilemedi.");
     }
@@ -138,7 +142,7 @@ export default function Odenmezler() {
       setSilinecek(null);
       setPanel(undefined);
       await tazele();
-      setBildirim(sonuc === "pasif" ? "Pasife alındı" : "Silindi");
+      bildir(sonuc === "pasif" ? "Pasife alındı" : "Silindi");
     } catch (e) {
       setSilinecek(null);
       setHata(e instanceof Error ? e.message : "Silinemedi.");
@@ -149,9 +153,8 @@ export default function Odenmezler() {
     try {
       const adet = await personeldenAktar();
       await tazele();
-      setBildirim(
-        adet > 0 ? `${adet} kişi listeye eklendi` : "Eklenecek yeni kişi yok"
-      );
+      if (adet > 0) bildir(`${adet} kişi listeye eklendi`);
+      else uyar("Eklenecek yeni kişi yok");
     } catch (e) {
       setHata(e instanceof Error ? e.message : "Personel aktarılamadı.");
     }
@@ -182,7 +185,7 @@ export default function Odenmezler() {
 
     const hazir = odenmezPlaniHazirla(tablo, liste);
     if (!hazir.yeniler.length && !hazir.guncellenecekler.length && !hazir.hatalar.length) {
-      setBildirim(
+      uyar(
         hazir.degismeyen ? "Dosyada değişen bir şey yok" : "Dosyada kayıt satırı bulunamadı"
       );
       return;
@@ -198,7 +201,7 @@ export default function Odenmezler() {
       const adet = plan.yeniler.length + plan.guncellenecekler.length;
       setPlan(null);
       await tazele();
-      setBildirim(`${adet} kayıt yazıldı`);
+      bildir(`${adet} kayıt yazıldı`);
     } catch (e) {
       setPlan(null);
       setHata(e instanceof Error ? e.message : "Dosya yazılamadı.");
@@ -228,7 +231,7 @@ export default function Odenmezler() {
   const gorunen = liste.filter((o) => eslesiyor(`${o.ad} ${o.unvan}`, ara));
 
   return (
-    <Duzen>
+    <>
       <div className="sayfa ayar-sayfa">
         <AyarBasligi ara={ara} araDegistir={setAra} araYer="Ad veya unvan ara" />
 
@@ -333,7 +336,9 @@ export default function Odenmezler() {
       )}
 
       {hata && <OnayModal mesaj={hata} tekTus onKapat={() => setHata("")} />}
-      {bildirim && <Bildirim mesaj={bildirim} onKapat={() => setBildirim("")} />}
-    </Duzen>
+      {bildirim && (
+        <Bildirim mesaj={bildirim} tur={bildirimTuru} onKapat={() => setBildirim("")} />
+      )}
+    </>
   );
 }

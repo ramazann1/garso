@@ -1,6 +1,5 @@
 import { useEffect, useState } from "react";
 import { Check, Circle, Pencil, Plus, Trash2, UserRound, X } from "lucide-react";
-import Duzen from "../components/Duzen";
 import AyarBasligi from "../components/AyarBasligi";
 import AramaKutusu from "../components/AramaKutusu";
 import Bildirim from "../components/Bildirim";
@@ -301,7 +300,7 @@ export default function PersonelEkrani() {
   );
 
   return (
-    <Duzen>
+    <>
       <div className="sayfa ayar-sayfa">
         <AyarBasligi />
 
@@ -381,6 +380,6 @@ export default function PersonelEkrani() {
       )}
 
       {bildirim && <Bildirim mesaj={bildirim} onKapat={() => setBildirim("")} />}
-    </Duzen>
+    </>
   );
 }
