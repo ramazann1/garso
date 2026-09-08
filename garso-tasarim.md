@@ -1,7 +1,103 @@
 # GARSO — Teknik Tasarım: Veri Modeli & Ekran Haritası
 *Restoran ve cafe'ler için bulut tabanlı satış ve işletme yönetim sistemi.*
 
-## 0. SIRADAKİ İŞ (7 Eyl 2026 gecesi güncellendi)
+## 0. SIRADAKİ İŞ (9 Eyl 2026 güncellendi)
+
+> **9 Eyl 2026 — mobil ikizler kapandı, Menü Stüdyosu ve Kampanyalı Menü yenilendi.**
+>
+> **`MasaHedefi` silindi** (`mobil/Siparis.tsx`, 65 satır): telefon da ortak
+> `MasaSecim`'i açıyor. Hedefe dokununca doğrudan uygulanmıyor, masaüstündeki
+> gibi onay penceresi çıkıyor (`hedefOnayMesaji`). Yolda çıkan eşitsizlik:
+> mobil salon planında **kaynak masa kilit rozetinden muaf tutulmuş**, yerine
+> kesikli mercan çerçeve konmuştu; masaüstünde düz kilit vardı. **Karar
+> (Ramazan): sadece kilit** — kesikli çerçeve ve `.kaynak` sınıfı kalktı.
+>
+> **Eksik Kapat / Ödeme Tipi Düzelt bitti.** Asıl eksik ödeme tipi kartlarında
+> **seçili hâlin olmamasıydı**: karta basınca kart değişmiyor, seçim yalnız
+> altta beliren cümleden anlaşılıyordu (o cümle de pencereyi aşağı itiyordu).
+> `OdemeTipDugmeleri` isteğe bağlı `secili` aldı — tahsilat ekranları bu
+> özelliği vermiyor, orada düğmeye basmak ödemeyi alıyor, bekleyen seçim yok.
+> **Yanlış teşhis düzeltmesi:** Eksik Kapat'ın tutar kutusunun kenara yapışık
+> olduğunu söylemiştim; dosyanın ilerisinde onu düzelten ikinci bir kural
+> varmış. *Aynı ders üçüncü kez: bir sınıfa bakmadan önce dosyanın tamamında ara.*
+>
+> **Menü Stüdyosu — ürünler kart ızgarasına geçti** (`.mu-kart`). Önce Adisyo'da
+> canlı tur atıldı ve ölçüldü: sol panel 350px / satır 50px / seçili satır düz
+> gri hap, ürün kartı 217×149, köşe 6px, `0.8px rgba(0,0,0,.12)` çerçeve, ad
+> 14px-700 **ortalı**, fiyat 14px-700 **solda**. Adisyo'da iyi olan: kart
+> üstündeki üç ikon **hep görünür** — bizde `opacity: 0` ile gizliydi, dokunmatik
+> kasada ulaşılamıyordu. Alınmayanlar: kart içindeki iki ayrı hiza, kartın
+> altında kırpılan renk şeridi, 149px'lik boş kart.
+> Bizde: renk **üst kenarda** 3px şerit, kartta silme de var, `tükendi` ·
+> `satışta gizli` · `mutfakta gizli` rozetleri (Adisyo'da hiçbiri yok), fiyat
+> sağa yaslı. **Kart boyu 208px'e sabitlendi** — rozet çıkıp kaybolunca ızgara
+> oynuyordu; ad `flex: none`, yer yetmezse rozet kırpılır, ad asla.
+> Ara denemeler elendi: "fiyat aralığı" (saçma bulundu), "satış ekranı
+> önizlemesi" ve "fiyat odaklı kart" (ikisi de beğenilmedi), tam genişlikte
+> sütunlu liste (kart daha iyi bulundu).
+> **Kategori paneli:** 300px, ferah satırlar, ürün sayısı sağda, ad kesilmiyor
+> (ikinci satıra sarıyor), seçili satır **dolu mercan blok değil** — mercan sis
+> + 3px çubuk. Panel `sticky` ve **kendi içinde kayıyor**; ekle/sırala düğmeleri
+> başta sabit (`.ms-kat-liste`).
+>
+> **Karar: uzunluğu veriye bağlı listelerde panel kendi içinde kayar.** 30 Tem'deki
+> "paneller kendi içinde kaydırılmaz" kuralı **sabit yükseklikli** paneller için
+> geçerli; kategori sayısı işletmeye göre değişiyor ve sayfanın kaydırma çubuğu
+> ürünlerle ilgisiz biçimde uzuyordu.
+>
+> **Karar: "Fiyat" masa fiyatıdır, ayrı masa kutusu yoktur (Ramazan).** Dört
+> fiyat kutusu (tek + masa + gel al + paket) vardı ve **boş bırakılan kutu "tek
+> fiyat geçerli" anlamına geliyordu** — boş kutunun dolu bir anlam taşıması
+> okunmuyordu. Artık tek "Fiyat (masa)" + anahtar; anahtar açılınca Gel Al ve
+> Paket **tek fiyatla dolu** geliyor, kapanınca temizleniyor. Anahtar **hep
+> kapalı** açılıyor; kayıtlı ama farklı bir tür fiyatı varsa altında mercan
+> şerit onu yazıyor ve tek tuşla açıyor (görünmeyen fiyat = tek fiyata yapılan
+> zammın satışa yansımaması). Açmak mevcut değeri **ezmiyor**, yalnız boşları
+> dolduruyor. Aynı karar Toplu Düzenle'ye ve Excel'e yayıldı: `Masa Fiyatı`
+> sütunu şablondan kalktı (13 → 12 sütun), eski dosyalardaki sütun yok sayılıyor.
+> **Veritabanına dokunulmadı** — `masa_fiyat` duruyor, okuma tarafı hâlâ onu
+> önceliyor; ekranlar oraya yazmayı bırakıyor, düzenlenen porsiyonda değer tek
+> fiyata taşınıyor.
+>
+> **Ürün paneli sırası değişti:** Ürün → **Porsiyon ve fiyat** → Kategoriler →
+> Menü. En çok değiştirilen alan fiyat, panelin dibindeydi.
+>
+> **Kaydetme hızlandı, iki ayrı sebep vardı.** (1) `menuGetir` **önden ver**
+> kipinde: kaydettikten sonra okunan liste kopyanın eski hâliydi, değişiklik
+> ancak ikinci denemede görünüyordu. `tanimTazele(MENU_ANAHTAR)` eklendi ama
+> **beklemeden** — ekran kopyadan anında çiziliyor, tazeleme gelince sessizce
+> yeniden kuruluyor. Beklenerek yapıldığında kaydetme gözle görülür yavaşladı.
+> (2) `urunKaydet` sunucuya **sırayla ~10 istek** atıyordu; porsiyon, kategori
+> bağı, menü grubu ve medya ayrı tablolar, birbirlerini beklemelerinin sebebi
+> yoktu — `Promise.all` ile birlikte gidiyorlar, porsiyonlar da kendi arasında.
+>
+> **Kampanyalı Menü baştan kuruldu** (`kmp-` önekli). Üç çerçeve iç içeydi
+> (panel > indirim kutusu > grup kutusu); tek dış çerçeve kaldı, bölümler
+> çizgiyle ayrılıyor. Grup kutusu değil, solunda mercan çubuk olan blok. Sol
+> liste 300px + sticky + kendi içinde kayan, seçili satır mercan sis. Özet beş
+> ikonlu kartta (kazanç mercan, kâr yeşil). **`★ ☆` düz karakterleri ikona
+> döndü.** Dört köşe değeri (16/13/11/9px) belirteçlere, `#e0e7f1`/`#dde4ed`/
+> `#c2410c` gitti; ~190 satır ölü CSS silindi.
+>
+> **Silik yazı süpürmesi — ürün paneli.** Sekiz yer kuralı çiğniyordu; asıl
+> suçlu bölüm başlıklarıydı: **12px + soluk ton + BÜYÜK HARF + seyreltilmiş
+> harf aralığı** üst üste gelince yazı kayboluyordu. 15px koyu normal yazıma
+> geçti; alan etiketleri, ₺ simgesi ve rozetler 14px'e çıktı, porsiyon
+> sekmesindeki `opacity: .55` kalktı.
+>
+> **Birimler ve KDV'de silme artık soruyor.** İki ekran taslak çalışıyor
+> (silme Kaydet'e basınca gidiyor) ama satır sorusuz kaybolduğu için kalıcı
+> silinmiş gibi duruyordu. Kayıtlı satır onay soruyor, henüz kaydedilmemiş
+> satır sorusuz kalkıyor. **Vazgeç düğmesi eklendi** ve **Kaydet değişiklik
+> yoksa bekliyor** — bekleyen düğme saydamlıkla sönmüyor, nötr gri.
+>
+> **Kabuk genişliği 1100 → 1400px** (`.sayfa`, `.ayar-sayfa`, `.analiz-sayfa`
+> birlikte; üçü bilerek eşit). Yalnız Menü Stüdyosu genişletilseydi ekran
+> değiştirirken içerik yana zıplardı. **Yolda çıkan hata:** ilk denemede Salon
+> da genişleyip masa kartları esnedi — `.masa-grid` sütunları `1fr` ile boş
+> alanı paylaşıyordu. Sütun genişliği 205–232px'e sabitlendi: kabuk genişleyince
+> kart büyümüyor, yalnız satıra bir kart daha giriyor.
+
 
 > **7 Eyl 2026 — kalan pencereler bitti, gezinme baştan kuruldu.**
 >
@@ -629,22 +725,24 @@
 > menü çalışır durumda, çevrimdışının kalan ucu tek bir akış). Önce elde biriken
 > küçük işler temizlendi; dördü de 1 Eyl akşamı kapandı. Kalan sıra:
 >
-> 1. **Görsel dilin yayılması — kalan işler.** Pencerelerin hepsi bitti
->    (7 Eyl 2026: Kampanya Seçim, Müşteri Detay/Seçici/Düzenleme, Bildirim,
->    Köprü İndir, Kilit Ekranı). Gezinme de yenilendi (aşağıda). Kalanlar:
->    a. `mobil/Siparis.tsx` içindeki **`MasaHedefi`** bileşeni `MasaSecim`'in
->       mobil ikizi — masaüstü–mobil eşitliği gereği silinip ortak bileşene
->       bağlanmalı (Misafir Sayısı'nda yapılanın aynısı).
->    b. **Eksik Kapat ile Ödeme Tipi Düzelt yarım:** onay kabuğunu paylaştıkları
->       için kabuk, çipler ve alt şerit kendiliğinden düzeldi; kendi iç düzenleri
->       (tutar kutusu, ödeme tipi ızgarası) elden geçmedi.
->    c. **Ekranların gövdeleri** — pencereler bitti ama liste, kart ve form
->       gövdeleri hâlâ elle yazılmış köşe, gölge ve hex ile duruyor; belirteçlere
->       geçecek. Ramazan'ın ifadesiyle "her ekran ilkel görünüyor"; kalan iş
->       pencerelerde değil ekran gövdelerinde.
+> 1. **Görsel dilin yayılması — ekran gövdeleri.** Pencerelerin hepsi bitti,
+>    gezinme yenilendi, mobil ikizler kapandı (7–9 Eyl 2026). Kalan iş
+>    **ekranların gövdesinde**; ekran ekran gidiliyor. Sıra:
+>    a. **İçe/Dışa Aktar sekmesi** — Ramazan "bu sayfadan çok çok rahatsızım"
+>       dedi (9 Eyl 2026). Sıradaki ekran bu.
+>    b. **Seçenek Grupları ve Birimler/KDV sekmelerinin gövdesi** — Menü
+>       Stüdyosu'nun kalan üç sekmesi; alt şeritleri 9 Eyl'de düzeldi, liste ve
+>       form düzenleri elden geçmedi.
+>    c. **Kalan ekranlar** — Salon dışındakiler tek tek gezilecek. Sıra
+>       Ramazan'ın "burası ilkel" dediği yerden kuruluyor, ölçümle değil.
 >    d. **Yükleme çemberi** — ekran değişince veri çekilirken çıkan çember
 >       yanıp sönme hissi veriyor. Yazıcılar'da çözüldü (son liste modülde
 >       tutuluyor, çember yalnız ilk açılışta); aynısı diğer ekranlara.
+>    **Salon'a dokunulmayacak (9 Eyl 2026 kararı).** Ekran ölçüldü: masa
+>    kartının düzeni düşünülmüş, renkler Ramazan'ın işine yarıyor ("kapıdan
+>    bakınca hangi masa dolu belli olsun"), bölge şeridi sağlam. Kalan yalnız
+>    belirteç temizliği — kullanıcının fark etmeyeceği türden. Degrade fikri
+>    yan yana gösterildi, "asıl mesele renk değil" diye kapatıldı.
 >    **İndirim modalına dokunulmayacak** — Ramazan beğeniyor (2 Eyl 2026).
 >    **Stok bu iş bitene kadar bekliyor** — Ramazan görüntüyü öne aldı.
 >

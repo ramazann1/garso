@@ -1,5 +1,20 @@
 import { useState } from "react";
-import { Plus, X } from "lucide-react";
+import {
+  Check,
+  Coins,
+  Gift,
+  Info,
+  Layers,
+  Percent,
+  Plus,
+  Receipt,
+  Sparkles,
+  Star,
+  Tag,
+  Trash2,
+  TrendingUp,
+  X,
+} from "lucide-react";
 import Bilgi from "./Bilgi";
 import {
   grubunVarsayilanSecimi,
@@ -178,166 +193,203 @@ export default function KampanyaSekmesi({
   };
 
   return (
-    <div className="kampanya-sekme">
-      <aside className="kampanya-liste">
-        <div className="ms-urun-ust">
-          <h2>Kampanyalı Menüler</h2>
-          <span>{kampanyalar.length}</span>
-          <button className="ms-urun-ekle" onClick={() => yukle(undefined)}><Plus size={15} /> Menü</button>
+    <div className="kmp-duzen">
+      <aside className="kmp-liste">
+        <header className="kmp-liste-ust">
+          <span className="kmp-im"><Sparkles size={17} /></span>
+          <h3>Kampanyalı menüler</h3>
+          <span className="kmp-sayi">{kampanyalar.length}</span>
+        </header>
+
+        <div className="kmp-liste-govde">
+          {kampanyalar.map((u) => (
+            <button
+              key={u.id}
+              className={!yeni && u.id === seciliId ? "kmp-satir secili" : "kmp-satir"}
+              onClick={() => yukle(u)}
+            >
+              <span className="kmp-satir-ad">{u.ad}</span>
+              <span className="kmp-satir-alt">
+                <Layers size={13} />
+                {u.menuGruplari.length} grup
+                <b>₺{menuFiyati(u)}</b>
+              </span>
+            </button>
+          ))}
+
+          {kampanyalar.length === 0 && <p className="bos">Henüz kampanyalı menü yok</p>}
         </div>
 
-        {kampanyalar.map((u) => (
-          <button
-            key={u.id}
-            className={!yeni && u.id === seciliId ? "kampanya-satir secili" : "kampanya-satir"}
-            onClick={() => yukle(u)}
-          >
-            <span>{u.ad}</span>
-            <small>
-              {u.menuGruplari.length} grup · ₺{menuFiyati(u)}
-            </small>
+        <footer className="kmp-liste-alt">
+          <button className="kmp-yeni" onClick={() => yukle(undefined)}>
+            <Plus size={16} /> Yeni menü
           </button>
-        ))}
-
-        {kampanyalar.length === 0 && <p className="bos">Henüz kampanyalı menü yok</p>}
+        </footer>
       </aside>
 
-      <section className="kampanya-duzen">
+      <section className="kmp-panel">
         {!yeni && !secili ? (
           <p className="bos">Soldan bir menü seç ya da yenisini oluştur</p>
         ) : (
           <>
-            <Bilgi>
-              Kampanyalı menü, birden fazla ürünü tek fiyata satar. Her grup için "kaç tane
-              seçilebilir" belirlersin; siparişte garson o gruptan seçim yapar.
-            </Bilgi>
-
-            <div className="alan">
-              <span>Menü adı</span>
-              <input
-                value={ad}
-                onChange={(e) => setAd(e.target.value)}
-                placeholder="Kahvaltı Menüsü"
-              />
-            </div>
-
-
-            <div className="ekle-satir">
-              <button
-                onClick={() => setGruplar([...gruplar, { baslik: "", secilebilir: 1, satirlar: [] }])}
-              >
-                <Plus size={14} /> Grup
-              </button>
-            </div>
-
-            {gruplar.map((g, gi) => (
-              <div key={gi} className="menu-grup">
-                <div className="satir-alan">
-                  <input
-                    value={g.baslik}
-                    onChange={(e) => grupDegis(gi, { baslik: e.target.value })}
-                    placeholder="Ana yemek"
-                  />
-                  <input
-                    className="kisa"
-                    value={g.secilebilir}
-                    onChange={(e) => grupDegis(gi, { secilebilir: sayiyaCevir(e.target.value) })}
-                    title="Bu gruptan kaç ürün seçilebilir"
-                  />
-                  <button
-                    className="satir-sil"
-                    onClick={() => setGruplar(gruplar.filter((_, j) => j !== gi))}
-                  >
-                    <X size={15} />
-                  </button>
-                </div>
-                <Bilgi>
-                  Müşteri bu gruptan {g.secilebilir} ürün seçer. Yıldızlı satır hazır gelir.
-                </Bilgi>
-
-                {g.satirlar.map((s, si) => {
-                  const urun = urunler.find((u) => u.id === s.urunId);
-                  return (
-                    <div key={si} className="satir-alan menu-satir">
-                      <button
-                        className={s.varsayilan ? "varsayilan-tus aktif" : "varsayilan-tus"}
-                        onClick={() => satirDegis(gi, si, { varsayilan: !s.varsayilan })}
-                        title="Hazır gelen seçim"
-                      >
-                        {s.varsayilan ? "★" : "☆"}
-                      </button>
-                      <select
-                        value={s.urunId}
-                        onChange={(e) => {
-                          const yeniUrun = urunler.find((u) => u.id === Number(e.target.value));
-                          satirDegis(gi, si, {
-                            urunId: Number(e.target.value),
-                            porsiyonId: (
-                              yeniUrun?.porsiyonlar.find((p) => p.varsayilan) ??
-                              yeniUrun?.porsiyonlar[0]
-                            )?.id,
-                          });
-                        }}
-                      >
-                        {icerikAdaylari.map((u) => (
-                          <option key={u.id} value={u.id}>{u.ad}</option>
-                        ))}
-                      </select>
-                      <select
-                        value={s.porsiyonId ?? ""}
-                        onChange={(e) =>
-                          satirDegis(gi, si, {
-                            porsiyonId: e.target.value ? Number(e.target.value) : undefined,
-                          })
-                        }
-                      >
-                        {(urun?.porsiyonlar ?? []).map((p) => (
-                          <option key={p.id} value={p.id}>{p.ad}</option>
-                        ))}
-                      </select>
-                      <input
-                        className="kisa"
-                        value={s.miktar}
-                        onChange={(e) => satirDegis(gi, si, { miktar: sayiyaCevir(e.target.value) })}
-                        title="Adet"
-                      />
-                      <input
-                        className="kisa"
-                        value={s.ekFiyat}
-                        onChange={(e) => satirDegis(gi, si, { ekFiyat: paraYaz(e.target.value) })}
-                        placeholder="+₺"
-                        inputMode="decimal"
-                        title="Bu seçim için ek fiyat"
-                      />
-                      <button
-                        className="satir-sil"
-                        onClick={() =>
-                          grupDegis(gi, { satirlar: g.satirlar.filter((_, j) => j !== si) })
-                        }
-                      >
-                        <X size={15} />
-                      </button>
-                    </div>
-                  );
-                })}
-
-                <div className="ekle-satir">
-                  <button onClick={() => satirEkle(gi)} disabled={!icerikAdaylari.length}>
-                    <Plus size={14} /> Ürün
-                  </button>
-                </div>
+            <div className="kmp-bolum">
+              <div className="kmp-bolum-ust">
+                <span className="kmp-im"><Tag size={16} /></span>
+                <h4>Menü</h4>
               </div>
-            ))}
+
+              <Bilgi>
+                Kampanyalı menü, birden fazla ürünü tek fiyata satar. Her grup için kaç ürün
+                seçilebileceğini belirlersin; siparişte garson o gruptan seçim yapar.
+              </Bilgi>
+
+              <div className="alan">
+                <span>Menü adı</span>
+                <input
+                  value={ad}
+                  onChange={(e) => setAd(e.target.value)}
+                  placeholder="Kahvaltı Menüsü"
+                />
+              </div>
+            </div>
+
+            <div className="kmp-bolum">
+              <div className="kmp-bolum-ust">
+                <span className="kmp-im"><Layers size={16} /></span>
+                <h4>Gruplar</h4>
+                <span className="kmp-sayi">{gruplar.length}</span>
+                <button
+                  className="kmp-ekle"
+                  onClick={() => setGruplar([...gruplar, { baslik: "", secilebilir: 1, satirlar: [] }])}
+                >
+                  <Plus size={15} /> Grup
+                </button>
+              </div>
+
+              {gruplar.length === 0 && <p className="bos">Henüz grup yok.</p>}
+
+              {gruplar.map((g, gi) => (
+                <div key={gi} className="kmp-grup">
+                  <div className="kmp-grup-ust">
+                    <input
+                      className="kmp-grup-ad"
+                      value={g.baslik}
+                      onChange={(e) => grupDegis(gi, { baslik: e.target.value })}
+                      placeholder="Ana yemek"
+                    />
+                    <label className="kmp-adet">
+                      Seçilebilir
+                      <input
+                        value={g.secilebilir}
+                        onChange={(e) => grupDegis(gi, { secilebilir: sayiyaCevir(e.target.value) })}
+                        title="Bu gruptan kaç ürün seçilebilir"
+                      />
+                    </label>
+                    <button
+                      className="kmp-sil"
+                      title="Grubu kaldır"
+                      onClick={() => setGruplar(gruplar.filter((_, j) => j !== gi))}
+                    >
+                      <Trash2 size={16} />
+                    </button>
+                  </div>
+
+                  <p className="kmp-grup-not">
+                    <Info size={14} />
+                    Müşteri bu gruptan {g.secilebilir} ürün seçer. Yıldızlı satır hazır gelir.
+                  </p>
+
+                  {g.satirlar.map((s, si) => {
+                    const urun = urunler.find((u) => u.id === s.urunId);
+                    return (
+                      <div key={si} className="kmp-urun-satir">
+                        <button
+                          className={s.varsayilan ? "kmp-yildiz dolu" : "kmp-yildiz"}
+                          onClick={() => satirDegis(gi, si, { varsayilan: !s.varsayilan })}
+                          title="Hazır gelen seçim"
+                        >
+                          <Star size={16} fill={s.varsayilan ? "currentColor" : "none"} />
+                        </button>
+                        <select
+                          value={s.urunId}
+                          onChange={(e) => {
+                            const yeniUrun = urunler.find((u) => u.id === Number(e.target.value));
+                            satirDegis(gi, si, {
+                              urunId: Number(e.target.value),
+                              porsiyonId: (
+                                yeniUrun?.porsiyonlar.find((p) => p.varsayilan) ??
+                                yeniUrun?.porsiyonlar[0]
+                              )?.id,
+                            });
+                          }}
+                        >
+                          {icerikAdaylari.map((u) => (
+                            <option key={u.id} value={u.id}>{u.ad}</option>
+                          ))}
+                        </select>
+                        <select
+                          value={s.porsiyonId ?? ""}
+                          onChange={(e) =>
+                            satirDegis(gi, si, {
+                              porsiyonId: e.target.value ? Number(e.target.value) : undefined,
+                            })
+                          }
+                        >
+                          {(urun?.porsiyonlar ?? []).map((p) => (
+                            <option key={p.id} value={p.id}>{p.ad}</option>
+                          ))}
+                        </select>
+                        <input
+                          className="kmp-kisa"
+                          value={s.miktar}
+                          onChange={(e) => satirDegis(gi, si, { miktar: sayiyaCevir(e.target.value) })}
+                          title="Adet"
+                        />
+                        <input
+                          className="kmp-kisa"
+                          value={s.ekFiyat}
+                          onChange={(e) => satirDegis(gi, si, { ekFiyat: paraYaz(e.target.value) })}
+                          placeholder="+₺"
+                          inputMode="decimal"
+                          title="Bu seçim için ek fiyat"
+                        />
+                        <button
+                          className="kmp-sil"
+                          title="Satırı kaldır"
+                          onClick={() =>
+                            grupDegis(gi, { satirlar: g.satirlar.filter((_, j) => j !== si) })
+                          }
+                        >
+                          <X size={16} />
+                        </button>
+                      </div>
+                    );
+                  })}
+
+                  <button
+                    className="kmp-ekle sade"
+                    onClick={() => satirEkle(gi)}
+                    disabled={!icerikAdaylari.length}
+                  >
+                    <Plus size={15} /> Ürün
+                  </button>
+                </div>
+              ))}
+            </div>
 
             {temizGruplar.length > 0 && (
-              <div className="kampanya-indirim">
-                <span className="bolum-ad">Kampanya indirimi</span>
+              <div className="kmp-bolum">
+                <div className="kmp-bolum-ust">
+                  <span className="kmp-im"><Percent size={16} /></span>
+                  <h4>Kampanya indirimi</h4>
+                </div>
+
                 <Bilgi>
                   Bu ürünler ayrı ayrı ₺{ayriTutar} tutuyor. İndirimi yüzde ya da tutar olarak
                   gir; menünün satış fiyatı buradan çıkar.
                 </Bilgi>
 
-                <div className="indirim-satir">
+                <div className="kmp-indirim">
                   <div className="mod-sec">
                     <button
                       className={indirimTipi === "yuzde" ? "aktif" : ""}
@@ -353,52 +405,56 @@ export default function KampanyaSekmesi({
                     </button>
                   </div>
                   <input
-                    className={indirimTutari >= ayriTutar ? "kisa hatali" : "kisa"}
+                    className={indirimTutari >= ayriTutar ? "kmp-kisa hatali" : "kmp-kisa"}
                     value={indirimDeger}
                     onChange={(e) => setIndirimDeger(paraYaz(e.target.value))}
                     placeholder={indirimTipi === "yuzde" ? "%" : "₺"}
                     inputMode="decimal"
                   />
-                  <strong className="indirim-sonuc">
-                    Menü fiyatı ₺{satisFiyati}
+                  <span className="kmp-sonuc">
+                    Menü fiyatı <strong>₺{satisFiyati}</strong>
                     {gecerliIndirim && <em>−₺{indirimTutari}</em>}
-                  </strong>
+                  </span>
                 </div>
               </div>
             )}
 
             {temizGruplar.length > 0 && (
-              <div className="kampanya-ozet">
-                <div>
-                  <span>Ayrı ayrı satılsa</span>
+              <div className="kmp-ozet">
+                <div className="kmp-kutu">
+                  <span><Receipt size={15} /> Ayrı ayrı satılsa</span>
                   <strong>₺{ayriTutar}</strong>
                 </div>
-                <div>
-                  <span>Menü fiyatı</span>
+                <div className="kmp-kutu">
+                  <span><Tag size={15} /> Menü fiyatı</span>
                   <strong>₺{satisFiyati}</strong>
                 </div>
-                <div className="kazanc">
-                  <span>Müşterinin kazancı</span>
+                <div className="kmp-kutu kazanc">
+                  <span><Gift size={15} /> Müşterinin kazancı</span>
                   <strong>₺{indirimTutari}</strong>
                 </div>
-                <div>
-                  <span>Maliyet</span>
+                <div className="kmp-kutu">
+                  <span><Coins size={15} /> Maliyet</span>
                   <strong>{maliyetGirilmemis ? "—" : `₺${maliyet}`}</strong>
                 </div>
                 {satisFiyati > 0 && !maliyetGirilmemis && (
-                  <div>
-                    <span>Kâr</span>
+                  <div className="kmp-kutu kar">
+                    <span><TrendingUp size={15} /> Kâr</span>
                     <strong>₺{satisFiyati - maliyet}</strong>
                   </div>
                 )}
               </div>
             )}
 
-            <div className="birim-aksiyon">
+            <div className="kmp-alt">
               {duzenlenen && (
-                <button className="sil-buton" onClick={() => onSil(duzenlenen)}>Menüyü sil</button>
+                <button className="kmp-menu-sil" onClick={() => onSil(duzenlenen)}>
+                  <Trash2 size={16} /> Menüyü sil
+                </button>
               )}
-              <button className="birim-kaydet" onClick={kaydet}>Kaydet</button>
+              <button className="kmp-kaydet" onClick={kaydet}>
+                <Check size={16} /> Kaydet
+              </button>
             </div>
           </>
         )}

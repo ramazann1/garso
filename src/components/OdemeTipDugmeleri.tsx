@@ -12,10 +12,17 @@ import type { OdemeTipi } from "../odemeTipleri";
 export default function OdemeTipDugmeleri({
   tipler,
   pasif,
+  secili,
   onSec,
 }: {
   tipler: OdemeTipi[];
   pasif?: boolean;
+  /**
+   * Seçimin ekranda kaldığı yerlerde (ödeme tipi düzeltme) seçili tipin adı.
+   * Tahsilat ekranlarında verilmiyor: orada düğmeye basmak ödemeyi alıyor,
+   * ortada bekleyen bir seçim yok.
+   */
+  secili?: string;
   onSec: (ad: string) => void;
 }) {
   // Açık hesaba yazmak parayı kasaya sokmadan hesabı kapatıyor; yetkisi
@@ -36,7 +43,7 @@ export default function OdemeTipDugmeleri({
       {liste.map(({ id, ad, renk }) => (
         <button
           key={id}
-          className="odeme-tip-btn"
+          className={secili === ad ? "odeme-tip-btn secili" : "odeme-tip-btn"}
           style={{ "--tip-renk": renk } as CSSProperties}
           disabled={pasif}
           onClick={() => onSec(ad)}

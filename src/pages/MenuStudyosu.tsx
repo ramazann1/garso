@@ -1,4 +1,5 @@
 import { useEffect, useState } from "react";
+import type { CSSProperties } from "react";
 import { useNavigate, useParams } from "react-router-dom";
 import {
   ArrowUpDown,
@@ -29,6 +30,7 @@ import Anahtar from "../components/Anahtar";
 import BolumSecici from "../components/BolumSecici";
 import RenkSecici, { renkler } from "../components/RenkSecici";
 import {
+  MENU_ANAHTAR,
   menuGetir,
   maliyetleriGetir,
   maliyetleriIsle,
@@ -40,6 +42,7 @@ import {
   altKategoriler,
   urunKaydet,
   urunKopyala,
+  urunFavoriDegistir,
   urunSil,
   urunSirala,
   grupKaydet,
@@ -49,10 +52,10 @@ import {
   KDV_SINIRI,
   topluKaydet,
   porsiyonFiyat,
-  urunGrupIdleri,
   bosMenuAlanlari,
 } from "../menu";
 import type { KategoriAlanlari, KdvSatiri, TopluPorsiyon, TopluUrun } from "../menu";
+import { tanimTazele } from "../tanimAbonelik";
 import { planHazirla, type AktarimPlani } from "../aktarim";
 import { istasyonlariGetir, istasyonHaritasiniUnut } from "../yazicilar";
 import type { Istasyon } from "../yazicilar";
@@ -377,15 +380,35 @@ function BirimlerSekmesi({
   ) => void;
   onUyari: (mesaj: string) => void;
 }) {
-  const [liste, setListe] = useState<{ id?: number; ad: string; varsayilan: boolean }[]>(
-    birimler.map((b) => ({ id: b.id, ad: b.ad, varsayilan: b.varsayilan }))
-  );
+  type BirimSatiri = { id?: number; ad: string; varsayilan: boolean };
+  const baslangic = (): BirimSatiri[] =>
+    birimler.map((b) => ({ id: b.id, ad: b.ad, varsayilan: b.varsayilan }));
+  const [liste, setListe] = useState<BirimSatiri[]>(baslangic);
   const [silinenler, setSilinenler] = useState<number[]>([]);
+  const [silSorusu, setSilSorusu] = useState<{ sira: number; ad: string } | null>(null);
+
+  // Kaydet yalnız gerçekten bir şey değiştiyse çalışıyor; Vazgeç listeyi
+  // açılıştaki hâline döndürüyor.
+  const degisti =
+    silinenler.length > 0 || JSON.stringify(liste) !== JSON.stringify(baslangic());
+
+  const geriAl = () => {
+    setListe(baslangic());
+    setSilinenler([]);
+  };
 
   // Varsayılan tektir — birine basınca diğerleri iner; yıldızlıya tekrar
   // basmak işareti kaldırır (o zaman "Tam" kuralı devreye girer).
   const varsayilanSec = (i: number) =>
     setListe((l) => l.map((x, j) => ({ ...x, varsayilan: j === i && !x.varsayilan })));
+
+  // Kayıtlı satır sorulmadan silinmiyor. Henüz kaydedilmemiş satır sorusuz
+  // kalkıyor: ortada kaybolacak bir şey yok.
+  const satiriCikar = (i: number) => {
+    const satir = liste[i];
+    if (satir.id) setSilinenler((s) => [...s, satir.id!]);
+    setListe((l) => l.filter((_, j) => j !== i));
+  };
 
   const satirSil = (i: number) => {
     const satir = liste[i];
@@ -393,8 +416,11 @@ function BirimlerSekmesi({
       onUyari(`"${satir.ad}" birimi ${kullanim(satir.id)} porsiyonda kullanılıyor. Önce o porsiyonların birimini değiştir.`);
       return;
     }
-    if (satir.id) setSilinenler((s) => [...s, satir.id!]);
-    setListe((l) => l.filter((_, j) => j !== i));
+    if (!satir.id) {
+      satiriCikar(i);
+      return;
+    }
+    setSilSorusu({ sira: i, ad: satir.ad || "Adsız birim" });
   };
 
   const kaydet = () => {
@@ -451,8 +477,28 @@ function BirimlerSekmesi({
       {liste.length === 0 && <p className="bos">Henüz birim yok</p>}
 
       <div className="birim-aksiyon">
-        <button className="birim-kaydet" onClick={kaydet}>Kaydet</button>
+        <button className="birim-vazgec" onClick={geriAl} disabled={!degisti}>
+          Vazgeç
+        </button>
+        <button className="birim-kaydet" onClick={kaydet} disabled={!degisti}>
+          Kaydet
+        </button>
       </div>
+
+      {silSorusu && (
+        <OnayModal
+          baslik="Birimi sil"
+          ikon={<Trash2 size={20} />}
+          mesaj={`*${silSorusu.ad}* birimi listeden çıkarılacak. Kaydet dediğinde kalıcı olur.`}
+          tehlikeli
+          onayMetni="Evet, çıkar"
+          onOnay={() => {
+            satiriCikar(silSorusu.sira);
+            setSilSorusu(null);
+          }}
+          onKapat={() => setSilSorusu(null)}
+        />
+      )}
     </div>
   );
 }
@@ -469,10 +515,19 @@ function KdvSekmesi({
   onUyari: (mesaj: string) => void;
 }) {
   // Oran taslakta metin: kullanıcı silip yeniden yazarken alan boş kalabilmeli.
-  const [liste, setListe] = useState<(KdvSatiri & { oranMetin: string })[]>(
-    kdvler.map((k) => ({ ...k, oranMetin: String(k.oran) }))
-  );
+  type KdvTaslak = KdvSatiri & { oranMetin: string };
+  const baslangic = (): KdvTaslak[] => kdvler.map((k) => ({ ...k, oranMetin: String(k.oran) }));
+  const [liste, setListe] = useState<KdvTaslak[]>(baslangic);
   const [silinenler, setSilinenler] = useState<number[]>([]);
+  const [silSorusu, setSilSorusu] = useState<{ sira: number; ad: string } | null>(null);
+
+  const degisti =
+    silinenler.length > 0 || JSON.stringify(liste) !== JSON.stringify(baslangic());
+
+  const geriAl = () => {
+    setListe(baslangic());
+    setSilinenler([]);
+  };
 
   const degis = (i: number, degisim: Partial<KdvSatiri & { oranMetin: string }>) =>
     setListe((l) => l.map((x, j) => (j === i ? { ...x, ...degisim } : x)));
@@ -480,10 +535,20 @@ function KdvSekmesi({
   const varsayilanSec = (i: number) =>
     setListe((l) => l.map((x, j) => ({ ...x, varsayilan: j === i && !x.varsayilan })));
 
-  const satirSil = (i: number) => {
+  const satiriCikar = (i: number) => {
     const satir = liste[i];
     if (satir.id) setSilinenler((s) => [...s, satir.id!]);
     setListe((l) => l.filter((_, j) => j !== i));
+  };
+
+  // Kayıtlı grup sorulmadan silinmiyor; yeni eklenen satır sorusuz kalkıyor.
+  const satirSil = (i: number) => {
+    const satir = liste[i];
+    if (!satir.id) {
+      satiriCikar(i);
+      return;
+    }
+    setSilSorusu({ sira: i, ad: satir.ad || "Adsız grup" });
   };
 
   const kaydet = () => {
@@ -557,8 +622,28 @@ function KdvSekmesi({
       {liste.length === 0 && <p className="bos">Henüz KDV grubu yok</p>}
 
       <div className="birim-aksiyon">
-        <button className="birim-kaydet" onClick={kaydet}>Kaydet</button>
+        <button className="birim-vazgec" onClick={geriAl} disabled={!degisti}>
+          Vazgeç
+        </button>
+        <button className="birim-kaydet" onClick={kaydet} disabled={!degisti}>
+          Kaydet
+        </button>
       </div>
+
+      {silSorusu && (
+        <OnayModal
+          baslik="KDV grubunu sil"
+          ikon={<Trash2 size={20} />}
+          mesaj={`*${silSorusu.ad}* KDV grubu listeden çıkarılacak. Kaydet dediğinde kalıcı olur.`}
+          tehlikeli
+          onayMetni="Evet, çıkar"
+          onOnay={() => {
+            satiriCikar(silSorusu.sira);
+            setSilSorusu(null);
+          }}
+          onKapat={() => setSilSorusu(null)}
+        />
+      )}
     </div>
   );
 }
@@ -606,15 +691,26 @@ export default function MenuStudyosu() {
   const yukle = async (ilk = false) => {
     // Ürün/kategori istasyonu değişmiş olabilir; fiş tarafındaki eşleme tazelensin.
     istasyonHaritasiniUnut();
+
     // Maliyet menüyle birlikte gelmiyor (kâr marjı satış ekranlarına
     // düşmesin); menü ekranı onu ayrıca isteyip ürünlere işliyor.
-    const [veri, maliyetler] = await Promise.all([menuGetir(), maliyetleriGetir()]);
-    setKategoriler(veri.kategoriler);
-    setUrunler(maliyetleriIsle(veri.urunler, maliyetler));
-    setGruplar(veri.gruplar);
-    setBirimler(veri.birimler);
-    setKdvler(veri.kdvler);
-    if (ilk) setSeciliId(veri.kategoriler[0]?.id ?? null);
+    const oku = async () => {
+      const [veri, maliyetler] = await Promise.all([menuGetir(), maliyetleriGetir()]);
+      setKategoriler(veri.kategoriler);
+      setUrunler(maliyetleriIsle(veri.urunler, maliyetler));
+      setGruplar(veri.gruplar);
+      setBirimler(veri.birimler);
+      setKdvler(veri.kdvler);
+      if (ilk) setSeciliId(veri.kategoriler[0]?.id ?? null);
+    };
+
+    await oku();
+
+    // menuGetir kopyayı beklemeden veriyor; kaydettikten hemen sonra okunan
+    // liste ürünün eski hâlini gösterebiliyor (değişiklik ancak ikinci
+    // denemede görünüyordu). Kopya arkadan tazeleniyor ve ekran bir kez daha
+    // kuruluyor — kaydet düğmesi bu okumayı beklemiyor.
+    if (!ilk) tanimTazele(MENU_ANAHTAR).then(oku);
   };
 
   useEffect(() => {
@@ -719,6 +815,22 @@ export default function MenuStudyosu() {
     if (yeniId) {
       setVurgulu(yeniId);
       setTimeout(() => setVurgulu((v) => (v === yeniId ? null : v)), 2000);
+    }
+  };
+
+  /**
+   * Favoriyi listeden tek dokunuşla değiştirir. Ekran beklemesin diye önce
+   * yerel liste güncelleniyor; sunucu hata verirse eski hâline dönüyor.
+   */
+  const favoriDegistir = async (u: MenuUrun) => {
+    if (!u.id) return;
+    const yeni = !u.favori;
+    setUrunler((liste) => liste.map((x) => (x.id === u.id ? { ...x, favori: yeni } : x)));
+    try {
+      await urunFavoriDegistir(u.id, yeni);
+    } catch {
+      setUrunler((liste) => liste.map((x) => (x.id === u.id ? { ...x, favori: !yeni } : x)));
+      setBildirim(`${u.ad} favoriye alınamadı`);
     }
   };
 
@@ -1023,6 +1135,9 @@ export default function MenuStudyosu() {
                 </button>
               </div>
 
+              {/* Yalnız liste kayıyor: ekle ve sırala düğmeleri panelin başında
+                  sabit kalıyor, uzun kategori listesinde aşağı kaçmıyorlar. */}
+              <div className="ms-kat-liste">
               {anaKategoriler.map((k) => {
                 const altlar = altKategoriler(kategoriler, k.id);
                 return (
@@ -1036,6 +1151,9 @@ export default function MenuStudyosu() {
                       {k.ad}
                       {!k.satistaGorunur && <em className="gizli-im" title="Satışta gizli">gizli</em>}
                     </span>
+                    {/* Kategorinin ürün sayısı: hangi kategorinin dolu olduğu
+                        listeye girmeden görünüyor. */}
+                    <span className="ms-sayi">{sayac(k.id)}</span>
                     <button
                       className="ms-islem"
                       title="Düzenle"
@@ -1077,6 +1195,7 @@ export default function MenuStudyosu() {
                           {a.ad}
                           {!a.satistaGorunur && <em className="gizli-im" title="Satışta gizli">gizli</em>}
                         </span>
+                        <span className="ms-sayi">{sayac(a.id)}</span>
                         <button
                           className="ms-islem"
                           title="Düzenle"
@@ -1098,6 +1217,7 @@ export default function MenuStudyosu() {
               })}
 
               {kategoriler.length === 0 && <p className="bos">Henüz kategori yok</p>}
+              </div>
             </div>
 
             <div className="ms-urunler">
@@ -1162,40 +1282,55 @@ export default function MenuStudyosu() {
                     </div>
                   </div>
 
-                  <div className="menu-urunler">
+                  {/* Ürünler kart ızgarasında: kategorinin rengi kartın üst
+                      kenarında ince şerit, eylemler kartın kendi başlığında ve
+                      her zaman görünür — dokunmatik kasada hover yok. */}
+                  <div className="mu-izgara">
                     {listelenenUrunler.map((u) => (
                       <div
                         key={u.id}
-                        className={u.id === vurgulu ? "menu-urun tiklanir yeni" : "menu-urun tiklanir"}
-                        style={u.renk ? { borderLeft: `4px solid ${u.renk}` } : undefined}
+                        className={u.id === vurgulu ? "mu-kart yeni" : "mu-kart"}
+                        style={u.renk ? ({ "--urun-renk": u.renk } as CSSProperties) : undefined}
                         onClick={() => setPanel(u)}
                       >
-                        <div className="urun-bilgi">
-                          <span>
-                            {u.favori && <em className="favori-im">★</em>}
-                            {u.ad}
-                          </span>
-                          <small>
-                            {[
-                              !u.kategoriIdler.length && "kategorisiz",
-                              !u.satistaGorunur && "satışta gizli",
-                              u.menuGruplari.length > 0 && "menü",
-                              u.porsiyonlar.length > 1 && `${u.porsiyonlar.length} porsiyon`,
-                              urunGrupIdleri(u).length > 0 && `${urunGrupIdleri(u).length} seçenek`,
-                              u.kategoriIdler.length > 1 && `${u.kategoriIdler.length} kategori`,
-                            ].filter(Boolean).join(" · ")}
-                          </small>
+                        <span className="mu-serit" />
+
+                        <div className="mu-eylem">
+                          <button
+                            className={u.favori ? "mu-tus favori dolu" : "mu-tus favori"}
+                            title={u.favori ? "Favoriden çıkar" : "Favoriye al"}
+                            onClick={(e) => { e.stopPropagation(); favoriDegistir(u); }}
+                          >
+                            <Star size={16} fill={u.favori ? "currentColor" : "none"} />
+                          </button>
+                          <button
+                            className="mu-tus"
+                            title="Kopyala"
+                            onClick={(e) => { e.stopPropagation(); urunuKopyala(u); }}
+                          >
+                            <Copy size={16} />
+                          </button>
+                          <button
+                            className="mu-tus sil"
+                            title="Sil"
+                            onClick={(e) => { e.stopPropagation(); urunuSil(u); }}
+                          >
+                            <Trash2 size={16} />
+                          </button>
                         </div>
-                        <strong>₺{anaFiyat(u)}</strong>
-                        <button
-                          className="menu-urun-kopya"
-                          onClick={(e) => { e.stopPropagation(); urunuKopyala(u); }}
-                        >
-                          <Copy size={14} /><span>Kopyala</span>
-                        </button>
-                        <button className="menu-urun-sil" onClick={(e) => { e.stopPropagation(); urunuSil(u); }}>
-                          <Trash2 size={14} /><span>Sil</span>
-                        </button>
+
+                        <div className="mu-govde">
+                          <span className="mu-ad">{u.ad}</span>
+                          {/* Yalnız olağandışı durumlar rozet alıyor: her kartta
+                              duran bir bilgi listesi ızgarayı kalabalıklaştırıyor. */}
+                          <span className="mu-rozetler">
+                            {u.tukendi && <span className="mu-rozet bitti">tükendi</span>}
+                            {!u.satistaGorunur && <span className="mu-rozet">satışta gizli</span>}
+                            {!u.mutfaktaGorunur && <span className="mu-rozet">mutfakta gizli</span>}
+                          </span>
+                        </div>
+
+                        <span className="mu-fiyat">₺{anaFiyat(u)}</span>
                       </div>
                     ))}
                   </div>

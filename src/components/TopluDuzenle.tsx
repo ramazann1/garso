@@ -56,11 +56,14 @@ const taslakYap = (urunler: MenuUrun[]): UrunTaslak[] =>
       porsiyonlar: u.porsiyonlar.map((p) => ({
         id: p.id,
         birimId: p.birimId,
-        fiyat: paraMetin(p.fiyat),
+        // Tek fiyat masada satılan fiyattır; eskiden ayrı yazılmış masa
+        // fiyatı varsa tek fiyat sayılıyor, gel al ile paket boşsa eski tek
+        // fiyatla dolduruluyor — hiçbir türün satış fiyatı değişmiyor.
+        fiyat: paraMetin(p.masaFiyat ?? p.fiyat),
         maliyet: paraMetin(p.maliyet),
-        masaFiyat: paraMetin(p.masaFiyat),
-        gelalFiyat: paraMetin(p.gelalFiyat),
-        paketFiyat: paraMetin(p.paketFiyat),
+        masaFiyat: "",
+        gelalFiyat: paraMetin(p.gelalFiyat ?? (p.masaFiyat != null ? p.fiyat : undefined)),
+        paketFiyat: paraMetin(p.paketFiyat ?? (p.masaFiyat != null ? p.fiyat : undefined)),
       })),
     }));
 
@@ -72,7 +75,7 @@ const taslakYap = (urunler: MenuUrun[]): UrunTaslak[] =>
  */
 const turAyrisiyor = (p: PorsiyonTaslak) => {
   const tek = paraSayi(p.fiyat) ?? 0;
-  return [p.masaFiyat, p.gelalFiyat, p.paketFiyat].some((v) => {
+  return [p.gelalFiyat, p.paketFiyat].some((v) => {
     const sayi = paraSayi(v);
     return sayi !== undefined && sayi !== null && sayi !== tek;
   });
@@ -90,7 +93,6 @@ const porsiyonFarki = (p: PorsiyonTaslak, a: MenuPorsiyon) =>
   p.birimId !== a.birimId ||
   (paraSayi(p.fiyat) ?? 0) !== a.fiyat ||
   paraSayi(p.maliyet) !== a.maliyet ||
-  paraSayi(p.masaFiyat) !== a.masaFiyat ||
   paraSayi(p.gelalFiyat) !== a.gelalFiyat ||
   paraSayi(p.paketFiyat) !== a.paketFiyat;
 
@@ -196,7 +198,8 @@ export default function TopluDuzenle({
           birimId: p.birimId,
           fiyat: paraSayi(p.fiyat) ?? 0,
           maliyet: paraSayi(p.maliyet),
-          masaFiyat: paraSayi(p.masaFiyat),
+          // Masa fiyatı ayrı tutulmuyor.
+          masaFiyat: undefined,
           gelalFiyat: paraSayi(p.gelalFiyat),
           paketFiyat: paraSayi(p.paketFiyat),
         });
@@ -291,7 +294,7 @@ export default function TopluDuzenle({
         yeni.delete(anah);
         // Tek fiyata dönen porsiyonda türe özel tutarlar kalmamalı, yoksa
         // görünmeyen bir fiyat satışa girer.
-        porsiyonDegis(id, sira, { masaFiyat: "", gelalFiyat: "", paketFiyat: "" });
+        porsiyonDegis(id, sira, { gelalFiyat: "", paketFiyat: "" });
       } else yeni.add(anah);
       return yeni;
     });
@@ -373,18 +376,15 @@ export default function TopluDuzenle({
           <div className="toplu-tur">
             <span className="toplu-tur-ad">
               <SplitSquareHorizontal size={14} />
-              Sipariş türüne göre fiyat
+              Gel Al ve Paket fiyatı
             </span>
-            {turKutusu("Masa", p.masaFiyat, fark("masaFiyat", p.masaFiyat), tekFiyat, (v) =>
-              porsiyonDegis(t.id, sira, { masaFiyat: v })
-            )}
             {turKutusu("Gel Al", p.gelalFiyat, fark("gelalFiyat", p.gelalFiyat), tekFiyat, (v) =>
               porsiyonDegis(t.id, sira, { gelalFiyat: v })
             )}
             {turKutusu("Paket", p.paketFiyat, fark("paketFiyat", p.paketFiyat), tekFiyat, (v) =>
               porsiyonDegis(t.id, sira, { paketFiyat: v })
             )}
-            <span className="toplu-tur-not">Boş bırakılan tür {tekFiyat} ₺ ile satılır.</span>
+            <span className="toplu-tur-not">Boş bırakılan tür masa fiyatıyla ({tekFiyat} ₺) satılır.</span>
           </div>
         </td>
       </tr>
@@ -530,7 +530,7 @@ export default function TopluDuzenle({
                 <th className="s-kdv">{basligi(<Percent size={15} />, "KDV")}</th>
               )}
               <th className="s-porsiyon">{basligi(<Scale size={15} />, "Porsiyon")}</th>
-              <th className="s-para sag">{basligi(<Tag size={15} />, "Fiyat")}</th>
+              <th className="s-para sag">{basligi(<Tag size={15} />, "Fiyat (masa)")}</th>
               <th className="s-para sag">{basligi(<Wallet size={15} />, "Maliyet")}</th>
               <th className="s-imler">{basligi(<Eye size={15} />, "Görünürlük")}</th>
             </tr>

@@ -391,7 +391,6 @@ export default function MobilMasalar() {
               odendi ? "odendi" : odenen > 0 ? "kismi" : "",
               mesgul ? "mesgul" : "",
               secimModu ? (secilebilir(m) ? "secilebilir" : "kapali") : "",
-              secimModu?.kaynak.id === m.id ? "kaynak" : "",
             ]
               .filter(Boolean)
               .join(" ");
@@ -432,8 +431,9 @@ export default function MobilMasalar() {
                     </span>
                   )}
                   {/* Seçilemeyen masa silikleşmiyor; nedenini köşedeki kilit
-                      söylüyor — masaüstündeki kuralın aynısı. */}
-                  {secimModu && !secilebilir(m) && m.id !== secimModu.kaynak.id && (
+                      söylüyor — masaüstündeki kuralın aynısı. İşlemin kaynağı
+                      olan masa da kilitli: kendi kendine taşınamaz. */}
+                  {secimModu && !secilebilir(m) && (
                     <span className="m-masa-secilemez">
                       <LockKeyhole size={14} />
                     </span>

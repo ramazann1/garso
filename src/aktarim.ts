@@ -13,8 +13,8 @@ export const BASLIKLAR = [
   "Barkod",
   "Birim",
   "KDV Oranı",
+  // "Fiyat" masada satılan fiyattır; ayrı bir masa sütunu yok.
   "Fiyat",
-  "Masa Fiyatı",
   "Gel-Al Fiyatı",
   "Paket Fiyatı",
   "Maliyet",
@@ -89,8 +89,7 @@ export function tabloUret(urunler: MenuUrun[], kategoriler: MenuKategori[], kdvl
       yazi(p.barkod),
       yazi(p.ad),
       rakam(urunKdv(u, kdvler)?.oran),
-      rakam(p.fiyat),
-      rakam(p.masaFiyat),
+      rakam(p.masaFiyat ?? p.fiyat),
       rakam(p.gelalFiyat),
       rakam(p.paketFiyat),
       rakam(p.maliyet),
@@ -164,7 +163,6 @@ type CozulmusSatir = {
   birimAd: string;
   kdvId?: number;
   fiyat: number;
-  masaFiyat?: number;
   gelalFiyat?: number;
   paketFiyat?: number;
   maliyet?: number;
@@ -249,7 +247,6 @@ function urunFarklari(
       fark(`${ad} fiyatı`, paraGoster(eski.fiyat), paraGoster(p.fiyat)),
       fark(`${ad} maliyeti`, paraGoster(eski.maliyet ?? 0), paraGoster(p.maliyet ?? 0)),
       fark(`${ad} barkodu`, eski.barkod || "yok", p.barkod || "yok"),
-      fark(`${ad} masa fiyatı`, paraGoster(eski.masaFiyat ?? 0), paraGoster(p.masaFiyat ?? 0)),
       fark(`${ad} gel al fiyatı`, paraGoster(eski.gelalFiyat ?? 0), paraGoster(p.gelalFiyat ?? 0)),
       fark(`${ad} paket fiyatı`, paraGoster(eski.paketFiyat ?? 0), paraGoster(p.paketFiyat ?? 0))
     );
@@ -327,11 +324,10 @@ export function planHazirla(satirlar: AktarimSatiri[], kaynak: Kaynak): AktarimP
       return v;
     };
 
-    const masaFiyat = sayisal("Masa Fiyatı");
     const gelalFiyat = sayisal("Gel-Al Fiyatı");
     const paketFiyat = sayisal("Paket Fiyatı");
     const maliyet = sayisal("Maliyet");
-    if (masaFiyat === null || gelalFiyat === null || paketFiyat === null || maliyet === null) return;
+    if (gelalFiyat === null || paketFiyat === null || maliyet === null) return;
 
     cozulenler.push({
       satirNo,
@@ -345,7 +341,6 @@ export function planHazirla(satirlar: AktarimSatiri[], kaynak: Kaynak): AktarimP
       birimAd: birim?.ad ?? "",
       kdvId,
       fiyat,
-      masaFiyat,
       gelalFiyat,
       paketFiyat,
       maliyet,
@@ -427,7 +422,6 @@ export function planHazirla(satirlar: AktarimSatiri[], kaynak: Kaynak): AktarimP
         kontrol(`fiyat${not}`, (s) => s.fiyat, ayniBirim);
         kontrol(`maliyet${not}`, (s) => s.maliyet, ayniBirim);
         kontrol(`barkod${not}`, (s) => s.barkod, ayniBirim);
-        kontrol(`masa fiyatı${not}`, (s) => s.masaFiyat, ayniBirim);
         kontrol(`gel-al fiyatı${not}`, (s) => s.gelalFiyat, ayniBirim);
         kontrol(`paket fiyatı${not}`, (s) => s.paketFiyat, ayniBirim);
       }
@@ -456,7 +450,8 @@ export function planHazirla(satirlar: AktarimSatiri[], kaynak: Kaynak): AktarimP
         fiyat: s.fiyat,
         maliyet: s.maliyet,
         barkod: s.barkod || undefined,
-        masaFiyat: s.masaFiyat,
+        // Masa fiyatı ayrı tutulmuyor; dosyadaki "Fiyat" masada geçerli olan.
+        masaFiyat: undefined,
         gelalFiyat: s.gelalFiyat,
         paketFiyat: s.paketFiyat,
       };

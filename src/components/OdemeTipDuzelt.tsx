@@ -53,15 +53,15 @@ export default function OdemeTipDuzelt({
           ödeme tipine geçecek. Tutar değişmiyor, hesabın toplamı aynı kalıyor.
         </p>
 
+        {/* Seçim kartın kendisinde duruyor; altta beliren "yeni tip şu" cümlesi
+            hem tekrardı hem de yoktan var olup pencereyi aşağı itiyordu. */}
         <div className="duzelt-tipler">
-          <OdemeTipDugmeleri tipler={tipler.filter((t) => t.ad !== tip)} onSec={setYeniTip} />
+          <OdemeTipDugmeleri
+            tipler={tipler.filter((t) => t.ad !== tip)}
+            secili={yeniTip}
+            onSec={setYeniTip}
+          />
         </div>
-
-        {yeniTip && (
-          <p className="duzelt-secim">
-            Yeni ödeme tipi: <strong>{yeniTip}</strong>
-          </p>
-        )}
 
         <div className="onay-sebepler">
           {SEBEPLER.map((s) => (

@@ -426,58 +426,78 @@ export async function urunKaydet(u: MenuUrun) {
   // Ürün yeniden açıldıysa eski porsiyon numaraları da yok; hepsi yeni yazılır.
   if (yenidenAcildi) u = { ...u, porsiyonlar: u.porsiyonlar.map(({ id: _, ...p }) => p) };
 
-  // Porsiyonlar silinip yeniden yazılmaz, id'leriyle güncellenir — seçenek grupları
-  // porsiyon id'sine bağlı, silinen porsiyonla birlikte bağlantıları da giderdi.
-  const { data: eskiPorsiyonlar } = await supabase
-    .from("porsiyonlar")
-    .select("id")
-    .eq("urun_id", id);
-  const kalanlar = u.porsiyonlar.map((p) => p.id).filter(Boolean);
-  const silinecek = (eskiPorsiyonlar ?? [])
-    .map((p: any) => p.id as number)
-    .filter((pid) => !kalanlar.includes(pid));
-  if (silinecek.length) {
-    await supabase.from("porsiyonlar").delete().in("id", silinecek);
-  }
+  // Dört öbek birbirinden bağımsız (porsiyon, kategori bağı, menü grubu,
+  // medya) ve ayrı tabloları yazıyor; sırayla beklenince tek ürünü kaydetmek
+  // on ayrı gidiş-geliş sürüyordu. Birlikte gönderiliyorlar.
+  const urunId = id;
 
-  for (const [i, p] of u.porsiyonlar.entries()) {
-    let porsiyonId = p.id;
-    if (porsiyonId) {
-      await supabase.from("porsiyonlar").update(porsiyonSatiri(id, p, i + 1)).eq("id", porsiyonId);
-    } else {
-      const { data } = await supabase
-        .from("porsiyonlar")
-        .insert(porsiyonSatiri(id, p, i + 1))
-        .select("id")
-        .single();
-      porsiyonId = data?.id;
+  const porsiyonlariYaz = async () => {
+    // Porsiyonlar silinip yeniden yazılmaz, id'leriyle güncellenir — seçenek
+    // grupları porsiyon id'sine bağlı, silinen porsiyonla bağlantıları giderdi.
+    const { data: eskiPorsiyonlar } = await supabase
+      .from("porsiyonlar")
+      .select("id")
+      .eq("urun_id", urunId);
+    const kalanlar = u.porsiyonlar.map((p) => p.id).filter(Boolean);
+    const silinecek = (eskiPorsiyonlar ?? [])
+      .map((p: any) => p.id as number)
+      .filter((pid) => !kalanlar.includes(pid));
+    if (silinecek.length) {
+      await supabase.from("porsiyonlar").delete().in("id", silinecek);
     }
-    if (porsiyonId) await porsiyonGruplariYaz(porsiyonId, p.grupIdler);
-  }
 
-  // Kategori bağlantıları silinip yeniden yazılıyor; ürünün eski sırası korunur,
-  // yeni eklenen kategoride sona konur.
-  const { data: eskiBaglar } = await supabase
-    .from("urun_kategorileri")
-    .select("kategori_id, sira")
-    .eq("urun_id", id);
-  const eskiSira = new Map<number, number>(
-    (eskiBaglar ?? []).map((x: any) => [x.kategori_id, x.sira])
-  );
+    await Promise.all(
+      u.porsiyonlar.map(async (p, i) => {
+        let porsiyonId = p.id;
+        if (porsiyonId) {
+          await supabase
+            .from("porsiyonlar")
+            .update(porsiyonSatiri(urunId, p, i + 1))
+            .eq("id", porsiyonId);
+        } else {
+          const { data } = await supabase
+            .from("porsiyonlar")
+            .insert(porsiyonSatiri(urunId, p, i + 1))
+            .select("id")
+            .single();
+          porsiyonId = data?.id;
+        }
+        if (porsiyonId) await porsiyonGruplariYaz(porsiyonId, p.grupIdler);
+      })
+    );
+  };
 
-  const baglar = [];
-  for (const k of u.kategoriIdler) {
-    const sira = eskiSira.get(k) ?? (await kategoriSonSira(k)) + 1;
-    baglar.push({ urun_id: id, kategori_id: k, sira });
-  }
+  const kategorileriYaz = async () => {
+    // Kategori bağlantıları silinip yeniden yazılıyor; ürünün eski sırası
+    // korunur, yeni eklenen kategoride sona konur.
+    const { data: eskiBaglar } = await supabase
+      .from("urun_kategorileri")
+      .select("kategori_id, sira")
+      .eq("urun_id", urunId);
+    const eskiSira = new Map<number, number>(
+      (eskiBaglar ?? []).map((x: any) => [x.kategori_id, x.sira])
+    );
 
-  await supabase.from("urun_kategorileri").delete().eq("urun_id", id);
-  if (baglar.length) {
-    await supabase.from("urun_kategorileri").insert(baglar);
-  }
+    const baglar = await Promise.all(
+      u.kategoriIdler.map(async (k) => ({
+        urun_id: urunId,
+        kategori_id: k,
+        sira: eskiSira.get(k) ?? (await kategoriSonSira(k)) + 1,
+      }))
+    );
 
-  await menuGruplariYaz(id, u.menuGruplari);
-  await urunMedyasiYaz(id, u.medya);
+    await supabase.from("urun_kategorileri").delete().eq("urun_id", urunId);
+    if (baglar.length) {
+      await supabase.from("urun_kategorileri").insert(baglar);
+    }
+  };
+
+  await Promise.all([
+    porsiyonlariYaz(),
+    kategorileriYaz(),
+    menuGruplariYaz(urunId, u.menuGruplari),
+    urunMedyasiYaz(urunId, u.medya),
+  ]);
 }
 
 // Medya satırları silinip yeniden yazılıyor: sıralarını da kullanıcı
@@ -576,6 +596,16 @@ export async function urunKopyala(kaynak: MenuUrun, hepsi: MenuUrun[]) {
 
 export async function urunSil(id: number) {
   await supabase.from("urunler").delete().eq("id", id);
+}
+
+/**
+ * Favori işaretini tek alan olarak yazar. Ürünün tamamı kaydedilmiyor:
+ * `urunKaydet` porsiyon ve kategori bağlarını da baştan kuruyor, listeden tek
+ * tuşla favori değiştirmek için ağır bir iş.
+ */
+export async function urunFavoriDegistir(id: number, favori: boolean) {
+  const { error } = await supabase.from("urunler").update({ favori }).eq("id", id);
+  if (error) throw error;
 }
 
 async function kategoriSonSira(kategoriId: number) {

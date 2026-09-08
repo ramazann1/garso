@@ -6,7 +6,6 @@ import {
   ArrowRightLeft,
   Ban,
   ChevronDown,
-  ChevronRight,
   ChevronUp,
   CircleCheck,
   CloudOff,
@@ -29,12 +28,13 @@ import TahsilatPanel from "../components/TahsilatPanel";
 import KalemPaneli from "../components/KalemPaneli";
 import AdisyonBilgi from "../components/AdisyonBilgi";
 import MisafirSayisi from "../components/MisafirSayisi";
+import MasaSecim from "../components/MasaSecim";
 import { kalemiUygula } from "./KalemIslemleri";
 import OnayModal from "../components/OnayModal";
 import AltSayfa from "./AltSayfa";
 import { MENU_ANAHTAR, agacUrunleri, menuGetir, porsiyonFiyat, urunKdv } from "../menu";
 import { useTanimEtkisi } from "../tanimAbonelik";
-import { bolgeleriGetir, masaGetir } from "../masalar";
+import { bolgeleriGetir, hedefOnayMesaji, masaGetir } from "../masalar";
 import {
   CEVRIMDISI_ADISYON,
   adisyonGetir,
@@ -64,6 +64,7 @@ import { yetkiVar } from "../oturum";
 import { adetGoster, paraGoster } from "../para";
 import type {
   Bolge,
+  Masa,
   MenuKategori,
   MenuKdv,
   MenuSecenekGrubu,
@@ -142,6 +143,9 @@ export default function MobilSiparis() {
   const [islemlerAcik, setIslemlerAcik] = useState(false);
   const [kalemIslem, setKalemIslem] = useState<SepetKalemi | null>(null);
   const [hedefSecim, setHedefSecim] = useState<"tasi" | "birlestir" | null>(null);
+  const [hedefBolgeler, setHedefBolgeler] = useState<Bolge[]>([]);
+  const [hedefDolular, setHedefDolular] = useState<Set<number>>(new Set());
+  const [hedefOnay, setHedefOnay] = useState<{ tip: "tasi" | "birlestir"; masa: Masa } | null>(null);
   const [iptalSorusu, setIptalSorusu] = useState(false);
   const [kisiSorusu, setKisiSorusu] = useState(false);
   const [uyari, setUyari] = useState<string | null>(null);
@@ -433,9 +437,24 @@ export default function MobilSiparis() {
     setHedefSecim(tip);
   };
 
-  const hedefeUygula = async (hedefMasaId: number) => {
-    const tip = hedefSecim;
-    setHedefSecim(null);
+  // Hedef penceresi açılırken masa planı ve doluluk okunuyor. Doluluk
+  // önbellekten gelmiyor: bayat liste dolu masayı boş gösterirse adisyon
+  // yanlış yere taşınır.
+  useEffect(() => {
+    if (!hedefSecim) return;
+    let gecerli = true;
+    Promise.all([bolgeleriGetir(), tumAdisyonlar()]).then(([b, a]) => {
+      if (!gecerli) return;
+      setHedefBolgeler(b);
+      setHedefDolular(new Set(Object.keys(a).map(Number)));
+    });
+    return () => {
+      gecerli = false;
+    };
+  }, [hedefSecim]);
+
+  const hedefeUygula = async (tip: "tasi" | "birlestir", hedefMasaId: number) => {
+    setHedefOnay(null);
     try {
       if (tip === "tasi") await masaTasi(masaId, hedefMasaId);
       else await masaBirlestir(masaId, hedefMasaId);
@@ -1049,11 +1068,33 @@ export default function MobilSiparis() {
       )}
 
       {hedefSecim && (
-        <MasaHedefi
-          tip={hedefSecim}
-          masaId={masaId}
+        <MasaSecim
+          baslik={hedefSecim === "tasi" ? "Masayı taşı" : "Masaları birleştir"}
+          aciklama={
+            hedefSecim === "tasi"
+              ? `${masaAdi} masasındaki adisyonun tamamı seçtiğiniz boş masaya geçer.`
+              : `${masaAdi} masasındaki adisyon seçtiğiniz masanın adisyonuna eklenir, iki hesap tek adisyonda toplanır.`
+          }
+          bolgeler={hedefBolgeler}
+          doluIdler={hedefDolular}
+          secilebilirlik={hedefSecim === "tasi" ? "bos" : "dolu"}
+          haricId={masaId}
+          onSec={(m) => {
+            setHedefOnay({ tip: hedefSecim, masa: m });
+            setHedefSecim(null);
+          }}
           onKapat={() => setHedefSecim(null)}
-          onSec={hedefeUygula}
+        />
+      )}
+
+      {hedefOnay && (
+        <OnayModal
+          baslik={hedefOnay.tip === "tasi" ? "Masayı taşı" : "Masaları birleştir"}
+          ikon={hedefOnay.tip === "tasi" ? <ArrowRightLeft size={20} /> : <Merge size={20} />}
+          mesaj={hedefOnayMesaji(hedefOnay.tip, masaAdi, hedefOnay.masa.ad)}
+          onayMetni={hedefOnay.tip === "tasi" ? "Evet, taşı" : "Evet, birleştir"}
+          onOnay={() => hedefeUygula(hedefOnay.tip, hedefOnay.masa.id)}
+          onKapat={() => setHedefOnay(null)}
         />
       )}
 
@@ -1195,74 +1236,6 @@ export default function MobilSiparis() {
       )}
 
       {uyari && <OnayModal tekTus mesaj={uyari} onKapat={() => setUyari(null)} />}
-    </div>
-  );
-}
-
-/**
- * Taşıma ve birleştirme için hedef masa seçimi. Taşımada boş, birleştirmede
- * dolu masalar listeleniyor — yanlış hedefi baştan eliyor.
- */
-function MasaHedefi({
-  tip,
-  masaId,
-  onKapat,
-  onSec,
-}: {
-  tip: "tasi" | "birlestir";
-  masaId: number;
-  onKapat: () => void;
-  onSec: (hedefMasaId: number) => void;
-}) {
-  const [bolgeler, setBolgeler] = useState<Bolge[]>([]);
-  const [dolular, setDolular] = useState<Set<number>>(new Set());
-  const [yukleniyor, setYukleniyor] = useState(true);
-
-  useEffect(() => {
-    Promise.all([bolgeleriGetir(), tumAdisyonlar()]).then(([b, a]) => {
-      setBolgeler(b);
-      setDolular(new Set(Object.keys(a).map(Number)));
-      setYukleniyor(false);
-    });
-  }, []);
-
-  const secilebilirler = bolgeler.flatMap((b) =>
-    b.masalar
-      .filter((m) => m.aktif && m.id !== masaId && (tip === "tasi" ? !dolular.has(m.id) : dolular.has(m.id)))
-      .map((m) => ({ masa: m, bolge: b.ad }))
-  );
-
-  return (
-    <div className="m-perde" onClick={onKapat}>
-      <div className="m-sayfa" onClick={(e) => e.stopPropagation()}>
-        <header className="m-sayfa-ust">
-          <h2>{tip === "tasi" ? "Hangi masaya taşınsın?" : "Hangi masayla birleşsin?"}</h2>
-          <button className="m-ikon-dugme" onClick={onKapat} aria-label="Kapat">
-            <X size={20} />
-          </button>
-        </header>
-        <div className="m-sayfa-icerik">
-          {yukleniyor ? (
-            <div className="yukleniyor"><div className="cember" /></div>
-          ) : secilebilirler.length === 0 ? (
-            <div className="m-bos">
-              <p>{tip === "tasi" ? "Boş masa yok." : "Birleştirilecek dolu masa yok."}</p>
-            </div>
-          ) : (
-            <div className="m-liste">
-              {secilebilirler.map(({ masa, bolge }) => (
-                <button key={masa.id} className="m-satir" onClick={() => onSec(masa.id)}>
-                  <span>
-                    {masa.ad}
-                    <small>{bolge}</small>
-                  </span>
-                  <ChevronRight size={18} className="m-satir-ok" />
-                </button>
-              ))}
-            </div>
-          )}
-        </div>
-      </div>
     </div>
   );
 }

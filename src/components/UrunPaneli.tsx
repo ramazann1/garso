@@ -43,19 +43,29 @@ type PorsiyonTaslak = {
   grupIdler: number[];
 };
 
-const taslakYap = (p: MenuPorsiyon): PorsiyonTaslak => ({
-  id: p.id,
-  birimId: p.birimId,
-  ad: p.ad,
-  fiyat: paraMetin(p.fiyat),
-  maliyet: paraMetin(p.maliyet),
-  barkod: p.barkod ?? "",
-  masaFiyat: paraMetin(p.masaFiyat),
-  gelalFiyat: paraMetin(p.gelalFiyat),
-  paketFiyat: paraMetin(p.paketFiyat),
-  varsayilan: p.varsayilan,
-  grupIdler: p.grupIdler,
-});
+/**
+ * "Fiyat" masada satılan fiyattır; ayrı bir masa kutusu yoktur. Eskiden
+ * yazılmış bir masa fiyatı varsa tek fiyat sayılıyor, gel al ile paket boşsa
+ * eski tek fiyatla dolduruluyor — böylece hiçbir türün satış fiyatı değişmiyor.
+ */
+const taslakYap = (p: MenuPorsiyon): PorsiyonTaslak => {
+  const eski = paraMetin(p.fiyat);
+  const masa = paraMetin(p.masaFiyat);
+  const ayrildi = Boolean(masa && masa !== eski);
+  return {
+    id: p.id,
+    birimId: p.birimId,
+    ad: p.ad,
+    fiyat: masa || eski,
+    maliyet: paraMetin(p.maliyet),
+    barkod: p.barkod ?? "",
+    masaFiyat: "",
+    gelalFiyat: paraMetin(p.gelalFiyat) || (ayrildi ? eski : ""),
+    paketFiyat: paraMetin(p.paketFiyat) || (ayrildi ? eski : ""),
+    varsayilan: p.varsayilan,
+    grupIdler: p.grupIdler,
+  };
+};
 
 const porsiyonYap = (t: PorsiyonTaslak): MenuPorsiyon => ({
   id: t.id,
@@ -64,17 +74,19 @@ const porsiyonYap = (t: PorsiyonTaslak): MenuPorsiyon => ({
   fiyat: paraSayi(t.fiyat) ?? 0,
   maliyet: paraSayi(t.maliyet),
   barkod: t.barkod.trim() || undefined,
-  masaFiyat: paraSayi(t.masaFiyat),
+  // Masa fiyatı ayrı tutulmuyor: tek fiyatın kendisi masa fiyatı.
+  masaFiyat: undefined,
   gelalFiyat: paraSayi(t.gelalFiyat),
   paketFiyat: paraSayi(t.paketFiyat),
   varsayilan: t.varsayilan,
   grupIdler: t.grupIdler,
 });
 
-// Sipariş türü fiyatı, açılışta yalnız gerçekten doldurulmuş porsiyonlarda açık
-// gelir; boş bir üründe üç kutu daha göstermenin anlamı yok.
-const turDolu = (t: PorsiyonTaslak) =>
-  Boolean(t.masaFiyat || t.gelalFiyat || t.paketFiyat);
+// Tür fiyatı tek fiyattan gerçekten ayrışıyor mu. Menülerde üç tür çoğu zaman
+// tek fiyatla birebir aynı yazılıyor (50/50/50); "dolu mu" diye bakılsaydı
+// panel hemen her üründe açık gelirdi.
+const turAyrisik = (t: PorsiyonTaslak) =>
+  [t.gelalFiyat, t.paketFiyat].some((f) => f && f !== t.fiyat);
 
 export default function UrunPaneli({
   urun,
@@ -140,9 +152,10 @@ export default function UrunPaneli({
   // Porsiyonlar sekme: aynı anda tek porsiyon açık, alanları da katlanmadan
   // duruyor. Eski panelde üç kat iç içe açılır kapanır vardı.
   const [secili, setSecili] = useState(0);
-  const [turAcik, setTurAcik] = useState<number[]>(() =>
-    porsiyonlar.map((p, i) => (turDolu(p) ? i : -1)).filter((i) => i >= 0)
-  );
+  // Anahtar kapalı açılıyor. Kayıtlı ama gizli kalan farklı bir tür fiyatı
+  // varsa anahtarın altındaki şerit onu yazıyor — görünmeyen fiyat, tek
+  // fiyata yapılan zammın sessizce boşa gitmesi demek.
+  const [turAcik, setTurAcik] = useState<number[]>([]);
   // Seçenek grubu bağlama kendi penceresinde: liste uzayınca ürün penceresi
   // aşağı doğru büyüyordu.
   const [grupPencere, setGrupPencere] = useState<number | null>(null);
@@ -199,8 +212,28 @@ export default function UrunPaneli({
     setSecili((s) => (s > i ? s - 1 : Math.min(s, porsiyonlar.length - 2)));
   };
 
-  const turKatla = (i: number) =>
-    setTurAcik((l) => (l.includes(i) ? l.filter((x) => x !== i) : [...l, i]));
+  /**
+   * Tür fiyatı anahtarı. Masa fiyatı yukarıdaki tek fiyattır; burada yalnız
+   * gel al ve paket ayrışır. Açılınca ikisi de tek fiyatla doldurulur,
+   * kapanınca temizlenir — boş kutu bırakmak "tek fiyat geçerli" demekti ve
+   * ekranda okunmuyordu.
+   */
+  const turKatla = (i: number) => {
+    if (turAcik.includes(i)) {
+      porsiyonDegis(i, { gelalFiyat: "", paketFiyat: "" });
+      setTurAcik((l) => l.filter((x) => x !== i));
+      return;
+    }
+    // Kayıtlı tür fiyatı varsa korunuyor; yalnız boş olanlar tek fiyatla
+    // dolduruluyor. Aksi hâlde anahtarı açmak mevcut fiyatı siliyordu.
+    const t = porsiyonlar[i];
+    const taban = t?.fiyat ?? "";
+    porsiyonDegis(i, {
+      gelalFiyat: t?.gelalFiyat || taban,
+      paketFiyat: t?.paketFiyat || taban,
+    });
+    setTurAcik((l) => [...l, i]);
+  };
 
   const secimDegis = (liste: number[], ayarla: (l: number[]) => void, deger: number) => {
     ayarla(liste.includes(deger) ? liste.filter((x) => x !== deger) : [...liste, deger]);
@@ -354,54 +387,6 @@ export default function UrunPaneli({
             </section>
 
             <section>
-              <div className="up-blok-basi">
-                Kategoriler
-                <em className="up-sayac">{kategoriIdler.length} seçili</em>
-              </div>
-              <div className="up-kategori-kutu">
-                {anaKategoriler.map((k) => {
-                  const altlar = altKategoriler(kategoriler, k.id);
-                  const seciliAlt = altlar.filter((a) => kategoriIdler.includes(a.id)).length;
-                  return (
-                    <div key={k.id}>
-                      <div className="up-agac-satir">
-                        <button
-                          className={kategoriIdler.includes(k.id) ? "up-agac-ad secili" : "up-agac-ad"}
-                          onClick={() => secimDegis(kategoriIdler, setKategoriIdler, k.id)}
-                        >
-                          <span className="renk-nokta" style={{ background: k.renk }} />
-                          {k.ad}
-                        </button>
-                        {altlar.length > 0 && (
-                          <button className="up-agac-ok" onClick={() => altKatla(k.id)} title="Alt kategoriler">
-                            {seciliAlt > 0 && <em className="up-agac-rozet">{seciliAlt}</em>}
-                            <ChevronDown
-                              size={17}
-                              className={altAcik.includes(k.id) ? "bolum-ok donuk" : "bolum-ok"}
-                            />
-                          </button>
-                        )}
-                      </div>
-                      {altAcik.includes(k.id) &&
-                        altlar.map((a) => (
-                          <button
-                            key={a.id}
-                            className={
-                              kategoriIdler.includes(a.id) ? "up-agac-ad alt secili" : "up-agac-ad alt"
-                            }
-                            onClick={() => secimDegis(kategoriIdler, setKategoriIdler, a.id)}
-                          >
-                            <span className="renk-nokta" style={{ background: a.renk }} />
-                            {a.ad}
-                          </button>
-                        ))}
-                    </div>
-                  );
-                })}
-              </div>
-            </section>
-
-            <section>
               <div className="up-blok-basi">Porsiyon ve fiyat</div>
 
               {!birimler.length && (
@@ -453,7 +438,7 @@ export default function UrunPaneli({
                       </select>
                     </div>
                     <div className="up-alan">
-                      <label htmlFor="up-fiyat">Fiyat</label>
+                      <label htmlFor="up-fiyat">Fiyat (masa)</label>
                       <div className="up-sonek">
                         <input
                           id="up-fiyat"
@@ -501,59 +486,55 @@ export default function UrunPaneli({
                     <small>Siparişte önce bu porsiyon gelir.</small>
                   </div>
 
-                  <div className="up-katlanir">
-                    <button className="up-katlanir-basi" onClick={() => turKatla(secili)}>
-                      {turAcik.includes(secili) ? <Minus size={15} /> : <Plus size={15} />}
-                      <span>Sipariş türüne göre farklı fiyat</span>
-                      <small>Masa · Gel Al · Paket</small>
-                    </button>
+                  {/* Tür fiyatları bir anahtarın arkasında ve açılınca üçü de
+                      tek fiyatla dolu geliyor. Eskiden dört kutu vardı ve boş
+                      bırakılan kutu "tek fiyat geçerli" anlamına geliyordu —
+                      boş kutunun dolu bir anlam taşıması okunmuyordu. */}
+                  <div className="up-turfiyat">
+                    <Anahtar
+                      etiket="Gel Al ve Paket fiyatı farklı olsun"
+                      ipucu="Yukarıdaki fiyat masada geçerli"
+                      acik={turAcik.includes(secili)}
+                      degistir={() => turKatla(secili)}
+                    />
+
+                    {!turAcik.includes(secili) && turAyrisik(p) && (
+                      <button className="up-tur-uyari" onClick={() => turKatla(secili)}>
+                        <Info size={15} />
+                        Bu porsiyonda kayıtlı tür fiyatı var:
+                        {p.gelalFiyat && p.gelalFiyat !== p.fiyat ? ` Gel Al ₺${p.gelalFiyat}` : ""}
+                        {p.paketFiyat && p.paketFiyat !== p.fiyat ? ` Paket ₺${p.paketFiyat}` : ""}
+                        . Görmek için aç.
+                      </button>
+                    )}
+
                     {turAcik.includes(secili) && (
-                      <>
-                        <Bilgi>
-                          Boş bıraktığın türde yukarıdaki tek fiyat geçerli olur.
-                        </Bilgi>
-                        <div className="up-izgara uc">
-                          <div className="up-alan">
-                            <label htmlFor="up-masa">Masa</label>
-                            <div className="up-sonek">
-                              <input
-                                id="up-masa"
-                                value={p.masaFiyat}
-                                onChange={(e) => porsiyonDegis(secili, { masaFiyat: paraYaz(e.target.value) })}
-                                placeholder={p.fiyat || "0,00"}
-                                inputMode="decimal"
-                              />
-                              <em>₺</em>
-                            </div>
-                          </div>
-                          <div className="up-alan">
-                            <label htmlFor="up-gelal">Gel Al</label>
-                            <div className="up-sonek">
-                              <input
-                                id="up-gelal"
-                                value={p.gelalFiyat}
-                                onChange={(e) => porsiyonDegis(secili, { gelalFiyat: paraYaz(e.target.value) })}
-                                placeholder={p.fiyat || "0,00"}
-                                inputMode="decimal"
-                              />
-                              <em>₺</em>
-                            </div>
-                          </div>
-                          <div className="up-alan">
-                            <label htmlFor="up-paket">Paket</label>
-                            <div className="up-sonek">
-                              <input
-                                id="up-paket"
-                                value={p.paketFiyat}
-                                onChange={(e) => porsiyonDegis(secili, { paketFiyat: paraYaz(e.target.value) })}
-                                placeholder={p.fiyat || "0,00"}
-                                inputMode="decimal"
-                              />
-                              <em>₺</em>
-                            </div>
+                      <div className="up-izgara">
+                        <div className="up-alan">
+                          <label htmlFor="up-gelal">Gel Al</label>
+                          <div className="up-sonek">
+                            <input
+                              id="up-gelal"
+                              value={p.gelalFiyat}
+                              onChange={(e) => porsiyonDegis(secili, { gelalFiyat: paraYaz(e.target.value) })}
+                              inputMode="decimal"
+                            />
+                            <em>₺</em>
                           </div>
                         </div>
-                      </>
+                        <div className="up-alan">
+                          <label htmlFor="up-paket">Paket</label>
+                          <div className="up-sonek">
+                            <input
+                              id="up-paket"
+                              value={p.paketFiyat}
+                              onChange={(e) => porsiyonDegis(secili, { paketFiyat: paraYaz(e.target.value) })}
+                              inputMode="decimal"
+                            />
+                            <em>₺</em>
+                          </div>
+                        </div>
+                      </div>
                     )}
                   </div>
 
@@ -584,6 +565,54 @@ export default function UrunPaneli({
                   </div>
                 </div>
               )}
+            </section>
+
+            <section>
+              <div className="up-blok-basi">
+                Kategoriler
+                <em className="up-sayac">{kategoriIdler.length} seçili</em>
+              </div>
+              <div className="up-kategori-kutu">
+                {anaKategoriler.map((k) => {
+                  const altlar = altKategoriler(kategoriler, k.id);
+                  const seciliAlt = altlar.filter((a) => kategoriIdler.includes(a.id)).length;
+                  return (
+                    <div key={k.id}>
+                      <div className="up-agac-satir">
+                        <button
+                          className={kategoriIdler.includes(k.id) ? "up-agac-ad secili" : "up-agac-ad"}
+                          onClick={() => secimDegis(kategoriIdler, setKategoriIdler, k.id)}
+                        >
+                          <span className="renk-nokta" style={{ background: k.renk }} />
+                          {k.ad}
+                        </button>
+                        {altlar.length > 0 && (
+                          <button className="up-agac-ok" onClick={() => altKatla(k.id)} title="Alt kategoriler">
+                            {seciliAlt > 0 && <em className="up-agac-rozet">{seciliAlt}</em>}
+                            <ChevronDown
+                              size={17}
+                              className={altAcik.includes(k.id) ? "bolum-ok donuk" : "bolum-ok"}
+                            />
+                          </button>
+                        )}
+                      </div>
+                      {altAcik.includes(k.id) &&
+                        altlar.map((a) => (
+                          <button
+                            key={a.id}
+                            className={
+                              kategoriIdler.includes(a.id) ? "up-agac-ad alt secili" : "up-agac-ad alt"
+                            }
+                            onClick={() => secimDegis(kategoriIdler, setKategoriIdler, a.id)}
+                          >
+                            <span className="renk-nokta" style={{ background: a.renk }} />
+                            {a.ad}
+                          </button>
+                        ))}
+                    </div>
+                  );
+                })}
+              </div>
             </section>
 
             <section>
