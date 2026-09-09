@@ -5297,71 +5297,148 @@ body {
 
 /* İçe/Dışa aktarım */
 
-.ms-aktarim {
+/* İçe/Dışa Aktar — iki kart yan yana, dar ekranda alt alta. Kartlar eşit boyda
+   duruyor, düğme her ikisinde de en altta (mt: auto). */
+.ax-sekme {
+  display: grid;
+  grid-template-columns: repeat(auto-fit, minmax(420px, 1fr));
+  gap: 18px;
+  align-items: stretch;
+}
+
+.ax-kart {
   display: flex;
   flex-direction: column;
-  gap: 16px;
-  max-width: 760px;
-}
-
-.aktarim-kart {
-  padding: 20px 22px;
-  border-radius: 14px;
+  padding: 22px 24px 24px;
+  border-radius: var(--r-bk);
   background: var(--kart);
-  box-shadow: 0 1px 3px rgba(20, 32, 48, 0.06);
+  box-shadow: var(--g1);
 }
 
-.aktarim-kart h2 {
-  font-size: 17px;
+.ax-kart-bas {
+  display: flex;
+  align-items: center;
+  gap: 13px;
+}
+
+.ax-kart-bas h2 {
+  font-size: 18px;
   color: var(--metin);
 }
 
-.aktarim-kart p {
-  margin: 10px 0 18px;
-  max-width: 580px;
-  font-size: 14px;
-  line-height: 1.65;
-  color: var(--metin);
-}
-
-.aktarim-kart small {
+.ax-kart-bas > div > span {
   display: block;
-  max-width: 580px;
-  margin-top: 14px;
-  font-size: 13px;
-  line-height: 1.6;
-  color: #6b7477;
+  margin-top: 3px;
+  font-size: 14px;
+  color: var(--soluk);
 }
 
-.aktarim-kart small strong {
+.ax-ikon {
+  display: grid;
+  place-items: center;
+  width: 42px;
+  height: 42px;
+  flex: none;
+  border-radius: var(--r-or);
+  background: var(--mercan-sis);
+  color: var(--mercan);
+}
+
+.ax-not {
+  margin: 0 0 18px;
+  font-size: 14px;
+  line-height: 1.6;
   color: var(--metin);
 }
 
-.aktarim-buton {
-  padding: 10px 24px;
+.ax-not strong {
+  font-weight: 600;
+}
+
+/* Aktarım öngösterimi: onay penceresinde dosyadan okunan ilk satırlar. 12 sütun
+   pencereye sığmıyor, tablo kendi kutusunda yana kayıyor. */
+.ax-tablo-kutu {
+  overflow-x: auto;
+  border: 1px solid var(--cizgi);
+  border-radius: var(--r-kk);
+  background: var(--kart);
+}
+
+.ax-tablo {
+  border-collapse: collapse;
+  width: max-content;
+  min-width: 100%;
+  font-size: 14px;
+  color: var(--metin);
+}
+
+.ax-tablo th,
+.ax-tablo td {
+  padding: 9px 12px;
+  text-align: left;
+  white-space: nowrap;
+  border-bottom: 1px solid var(--cizgi);
+}
+
+.ax-tablo th {
+  position: sticky;
+  top: 0;
+  background: var(--kart-ust);
+  font-weight: 600;
+}
+
+.ax-tablo tr:last-child td {
+  border-bottom: none;
+}
+
+.ax-dugmeler {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 10px;
+  margin-top: auto;
+}
+
+.ax-dugmeler .ax-buton {
+  margin-top: 0;
+}
+
+.ak-onizleme-not {
+  margin: 10px 0 0;
+  font-size: 14px;
+  color: var(--metin);
+}
+
+.ax-buton {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  gap: 9px;
+  align-self: flex-start;
+  margin-top: auto;
+  padding: 11px 24px;
   border: none;
-  border-radius: 10px;
+  border-radius: var(--r-or);
   background: var(--mercan);
   color: #fff;
-  font-size: 14px;
+  font-size: 15px;
   font-weight: 600;
   font-family: inherit;
   cursor: pointer;
-  transition: background 0.15s ease;
+  transition: background var(--gecis);
 }
 
-.aktarim-buton:hover {
+.ax-buton:hover {
   background: #f26a48;
 }
 
-.aktarim-buton.ikincil {
-  border: 1px solid #dde4ed;
+.ax-buton.ikincil {
+  border: 1px solid var(--cizgi-koyu);
   background: var(--kart);
   color: var(--metin);
 }
 
-.aktarim-buton.ikincil:hover {
-  background: #f4f7fc;
+.ax-buton.ikincil:hover {
+  background: var(--zemin);
 }
 
 .ozet-ilerleme small {
@@ -10054,6 +10131,665 @@ body {
   color: var(--mercan);
 }
 
+/* ---- Analiz Özeti: kahraman kart ----
+   Ekranın tek koyu yüzeyi. Ciro ile seyri aynı kartta duruyor; ayrı kutulara
+   bölündüklerinde ikisi de sıradan birer panel karesi gibi görünüyordu. */
+/* Zemin düz tek renk. Önce köşegen bir degrade vardı ve yazılar boyunca zemin
+   tonu değiştiği için harflerin kenarı titrek, bulanık görünüyordu — açık yazı
+   koyu zeminde zaten kalın basıyor, altındaki ton da kayınca okunurluk
+   düşüyor. Işıltı yalnız grafiğin arkasında, yazının olduğu yarıda değil. */
+.oz-kahraman {
+  position: relative;
+  display: grid;
+  grid-template-columns: minmax(300px, 400px) 1fr;
+  gap: 34px;
+  padding: 30px 34px 28px;
+  border-radius: var(--r-bk);
+  background: #18202a;
+  overflow: hidden;
+  -webkit-font-smoothing: antialiased;
+}
+
+.oz-kahraman::after {
+  content: "";
+  position: absolute;
+  top: -200px;
+  right: -140px;
+  width: 460px;
+  height: 460px;
+  border-radius: 50%;
+  background: radial-gradient(circle, rgba(255, 107, 69, 0.16), transparent 68%);
+  pointer-events: none;
+}
+
+.oz-kahraman-sol,
+.oz-kahraman-sag {
+  position: relative;
+  z-index: 1;
+  min-width: 0;
+}
+
+.oz-kahraman-sol {
+  display: flex;
+  flex-direction: column;
+  gap: 9px;
+}
+
+.oz-kahraman .oz-etiket {
+  color: #b3c0cf;
+}
+
+.oz-dev {
+  font-size: 46px;
+  font-weight: 700;
+  letter-spacing: -1.6px;
+  line-height: 1.05;
+  color: #fff;
+  white-space: nowrap;
+}
+
+.oz-kahraman .oz-alt em {
+  color: #b3c0cf;
+}
+
+/* Toplam satışın kırılımı: kapanan + açık. Toplama işlemi gibi okunuyor. */
+.oz-kirilim {
+  display: flex;
+  align-items: stretch;
+  gap: 10px;
+  margin-top: 16px;
+}
+
+.oz-kirilim > div {
+  flex: 1;
+  min-width: 0;
+  padding: 12px 14px;
+  border-radius: var(--r-or);
+  background: #1e2833;
+}
+
+.oz-kirilim .oz-acik-blok {
+  background: #2b2129;
+}
+
+.oz-kirilim .oz-acik-blok.bos {
+  background: #1e2833;
+}
+
+.oz-kirilim dt {
+  font-size: 14px;
+  color: #b3c0cf;
+}
+
+.oz-kirilim dd {
+  margin: 3px 0 2px;
+  font-size: 21px;
+  font-weight: 700;
+  letter-spacing: -0.4px;
+  color: #fff;
+  white-space: nowrap;
+}
+
+.oz-kirilim .oz-acik-blok dd {
+  color: #ff9273;
+}
+
+.oz-kirilim .oz-acik-blok.bos dd {
+  color: #b3c0cf;
+}
+
+.oz-kirilim em {
+  font-size: 14px;
+  font-style: normal;
+  color: #b3c0cf;
+}
+
+.oz-arti {
+  display: flex;
+  align-items: center;
+  font-size: 19px;
+  font-weight: 600;
+  color: #6b7c90;
+}
+
+/* Künye: cironun tarifi. Koyu zeminde çizgiyle ayrılıyor, kutulanmıyor. */
+.oz-kunye {
+  display: grid;
+  grid-template-columns: repeat(2, 1fr);
+  gap: 1px;
+  margin-top: 12px;
+  background: #2a3542;
+  border: 1px solid #2a3542;
+  border-radius: var(--r-or);
+  overflow: hidden;
+}
+
+/* Yüzeyler saydam beyaz değil, düz renk: saydam katman altındaki zemine göre
+   ton değiştiriyor ve yazının kontrastı kutudan kutuya oynuyordu. */
+.oz-kunye > div {
+  padding: 11px 14px;
+  background: #1e2833;
+}
+
+.oz-kunye .kunye-net {
+  grid-column: 1 / -1;
+  background: #2b2129;
+}
+
+.oz-kunye dt {
+  margin-bottom: 3px;
+  font-size: 14px;
+  color: #b3c0cf;
+}
+
+.oz-kunye dd {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  font-size: 18px;
+  font-weight: 600;
+  color: #fff;
+}
+
+.oz-kunye .kunye-net dd {
+  font-size: 22px;
+  color: var(--mercan);
+}
+
+.oz-kunye .kunye-net em {
+  font-size: 14px;
+  font-style: normal;
+  color: #b3c0cf;
+}
+
+/* Grafik kartın dibine kadar iniyor: sabit yükseklikte bırakılınca sol
+   sütundan kısa kalıyor ve kartın sağ altında ölü boşluk oluşuyordu. */
+.oz-kahraman-sag {
+  display: flex;
+  flex-direction: column;
+}
+
+.oz-kahraman-sag .gr-sarmal {
+  flex: 1;
+  display: flex;
+}
+
+.oz-kahraman-sag .gr-cizgi {
+  height: 100%;
+  min-height: 230px;
+}
+
+.oz-egri-bas {
+  display: flex;
+  align-items: center;
+  gap: 12px;
+  margin-bottom: 10px;
+}
+
+.oz-egri-bas h2 {
+  flex: 1;
+  font-size: 16px;
+  font-weight: 600;
+  color: #fff;
+}
+
+.oz-egri-bos {
+  display: flex;
+  flex: 1;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  gap: 10px;
+  min-height: 200px;
+  font-size: 15px;
+  color: #b3c0cf;
+}
+
+@media (max-width: 1080px) {
+  .oz-kahraman {
+    grid-template-columns: 1fr;
+    gap: 24px;
+  }
+}
+
+.oz-etiket {
+  display: inline-flex;
+  align-items: center;
+  gap: 7px;
+  font-size: 14px;
+  font-weight: 600;
+  color: var(--soluk);
+}
+
+.oz-etiket svg {
+  color: var(--mercan);
+}
+
+.oz-alt {
+  display: flex;
+  align-items: center;
+  gap: 9px;
+  min-height: 22px;
+}
+
+.oz-alt em {
+  font-size: 14px;
+  font-style: normal;
+  color: var(--soluk);
+}
+
+.oz-egri-lejant,
+.oz-ipucu {
+  display: inline-flex;
+  align-items: center;
+  gap: 7px;
+  font-size: 14px;
+  color: var(--soluk);
+}
+
+.oz-egri-lejant i {
+  width: 16px;
+  height: 3px;
+  border-radius: var(--r-tam);
+  background: var(--mercan);
+}
+
+.oz-egri-lejant i.onceki {
+  margin-left: 8px;
+  background: var(--cizgi-koyu);
+}
+
+/* ---- çizim bileşenleri ---- */
+
+/* Eğri kutusuna esniyor, yazılar esnemiyor: eksen etiketleri SVG'nin içindeyken
+   çizimle birlikte dikey olarak geriliyor, şişkin ve yamuk görünüyorlardı. */
+.gr-sarmal {
+  position: relative;
+  display: flex;
+  flex-direction: column;
+}
+
+.gr-orta {
+  display: flex;
+  flex: 1;
+  gap: 12px;
+  min-height: 190px;
+}
+
+.gr-y {
+  display: flex;
+  flex-direction: column;
+  justify-content: space-between;
+  width: 46px;
+  flex: none;
+  font-size: 14px;
+  font-weight: 500;
+  text-align: right;
+  color: var(--soluk);
+}
+
+/* Etiketin ortası kılavuz çizgisiyle aynı hizada olmalı; uçtaki ikisi kutunun
+   kenarına dayandığı için yarım satır kaydırılıyor. */
+.gr-y span:first-child {
+  transform: translateY(-50%);
+}
+
+.gr-y span:last-child {
+  transform: translateY(50%);
+}
+
+.gr-tuval {
+  position: relative;
+  flex: 1;
+  min-width: 0;
+}
+
+.gr-tuval svg {
+  display: block;
+  width: 100%;
+  height: 100%;
+}
+
+.gr-kilavuz {
+  position: absolute;
+  left: 0;
+  right: 0;
+  height: 1px;
+  background: var(--cizgi);
+}
+
+.gr-sarmal.koyu .gr-kilavuz {
+  background: rgba(255, 255, 255, 0.09);
+}
+
+.gr-x {
+  position: relative;
+  height: 20px;
+  margin: 9px 0 0 58px;
+  font-size: 14px;
+  font-weight: 500;
+  color: var(--soluk);
+}
+
+.gr-x span {
+  position: absolute;
+  transform: translateX(-50%);
+  white-space: nowrap;
+}
+
+/* İlk ve son etiket kenardan taşmasın. */
+.gr-x span:first-child {
+  transform: none;
+}
+
+.gr-x span:last-child {
+  transform: translateX(-100%);
+}
+
+.gr-x span.acik,
+.gr-sarmal.koyu .gr-x span.acik {
+  color: var(--mercan);
+  font-weight: 600;
+}
+
+.gr-sarmal.koyu .gr-y,
+.gr-sarmal.koyu .gr-x {
+  color: #b3c0cf;
+}
+
+/* Sütunlar: fare çizgiye değil, noktanın şeridine giriyor. */
+.gr-sutunlar {
+  position: absolute;
+  inset: 0;
+  display: flex;
+}
+
+.gr-sutunlar button {
+  position: relative;
+  flex: 1;
+  min-width: 0;
+  padding: 0;
+  border: none;
+  background: transparent;
+  cursor: default;
+}
+
+.gr-sutunlar button.acik {
+  background: linear-gradient(
+    180deg,
+    rgba(255, 107, 69, 0.14),
+    rgba(255, 107, 69, 0)
+  );
+}
+
+.gr-nokta {
+  position: absolute;
+  width: 11px;
+  height: 11px;
+  margin: 0 0 -5.5px -5.5px;
+  border: 3px solid var(--mercan);
+  border-radius: 50%;
+  background: var(--kart);
+  pointer-events: none;
+}
+
+.gr-sarmal.koyu .gr-nokta {
+  border-color: #ff8560;
+  background: #1d2733;
+}
+
+.gr-yol {
+  fill: none;
+  stroke: var(--mercan);
+  stroke-width: 3;
+  stroke-linejoin: round;
+  stroke-linecap: round;
+  vector-effect: non-scaling-stroke;
+}
+
+/* Koyu zeminde çizgi kendi ışığını taşıyor; ince mercan bir çizgi koyu yüzeyde
+   sönük kalıyordu. */
+.gr-sarmal.koyu .gr-yol {
+  stroke: #ff8560;
+  filter: drop-shadow(0 0 7px rgba(255, 133, 96, 0.5));
+}
+
+.gr-sarmal.koyu .gr-onceki {
+  stroke: rgba(255, 255, 255, 0.32);
+}
+
+.gr-sarmal.koyu .gr-balon {
+  background: #fff;
+  color: var(--metin);
+}
+
+/* Önceki dönem geride durmalı: aynı kalınlıkta çizilirse hangi çizginin bugün
+   olduğu karışıyor. */
+.gr-onceki {
+  fill: none;
+  stroke: var(--cizgi-koyu);
+  stroke-width: 1.5;
+  stroke-linejoin: round;
+  stroke-linecap: round;
+  vector-effect: non-scaling-stroke;
+}
+
+
+.gr-balon {
+  position: absolute;
+  top: 6px;
+  right: 6px;
+  display: flex;
+  align-items: baseline;
+  gap: 10px;
+  padding: 8px 13px;
+  border-radius: var(--r-kk);
+  background: var(--metin);
+  color: #fff;
+  pointer-events: none;
+}
+
+.gr-balon strong {
+  font-size: 14px;
+  font-weight: 600;
+}
+
+.gr-balon span {
+  font-size: 15px;
+  font-weight: 700;
+}
+
+.gr-balon em {
+  font-size: 14px;
+  font-style: normal;
+  opacity: 0.75;
+}
+
+/* Halka: tek renk ailesi, en büyük dilim mercan. */
+.gr-halka-sarmal {
+  display: flex;
+  align-items: center;
+  gap: 22px;
+  flex-wrap: wrap;
+  padding: 4px 2px 2px;
+}
+
+.gr-halka {
+  position: relative;
+  width: 168px;
+  flex: none;
+}
+
+.gr-halka svg {
+  display: block;
+  width: 100%;
+  transform: rotate(-90deg);
+}
+
+.gr-halka-zemin {
+  fill: none;
+  stroke: var(--zemin);
+}
+
+.gr-dilim {
+  fill: none;
+  cursor: default;
+  transition: opacity var(--gecis);
+}
+
+.gr-dilim.k0 {
+  stroke: var(--mercan);
+}
+.gr-dilim.k1 {
+  stroke: #ff9273;
+}
+.gr-dilim.k2 {
+  stroke: #ffb9a3;
+}
+.gr-dilim.k3 {
+  stroke: #9fb0c4;
+}
+.gr-dilim.k4 {
+  stroke: #c6d0dc;
+}
+
+/* Sönükleştirme yalnız bir dilim seçiliyken: kartın üstüne gelmek yetiyordu ve
+   hiçbir dilim vurgulanmadan hepsi birden soluyordu. */
+.gr-halka-sarmal.secili .gr-dilim {
+  opacity: 0.4;
+}
+
+.gr-halka-sarmal .gr-dilim.vurgu {
+  opacity: 1;
+}
+
+.gr-halka-ic {
+  position: absolute;
+  inset: 0;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  gap: 2px;
+  pointer-events: none;
+}
+
+.gr-halka-ic strong {
+  font-size: 17px;
+  font-weight: 700;
+  letter-spacing: -0.3px;
+}
+
+.gr-halka-ic span {
+  font-size: 14px;
+  color: var(--soluk);
+}
+
+.gr-lejant {
+  flex: 1;
+  min-width: 190px;
+  display: flex;
+  flex-direction: column;
+  gap: 3px;
+}
+
+/* Ad, tutar ve pay tek satıra sığmıyordu: "Kredi Kartı" üç noktayla kesiliyordu.
+   Ad ile tutar üstte, pay altta. */
+.gr-lejant li {
+  display: grid;
+  grid-template-columns: 10px minmax(0, 1fr) auto;
+  align-items: center;
+  gap: 2px 9px;
+  padding: 8px 10px;
+  border-radius: var(--r-kk);
+  font-size: 15px;
+  transition: background var(--gecis);
+}
+
+.gr-lejant li.vurgu {
+  background: var(--zemin);
+}
+
+.gr-lejant i {
+  width: 10px;
+  height: 10px;
+  flex: none;
+  border-radius: 3px;
+}
+
+.gr-lejant i.k0 {
+  background: var(--mercan);
+}
+.gr-lejant i.k1 {
+  background: #ff9273;
+}
+.gr-lejant i.k2 {
+  background: #ffb9a3;
+}
+.gr-lejant i.k3 {
+  background: #9fb0c4;
+}
+.gr-lejant i.k4 {
+  background: #c6d0dc;
+}
+
+.gr-lejant span {
+  flex: 1;
+  min-width: 0;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+.gr-lejant strong {
+  font-weight: 600;
+}
+
+.gr-lejant em {
+  grid-column: 2 / 4;
+  font-size: 14px;
+  font-style: normal;
+  color: var(--soluk);
+}
+
+.gr-sarmal.koyu stop:first-child {
+  stop-color: #ff8560;
+  stop-opacity: 0.36;
+}
+
+/* Değişim rozeti */
+.gr-degisim {
+  display: inline-flex;
+  align-items: center;
+  gap: 3px;
+  padding: 3px 9px;
+  border-radius: var(--r-tam);
+  font-size: 14px;
+  font-weight: 600;
+  white-space: nowrap;
+}
+
+.gr-degisim.artan {
+  background: rgba(18, 184, 134, 0.14);
+  color: #0b8f68;
+}
+
+.gr-degisim.azalan {
+  background: rgba(255, 107, 69, 0.14);
+  color: #d1441f;
+}
+
+.gr-degisim.esit {
+  background: var(--zemin);
+  color: var(--soluk);
+}
+
+/* Koyu kartta açık zeminli rozet delik gibi duruyordu. */
+.oz-kahraman .gr-degisim.esit {
+  background: #2a3542;
+  color: #b3c0cf;
+}
+
 .analiz-ikili {
   display: grid;
   grid-template-columns: 1fr 1fr;
@@ -10066,6 +10802,24 @@ body {
   grid-template-columns: repeat(3, minmax(0, 1fr));
   gap: 18px;
   align-items: stretch;
+}
+
+/* Üç kart aynı boyda ama içerikleri farklı uzunlukta; kısa olanın altında
+   yüz piksellik ölü boşluk kalıyordu. İçerik kartın boyuna yayılıyor. */
+.analiz-uclu > .ayar-bolum {
+  display: flex;
+  flex-direction: column;
+}
+
+.analiz-uclu .analiz-dagilim,
+.analiz-uclu .kasa-dokum {
+  flex: 1;
+  justify-content: space-between;
+}
+
+.analiz-uclu .gr-halka-sarmal {
+  flex: 1;
+  align-content: center;
 }
 
 /* Eksik tahsilat sıfırsa satır hiç çıkmıyor; çıktığında tıklanır ve mercan. */
@@ -10187,50 +10941,6 @@ body {
   font-size: 15px;
   font-weight: 600;
   white-space: nowrap;
-}
-
-.analiz-saatler {
-  display: flex;
-  align-items: flex-end;
-  gap: 8px;
-  height: 170px;
-  overflow-x: auto;
-  padding-bottom: 4px;
-}
-
-.analiz-saat {
-  display: flex;
-  flex-direction: column;
-  align-items: center;
-  justify-content: flex-end;
-  gap: 6px;
-  height: 100%;
-  min-width: 46px;
-  flex: 1;
-}
-
-.analiz-saat i {
-  width: 100%;
-  max-width: 34px;
-  border-radius: 8px 8px 4px 4px;
-  background: var(--mercan);
-  opacity: 0.85;
-}
-
-.analiz-saat:hover i {
-  opacity: 1;
-}
-
-.saat-tutar {
-  font-size: 12.5px;
-  font-weight: 600;
-  color: var(--soluk);
-  white-space: nowrap;
-}
-
-.saat-ad {
-  font-size: 13px;
-  font-weight: 600;
 }
 
 /* ---- Analiz: adisyon tablosu ---- */

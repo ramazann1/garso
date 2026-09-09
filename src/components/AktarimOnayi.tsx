@@ -6,10 +6,16 @@ import {
   FileSpreadsheet,
   FolderPlus,
   Pencil,
+  TableProperties,
   X,
 } from "lucide-react";
 import Bilgi from "./Bilgi";
+import { BASLIKLAR } from "../aktarim";
 import type { AktarimPlani, AktarimUrunu, KategoriYeri } from "../aktarim";
+
+// Öngösterimde dosyanın tamamı değil ilk satırları duruyor: amaç sütunların
+// doğru yere düştüğünü göstermek, dosyayı okutmak değil.
+const ONIZLEME_SATIRI = 8;
 
 /**
  * Excel dosyası seçildikten sonra açılan onay penceresi.
@@ -43,7 +49,9 @@ export default function AktarimOnayi({
   const toplamAdim = yazilacak + plan.yeniKategoriler.length;
   const yaziliyor = yapilan !== null;
 
-  const [acik, setAcik] = useState<"guncellenen" | "yeni" | "kategori" | "atlanan" | null>(
+  const [acik, setAcik] = useState<
+    "onizleme" | "guncellenen" | "yeni" | "kategori" | "atlanan" | null
+  >(
     guncellenenler.length ? "guncellenen" : null
   );
   const gecis = (hangi: typeof acik) => setAcik((a) => (a === hangi ? null : hangi));
@@ -118,6 +126,46 @@ export default function AktarimOnayi({
         </div>
 
         <div className="ak-bolumler">
+          {plan.satirlar.length > 0 && (
+            <Bolum
+              ikon={<TableProperties size={16} />}
+              baslik={`Dosyadan okunanlar — ${plan.satirlar.length} satır`}
+              acik={acik === "onizleme"}
+              onGecis={() => gecis("onizleme")}
+            >
+              <Bilgi>
+                Dosyanın ilk satırları burada; sütunların doğru yere düştüğünü kontrol et. Ad ya da
+                fiyat yanlış sütunda görünüyorsa Vazgeç deyip dosyanın başlık satırını düzelt.
+              </Bilgi>
+              <div className="ax-tablo-kutu">
+                <table className="ax-tablo">
+                  <thead>
+                    <tr>
+                      {BASLIKLAR.map((baslik) => (
+                        <th key={baslik}>{baslik}</th>
+                      ))}
+                    </tr>
+                  </thead>
+                  <tbody>
+                    {plan.satirlar.slice(0, ONIZLEME_SATIRI).map((satir, s) => (
+                      <tr key={s}>
+                        {BASLIKLAR.map((baslik) => (
+                          <td key={baslik}>{satir[baslik]}</td>
+                        ))}
+                      </tr>
+                    ))}
+                  </tbody>
+                </table>
+              </div>
+              {plan.satirlar.length > ONIZLEME_SATIRI && (
+                <p className="ak-onizleme-not">
+                  Dosyanın ilk {ONIZLEME_SATIRI} satırı gösteriliyor, kalan{" "}
+                  {plan.satirlar.length - ONIZLEME_SATIRI} satır da aşağıdaki özete girdi.
+                </p>
+              )}
+            </Bolum>
+          )}
+
           {guncellenenler.length > 0 && (
             <Bolum
               ikon={<Pencil size={16} />}

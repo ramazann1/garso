@@ -3,6 +3,76 @@
 
 ## 0. SIRADAKİ İŞ (9 Eyl 2026 güncellendi)
 
+> **9 Eyl 2026 (2. seans) — İçe/Dışa Aktar bitti, Analiz Özeti baştan kuruldu.**
+>
+> **İçe/Dışa Aktar.** İki kart yan yana, ikonlu başlık, açıklamalar `Bilgi`
+> kutusunda; silik `small` yazılar kalktı. **Örnek dosya eklendi**
+> (`ORNEK_SATIRLAR` + `ornekTabloUret`): menüsü boş işletmede indirilen dosya
+> yalnız başlıktan ibaret kalıyordu, artık doldurulmuş dört satırla iniyor —
+> aynı ürünün iki porsiyonu ayrı satırda, biri alt kategorili, biri barkodlu,
+> Ürün No boş. **Öngösterim onay penceresinde**: dosya seçilince ilk 8 satır
+> tabloda. Ekranda duran örnek tablo denendi, **Ramazan kaldırttı** — "indirince
+> zaten görünüyor". `SUTUN_GENISLIKLERI` 13 değerdi, sütun 12; Masa Fiyatı
+> kalkarken genişliği silinmemişti.
+>
+> **Karar: grafik kütüphanesi kullanılmıyor, çizimler kendi SVG'miz.**
+> (`components/Grafikler.tsx`) Adisyo'nun grafiklerinin ilkel görünmesinin
+> sebebi kütüphane varsayılanları: her çubuk ayrı renk + aynı etiketleri
+> tekrarlayan lejant, tutar ile adet aynı eksende, eksende `20000.00`.
+> Bileşenler: `CizgiGrafik`, `Halka`, `Degisim`.
+>
+> **Karar: Analiz'in en büyük sayısı toplam satıştır (Ramazan).** Önce kapanan
+> ciro dev puntodaydı; işletmenin baktığı sayı günün toplam işi. Altında
+> toplama işlemi olarak duruyor: **kapanan ciro + masalarda açık = toplam**.
+>
+> **Karşılaştırma eklendi — Adisyo'da hiçbir ekranda yok.** `oncekiAralik`:
+> seçili dönemin hemen öncesindeki aynı uzunlukta pencere. **Süren dönem
+> kırpılıyor** — bugün saat 14:00'te dünün tamamıyla değil dünün 14:00'ine
+> kadarki hâliyle kıyaslanıyor, yoksa her sabah "düşüş" görünürdü. Tarih dışı
+> filtreler karşılaştırmaya da uygulanıyor. Vardiyada karşılaştırma yok
+> (vardiyalar eşit uzunlukta değil). Önceki dönem boşsa rozet hiç çıkmıyor.
+>
+> **Kahraman kart** (koyu, ekranın tek koyu yüzeyi): solda toplam satış 46px +
+> kırılım + künye (adisyon · ortalama · misafir · kişi başı, hepsi rozetli;
+> altta kasaya kalan), sağda ciro eğrisi. Dokuz beyaz kutu beşe indi.
+> **Ramazan rengi beğenmedi**, dört seçenek yan yana gösterildi (açık şeftali /
+> beyaz / açık gri-mavi / koyu) — **karar ertelendi, koyu kalıyor.**
+>
+> **Grafikte üç ayrı hata bulundu ve düzeltildi:**
+> 1. **Yazılar bulanık ve şişkindi:** eksen etiketleri SVG'nin içindeydi ve
+>    `preserveAspectRatio="none"` yüzünden çizgiyle birlikte dikey olarak
+>    geriliyorlardı. Eksen artık HTML'de. *Kural: esneyen SVG'nin içine yazı
+>    konmaz.*
+> 2. **Daire tarihin üstünde durmuyordu:** çizgi eşit aralıklı noktalardan
+>    geçiyor (n−1 aralık), daire ve etiket ise eşit sütunların ortasına
+>    konuyordu (n sütun). İkisi yalnız ortada çakışıyor. Üçü de tek orandan
+>    besleniyor artık.
+> 3. **Kırık çizgi testere gibiydi:** Fritsch–Carlson yumuşatma — sıradan
+>    bezier veride olmayan tepe uyduruyor, bu yöntem iki nokta arasında
+>    ikisinin dışına çıkmıyor. Önceki dönem kesikliydi, eğriyle kesişince
+>    taralı kalabalık oluyordu; düz ince hat oldu.
+>
+> **Karar: saat dökümü kasa gününün tamamıdır.** Grafik ilk satıştan son
+> satışa kırpılıyordu; günü 08:00'de başlayan işletmede "21 – 06" gibi bir
+> aralık çıkıyor, günün neresinde olunduğu anlaşılmıyordu. Saatler artık kasa
+> günü sırasında (`kasaSaatSirasi`) ve 24 saatin tamamı çiziliyor — sessiz
+> saat de bilgi. Aynı sıra ciro eğrisinin saatlik kırılımına da uygulandı.
+> **"Saatlere göre" sütun değil çizgi grafik** (Ramazan); `SutunGrafik`
+> yazılmıştı, kaldırıldı — tek çizim dili tutuluyor.
+>
+> **Eksik tahsilat dönüşü:** Özet'ten gelince çıkan "Eksik tahsilatı olanlar"
+> çipi kapatılınca listede kalınıyordu; artık Özet'e dönüyor. Yeni düğme
+> eklenmedi, mevcut çipin davranışı genişletildi.
+>
+> **Yolda çıkan görünüm hataları:** halka lejantında ad üç noktayla kesiliyordu
+> (ad+tutar üstte, yüzde altta); fare kartın herhangi bir yerine gelince
+> halkanın **bütün dilimleri** sönüyordu (sönükleştirme artık yalnız bir dilim
+> seçiliyken); üç kartın altında 150px ölü boşluk vardı.
+>
+> **Geçici önizleme yöntemi:** giriş ekranı aşılamadığı için ekran
+> `public/ozet-onizleme.html` ile sahte veriyle açıldı, tasarım orada ölçüldü.
+> Seans sonunda silindi — bu dosyalar pakete girmemeli.
+
 > **9 Eyl 2026 — mobil ikizler kapandı, Menü Stüdyosu ve Kampanyalı Menü yenilendi.**
 >
 > **`MasaHedefi` silindi** (`mobil/Siparis.tsx`, 65 satır): telefon da ortak
@@ -726,16 +796,26 @@
 > küçük işler temizlendi; dördü de 1 Eyl akşamı kapandı. Kalan sıra:
 >
 > 1. **Görsel dilin yayılması — ekran gövdeleri.** Pencerelerin hepsi bitti,
->    gezinme yenilendi, mobil ikizler kapandı (7–9 Eyl 2026). Kalan iş
->    **ekranların gövdesinde**; ekran ekran gidiliyor. Sıra:
->    a. **İçe/Dışa Aktar sekmesi** — Ramazan "bu sayfadan çok çok rahatsızım"
->       dedi (9 Eyl 2026). Sıradaki ekran bu.
->    b. **Seçenek Grupları ve Birimler/KDV sekmelerinin gövdesi** — Menü
+>    gezinme yenilendi, mobil ikizler kapandı (7–9 Eyl 2026), İçe/Dışa Aktar ve
+>    Analiz Özeti bitti (9 Eyl). Kalan iş **ekranların gövdesinde**; ekran ekran
+>    gidiliyor. Sıra:
+>    a. **Kahraman kartın rengi** — Ramazan koyuyu beğenmedi, dört seçenek
+>       gösterildi (açık şeftali / beyaz / açık gri-mavi / koyu), karar
+>       ertelendi. Seçim yapılınca kurulacak; "≈ aynı" rozeti açık zeminlerde
+>       koyu kalıyor, o da o zaman ayarlanacak. Seçenekler seans sonunda silinen
+>       `public/kahraman-secenekler.html`'deydi, gerekirse yeniden üretilir.
+>    b. **Analiz'in kalan sekmeleri** — Özet bitti; Adisyonlar, Ürünler, Mutfak,
+>       Personel, Giderler, Ödenmezler, Açık Hesap, Denetim hâlâ düz tablo.
+>       Grafik bileşenleri hazır (`Grafikler.tsx`), tablolardaki oran sütunları
+>       çubuğa dönecek. **Açık soru:** dönem "Bugün/Dün" iken Ciro seyri zaten
+>       saatlik, alttaki "Saatlere göre" ile birebir aynı oluyor — tek günlük
+>       dönemde alttaki gizlensin mi? Ramazan'a soruldu, cevap bekliyor.
+>    c. **Seçenek Grupları ve Birimler/KDV sekmelerinin gövdesi** — Menü
 >       Stüdyosu'nun kalan üç sekmesi; alt şeritleri 9 Eyl'de düzeldi, liste ve
 >       form düzenleri elden geçmedi.
->    c. **Kalan ekranlar** — Salon dışındakiler tek tek gezilecek. Sıra
+>    d. **Kalan ekranlar** — Salon dışındakiler tek tek gezilecek. Sıra
 >       Ramazan'ın "burası ilkel" dediği yerden kuruluyor, ölçümle değil.
->    d. **Yükleme çemberi** — ekran değişince veri çekilirken çıkan çember
+>    e. **Yükleme çemberi** — ekran değişince veri çekilirken çıkan çember
 >       yanıp sönme hissi veriyor. Yazıcılar'da çözüldü (son liste modülde
 >       tutuluyor, çember yalnız ilk açılışta); aynısı diğer ekranlara.
 >    **Salon'a dokunulmayacak (9 Eyl 2026 kararı).** Ekran ölçüldü: masa

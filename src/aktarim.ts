@@ -22,6 +22,22 @@ export const BASLIKLAR = [
 
 export type AktarimSatiri = Record<(typeof BASLIKLAR)[number], string>;
 
+/**
+ * Örnek dosyanın satırları. Menüsü henüz boş olan işletmede indirilen tablo
+ * yalnız başlıktan ibaret kalıyor ve hangi sütuna ne yazılacağı anlaşılmıyordu.
+ * Aynı satırlar ekrandaki öngösterimde de kullanılıyor — indirmeden önce
+ * dosyanın nasıl görüneceği görünsün.
+ *
+ * Ürün No bilerek boş: numarayı program veriyor, yeni ürün eklerken boş kalır.
+ * İlk iki satır aynı ürünün iki porsiyonu — her porsiyon kendi satırında.
+ */
+export const ORNEK_SATIRLAR: string[][] = [
+  ["", "Sıcak İçecekler", "Kahveler", "Filtre Kahve", "KHV-01", "", "Tam", "10", "85", "80", "80", "22"],
+  ["", "Sıcak İçecekler", "Kahveler", "Filtre Kahve", "KHV-01", "", "Yarım", "10", "55", "50", "50", "14"],
+  ["", "Tatlılar", "", "Cheesecake", "TTL-04", "", "Tam", "10", "140", "130", "135", "48"],
+  ["", "Soğuk İçecekler", "", "Limonata", "", "8690000000001", "Tam", "10", "70", "65", "65", "18"],
+];
+
 export type AktarimHatasi = { satir: number; mesaj: string };
 
 // Ürünün dosyada geçtiği yer. Kategori henüz açılmamış olabileceği için burada
@@ -72,7 +88,27 @@ const yazi = (v?: string): Hucre => (v ? { value: v, type: String } : null);
 const rakam = (v?: number): Hucre => (v == null ? null : { value: v, type: Number });
 
 // Sütun genişlikleri karakter sayısı: başlık sığacak kadar, bir harf fazla değil.
-export const SUTUN_GENISLIKLERI = [8, 15, 13, 20, 10, 11, 7, 10, 8, 11, 12, 11, 8];
+export const SUTUN_GENISLIKLERI = [8, 15, 13, 20, 10, 11, 7, 10, 8, 13, 13, 8];
+
+// Örnek dosya: başlık satırı + ORNEK_SATIRLAR. Sayı sütunları gerçek dosyadaki
+// gibi Number yazılıyor, yoksa kullanıcı üstüne yazarken Excel biçimi bozuluyor.
+const SAYI_SUTUNLARI = new Set(["KDV Oranı", "Fiyat", "Gel-Al Fiyatı", "Paket Fiyatı", "Maliyet"]);
+
+export function ornekTabloUret() {
+  const satirlar: Hucre[][] = [
+    BASLIKLAR.map((b): Hucre => ({ value: b, type: String, fontWeight: "bold" })),
+  ];
+
+  for (const satir of ORNEK_SATIRLAR) {
+    satirlar.push(
+      satir.map((deger, i) =>
+        deger === "" ? null : SAYI_SUTUNLARI.has(BASLIKLAR[i]) ? rakam(Number(deger)) : yazi(deger)
+      )
+    );
+  }
+
+  return satirlar;
+}
 
 export function tabloUret(urunler: MenuUrun[], kategoriler: MenuKategori[], kdvler: MenuKdv[]) {
   const satirlar: Hucre[][] = [

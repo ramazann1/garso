@@ -110,6 +110,16 @@ export function kasaGunuBasi(an: Date) {
   return bas > an ? gunEkle(bas, -1) : bas;
 }
 
+/**
+ * Saatlerin işletme sırası. Gün 06:00'da başlıyorsa saat dökümü 06, 07 … 05
+ * diye gidiyor; 0–23 doğal sırada dizilince gece 01:00'deki satış listenin
+ * başına, aynı iş gününün başlangıcından önceye düşüyordu.
+ */
+export function kasaSaatSirasi(): number[] {
+  const bas = Number(ayarlar().kasaGunuBaslangic.split(":")[0]) || 0;
+  return Array.from({ length: 24 }, (_, i) => (bas + i) % 24);
+}
+
 /** Haftanın ilk günü pazartesi; JavaScript'te pazar 0 olduğu için kaydırılıyor. */
 function haftaBasi(t: Date) {
   const gun = (t.getDay() + 6) % 7;
@@ -153,6 +163,31 @@ export function donemAraligi(f: AnalizFiltre): { bas: Date; bit: Date } {
     default:
       return { bas: bugun, bit: yarin };
   }
+}
+
+/**
+ * Karşılaştırma aralığı: seçili dönemin hemen öncesindeki aynı uzunlukta pencere.
+ * Bugünü dünle, bu haftayı geçen haftayla kıyaslıyor.
+ *
+ * Süren dönem kırpılıyor. "Bugün" saat 14:00'te yarım bir gündür; dünün
+ * tamamıyla kıyaslanırsa her öğleden önce "düşüş var" görünür. Önceki pencere
+ * de aynı süre kadar alınıyor — dün de saat 14:00'e kadar.
+ *
+ * Vardiyada karşılaştırma yok: vardiyalar eşit uzunlukta değil, bir öncekinin
+ * nerede başladığı da buradan bilinmiyor.
+ */
+export function oncekiAralik(f: AnalizFiltre): { bas: Date; bit: Date } | null {
+  if (f.vardiyaId) return null;
+
+  const { bas, bit } = donemAraligi(f);
+  const simdi = new Date();
+  // Dönem henüz bitmediyse geçen süre kadarı ölçülüyor.
+  const son = bit > simdi ? simdi : bit;
+  const uzunluk = son.getTime() - bas.getTime();
+  if (uzunluk <= 0) return null;
+
+  const oncekiBas = new Date(bas.getTime() - (bit.getTime() - bas.getTime()));
+  return { bas: oncekiBas, bit: new Date(oncekiBas.getTime() + uzunluk) };
 }
 
 /** Başlıkta duran okunur aralık metni: "12 Ağustos" veya "1 – 12 Ağustos". */
@@ -317,7 +352,21 @@ function satiraCevir(s: any, varsayilanKdv?: number): AnalizAdisyon {
  */
 export async function analizAdisyonlari(f: AnalizFiltre): Promise<AnalizAdisyon[]> {
   const { bas, bit } = donemAraligi(f);
+  return adisyonlariCek(bas, bit, f);
+}
 
+/**
+ * Karşılaştırma penceresinin adisyonları. Tarih dışındaki süzgeçler aynen
+ * geçerli — bir garsonun bu haftasını kıyaslarken önceki hafta bütün ekibi
+ * kapsasaydı karşılaştırma anlamsız olurdu.
+ */
+export async function oncekiAdisyonlar(f: AnalizFiltre): Promise<AnalizAdisyon[]> {
+  const aralik = oncekiAralik(f);
+  if (!aralik) return [];
+  return adisyonlariCek(aralik.bas, aralik.bit, f);
+}
+
+async function adisyonlariCek(bas: Date, bit: Date, f: AnalizFiltre) {
   const [{ data }, varsayilanKdv] = await Promise.all([
     supabase
       .from("adisyonlar")
@@ -576,11 +625,13 @@ export function analizOzeti(adisyonlar: AnalizAdisyon[], giderler: Masraf[]): An
 
   // Saat dökümü adisyonun kapandığı saate göre; yoğunluk grafiği hesabın
   // kapandığı anı değil masanın dolduğu saati sorsa açık masalar hiç sayılmazdı.
-  const saatler = Array.from({ length: 24 }, (_, saat) => ({ saat, tutar: 0, adet: 0 }));
+  const saatler = kasaSaatSirasi().map((saat) => ({ saat, tutar: 0, adet: 0 }));
+  const saatYeri = new Map(saatler.map((s, i) => [s.saat, i]));
   for (const a of kapanan) {
-    const saat = new Date(a.kapanis ?? a.acilis).getHours();
-    saatler[saat].tutar += a.toplam;
-    saatler[saat].adet += 1;
+    const yer = saatYeri.get(new Date(a.kapanis ?? a.acilis).getHours());
+    if (yer == null) continue;
+    saatler[yer].tutar += a.toplam;
+    saatler[yer].adet += 1;
   }
 
   const gider = giderler.reduce((t, g) => t + g.tutar, 0);
@@ -614,6 +665,65 @@ export function analizOzeti(adisyonlar: AnalizAdisyon[], giderler: Masraf[]): An
     gider,
     net: ciro - gider,
   };
+}
+
+export type SeriNoktasi = { etiket: string; baslik: string; tutar: number; adet: number };
+export type ZamanSerisi = { noktalar: SeriNoktasi[]; birim: "saat" | "gun" };
+
+/**
+ * Ciro eğrisinin verisi. Tek günlük dönem saat saat, uzun dönem gün gün
+ * kırılıyor — 30 günü saate bölmek 720 sütun demek, bir günü güne bölmek tek
+ * sütun. Kırılımı kullanıcı seçmiyor, aralığın uzunluğu söylüyor.
+ *
+ * Kapanmamış adisyon eğriye girmiyor: ciro kapanışta oluşuyor, açık masanın
+ * tutarı daha değişecek.
+ */
+export function zamanSerisi(adisyonlar: AnalizAdisyon[], bas: Date, bit: Date): ZamanSerisi {
+  const kapanan = adisyonlar.filter((a) => a.durum === "kapali");
+  const gunSayisi = Math.round((bit.getTime() - bas.getTime()) / 86400000);
+  const birim: "saat" | "gun" = gunSayisi <= 1 ? "saat" : "gun";
+
+  if (birim === "saat") {
+    // Saatler işletmenin kasa günü sırasında: gün 06:00'da başlıyorsa eğri de
+    // 06'dan başlıyor, gece 01:00'deki satış günün sonunda görünüyor.
+    const sira = kasaSaatSirasi();
+    const kutular = sira.map((saat) => ({
+      etiket: String(saat).padStart(2, "0"),
+      baslik: `${String(saat).padStart(2, "0")}:00 – ${String((saat + 1) % 24).padStart(2, "0")}:00`,
+      tutar: 0,
+      adet: 0,
+    }));
+    const yeri = new Map(sira.map((saat, i) => [saat, i]));
+    for (const a of kapanan) {
+      const k = kutular[yeri.get(new Date(a.kapanis ?? a.acilis).getHours()) ?? 0];
+      k.tutar += a.toplam;
+      k.adet += 1;
+    }
+    // Kepenk kapalıyken geçen saatler eğrinin yarısını yutmasın: ilk ve son
+    // satıştan öteye kırpılıyor, aradaki boş saat duruyor (çukur da bilgidir).
+    const dolu = kutular.map((k) => k.tutar > 0);
+    const ilk = dolu.indexOf(true);
+    const son = dolu.lastIndexOf(true);
+    return { birim, noktalar: ilk < 0 ? [] : kutular.slice(ilk, son + 1) };
+  }
+
+  const kutular = new Map<string, SeriNoktasi>();
+  for (let i = 0; i < gunSayisi; i++) {
+    const gun = gunEkle(bas, i);
+    kutular.set(gun.toDateString(), {
+      etiket: gun.toLocaleDateString("tr-TR", { day: "numeric", month: "short" }),
+      baslik: gun.toLocaleDateString("tr-TR", { day: "numeric", month: "long", weekday: "long" }),
+      tutar: 0,
+      adet: 0,
+    });
+  }
+  for (const a of kapanan) {
+    const k = kutular.get(kasaGunuBasi(new Date(a.kapanis ?? a.acilis)).toDateString());
+    if (!k) continue;
+    k.tutar += a.toplam;
+    k.adet += 1;
+  }
+  return { birim, noktalar: [...kutular.values()] };
 }
 
 export type UrunSatiri = {

@@ -8,8 +8,8 @@ import {
   ChevronRight,
   ChevronsUpDown,
   ClipboardList,
+  Clock,
   CreditCard,
-  DoorOpen,
   Gift,
   Layers,
   Package,
@@ -23,6 +23,7 @@ import {
 import { analizBolumleri } from "../components/Duzen";
 import BolumSecici from "../components/BolumSecici";
 import AnalizFiltre from "../components/AnalizFiltre";
+import { CizgiGrafik, Degisim, Halka } from "../components/Grafikler";
 import AramaKutusu from "../components/AramaKutusu";
 import Bilgi from "../components/Bilgi";
 import AdisyonDetay from "../components/AdisyonDetay";
@@ -34,6 +35,10 @@ import { ayarlar } from "../isletmeAyarlari";
 import {
   BOS_FILTRE,
   analizAdisyonlari,
+  donemAraligi,
+  oncekiAdisyonlar,
+  oncekiAralik,
+  zamanSerisi,
   analizCariHareketleri,
   analizDenetimi,
   analizGiderleri,
@@ -59,6 +64,7 @@ import {
   type UrunKategorisi,
   type UrunOzeti,
   type UrunSatiri,
+  type ZamanSerisi,
 } from "../analiz";
 import { SAKIN, useCanli } from "../canli";
 import { odemeAdi, type Masraf } from "../masraflar";
@@ -71,6 +77,8 @@ export default function Analiz() {
 
   const [filtre, setFiltre] = useState<Filtre>(BOS_FILTRE);
   const [adisyonlar, setAdisyonlar] = useState<AnalizAdisyon[]>([]);
+  // Karşılaştırma listesi: seçili dönemin bir öncesi. Yalnız Özet kullanıyor.
+  const [oncekiler, setOncekiler] = useState<AnalizAdisyon[]>([]);
   const [giderler, setGiderler] = useState<Masraf[]>([]);
   const [denetim, setDenetim] = useState<DenetimSatiri[]>([]);
   const [cariHareketler, setCariHareketler] = useState<CariHareketSatiri[]>([]);
@@ -104,9 +112,11 @@ export default function Analiz() {
       analizCariHareketleri(filtre),
       // Hazırlık süreleri adisyondan değil turdan çıkıyor; kendi sorgusu var.
       mutfakSureleri(filtre),
-    ]).then(([a, g, d, c, m]) => {
+      oncekiAdisyonlar(filtre),
+    ]).then(([a, g, d, c, m, o]) => {
       if (!gecerli) return;
       setAdisyonlar(a);
+      setOncekiler(o);
       setGiderler(g);
       setDenetim(d);
       setCariHareketler(c);
@@ -132,6 +142,21 @@ export default function Analiz() {
   );
 
   const ozet = useMemo(() => analizOzeti(adisyonlar, giderler), [adisyonlar, giderler]);
+  // Karşılaştırmada gider yok: giderin kendi dönemi var, ciroyla aynı pencereye
+  // oturmuyor. Kıyaslanan sayılar adisyondan çıkanlar.
+  const oncekiOzet = useMemo(
+    () => (oncekiAralik(filtre) ? analizOzeti(oncekiler, []) : null),
+    [oncekiler, filtre]
+  );
+  const seri = useMemo(() => {
+    const { bas, bit } = donemAraligi(filtre);
+    return zamanSerisi(adisyonlar, bas, bit);
+  }, [adisyonlar, filtre]);
+  const oncekiSeri = useMemo(() => {
+    const aralik = oncekiAralik(filtre);
+    if (!aralik) return null;
+    return zamanSerisi(oncekiler, aralik.bas, aralik.bit);
+  }, [oncekiler, filtre]);
   const urunler = useMemo(
     () => analizUrunleri(adisyonlar, kategoriler),
     [adisyonlar, kategoriler]
@@ -165,6 +190,9 @@ export default function Analiz() {
         ) : bolum === "ozet" ? (
           <Ozet
             ozet={ozet}
+            onceki={oncekiOzet}
+            seri={seri}
+            oncekiSeri={oncekiSeri}
             onEksigeGit={() => {
               setSadeceEksik(true);
               navigate("/analiz/adisyonlar");
@@ -184,7 +212,14 @@ export default function Analiz() {
               setSecili(id);
             }}
             sadeceEksik={sadeceEksik}
-            onEksigiBirak={() => setSadeceEksik(false)}
+            // Bu daralma yalnız Özet'teki eksik tahsilat satırından gelince
+            // oluşuyor; çip kapanınca listede kalmak değil, geldiği yere dönmek
+            // doğru olan. Kullanıcı adisyon aramaya değil, özete bakmaya
+            // gelmişti — arada bir sayıyı açıp kapattı.
+            onEksigiBirak={() => {
+              setSadeceEksik(false);
+              navigate("/analiz/ozet");
+            }}
           />
         ) : bolum === "urunler" ? (
           <Urunler ozet={urunler} />
@@ -432,7 +467,7 @@ const zamanMetni = (t: string) => `${gunMetni(t)} ${saatMetni(t)}`;
 /** Özetten daraltarak gelindiğini gösteren, tek tıkla bırakılan çip. */
 function EksikCipi({ onBirak }: { onBirak: () => void }) {
   return (
-    <button type="button" className="analiz-cip-eksik" onClick={onBirak}>
+    <button type="button" className="analiz-cip-eksik" onClick={onBirak} title="Özete dön">
       Eksik tahsilatı olanlar
       <X size={14} />
     </button>
@@ -484,71 +519,125 @@ function tahsilatMetni(a: AnalizAdisyon) {
     : `${a.odemeler.length} tahsilat`;
 }
 
-function Ozet({ ozet, onEksigeGit }: { ozet: AnalizOzeti; onEksigeGit: () => void }) {
+function Ozet({
+  ozet,
+  onceki,
+  seri,
+  oncekiSeri,
+  onEksigeGit,
+}: {
+  ozet: AnalizOzeti;
+  onceki: AnalizOzeti | null;
+  seri: ZamanSerisi;
+  oncekiSeri: ZamanSerisi | null;
+  onEksigeGit: () => void;
+}) {
   const kdvDahil = ayarlar().kdvDahil;
 
   return (
     <div className="analiz-ozet">
       {/*
-        Şeridin okunuşu bir toplama işlemi: kapanan ciro + açık masalar = toplam.
-        Açık masa yoksa tek sayı kalıyor; "₺0,00 açık" göstermek gereksiz gürültü.
+        Kahraman kart. Önce dokuz beyaz kutu yan yana diziliydi ve ekranın en
+        önemli sayısı olan ciro, "kasaya kalan" ile aynı ağırlıkta duruyordu —
+        ekran yönetim paneli gibi görünüyordu, hiyerarşi yoktu. Ciro ve seyri
+        artık tek bir koyu kartta, birlikte okunuyor. Koyu yüzey yalnız burada:
+        ekranın geri kalanı beyaz kart, fiş ve QR menü de her zaman beyaz kâğıt.
       */}
-      <section className="ozet-serit">
-        <div className="serit-satir">
-          <div className="serit-sayi">
-            <span className="serit-etiket">
-              <TrendingUp size={15} /> Kapanan ciro
-            </span>
-            <strong>{paraGoster(ozet.ciro)}</strong>
-            <em>{ozet.adisyon} adisyon</em>
+      <section className="oz-kahraman">
+        {/*
+          En büyük sayı toplam satış. Önce kapanan ciro dev puntodaydı, açık
+          masalar altta bir cümlenin içinde geçiyordu — işletmenin baktığı sayı
+          günün toplam işi, kapanmış olması ayrı bir bilgi. İkisi artık cironun
+          altında yan yana duruyor: kapanan + açık = toplam.
+        */}
+        <div className="oz-kahraman-sol">
+          <span className="oz-etiket">
+            <TrendingUp size={16} /> Toplam satış
+          </span>
+          <strong className="oz-dev">{paraGoster(ozet.toplamIs)}</strong>
+          <div className="oz-alt">
+            <Degisim simdi={ozet.toplamIs} onceki={onceki?.toplamIs ?? null} />
+            <em>{onceki ? "önceki döneme göre" : `${ozet.adisyon} adisyon`}</em>
           </div>
 
-          {ozet.acik > 0 && (
-            <>
-              <span className="serit-islem">+</span>
-              <div className="serit-sayi serit-acik">
-                <span className="serit-etiket">
-                  <DoorOpen size={15} /> Açık masalar
-                </span>
-                <strong>{paraGoster(ozet.acikTutar)}</strong>
-                <em>{ozet.acik} hesap sürüyor</em>
-              </div>
+          <div className="oz-kirilim">
+            <div>
+              <dt>Kapanan ciro</dt>
+              <dd>{paraGoster(ozet.ciro)}</dd>
+              <em>
+                {ozet.toplamIs > 0
+                  ? `toplam satışın %${Math.round((ozet.ciro / ozet.toplamIs) * 100)}'i`
+                  : "hesap kapanmadı"}
+              </em>
+            </div>
+            <span className="oz-arti">+</span>
+            <div className={ozet.acik ? "oz-acik-blok" : "oz-acik-blok bos"}>
+              <dt>Masalarda açık</dt>
+              <dd>{paraGoster(ozet.acikTutar)}</dd>
+              <em>{ozet.acik ? `${ozet.acik} hesap sürüyor` : "açık hesap yok"}</em>
+            </div>
+          </div>
 
-              <span className="serit-islem">=</span>
-              <div className="serit-sayi serit-toplam">
-                <span className="serit-etiket">Toplam</span>
-                <strong>{paraGoster(ozet.toplamIs)}</strong>
-                <em>günün işi</em>
-              </div>
-            </>
-          )}
+          <dl className="oz-kunye">
+            <div>
+              <dt>Adisyon</dt>
+              <dd>
+                {sayiGoster(ozet.adisyon)}
+                <Degisim simdi={ozet.adisyon} onceki={onceki?.adisyon ?? null} />
+              </dd>
+            </div>
+            <div>
+              <dt>Ortalama adisyon</dt>
+              <dd>
+                {paraGoster(ozet.ortalama)}
+                <Degisim simdi={ozet.ortalama} onceki={onceki?.ortalama ?? null} />
+              </dd>
+            </div>
+            <div>
+              <dt>Misafir</dt>
+              <dd>
+                {ozet.misafir ? sayiGoster(ozet.misafir) : "—"}
+                <Degisim simdi={ozet.misafir} onceki={onceki?.misafir ?? null} />
+              </dd>
+            </div>
+            <div>
+              <dt>Kişi başı</dt>
+              <dd>
+                {ozet.kisiBasi ? paraGoster(ozet.kisiBasi) : "—"}
+                <Degisim simdi={ozet.kisiBasi} onceki={onceki?.kisiBasi ?? null} />
+              </dd>
+            </div>
+            <div className="kunye-net">
+              <dt>Kasaya kalan</dt>
+              <dd>{paraGoster(ozet.net)}</dd>
+              <em>
+                {ozet.gider ? `${paraGoster(ozet.gider)} gider düşüldü` : "gider girilmemiş"}
+              </em>
+            </div>
+          </dl>
         </div>
 
-        {/* Ciroyu tarif eden yardımcı sayılar; ayrı kart açmaya değmeyecek kadar kısa. */}
-        <dl className="serit-kunye">
-          <div>
-            <dt>Ortalama adisyon</dt>
-            <dd>{paraGoster(ozet.ortalama)}</dd>
+        <div className="oz-kahraman-sag">
+          <div className="oz-egri-bas">
+            <h2>Ciro seyri</h2>
+            <span className="oz-egri-lejant">
+              <i className="simdi" /> bu dönem
+              {oncekiSeri && oncekiSeri.noktalar.length > 1 && (
+                <>
+                  <i className="onceki" /> önceki
+                </>
+              )}
+            </span>
           </div>
-          <div>
-            <dt>Misafir</dt>
-            <dd>{ozet.misafir || "—"}</dd>
-          </div>
-          <div>
-            <dt>Kişi başı</dt>
-            <dd>{ozet.kisiBasi ? paraGoster(ozet.kisiBasi) : "—"}</dd>
-          </div>
-          <div>
-            <dt>Gider</dt>
-            <dd className={ozet.gider ? "azalan" : ""}>
-              {ozet.gider ? `−${paraGoster(ozet.gider)}` : "—"}
-            </dd>
-          </div>
-          <div className="kunye-net">
-            <dt>Kasaya kalan</dt>
-            <dd>{paraGoster(ozet.net)}</dd>
-          </div>
-        </dl>
+          {seri.noktalar.length === 0 ? (
+            <div className="oz-egri-bos">
+              <BarChart3 size={30} />
+              <p>Bu dönemde kapanmış adisyon yok.</p>
+            </div>
+          ) : (
+            <CizgiGrafik noktalar={seri.noktalar} onceki={oncekiSeri?.noktalar} koyu />
+          )}
+        </div>
       </section>
 
       <div className="analiz-uclu">
@@ -629,7 +718,7 @@ function Ozet({ ozet, onEksigeGit }: { ozet: AnalizOzeti; onEksigeGit: () => voi
               <p>Bu dönemde tahsilat yok.</p>
             </div>
           ) : (
-            <Dagilim satirlar={ozet.odemeler} toplam={ozet.ciro} />
+            <Halka dilimler={ozet.odemeler} toplam={ozet.tahsilEdilen || ozet.ciro} />
           )}
         </section>
 
@@ -650,12 +739,15 @@ function Ozet({ ozet, onEksigeGit }: { ozet: AnalizOzeti; onEksigeGit: () => voi
         </section>
       </div>
 
-      {/* Saat grafiği yarım sütuna sıkışınca çubuklar okunmuyordu; tam genişlikte. */}
+      {/* Saat grafiği yarım sütuna sıkışınca okunmuyordu; tam genişlikte. */}
       <section className="ayar-bolum">
         <div className="ayar-bolum-ust">
           <h2>
-            <BarChart3 size={17} /> Saatlere göre
+            <Clock size={17} /> Saatlere göre
           </h2>
+          <span className="oz-ipucu">
+            İşletme günü {ayarlar().kasaGunuBaslangic}'de başlıyor
+          </span>
         </div>
         <Saatler saatler={ozet.saatler} />
       </section>
@@ -1437,8 +1529,11 @@ function Dagilim({
  * kapalıyken geçen sekiz saat grafiğin yarısını yutmasın.
  */
 function Saatler({ saatler }: { saatler: { saat: number; tutar: number; adet: number }[] }) {
-  const dolu = saatler.filter((s) => s.tutar > 0);
-  if (dolu.length === 0) {
+  // Kasa gününün tamamı çiziliyor. Önce ilk satıştan son satışa kırpılıyordu;
+  // işletmenin günü 08:00'de başlasa bile grafik "21 – 06" gibi bir aralık
+  // gösteriyor, günün neresinde olduğun anlaşılmıyordu. Sessiz geçen saat de
+  // bilgidir: hangi saatlerde iş olmadığı ancak boş saat görününce okunuyor.
+  if (saatler.every((s) => s.tutar === 0)) {
     return (
       <div className="ayar-bos">
         <BarChart3 size={30} />
@@ -1447,17 +1542,15 @@ function Saatler({ saatler }: { saatler: { saat: number; tutar: number; adet: nu
     );
   }
 
-  const enBuyuk = Math.max(...dolu.map((s) => s.tutar));
   return (
-    <div className="analiz-saatler">
-      {dolu.map((s) => (
-        <div key={s.saat} className="analiz-saat" title={`${s.adet} adisyon`}>
-          <span className="saat-tutar">{paraGoster(s.tutar)}</span>
-          <i style={{ height: `${Math.max(6, (s.tutar / enBuyuk) * 100)}%` }} />
-          <span className="saat-ad">{String(s.saat).padStart(2, "0")}</span>
-        </div>
-      ))}
-    </div>
+    <CizgiGrafik
+      noktalar={saatler.map((s) => ({
+        etiket: String(s.saat).padStart(2, "0"),
+        baslik: `${String(s.saat).padStart(2, "0")}:00 – ${String((s.saat + 1) % 24).padStart(2, "0")}:00`,
+        tutar: s.tutar,
+        adet: s.adet,
+      }))}
+    />
   );
 }
 
