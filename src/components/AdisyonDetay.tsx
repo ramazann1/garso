@@ -3,15 +3,11 @@ import { useNavigate } from "react-router-dom";
 import {
   ArrowRight,
   Ban,
-  Banknote,
-  Clock,
-  DoorOpen,
   Gift,
   HandCoins,
   History,
   LockOpen,
   Pencil,
-  Plus,
   X,
 } from "lucide-react";
 import OnayModal from "./OnayModal";
@@ -29,6 +25,8 @@ import {
   type AdisyonDetay as Detay,
 } from "../analiz";
 import type { SepetKalemi } from "../types";
+import { adisyonDenetimi, type DenetimSatiri } from "../denetim";
+import { ZamanCizelgesi } from "./SiparisGecmisi";
 
 const saat = (t: string) =>
   new Date(t).toLocaleTimeString("tr-TR", { hour: "2-digit", minute: "2-digit" });
@@ -59,6 +57,7 @@ export default function AdisyonDetay({
   onDegisti?: () => void;
 }) {
   const [detay, setDetay] = useState<Detay | null>(null);
+  const [kayitlar, setKayitlar] = useState<DenetimSatiri[]>([]);
   const [yukleniyor, setYukleniyor] = useState(true);
   const [gecmis, setGecmis] = useState(false);
   const [aktifSor, setAktifSor] = useState(false);
@@ -71,8 +70,16 @@ export default function AdisyonDetay({
 
   useEffect(() => {
     setYukleniyor(true);
-    adisyonDetayi(adisyonId).then((d) => {
+    // Defter kayıtları detayla birlikte geliyor: iki sorgu paralel gittiği için
+    // geçmişe basıldığında bekleme olmuyor. Yetkisi olmayana sorgu hiç atılmıyor;
+    // satır güvenliği zaten boş döndürürdü, boşuna gidip gelmesin.
+    const defter = yetkiVar("siparis.gecmis")
+      ? adisyonDenetimi(adisyonId)
+      : Promise.resolve([] as DenetimSatiri[]);
+
+    Promise.all([adisyonDetayi(adisyonId), defter]).then(([d, k]) => {
       setDetay(d);
+      setKayitlar(k);
       setYukleniyor(false);
     });
   }, [adisyonId]);
@@ -111,13 +118,15 @@ export default function AdisyonDetay({
           <div className="detay-aksiyon">
             {detay && (
               <>
-                <button
-                  className={gecmis ? "detay-dugme acik" : "detay-dugme"}
-                  onClick={() => setGecmis(!gecmis)}
-                >
-                  <History size={16} />
-                  {gecmis ? "Detaya dön" : "Sipariş geçmişi"}
-                </button>
+                {yetkiVar("siparis.gecmis") && (
+                  <button
+                    className={gecmis ? "detay-dugme acik" : "detay-dugme"}
+                    onClick={() => setGecmis(!gecmis)}
+                  >
+                    <History size={16} />
+                    {gecmis ? "Detaya dön" : "Sipariş geçmişi"}
+                  </button>
+                )}
 
                 {detay.durum === "acik" ? (
                   <>
@@ -156,7 +165,7 @@ export default function AdisyonDetay({
           </div>
         ) : gecmis ? (
           <div className="detay-govde tek">
-            <ZamanCizelgesi detay={detay} />
+            <ZamanCizelgesi detay={detay} kayitlar={kayitlar} />
           </div>
         ) : (
           <div className="detay-govde">
@@ -420,67 +429,3 @@ function Kalem({
   );
 }
 
-/**
- * Türetilmiş zaman çizelgesi. Ayrı bir denetim kaydı tutmuyoruz — turların ve
- * tahsilatların kendi saatleri olayları zaten sırayla anlatıyor.
- */
-function ZamanCizelgesi({ detay }: { detay: Detay }) {
-  type Olay = {
-    zaman: string;
-    ikon: React.ReactNode;
-    kisi: string;
-    baslik: string;
-    alt?: string;
-  };
-
-  const olaylar: Olay[] = [
-    {
-      zaman: detay.acilis,
-      ikon: <DoorOpen size={15} />,
-      kisi: detay.garson,
-      baslik: "Sipariş açıldı",
-    },
-    ...detay.turlar.map((tur) => ({
-      zaman: tur.saat,
-      ikon: <Plus size={15} />,
-      kisi: tur.garson,
-      baslik: "Yeni ürün eklendi",
-      alt: tur.kalemler.map((k) => `${adetGoster(k.adet)} × ${k.ad}`).join(" · "),
-    })),
-    ...detay.tahsilatlar.map((t) => ({
-      zaman: t.olusturma,
-      ikon: <Banknote size={15} />,
-      kisi: "",
-      baslik: "Ödeme yapıldı",
-      alt: `${t.tip} · ${paraGoster(t.tutar)}`,
-    })),
-  ];
-
-  if (detay.kapanis) {
-    olaylar.push({
-      zaman: detay.kapanis,
-      ikon: <Clock size={15} />,
-      kisi: "",
-      baslik: "Sipariş kapatıldı",
-      alt: paraGoster(detay.toplam),
-    });
-  }
-
-  olaylar.sort((a, b) => a.zaman.localeCompare(b.zaman));
-
-  return (
-    <ol className="detay-cizelge">
-      {olaylar.map((o, i) => (
-        <li key={i}>
-          <span className="cizelge-saat">{gunSaat(o.zaman)}</span>
-          <span className="cizelge-im">{o.ikon}</span>
-          <span className="cizelge-metin">
-            <strong>{o.baslik}</strong>
-            {o.kisi && <b>{o.kisi}</b>}
-            {o.alt && <em>{o.alt}</em>}
-          </span>
-        </li>
-      ))}
-    </ol>
-  );
-}

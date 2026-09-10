@@ -41,20 +41,24 @@ function durumYaz(yeni: boolean) {
  * Sunucuya ulaşılıyor mu — en ucuz istek. Cevabın içeriği ilgilendirmiyor,
  * cevap dönmesi yeterli: sunucu konuşuyor demektir.
  *
- * İsteğe `apikey` başlığı konmuyor: sağlık kapısı anahtar sormuyor, ama başlık
- * konunca tarayıcı her yoklamadan önce bir de izin isteği (preflight) atıyordu —
- * otuz saniyede bir yerine iki istek gidiyor, ikisi de sıfır veri getiriyordu.
+ * İstek `apikey` başlığıyla gidiyor. Uzun süre başlıksız atılıyordu: sağlık
+ * kapısı eskiden anahtar sormuyordu ve başlık koymak tarayıcıya fazladan bir
+ * izin isteği (preflight) attırıyor. Supabase o kapıyı da anahtar ister hâle
+ * getirince her yoklama 401 dönmeye başladı; yoklama açısından fark yok (401
+ * de bir cevaptır) ama tarayıcı her 401'i konsola kırmızı hata olarak basıyor,
+ * dakikada iki satır çöp birikiyor ve gerçek hatalar aralarında kayboluyordu.
  *
- * Adres olarak sağlık kapısı seçildi. REST kapısı kimlik bileti istiyor,
- * yoklamada bilet göndermediğimiz için her otuz saniyede bir 401 dönüyordu.
- * Yoklama açısından fark yoktu ama tarayıcı her 401'i konsola kırmızı hata
- * olarak basıyor ve gerçek hatalar bunların arasında kayboluyordu.
+ * `no-cors` ile cevabı hiç açmamak denendi, işe yaramadı: tarayıcı yanıtı bize
+ * kapatsa da hatayı yine basıyor. Geriye anahtarı göndermek kalıyor. Bedeli
+ * otuz saniyede bir fazladan izin isteği; konsolu okunur tutmak buna değer.
+ * Anahtar gizli bilgi değil, zaten uygulamanın içinde duruyor.
  */
 async function yokla() {
   if (!navigator.onLine) return false;
   try {
     const durdur = AbortSignal.timeout(BEKLEME_SINIRI);
     await fetch(`${ADRES}/auth/v1/health`, {
+      headers: { apikey: import.meta.env.VITE_SUPABASE_KEY },
       cache: "no-store",
       signal: durdur,
     });

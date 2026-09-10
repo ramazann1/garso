@@ -11,6 +11,7 @@ import {
   CloudOff,
   Combine,
   Gift,
+  History,
   LayoutGrid,
   LockKeyhole,
   Pencil,
@@ -28,6 +29,7 @@ import MasaKarti from "../components/MasaKarti";
 import MasaPlani, { yerlesimiVar } from "../components/MasaPlani";
 import OnayModal from "../components/OnayModal";
 import HizliOde from "../components/HizliOde";
+import SiparisGecmisi from "../components/SiparisGecmisi";
 import { ODENMEZ_ANAHTAR, odenmezleriGetir, type Odenmez } from "../odenmezler";
 import { useTanim, useTanimEtkisi } from "../tanimAbonelik";
 import MasasizSiparis from "../components/MasasizSiparis";
@@ -189,6 +191,8 @@ export default function Salon() {
   >(null);
   // Hızlı Öde masadan açılıyor; adisyonun tamamı okunup panele veriliyor.
   const [hizli, setHizli] = useState<{ masa: Masa; veri: AdisyonVerisi } | null>(null);
+  // Masanın açık hesabının zaman çizelgesi; pencere kendi verisini çekiyor.
+  const [gecmis, setGecmis] = useState<{ ad: string; adisyonId: number } | null>(null);
   // Masada başkası varsa girişten önce sorulan pencere.
   const [mesgulSorusu, setMesgulSorusu] = useState<{ masa: Masa; ad: string } | null>(null);
   const mesguliyetler = useMesguliyetler();
@@ -491,6 +495,17 @@ export default function Salon() {
               ad: "Yazdır",
               ikon: <Printer size={16} />,
               onSec: () => fisYazdir(masa),
+            },
+          ]
+        : []),
+      // "Bu masada ne oldu" sorusu masanın başındayken soruluyor; cevabı için
+      // Analiz'e gidip adisyonu aramak gerekmesin.
+      ...(acik && yetkiVar("siparis.gecmis")
+        ? [
+            {
+              ad: "Sipariş geçmişi",
+              ikon: <History size={16} />,
+              onSec: () => setGecmis({ ad: masa.ad, adisyonId: acik.id }),
             },
           ]
         : []),
@@ -845,6 +860,14 @@ export default function Salon() {
             onayMetni="Evet, uygula"
             onOnay={onay.onOnay}
             onKapat={() => setOnay(null)}
+          />
+        )}
+
+        {gecmis && (
+          <SiparisGecmisi
+            adisyonId={gecmis.adisyonId}
+            baslik={gecmis.ad}
+            onKapat={() => setGecmis(null)}
           />
         )}
 

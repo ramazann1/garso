@@ -9,6 +9,7 @@ import {
   CloudUpload,
   EllipsisVertical,
   Gift,
+  History,
   LockKeyhole,
   Plus,
   Printer,
@@ -38,6 +39,7 @@ import { servisSatirlari } from "../servis";
 import { adisyonFisiYaz } from "../yazicilar";
 import { yetkiVar } from "../oturum";
 import OnayModal from "../components/OnayModal";
+import SiparisGecmisi from "../components/SiparisGecmisi";
 import AltSayfa from "./AltSayfa";
 import HizliOde from "../components/HizliOde";
 import { bekleyenMasalar, cevrimdisiHesap, kopyaMasalari, kuyrugaEkle, useKuyruk } from "../kuyruk";
@@ -109,6 +111,8 @@ export default function MobilMasalar() {
   const [okunamadi, setOkunamadi] = useState(false);
 
   const [islemMasasi, setIslemMasasi] = useState<Masa | null>(null);
+  // Masanın açık hesabının zaman çizelgesi; bilgisayardaki salon menüsüyle aynı.
+  const [gecmis, setGecmis] = useState<{ ad: string; adisyonId: number } | null>(null);
   // Izgara seçim modu: hangi işlem için hedef masa bekleniyor.
   const [secimModu, setSecimModu] = useState<{
     tip: "tasi" | "birlestir";
@@ -547,6 +551,10 @@ export default function MobilMasalar() {
           onOde={() => git(`/mobil/siparis/${islemMasasi.id}?tahsilat=1`)}
           onHizli={() => hizliOdeAc(islemMasasi)}
           onYazdir={() => fisYazdir(islemMasasi)}
+          onGecmis={(adisyonId) => {
+            setIslemMasasi(null);
+            setGecmis({ ad: islemMasasi.ad, adisyonId });
+          }}
           onTasi={(tip) => {
             setSecimModu({ tip, kaynak: islemMasasi });
             setIslemMasasi(null);
@@ -658,6 +666,14 @@ export default function MobilMasalar() {
         />
       )}
 
+      {gecmis && (
+        <SiparisGecmisi
+          adisyonId={gecmis.adisyonId}
+          baslik={gecmis.ad}
+          onKapat={() => setGecmis(null)}
+        />
+      )}
+
       {uyari && <OnayModal tekTus mesaj={uyari} onKapat={() => setUyari(null)} />}
     </>
   );
@@ -677,6 +693,7 @@ function MasaIslemleri({
   onHizli,
   onYazdir,
   onTasi,
+  onGecmis,
   onIkram,
   onIptal,
 }: {
@@ -687,6 +704,7 @@ function MasaIslemleri({
   onHizli: () => void;
   onYazdir: () => void;
   onTasi: (tip: "tasi" | "birlestir") => void;
+  onGecmis: (adisyonId: number) => void;
   onIkram: (adisyonId: number) => void;
   onIptal: (adisyonId: number) => void;
 }) {
@@ -719,6 +737,16 @@ function MasaIslemleri({
             ikon: <Combine size={19} />,
             renk: "tasi",
             sec: () => onTasi("birlestir"),
+          },
+        ]
+      : []),
+    ...(ozet && yetkiVar("siparis.gecmis")
+      ? [
+          {
+            ad: "Sipariş geçmişi",
+            ikon: <History size={19} />,
+            renk: "gecmis",
+            sec: () => onGecmis(ozet.id),
           },
         ]
       : []),

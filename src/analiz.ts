@@ -428,6 +428,8 @@ export type DetayTahsilat = {
   tutar: number;
   bahsis: number;
   olusturma: string;
+  /** Ödemeyi alan kişi; imza 2026-09-10 öncesi tahsilatlarda boş. */
+  kisi: string;
 };
 
 /** Detay penceresinin ihtiyacı liste satırından fazlası: turlar ve saatler. */
@@ -441,6 +443,8 @@ export type AdisyonDetay = AnalizAdisyon & {
   not: string;
   telefon: string;
   adres: string;
+  /** Hesabı kapatan kişi; imza 2026-09-10 öncesi adisyonlarda boş. */
+  kapatan: string;
 };
 
 const DETAY_ALANLARI = `id, adisyon_no, tip, durum, iptal_sebep, acilis, kapanis, indirim, indirim_ad,
@@ -448,10 +452,12 @@ const DETAY_ALANLARI = `id, adisyon_no, tip, durum, iptal_sebep, acilis, kapanis
        eksik_kisi, eksik_sebep,
        masa:masalar (ad, bolge_id, bolgeler (ad)),
        acan:personel!adisyonlar_acan_id_fkey (id, ad),
+       kapatan:personel!adisyonlar_kapatan_id_fkey (ad),
        turlar (sira, olusturma, garson:personel!turlar_garson_id_fkey (ad),
                adisyon_kalemleri (id, ad, porsiyon, secimler, adet, fiyat, kdv_oran,
                                   durum, not_metni, indirim, indirim_ad)),
-       tahsilatlar (id, tip, tutar, bahsis, olusturma)`;
+       tahsilatlar (id, tip, tutar, bahsis, olusturma,
+                    kisi:personel!tahsilatlar_kisi_id_fkey (ad))`;
 
 export async function adisyonDetayi(adisyonId: number): Promise<AdisyonDetay | null> {
   const [{ data }, varsayilanKdv] = await Promise.all([
@@ -490,6 +496,7 @@ export async function adisyonDetayi(adisyonId: number): Promise<AdisyonDetay | n
     not: s.not_metni ?? "",
     telefon: s.musteri_telefon ?? "",
     adres: s.adres ?? "",
+    kapatan: s.kapatan?.ad ? kisaAd(s.kapatan.ad) : "",
     turlar,
     tahsilatlar: ((s.tahsilatlar ?? []) as any[])
       .map((t) => ({
@@ -498,6 +505,7 @@ export async function adisyonDetayi(adisyonId: number): Promise<AdisyonDetay | n
         tutar: Number(t.tutar),
         bahsis: Number(t.bahsis ?? 0),
         olusturma: t.olusturma,
+        kisi: t.kisi?.ad ? kisaAd(t.kisi.ad) : "",
       }))
       .sort((a, b) => a.olusturma.localeCompare(b.olusturma)),
   };

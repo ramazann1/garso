@@ -452,6 +452,33 @@ body {
   text-align: left;
 }
 
+/* Başlık şeridinin sağ ucundaki geçmiş düğmesi. Adisyon bilgisi düğmesi kalan
+   yeri kapladığı için kendi payını ayırıyor; sıkışınca metni kısalmıyor. */
+.ust-gecmis {
+  display: inline-flex;
+  align-items: center;
+  gap: 7px;
+  flex: none;
+  margin-left: 16px;
+  padding: 7px 13px;
+  border: 1px solid var(--cizgi);
+  border-radius: var(--r-kk);
+  background: none;
+  font-family: inherit;
+  font-size: 14px;
+  font-weight: 500;
+  color: var(--metin);
+  cursor: pointer;
+  white-space: nowrap;
+  transition: background 0.14s ease, border-color 0.14s ease;
+}
+
+.ust-gecmis:hover {
+  background: var(--mercan-sis);
+  border-color: var(--mercan);
+  color: var(--mercan);
+}
+
 .adisyon-bilgi-tus .bilgi-oge {
   display: inline-flex;
   align-items: center;
@@ -6990,11 +7017,30 @@ body {
 /* Açıklama düz paragraf değil Bilgi kutusu; tutarla tipler arasında duruyor. */
 .hizli-govde .bilgi-kutu { margin: 14px 0; }
 
-/* Telefon: pencere tam ekrana yayılıyor, tuşlar parmakla basılacak kadar iri.
-   Hızlı Öde masanın başında açılıyor — kasada değil, elde kullanılıyor. */
+/* Telefon: tuşlar parmakla basılacak kadar iri — Hızlı Öde masanın başında
+   açılıyor, kasada değil. Pencere önce tam ekrana yayılıyordu: ödeme tipi az
+   olan işletmede içerik ekranın yarısında bitiyor, altında ekran boyu boşluk
+   kalıyordu. Artık boyunu içerik veriyor, taşarsa kendi içinde kayıyor. */
 @media (max-width: 600px) {
-  .up-fon:has(> .hizli-ode) { padding: 0; }
-  .hizli-ode { max-width: none; height: 100%; border: none; border-radius: 0; }
+  /* Pencere ekranın ortasında yüzüyor, arkasındaki salon bulanık kalıyor —
+     nereden açıldığı görünsün diye. Kenar boşluğu fonun görünmesi için şart. */
+  .up-fon:has(> .hizli-ode.tam) {
+    padding: 16px;
+    align-items: center;
+  }
+
+  /* Seçici üç sınıflı: ortak kabuğun dar ekran kuralı (.up-modal.tam) pencereyi
+     tam yüksekliğe ve köşesiz kenara zorluyor, üstelik bu bloktan sonra
+     yazılmış. Onu aşmadan yükseklik geri alınmıyor. */
+  .up-modal.tam.hizli-ode {
+    max-width: none;
+    width: 100%;
+    height: auto;
+    max-height: 88vh;
+    border: 1px solid var(--cizgi);
+    border-radius: var(--r-bk);
+  }
+
   .hizli-aksiyon button { padding: 13px 9px; }
   .hizli-giris input,
   .hizli-giris .hizli-indirim { padding: 14px; font-size: 16px; }
@@ -11035,12 +11081,19 @@ body {
   cursor: pointer;
 }
 
-.analiz-tablo th.sag button {
-  flex-direction: row-reverse;
+.analiz-tablo th button svg {
+  color: #8494a8;
 }
 
-.analiz-tablo th button svg {
-  color: #a3b0c0;
+/* On dört ok birden durunca başlık şeridi teknik bir kontrol paneline dönüyordu.
+   Ok yalnız sıralanan sütunda ve farenin üzerinde olduğu sütunda görünüyor. */
+.analiz-tablo th:not(.sirali) button svg {
+  opacity: 0;
+  transition: opacity 0.12s ease;
+}
+
+.analiz-tablo th:not(.sirali):hover button svg {
+  opacity: 1;
 }
 
 .analiz-tablo th button:hover {
@@ -11195,6 +11248,12 @@ body {
   background: #f3f7fc;
 }
 
+/* Kapanmış ama parası eksik kalan hesap: gün sonunda gözden kaçan en pahalı
+   satır o. Rozet tek başına yetmiyordu, satırın kendisi de işaretleniyor. */
+.analiz-tablo tbody tr.adisyon-eksik td:first-child {
+  box-shadow: inset 3px 0 0 var(--mercan);
+}
+
 .analiz-tablo .sag {
   text-align: right;
 }
@@ -11235,35 +11294,83 @@ body {
   border-bottom: none;
 }
 
+/* "Toplam" en solda, ilk rakam ekranın ortasındaydı; arada kalan boşluk satırı
+   listeden kopuk gösteriyordu. Üstteki ayırıcı ikisini tek satır yapıyor. */
+.analiz-tablo tfoot tr.analiz-toplam th:first-child {
+  color: var(--soluk);
+  font-weight: 600;
+  text-transform: uppercase;
+  letter-spacing: 0.4px;
+  font-size: 12.5px;
+}
+
+.analiz-tablo tfoot tr.analiz-toplam {
+  border-top: 2px solid #d6dfea;
+}
+
+/* Ödeme tipi, durum rozetiyle aynı dili konuşuyor: nötr bir çip. Adet çipin
+   dışında kalıyor — "3 ×" bir sayı, ödeme tipinin parçası değil. */
+.tahsilat-cip {
+  display: inline-flex;
+  align-items: baseline;
+  gap: 6px;
+}
+
+.tahsilat-cip b {
+  font-weight: 600;
+  color: var(--soluk);
+}
+
+.tahsilat-cip em {
+  padding: 2px 9px;
+  border-radius: 999px;
+  background: #eef3f9;
+  color: #435469;
+  font-size: 13px;
+  font-style: normal;
+  font-weight: 500;
+  white-space: nowrap;
+}
+
+.tahsilat-yok {
+  color: var(--soluk);
+}
+
 .rozet {
   display: inline-block;
   padding: 3px 10px;
   border-radius: 999px;
   background: #e2e9f2;
-  color: var(--soluk);
+  color: #435469;
   font-size: 13px;
   font-weight: 600;
 }
 
+/* Beş durum beş ayrı aileden: kapandı gri-mavi, açık yeşil, eksik tahsilat
+   mercan, ikram kehribar, iptal çerçeveli. Önce kapandı, ikram ve iptal aynı
+   gri-mavi tonun üç komşusuydu ve uzaktan ayırt edilmiyorlardı. */
 .rozet.acik {
-  background: #e8f8f2;
-  color: #1f8f6c;
+  background: #dff5ec;
+  color: #157a5a;
 }
 
 .rozet.eksik {
-  background: #fff1ec;
-  color: #c1503a;
+  background: #ffe6dd;
+  color: #b23f26;
 }
 
 .rozet.ikram {
-  background: #deebfb;
-  color: #a06a12;
+  background: #fbeecd;
+  color: #8a5c07;
 }
 
-/* İptal, eksik tahsilattan daha nötr: hata değil, bilinçli bir karar. */
+/* İptal'i renkle değil biçimle ayırıyoruz: dolgusuz, çerçeveli. Biçim farkı
+   ton farkından güçlü, üstelik iptal bir hata değil — sessiz kalması doğru. */
 .rozet.iptal {
-  background: #eceef2;
-  color: #5a6273;
+  padding: 2px 9px;
+  border: 1px solid #b9c3d1;
+  background: none;
+  color: #55637a;
 }
 
 /* ---- Adisyon detay penceresi ---- */
@@ -11353,6 +11460,71 @@ body {
 .detay-govde.tek {
   display: block;
   padding: 24px;
+}
+
+/* Sipariş geçmişi kendi başına da açılıyor (salon menüsü, sipariş ekranı).
+   Detay penceresinin tam genişliği burada gereksiz: çizelge tek sütun, geniş
+   pencerede satırlar ortada küçük bir şerit gibi kalıyordu. */
+.gecmis-pencere {
+  width: min(680px, 94vw);
+  max-height: 86vh;
+  display: flex;
+  flex-direction: column;
+}
+
+.gecmis-pencere .up-ust h3 {
+  display: flex;
+  align-items: center;
+  gap: 9px;
+}
+
+.gecmis-govde {
+  padding: 22px 24px 8px;
+  overflow-y: auto;
+}
+
+/* Kendi penceresinde çizelge zaten ortada; ikinci bir daraltma satırları
+   pencerenin soluna itiyordu. */
+.gecmis-govde .detay-cizelge {
+  max-width: none;
+}
+
+@media (max-width: 620px) {
+  .gecmis-govde {
+    padding: 16px 14px 4px;
+  }
+
+  /* Telefonda 96px'lik saat sütunu metne yer bırakmıyor: saat kendi satırında,
+     olayın üstünde duruyor. */
+  .gecmis-govde .detay-cizelge li {
+    grid-template-columns: 28px minmax(0, 1fr);
+    gap: 10px;
+    padding-bottom: 16px;
+  }
+
+  /* Bağlantı çizgisinin yerini de dar düzene çekmek şart: 123px'lik masaüstü
+     konumu telefonda metnin ortasından geçiyor, harflerin üstünü kapatıyordu.
+     Seçici asıl kuralın özgüllüğünü aşmalı — ikisi eşit olduğunda dosyada
+     sonra gelen kazanıyor ve asıl kural bu bloktan sonra yazılmış. */
+  .gecmis-govde .detay-cizelge li:not(:last-child)::before {
+    left: 13px;
+  }
+
+  .gecmis-govde .cizelge-saat {
+    grid-column: 2;
+    grid-row: 1;
+    padding-top: 0;
+    font-size: 13px;
+  }
+
+  .gecmis-govde .cizelge-im {
+    grid-row: 1 / span 2;
+  }
+
+  .gecmis-govde .cizelge-metin {
+    grid-column: 2;
+    padding-top: 0;
+  }
 }
 
 .detay-sutun {
@@ -11634,6 +11806,9 @@ body {
   white-space: nowrap;
 }
 
+/* Olağan akış (açıldı · ürün girildi · ödendi · kapandı) sessiz duruyor; mercan
+   yalnız deftere düşen müdahalelerde. Hepsi mercanken yirmi satırlık çizelgede
+   hiçbiri öne çıkmıyordu, oysa çizelgeye bakmanın sebebi tam da o satırlar. */
 .cizelge-im {
   display: flex;
   align-items: center;
@@ -11641,8 +11816,13 @@ body {
   width: 28px;
   height: 28px;
   border-radius: 50%;
-  background: var(--mercan-sis);
-  color: var(--mercan);
+  background: #eaf0f7;
+  color: #55647a;
+}
+
+.detay-cizelge li.dikkat .cizelge-im {
+  background: var(--mercan);
+  color: #fff;
 }
 
 .cizelge-metin {
@@ -15689,8 +15869,10 @@ body {
   color: inherit;
 }
 
-/* İkonun dairesi, ikonun kendi renginin soluk hâli. Renk satırın anlamını
-   taşıyor: para yeşil, yazdırma mavi, geri alınamayan iş kırmızı. */
+/* Her satır kendi renginde yazılıyordu — sekiz satırlık menüde altı ayrı renk
+   çıkıyor, liste alacalı görünüyordu. Bilgisayardaki masa menüsü tek renkte;
+   iki yüzey aynı görünsün diye burası da öyle. Renk bir tek geri alınamayan
+   işte kalıyor: iptali ayırt etmek görsel bir tercih değil. */
 .m-islem-ikon {
   flex-shrink: 0;
   width: 40px;
@@ -15698,15 +15880,16 @@ body {
   display: grid;
   place-items: center;
   border-radius: 13px;
-  background: color-mix(in srgb, currentColor 14%, #fff);
+  background: #eef2f7;
+  color: #55647a;
 }
 
-.m-islem-ode { color: #23a06f; }
-.m-islem-yazdir { color: #3b7fc4; }
-.m-islem-tasi { color: #7b5fc0; }
 .m-islem-iptal { color: #d64545; }
-.m-islem-not { color: #5a8f8a; }
-.m-islem-kisi { color: #4a7bb5; }
+
+.m-islem-iptal .m-islem-ikon {
+  background: #fdeceb;
+  color: #d64545;
+}
 
 /* Geri alınamayan işler ayrı bölümde: parmağın yanlışlıkla düşmemesi için
    üstlerinde ince bir ayırıcı var. */

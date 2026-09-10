@@ -1,4 +1,5 @@
 import { supabase } from "./supabase";
+import { kisaAd } from "./personel";
 
 /**
  * Denetim defteri: hassas işlemlerin "kim, ne zaman, ne yaptı" kaydı.
@@ -14,7 +15,9 @@ export type DenetimIslemi =
   | "adisyon_ikram"
   | "tahsilat_sil"
   | "tahsilat_tip_duzelt"
-  | "hesap_eksik_kapat";
+  | "hesap_eksik_kapat"
+  | "adisyon_masa_degisti"
+  | "adisyon_birlestirildi";
 
 export type DenetimKaydi = {
   islem: DenetimIslemi;
@@ -40,6 +43,8 @@ const ISLEM_ADLARI: Record<DenetimIslemi, string> = {
   tahsilat_sil: "Tahsilat silindi",
   tahsilat_tip_duzelt: "Ödeme tipi düzeltildi",
   hesap_eksik_kapat: "Hesap eksik kapatıldı",
+  adisyon_masa_degisti: "Başka masaya taşındı",
+  adisyon_birlestirildi: "Başka masayla birleştirildi",
 };
 
 export function islemAdi(islem: string) {
@@ -86,6 +91,21 @@ export type DenetimSatiri = {
   odenmez: string;
 };
 
+/**
+ * Tek adisyonun defter kayıtları, zaman çizelgesi için eskiden yeniye.
+ * Dönem sorgusundan süzmek yerine ayrı okunuyor: çizelge aylar önce kapanmış
+ * bir hesapta da açılabiliyor, o kayıt seçili dönemin dışında kalır.
+ */
+export async function adisyonDenetimi(adisyonId: number): Promise<DenetimSatiri[]> {
+  const { data } = await supabase
+    .from("denetim_kayitlari")
+    .select("id, zaman, kisi_id, kisi_ad, islem, adisyon_id, yer, konu, adet, tutar, sebep, odenmez")
+    .eq("adisyon_id", adisyonId)
+    .order("zaman", { ascending: true });
+
+  return satirlaraCevir(data as any[]);
+}
+
 export async function denetimGetir(bas: string, bit: string): Promise<DenetimSatiri[]> {
   const { data } = await supabase
     .from("denetim_kayitlari")
@@ -95,10 +115,17 @@ export async function denetimGetir(bas: string, bit: string): Promise<DenetimSat
     .order("zaman", { ascending: false })
     .limit(2000);
 
-  return ((data as any[]) ?? []).map((s) => ({
+  return satirlaraCevir(data as any[]);
+}
+
+function satirlaraCevir(data: any[] | null): DenetimSatiri[] {
+  return (data ?? []).map((s) => ({
     id: s.id,
     zaman: s.zaman,
-    kisi: s.kisi_ad || "—",
+    // Defterdeki ad sunucuda tam yazılıyor ("Ramazan Aktaş"); ekranın her yerinde
+    // kısa biçim kullanıldığı için burada da kısaltılıyor. Aynı kişi bir satırda
+    // "Ramazan A.", diğerinde "Ramazan AKTAŞ" görünüyordu.
+    kisi: s.kisi_ad ? kisaAd(s.kisi_ad) : "—",
     kisiId: s.kisi_id ?? null,
     islem: s.islem,
     islemAd: islemAdi(s.islem),

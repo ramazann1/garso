@@ -1,7 +1,140 @@
 # GARSO — Teknik Tasarım: Veri Modeli & Ekran Haritası
 *Restoran ve cafe'ler için bulut tabanlı satış ve işletme yönetim sistemi.*
 
-## 0. SIRADAKİ İŞ (9 Eyl 2026 güncellendi)
+## 0. SIRADAKİ İŞ (10 Eyl 2026 güncellendi)
+
+> **10 Eyl 2026 — Adisyonlar sekmesi ve sipariş geçmişi.**
+>
+> **Karar: kahraman kartın rengi koyu kalıyor (Ramazan).** 9 Eyl'de ertelenen
+> seçim kapandı, dört seçenek yeniden üretilmedi. **Karar: tek günlük dönemde
+> "Saatlere göre" gizlenmiyor (Ramazan);** aynı verinin iki boyda görünmesi
+> sorun değil. Başlığın yanındaki "İşletme günü 08:00'de başlıyor" yazısı
+> kaldırıldı.
+>
+> **Adisyo turu — Gün Sonu Raporu > Tüm Adisyonlar** (canlı, Chrome).
+> Adisyo'nun rapor menüsü altı satır: Ürün Satış, Gün Sonu, Vardiya Satış,
+> Restaurant İstatistikleri, Stok Durum, Fire. Bizim Analiz ekranımızın
+> karşılığı Gün Sonu Raporu ve içindeki dikey liste (Özet, Tüm Adisyonlar,
+> Yoğunluk, Masa/Gel Al/Paket Siparişler, Açık Hesap, Ödenmezler, Garson Bazlı,
+> İptal/İadeler, Masraflar, Zayi...).
+> **Bizde olmayan:** ikinci ve kısa bir "Sipariş No" (adisyon no 457976532 iken
+> sipariş no 149 — günlük konuşulan numara o). Sıraya alınmadı, Ramazan'a
+> sorulacak.
+> **Adisyo'nun zayıf yanları (bilerek tekrarlanmadı):** arama kutusu yok;
+> sıralama yalnız iki sütunda; başlık satırı yapışkan değil; tablo yatay taşıyor
+> ve toplam satırının sağ ucu ekran dışında kalıyor; aynı ekranda iki para
+> biçimi (`2590.00` ile `₺69.161,50`); durum düz metin; İndirim/Bahşiş sütunları
+> baştan sona sıfır ama yer kaplıyor; detay penceresinde Müşteri, Sipariş Notu
+> ve Müşteri Adresi masa hesabında hiç dolmadığı hâlde boş satır olarak duruyor.
+> Filtresi yalnız tarih/saat/ödeme tipi — **bu konuda biz zaten çok öndeyiz.**
+>
+> **Adisyonlar sekmesi elden geçti.** Üstte `ozet-serit` (adisyon sayısı ·
+> ortalama adisyon · misafir ve kişi başı · toplam); rakamlar listede görünenin
+> toplamı, arama daralınca şerit de daralıyor. **Kullanılmayan para sütunları
+> hiç çizilmiyor** (kuver/garsoniye/indirim/bahşiş) — ölçüt dönemin tamamı,
+> arama sonucu değil, yoksa yazdıkça sütun kaybolurdu. Eksik tahsilatlı satırın
+> solunda mercan çizgi (`.adisyon-eksik`).
+>
+> **Tablo görünümü — dört düzeltme.** (1) **Sıralama okları sessizleşti:** on
+> dört ok birden duruyordu, başlık şeridi kontrol paneline benziyordu; ok artık
+> yalnız sıralanan ve farenin üstünde olduğu sütunda. Sağa hizalı sütunlarda oku
+> adın soluna atan `flex-direction: row-reverse` kaldırıldı. (2) **Boş para
+> hücrelerindeki tireler kalktı** — ekranın yarısı "—" ile doluyordu. (3)
+> **Tahsilat çipe döndü** (`.tahsilat-cip`): ödeme tipi nötr çipte, adet ("4 ×")
+> çipin dışında sayı olarak; durum rozetiyle aynı dil. (4) **Toplam satırının
+> üstüne ayırıcı**, "TOPLAM" etiket tonunda.
+>
+> **Karar: durum rozetleri beş ayrı aileden.** Kapandı, İptal ve İkram aynı
+> gri-mavi tonun üç komşusuydu, uzaktan ayırt edilmiyorlardı (Ramazan yakaladı).
+> Açık yeşil, Kapandı gri-mavi, Eksik tahsilat mercan, İkram kehribar (zemini
+> maviyken yazısı altındı — eski paletten kalma uyumsuzluk), **İptal renkle
+> değil biçimle ayrılıyor: dolgusuz, çerçeveli.** Beş dolu rozet yan yana gelince
+> tablo alacalı görünüyor, üstelik iptal bir hata değil. `.rozet` iki ekranda
+> kullanılıyor (Analiz Durum sütunu ve Yazdırma Kuyruğu), anlamlar örtüştüğü
+> için ayrı sınıf açılmadı.
+>
+> **Zaman çizelgesi denetim defterini de okuyor.** Çizelge zaten vardı ama dört
+> olay türü tutuyordu (açıldı, ürün eklendi, ödendi, kapandı); hesapta ne olduğu
+> sorusunun asıl cevabı olan defter kayıtları girmiyordu. `adisyonDenetimi()`
+> eklendi — dönem sorgusundan süzmek yerine ayrı okunuyor, çünkü çizelge aylar
+> önce kapanmış hesapta da açılabiliyor. Detayla **paralel** çekiliyor, geçmişe
+> basınca bekleme olmuyor. Dokuz yeni olay kendi ikonuyla.
+> **Karar: çizelgede renk mantığı ters çevrildi.** Bütün imler mercandı, yirmi
+> satırlık çizelgede hiçbiri öne çıkmıyordu. Artık olağan akış sessiz (gri-mavi),
+> **mercan yalnız deftere düşen müdahalelerde** — çizelgeyi açmanın sebebi zaten
+> o satırlar.
+>
+> **Masa taşıma ve birleştirme deftere yazılıyor** (`adisyon_masa_degisti`,
+> `adisyon_birlestirildi`, "S 8 → DB 6" biçiminde). SQL gerekmedi: `islem`
+> serbest metin, yeni tür eklenebilsin diye bilerek öyle tasarlanmış. İki incelik:
+> **masa adları işlemden önce okunuyor** (taşımadan sonra eski ad adisyondan
+> silinmiş oluyor) ve **birleştirmede kayıt hedefe yazılıyor** (kaynak adisyon
+> siliniyor, ona bağlansaydı satır sahipsiz kalırdı).
+>
+> **Ödemeyi alan ve hesabı kapatan kişi kaydediliyor**
+> (`sql/2026-09-10-tahsilat-kapanis-imzasi.sql`): `tahsilatlar.kisi_id` ve
+> `adisyonlar.kapatan_id`, imza 5 Eyl kuralıyla sunucuda atılıyor. Adisyon
+> yeniden aktif edilirse kapatan imzası da siliniyor. Çizelgede o iki satır
+> boştu; eski kayıtlarda boş kalmaya devam ediyor, geriye dönük uydurulmuyor.
+>
+> **Yeni yetki: `siparis.gecmis`** (`sql/2026-09-10-siparis-gecmisi-yetkisi.sql`).
+> Defterin okuma politikası tek koda bağlıydı (`rapor.tumu`): tek bir hesabın
+> geçmişine bakmak için işletmenin bütün raporlarını görme yetkisi gerekiyordu,
+> ikisi aynı iş değil (Ramazan istedi). Politika iki koddan birini kabul ediyor.
+> **Rol ataması ada göre değil mevcut yetkiye göre yapıldı** — işletmeler kendi
+> rollerini kendi adlandırıyor, "Yönetici" diye bir rol olmayabilir. Yetkisi
+> olmayanda düğme hiç çıkmıyor ve sorgu da atılmıyor: geçmiş ya tam görünüyor ya
+> hiç, yarım ve sessiz hâli yok.
+>
+> **`SiparisGecmisi.tsx` kendi penceresine çıktı** — çizelge detay penceresine
+> gömülüydü. Kendi verisini kendi çekiyor, dört yerden aynı pencere açılıyor:
+> Analiz'in adisyon detayı, **Salon → masa menüsü**, **sipariş ekranı → başlıkta
+> "Geçmiş"**, ve mobil ikizleri (**Masalar → masa kartı menüsü**, **mobil sipariş
+> → üç nokta**). Pencere 680px: detay penceresinin tam genişliğinde çizelge
+> ortada ince bir şerit gibi kalıyordu. Telefonda saat, olayın soluna değil
+> **üstüne** alınıyor — 96px'lik saat sütunu dar ekranda metne yer bırakmıyor.
+>
+> **Karar: mobil işlem menüsünde renk cümbüşü bitti (Ramazan).** Her satır kendi
+> rengindeydi; sekiz satırlık menüde altı ayrı renk çıkıyordu. Üstelik yarım
+> uygulanmıştı — "Hızlı Öde" ve "Adisyonu ikram et"in renk kuralı hiç
+> yazılmamıştı. Bilgisayardaki masa menüsü tek renkte, mobil de öyle oldu.
+> **Tek istisna iptal:** geri alınamayan tek iş o, parmak listeyi kaydırırken
+> üstüne düşmemeli.
+>
+> **Hızlı Öde telefonda ortada yüzen pencere oldu.** Tam ekrana yayılıyordu,
+> ödeme tipi az olan işletmede içerik ekranın yarısında bitip altında ekran boyu
+> boşluk kalıyordu. Alt sayfa denendi, **Ramazan ortalanmış ve arkası bulanık
+> istedi.** Boyunu içerik veriyor, en fazla %88.
+>
+> **Kural: ortak pencere kabuğunu (`.up-modal.tam`) ezerken özgüllüğü say.**
+> Bu seansta üç kez aynı tuzağa düşüldü: yazılan kural asıl kuralla eşit ya da
+> düşük özgüllükte kalıyor, üstelik asıl kural dosyada daha sonra yazılmış olduğu
+> için sessizce kazanıyor. Belirti "CSS'i yazdım ama hiçbir şey değişmedi".
+> Üçü de seçici güçlendirilerek çözüldü (`.up-modal.tam.hizli-ode`,
+> `.up-fon:has(> .hizli-ode.tam)`, `.gecmis-govde .detay-cizelge li:not(:last-child)::before`).
+>
+> **İsim biçimi tek elden.** Denetim defterindeki ad sunucuda tam yazılıyor;
+> çizelgede "Ramazan A." ile "Ramazan AKTAŞ" yan yana düşüyordu (Ramazan
+> yakaladı). Kısaltma defter okumasının içine alındı, Denetim sekmesi de aynı
+> biçimi kullanıyor. Defterdeki tam ad kaydı olduğu gibi duruyor.
+>
+> **Konsoldaki 401 seli kapandı.** Bağlantı yoklaması (`baglanti.ts`) anahtarsız
+> soruyordu; Supabase sağlık kapısını da anahtar ister hâle getirince her yoklama
+> 401 dönüyor, dakikada iki kırmızı satır birikiyordu. Yoklama doğru çalışıyordu
+> (401 de bir cevaptır) ama gerçek hatalar aralarında kayboluyordu. **`no-cors`
+> denendi, işe yaramadı** — tarayıcı cevabı bize kapatsa da hatayı yine basıyor,
+> üstelik `ERR_ABORTED` ekliyor. Çözüm `apikey` başlığını göndermek; bedeli otuz
+> saniyede bir fazladan izin isteği (preflight), kodun eski yorumunda bu bedelden
+> kaçınılmıştı ama gerekçe geçersiz kaldı.
+>
+> **Giriş hatası tekrarladı (1 Eyl'de "çözüldü" sanılmıştı).** Belirti aynı:
+> giriş 200 dönüyor, oturum kuruluyor, ekran değişmiyor; yenileyince salon
+> geliyor. Oturum akışı satır satır okundu, kuşak koruması yerinde ve doğru —
+> gözle açık bulunamadı. Sert yenileme sonrası görülmedi; bu seansta on iki dosya
+> değiştiği için sıcak güncelleme yan etkisi olma ihtimali var (`oturum.ts`
+> `durumluModul` kullanıyor ama abone tarafı eski kopyada kalmış olabilir).
+> **Tekrarlarsa tahminle kod değiştirilmeyecek** — canlı gözlemle teşhis edilecek.
+
 
 > **9 Eyl 2026 (2. seans) — İçe/Dışa Aktar bitti, Analiz Özeti baştan kuruldu.**
 >
@@ -799,17 +932,18 @@
 >    gezinme yenilendi, mobil ikizler kapandı (7–9 Eyl 2026), İçe/Dışa Aktar ve
 >    Analiz Özeti bitti (9 Eyl). Kalan iş **ekranların gövdesinde**; ekran ekran
 >    gidiliyor. Sıra:
->    a. **Kahraman kartın rengi** — Ramazan koyuyu beğenmedi, dört seçenek
->       gösterildi (açık şeftali / beyaz / açık gri-mavi / koyu), karar
->       ertelendi. Seçim yapılınca kurulacak; "≈ aynı" rozeti açık zeminlerde
->       koyu kalıyor, o da o zaman ayarlanacak. Seçenekler seans sonunda silinen
->       `public/kahraman-secenekler.html`'deydi, gerekirse yeniden üretilir.
->    b. **Analiz'in kalan sekmeleri** — Özet bitti; Adisyonlar, Ürünler, Mutfak,
->       Personel, Giderler, Ödenmezler, Açık Hesap, Denetim hâlâ düz tablo.
->       Grafik bileşenleri hazır (`Grafikler.tsx`), tablolardaki oran sütunları
->       çubuğa dönecek. **Açık soru:** dönem "Bugün/Dün" iken Ciro seyri zaten
->       saatlik, alttaki "Saatlere göre" ile birebir aynı oluyor — tek günlük
->       dönemde alttaki gizlensin mi? Ramazan'a soruldu, cevap bekliyor.
+>    a. **Analiz'in kalan sekmeleri** — Özet ve **Adisyonlar** bitti (10 Eyl).
+>       Kalan: Ürünler, Mutfak, Personel, Giderler, Ödenmezler, Açık Hesap,
+>       Denetim. **Not: 9 Eyl'deki "hepsi düz tablo" teşhisi yanlıştı** — Ürünler,
+>       Personel ve Giderler zaten şerit + dağılım + pay çubuğu düzenindeydi.
+>       Gerçekten geride kalan üç yer: **Ödenmezler** (Pay düz yüzde metni;
+>       ayrıca satır açılınca ürün dökümü **yanlış sütunlara düşüyor** —
+>       `colSpan={2}` yüzünden adet Tutar'ın, tutar Pay'ın altına geliyor),
+>       **Açık Hesap** ve **Mutfak** (grafiği yok). Ramazan hepsinin sırayla
+>       elden geçmesini istiyor: "hepsi çok ilkel görünüyor".
+>    b. **Ödeme tipi kartlarının renkleri** — Hızlı Öde'de altı ayrı renk yan
+>       yana. Ramazan'a soruldu (işletmenin kendi tanımı mı, sadeleşsin mi),
+>       cevap bekliyor.
 >    c. **Seçenek Grupları ve Birimler/KDV sekmelerinin gövdesi** — Menü
 >       Stüdyosu'nun kalan üç sekmesi; alt şeritleri 9 Eyl'de düzeldi, liste ve
 >       form düzenleri elden geçmedi.
@@ -865,6 +999,9 @@
 >     İçi açılıp bakılacak: gerçekten eski yedekse silinecek, veri duruyorsa
 >     dokunulmayacak.
 > 11. **İkon boyut standardı** — bütün ekranlar tek tek gezilecek, en sonda
+> 12. **Kısa sipariş numarası** — Adisyo'da adisyon numarasının yanında ikinci
+>     ve kısa bir numara var (adisyon 457976532 / sipariş 149); günlük konuşulan
+>     numara o. Bizde tek numara. Ramazan'a sorulacak: gerek var mı?
 >
 > Ertelenen üçlü (2-4) buraya konuldu: acelesi yok ama stok ve raporlardan
 > sonra, sadakat ve çoklu şubeden önce. Ardından canlıya çıkış işleri

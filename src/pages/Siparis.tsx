@@ -6,6 +6,7 @@ import {
   Check,
   ChevronDown,
   CloudOff,
+  History,
   LockKeyhole,
   Minus,
   Percent,
@@ -42,6 +43,7 @@ import TahsilatPanel from "../components/TahsilatPanel";
 import HizliOde from "../components/HizliOde";
 import IndirimModal from "../components/IndirimModal";
 import { indirimYapabilir, yetkiVar } from "../oturum";
+import SiparisGecmisi from "../components/SiparisGecmisi";
 import { servisEtiketi, servisSatirlari, servisTutarlari, servisVar } from "../servis";
 import KdvDokum from "../components/KdvDokum";
 import OnayModal from "../components/OnayModal";
@@ -236,6 +238,10 @@ export default function Siparis() {
   const [bilgiAcik, setBilgiAcik] = useState(false);
   const [kisiSorusu, setKisiSorusu] = useState(false);
   const [adisyonNo, setAdisyonNo] = useState<number | undefined>();
+  // Masa siparişinde adisyonun kimliği adresten gelmiyor, kayıttan okunuyor;
+  // sipariş geçmişi penceresi onu istiyor.
+  const [acikAdisyonId, setAcikAdisyonId] = useState<number | undefined>();
+  const [gecmisAcik, setGecmisAcik] = useState(false);
 
   // Kayıt bağlantı yüzünden düşerse kuyruğa ekrandaki sepetin değil, kayda
   // gidecek tamamlanmış hâlin kopyası giriyor.
@@ -340,6 +346,7 @@ export default function Siparis() {
         )
       );
       setAdisyonNo(veri.no);
+      setAcikAdisyonId(veri.id);
       setBilgi(adisyondanBilgi(veri));
       setServis(adisyondanServis(veri));
       if (masasiz) setMasasizBilgi(veri);
@@ -644,6 +651,16 @@ export default function Siparis() {
               : "Adisyon bilgisi ekle"}
           </span>
         </button>
+
+        {/* Hesabın geçmişi başlığın sağ ucunda: sipariş alırken "bu masada ne
+            oldu" sorusu için Analiz'e gitmek gerekmesin. Adisyon açılmadan
+            önce (ürün girilmemiş masada) gösterecek bir şey yok. */}
+        {acikAdisyonId && yetkiVar("siparis.gecmis") && (
+          <button className="ust-gecmis" onClick={() => setGecmisAcik(true)}>
+            <History size={16} />
+            Geçmiş
+          </button>
+        )}
       </header>
 
       <div className="siparis-govde">
@@ -1109,6 +1126,14 @@ export default function Siparis() {
             setKisiSorusu(false);
           }}
           onVazgec={() => navigate("/")}
+        />
+      )}
+
+      {gecmisAcik && acikAdisyonId && (
+        <SiparisGecmisi
+          adisyonId={acikAdisyonId}
+          baslik={masasiz ? `#${adisyonNo}` : masaAdi}
+          onKapat={() => setGecmisAcik(false)}
         />
       )}
 

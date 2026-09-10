@@ -1528,10 +1528,24 @@ export async function masaTasi(kaynakMasaId: number, hedefMasaId: number) {
   const hedef = await acikAdisyonBul(hedefMasaId);
   if (hedef) throw new Error("Hedef masada açık adisyon var. Taşımak yerine birleştirin.");
 
+  // Masa adları taşımadan önce okunuyor: sonrasında kaynak adı adisyondan
+  // silinmiş oluyor ve deftere "nereden" bilgisi yazılamıyordu.
+  const nereden = await adisyonYeri(kaynak.id);
+
   await supabase
     .from("adisyonlar")
     .update({ masa_id: hedefMasaId, guncelleme: new Date().toISOString() })
     .eq("id", kaynak.id);
+
+  const nereye = await adisyonYeri(kaynak.id);
+  await denetimYaz([
+    {
+      islem: "adisyon_masa_degisti",
+      adisyonId: kaynak.id,
+      yer: nereye,
+      konu: `${nereden} → ${nereye}`,
+    },
+  ]);
 }
 
 /**
@@ -1548,6 +1562,13 @@ export async function masaBirlestir(kaynakMasaId: number, hedefMasaId: number) {
   ]);
   if (!kaynak) throw new Error("Bu masada açık adisyon yok.");
   if (!hedef) throw new Error("Hedef masada açık adisyon yok. Bu masayı oraya taşıyabilirsiniz.");
+
+  // Adlar en başta okunuyor: kaynak adisyon birleşmenin sonunda siliniyor,
+  // o zaman "hangi masa nereye katıldı" bilgisi artık hiçbir yerden okunamaz.
+  const [kaynakAd, hedefAd] = await Promise.all([
+    adisyonYeri(kaynak.id),
+    adisyonYeri(hedef.id),
+  ]);
 
   const [{ data: kaynakTurlar }, { data: hedefTurlar }] = await Promise.all([
     supabase.from("turlar").select("id, sira").eq("adisyon_id", kaynak.id).order("sira"),
@@ -1570,6 +1591,17 @@ export async function masaBirlestir(kaynakMasaId: number, hedefMasaId: number) {
 
   await supabase.from("adisyonlar").delete().eq("id", kaynak.id);
   await servisiTazele(hedef.id);
+
+  // Kayıt hedefe yazılıyor; kaynak adisyon artık yok, ona bağlansaydı silinme
+  // anında adisyon bağı kopar ve defterdeki satır sahipsiz kalırdı.
+  await denetimYaz([
+    {
+      islem: "adisyon_birlestirildi",
+      adisyonId: hedef.id,
+      yer: hedefAd,
+      konu: `${kaynakAd} → ${hedefAd}`,
+    },
+  ]);
 }
 
 /**

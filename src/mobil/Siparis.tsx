@@ -10,6 +10,7 @@ import {
   CircleCheck,
   CloudOff,
   EllipsisVertical,
+  History,
   LockKeyhole,
   Merge,
   Minus,
@@ -27,6 +28,7 @@ import UrunSecim from "../components/UrunSecim";
 import TahsilatPanel from "../components/TahsilatPanel";
 import KalemPaneli from "../components/KalemPaneli";
 import AdisyonBilgi from "../components/AdisyonBilgi";
+import SiparisGecmisi from "../components/SiparisGecmisi";
 import MisafirSayisi from "../components/MisafirSayisi";
 import MasaSecim from "../components/MasaSecim";
 import { kalemiUygula } from "./KalemIslemleri";
@@ -148,6 +150,10 @@ export default function MobilSiparis() {
   const [hedefOnay, setHedefOnay] = useState<{ tip: "tasi" | "birlestir"; masa: Masa } | null>(null);
   const [iptalSorusu, setIptalSorusu] = useState(false);
   const [kisiSorusu, setKisiSorusu] = useState(false);
+  // Sipariş geçmişi masaüstüyle aynı pencereyi açıyor; telefonda başlıkta yer
+  // olmadığı için giriş noktası üç nokta menüsünde.
+  const [acikAdisyonId, setAcikAdisyonId] = useState<number | undefined>();
+  const [gecmisAcik, setGecmisAcik] = useState(false);
   const [uyari, setUyari] = useState<string | null>(null);
   const [gonderiliyor, setGonderiliyor] = useState(false);
 
@@ -223,6 +229,7 @@ export default function MobilSiparis() {
     oku().then((veri) => {
       setSepet(veri.sepet);
       setIndirim(veri.indirim);
+      setAcikAdisyonId(veri.id);
       setTahsilatlar(veri.tahsilatlar);
       setKisiSayisi(veri.kisiSayisi);
       const okunan = {
@@ -973,6 +980,20 @@ export default function MobilSiparis() {
                   </span>
                   Adisyonu gör
                 </button>
+                {acikAdisyonId && yetkiVar("siparis.gecmis") && (
+                  <button
+                    className="m-islem m-islem-gecmis"
+                    onClick={() => {
+                      setIslemlerAcik(false);
+                      setGecmisAcik(true);
+                    }}
+                  >
+                    <span className="m-islem-ikon">
+                      <History size={19} />
+                    </span>
+                    Sipariş geçmişi
+                  </button>
+                )}
                 {odemeAlabilir && (
                 <button
                   className="m-islem m-islem-ode"
@@ -1201,6 +1222,14 @@ export default function MobilSiparis() {
             setSecimUrunu(null);
           }}
           onKapat={() => setSecimUrunu(null)}
+        />
+      )}
+
+      {gecmisAcik && acikAdisyonId && (
+        <SiparisGecmisi
+          adisyonId={acikAdisyonId}
+          baslik={masaAdi}
+          onKapat={() => setGecmisAcik(false)}
         />
       )}
 

@@ -392,19 +392,64 @@ function Adisyonlar({
   const topla = (alan: (a: AnalizAdisyon) => number) =>
     adisyonlar.reduce((t, a) => t + alan(a), 0);
 
+  // Kuver, garsoniye, indirim ve bahşiş her işletmede kullanılmıyor; hiç
+  // kullanılmamış sütun baştan sona "—" ile dolup tabloyu kalabalıklaştırıyordu.
+  // Ölçüt dönemin tamamı, arama sonucu değil — yazdıkça sütun kaybolmasın.
+  const varsa = (alan: (a: AnalizAdisyon) => number) => hepsi.some((a) => alan(a) > 0);
+  const kuverVar = varsa((a) => a.kuver);
+  const garsoniyeVar = varsa((a) => a.garsoniye);
+  const indirimVar = varsa((a) => a.indirim);
+  const bahsisVar = varsa((a) => a.bahsis);
+
   const toplamSatiri = (
     <tr className="analiz-toplam">
       <th colSpan={9}>Toplam</th>
-      <th className="sag">{paraGoster(topla((a) => a.kuver))}</th>
-      <th className="sag">{paraGoster(topla((a) => a.garsoniye))}</th>
-      <th className="sag">{paraGoster(topla((a) => a.indirim))}</th>
-      <th className="sag">{paraGoster(topla((a) => a.bahsis))}</th>
+      {kuverVar && <th className="sag">{paraGoster(topla((a) => a.kuver))}</th>}
+      {garsoniyeVar && <th className="sag">{paraGoster(topla((a) => a.garsoniye))}</th>}
+      {indirimVar && <th className="sag">{paraGoster(topla((a) => a.indirim))}</th>}
+      {bahsisVar && <th className="sag">{paraGoster(topla((a) => a.bahsis))}</th>}
       <th className="sag hucre-tutar">{paraGoster(topla((a) => a.toplam))}</th>
     </tr>
   );
 
+  // Şeridin rakamları listede görünenin toplamı: arama daraldıkça şerit de
+  // daralıyor, alttaki toplam satırıyla aynı kaynaktan besleniyor.
+  const misafir = topla((a) => a.kisiSayisi);
+  const ciro = topla((a) => a.toplam);
+  const eksikSayisi = adisyonlar.filter((a) => a.durum === "kapali" && a.kalan > 0).length;
+
   return (
-    <section className="ayar-bolum">
+    <div className="analiz-ozet">
+      <section className="ozet-serit">
+        <div className="serit-satir">
+          <div className="serit-sayi">
+            <span className="serit-etiket">
+              <ClipboardList size={15} /> Adisyon
+            </span>
+            <strong>{adisyonlar.length}</strong>
+            <em>
+              {eksikSayisi > 0 ? `${eksikSayisi} tanesinde eksik tahsilat` : "hesap açıldı"}
+            </em>
+          </div>
+          <div className="serit-sayi">
+            <span className="serit-etiket">Ortalama adisyon</span>
+            <strong>{paraGoster(adisyonlar.length ? ciro / adisyonlar.length : 0)}</strong>
+            <em>hesap başına</em>
+          </div>
+          <div className="serit-sayi">
+            <span className="serit-etiket">Misafir</span>
+            <strong>{misafir ? sayiGoster(misafir) : "—"}</strong>
+            <em>{misafir ? `kişi başı ${paraGoster(ciro / misafir)}` : "sayı girilmemiş"}</em>
+          </div>
+          <div className="serit-sayi serit-toplam">
+            <span className="serit-etiket">Toplam</span>
+            <strong>{paraGoster(ciro)}</strong>
+            <em>listedeki hesapların tutarı</em>
+          </div>
+        </div>
+      </section>
+
+      <section className="ayar-bolum">
       <div className="analiz-liste-ust">
         <h2>
           <ClipboardList size={17} /> {adisyonlar.length} adisyon
@@ -426,16 +471,24 @@ function Adisyonlar({
               <SiraBaslik alan="garson" ad="Açan" sira={sira} sirala={sirala} />
               <SiraBaslik alan="durum" ad="Durum" sira={sira} sirala={sirala} />
               <SiraBaslik alan="tahsilat" ad="Tahsilat" sira={sira} sirala={sirala} />
-              <SiraBaslik alan="kuver" ad="Kuver" sag sira={sira} sirala={sirala} />
-              <SiraBaslik alan="garsoniye" ad="Garsoniye" sag sira={sira} sirala={sirala} />
-              <SiraBaslik alan="indirim" ad="İndirim" sag sira={sira} sirala={sirala} />
-              <SiraBaslik alan="bahsis" ad="Bahşiş" sag sira={sira} sirala={sirala} />
+              {kuverVar && <SiraBaslik alan="kuver" ad="Kuver" sag sira={sira} sirala={sirala} />}
+              {garsoniyeVar && (
+                <SiraBaslik alan="garsoniye" ad="Garsoniye" sag sira={sira} sirala={sirala} />
+              )}
+              {indirimVar && (
+                <SiraBaslik alan="indirim" ad="İndirim" sag sira={sira} sirala={sirala} />
+              )}
+              {bahsisVar && <SiraBaslik alan="bahsis" ad="Bahşiş" sag sira={sira} sirala={sirala} />}
               <SiraBaslik alan="toplam" ad="Tutar" sag sira={sira} sirala={sirala} />
             </tr>
           </thead>
           <tbody>
             {adisyonlar.map((a) => (
-              <tr key={a.id} onClick={() => onSec(a.id)}>
+              <tr
+                key={a.id}
+                className={a.durum === "kapali" && a.kalan > 0 ? "adisyon-eksik" : undefined}
+                onClick={() => onSec(a.id)}
+              >
                 <td className="hucre-no">#{a.no}</td>
                 <td>{zamanMetni(a.acilis)}</td>
                 <td>{a.kapanis ? zamanMetni(a.kapanis) : "—"}</td>
@@ -446,11 +499,15 @@ function Adisyonlar({
                 <td>
                   <Durum adisyon={a} />
                 </td>
-                <td>{tahsilatMetni(a)}</td>
-                <td className="sag">{a.kuver ? paraGoster(a.kuver) : "—"}</td>
-                <td className="sag">{a.garsoniye ? paraGoster(a.garsoniye) : "—"}</td>
-                <td className="sag">{a.indirim ? paraGoster(a.indirim) : "—"}</td>
-                <td className="sag">{a.bahsis ? paraGoster(a.bahsis) : "—"}</td>
+                <td>
+                  <TahsilatCipi adisyon={a} />
+                </td>
+                {kuverVar && <td className="sag">{a.kuver ? paraGoster(a.kuver) : ""}</td>}
+                {garsoniyeVar && (
+                  <td className="sag">{a.garsoniye ? paraGoster(a.garsoniye) : ""}</td>
+                )}
+                {indirimVar && <td className="sag">{a.indirim ? paraGoster(a.indirim) : ""}</td>}
+                {bahsisVar && <td className="sag">{a.bahsis ? paraGoster(a.bahsis) : ""}</td>}
                 <td className="sag hucre-tutar">{paraGoster(a.toplam)}</td>
               </tr>
             ))}
@@ -458,7 +515,8 @@ function Adisyonlar({
           <tfoot>{toplamSatiri}</tfoot>
         </table>
       </div>
-    </section>
+      </section>
+    </div>
   );
 }
 
@@ -517,6 +575,24 @@ function tahsilatMetni(a: AnalizAdisyon) {
   return tipler.size === 1
     ? `${a.odemeler.length} × ${a.odemeler[0].tip}`
     : `${a.odemeler.length} tahsilat`;
+}
+
+/**
+ * Ödeme tipi düz yazıyken durum rozetinin yanında sıradan bir metin gibi
+ * kalıyordu; ikisi aynı dili konuşsun diye tip de kendi çipinde. Adet çipin
+ * dışında: "3 ×" bir sayı, ödeme tipinin parçası değil.
+ */
+function TahsilatCipi({ adisyon: a }: { adisyon: AnalizAdisyon }) {
+  if (a.odemeler.length === 0) return <span className="tahsilat-yok">—</span>;
+
+  const tipler = new Set(a.odemeler.map((o) => o.tip));
+  const tek = tipler.size === 1;
+  return (
+    <span className="tahsilat-cip">
+      {a.odemeler.length > 1 && <b>{a.odemeler.length} ×</b>}
+      <em>{tek ? a.odemeler[0].tip : "tahsilat"}</em>
+    </span>
+  );
 }
 
 function Ozet({
@@ -745,9 +821,6 @@ function Ozet({
           <h2>
             <Clock size={17} /> Saatlere göre
           </h2>
-          <span className="oz-ipucu">
-            İşletme günü {ayarlar().kasaGunuBaslangic}'de başlıyor
-          </span>
         </div>
         <Saatler saatler={ozet.saatler} />
       </section>
