@@ -3,6 +3,33 @@
 
 ## 0. SIRADAKİ İŞ (11 Eyl 2026 güncellendi)
 
+> **11 Eyl 2026 (2. seans) — Karar: dört grup kutusu kaldırıldı (Ramazan).**
+> Yıldız · Hacim · Pahalı · Geride ve tablodaki rozetler söküldü. İki kusuru:
+> (1) maliyet bilinmediği için "çok kazandırıyor" aslında yalnız "pahalı"
+> demekti, (2) ortanca listeyi hep ortadan böldüğü için gruplar kendiliğinden
+> dengeli çıkıyor, 34 ürünün 15'i "Yıldız" oluyordu — rozet bir şey söylemiyordu.
+> **Yerine iki cevap kartı:**
+> 1. **Ciroyu taşıyanlar** — "Cironun %80'ini 9 ürün getiriyor." Mutlak ölçü.
+>    Tabloda aynı sınır kesik mercan çizgiyle çiziliyor; çizgi yalnız liste
+>    ciroya göre büyükten küçüğe dizili ve aramasızken görünüyor.
+> 2. **Birlikte satılanlar** — "Salep alanların %40'ı yanında Çay da almış."
+>    Aynı adisyondaki ürün çiftleri (`birlikteSatilanlar`, analiz.ts). Her yere
+>    giden ürün her çifte girmesin diye çift ancak tesadüften %20 sık görülüyorsa
+>    sayılıyor; en az 3 ortak adisyon, kaynak ürün en az 5 adisyonda. İlk beş.
+> Türkçe ekler sayıya göre çekiliyor (`iyelik`: %80'i / %20'si / %6'sı,
+> `dahi`: Çay da / Simit de).
+> **Kart düzeni (Ramazan "şekilsiz, asimetrik" dedi, yeniden kuruldu):** iki
+> kart aynı boyda (`align-items: stretch`), ikisi de başlık → tek cümle özet →
+> en çok 5 satır (`CEVAP_SATIRI`) → dibe oturan "N ürün/çift daha · Tümünü gör ›"
+> şeridi (`CevapDevam`; "daha" yazısı kategori kartındaki gibi koyu). Satırlar
+> iki katlı ve iki kartta aynı boyda. Taşıyanlar: sıra dairesi, ad + ciro,
+> altında adet · kategori ve pay. Birlikte: solda mercan kutuda yüzde, iki ürün
+> çip olarak (öznesi mercan tonlu), altında "X geçen 13 adisyonun 11'inde Y de
+> var". Oran çubuğu kalktı — rakamı ikinci kez söylüyordu. Tümünü gör aramalı
+> `CevapPenceresi` açıyor; çift hesabı artık en çok 50 çift döndürüyor.
+> **Maliyet (gerçek kâr analizi) çok sonraki iş** — ürüne maliyet girilince
+> "çok satan ≠ çok kazandıran" ayrımı ancak o zaman dürüst yapılabilir.
+
 > **11 Eyl 2026 — Analiz → Ürünler sekmesi baştan kuruldu.**
 >
 > **Adisyo turu — Raporlar > Ürün Satış Raporu** (canlı, Chrome). Sol dikey

@@ -13,11 +13,14 @@ import {
   Gift,
   EyeOff,
   Layers,
+  Link2,
   MapPin,
   Package,
+  Plus,
   Receipt,
   ShieldCheck,
   Star,
+  Target,
   TrendingDown,
   TrendingUp,
   Users,
@@ -69,6 +72,7 @@ import {
   type PersonelSatiri,
   type MenuUrunu,
   type SatilmayanUrun,
+  type BirlikteSatis,
   type UrunKategorisi,
   type UrunOzeti,
   type UrunSatiri,
@@ -858,55 +862,62 @@ function degisimOrani(s: UrunSatiri) {
   return ((s.ciro - s.oncekiCiro) / s.oncekiCiro) * 100;
 }
 
-type UrunGrubu = "yildiz" | "hacim" | "pahali" | "geride";
+const BIRLER = ["ı", "i", "si", "ü", "ü", "i", "sı", "si", "i", "u"];
+const ONLAR = ["ü", "u", "si", "u", "ı", "si", "ı", "i", "i", "ı"];
 
-const GRUP_ADLARI: Record<UrunGrubu, { ad: string; aciklama: string }> = {
-  yildiz: { ad: "Yıldız", aciklama: "çok satıyor, çok kazandırıyor" },
-  hacim: { ad: "Hacim", aciklama: "çok satıyor, az kazandırıyor" },
-  pahali: { ad: "Pahalı", aciklama: "az satıyor, çok kazandırıyor" },
-  geride: { ad: "Geride", aciklama: "az satıyor, az kazandırıyor" },
+/** Sayının iyelik eki, okunuşuna göre: 80'i, 20'si, 6'sı, 100'ü. */
+function iyelik(n: number) {
+  const tam = Math.round(Math.abs(n));
+  if (tam % 10) return BIRLER[tam % 10];
+  if (tam === 0) return BIRLER[0];
+  return ONLAR[Math.floor(tam / 10) % 10];
+}
+
+/** "Çay da", "Simit de": son sesli harf kalın mı ince mi. */
+function dahi(ad: string) {
+  const sesliler = ad.toLocaleLowerCase("tr").match(/[aıoueiöü]/g);
+  const son = sesliler?.[sesliler.length - 1];
+  return son && "aıou".includes(son) ? "da" : "de";
+}
+
+/** Belirtme hâli: %80'ini, %20'sini. */
+const iyelikBelirtme = (n: number) => {
+  const ek = iyelik(n);
+  return `${ek}n${ek[ek.length - 1]}`;
 };
 
 /**
- * Ürünü dört gruptan birine yerleştiriyor: adedi ve cirosu dönem ortalamasının
- * üstünde mi altında mı. Önce dağılım grafiği çizilmişti; tek yüksek adetli ürün
- * (çay gibi) yatay ekseni tek başına doldurup diğerlerini köşeye eziyordu,
- * üstelik grafiği okumak için önce grafiği öğrenmek gerekiyordu. Aynı bilgi
- * satırın kendi rozetinde okunuyor artık.
- *
- * Ortalama değil ortanca kullanılıyor: ortalamayı da o tek ürün kaydırıyor.
+ * Cironun %80'ini kaç ürün getiriyor. Ortanca ile dört gruba bölmek denendi;
+ * liste her dönem kendiliğinden ortadan bölündüğü için gruplar hep kabaca
+ * eşit çıkıyor, "Yıldız" rozeti ürünlerin yarısına dağılıp bir şey söylemiyordu.
+ * Bu ölçü mutlak: dönem ne olursa olsun "bu ürünler olmadan ciro çöker" demek.
  */
-function urunGruplari(satirlar: UrunSatiri[]) {
-  const satanlar = satirlar.filter((s) => s.miktar > 0);
-  if (satanlar.length < 4) return new Map<string, UrunGrubu>();
+function ciroyuTasiyanlar(satirlar: UrunSatiri[], toplam: number) {
+  const satanlar = satirlar.filter((s) => s.ciro > 0).sort((a, b) => b.ciro - a.ciro);
+  if (satanlar.length < 5 || toplam <= 0) return null;
 
-  const ortanca = (sayilar: number[]) => {
-    const d = [...sayilar].sort((a, b) => a - b);
-    const o = Math.floor(d.length / 2);
-    return d.length % 2 ? d[o] : (d[o - 1] + d[o]) / 2;
+  let birikim = 0;
+  let adet = 0;
+  while (adet < satanlar.length && birikim < toplam * 0.8) birikim += satanlar[adet++].ciro;
+  return {
+    adet,
+    kalan: satanlar.length - adet,
+    pay: Math.round((birikim / toplam) * 100),
+    liste: satanlar.slice(0, adet),
   };
-  const adetEsigi = ortanca(satanlar.map((s) => s.miktar));
-  const ciroEsigi = ortanca(satanlar.map((s) => s.ciro));
-
-  const harita = new Map<string, UrunGrubu>();
-  for (const s of satanlar) {
-    const cok = s.miktar >= adetEsigi;
-    const kazanc = s.ciro >= ciroEsigi;
-    harita.set(s.anahtar, cok && kazanc ? "yildiz" : cok ? "hacim" : kazanc ? "pahali" : "geride");
-  }
-  return harita;
 }
+
+type Tasiyanlar = NonNullable<ReturnType<typeof ciroyuTasiyanlar>>;
+
+/** Kartta gösterilen satır sayısı; fazlası pencerede. İki kart aynı boyda dursun. */
+const CEVAP_SATIRI = 5;
 
 function Urunler({ ozet }: { ozet: UrunOzeti }) {
   const [sira, setSira] = useState<Sira>({ alan: "ciro", artan: false });
   const [arama, setArama] = useState("");
   const [kategoriArama, setKategoriArama] = useState("");
-  // Kadrandan bir ürüne basılınca tabloya o ad yazılıyor: grafikte gördüğü
-  // noktanın rakamlarını aramak için kullanıcı listeyi elle taramasın.
-  // Dört gruptan biri seçilince tablo o gruba daralıyor; ürün adıyla arama
-  // kutusu ise ayrı çalışıyor, ikisi birlikte de kullanılabiliyor.
-  const [grup, setGrup] = useState<UrunGrubu | null>(null);
   const [kategoriPenceresi, setKategoriPenceresi] = useState(false);
+  const [cevapPenceresi, setCevapPenceresi] = useState<"tasiyan" | "birlikte" | null>(null);
 
   // İki kutu iki ayrı listeyi süzüyor: kategori kartı ile ürün tablosu birbirini
   // etkilemiyor, aynı ekranda iki farklı soru sorulabiliyor.
@@ -916,15 +927,14 @@ function Urunler({ ozet }: { ozet: UrunOzeti }) {
     return ozet.kategoriler.filter((k) => k.ad.toLocaleLowerCase("tr").includes(ara));
   }, [ozet.kategoriler, kategoriArama]);
 
-  const gruplama = useMemo(() => urunGruplari(ozet.satirlar), [ozet.satirlar]);
+  const tasiyanlar = useMemo(
+    () => ciroyuTasiyanlar(ozet.satirlar, ozet.ciro),
+    [ozet.satirlar, ozet.ciro]
+  );
 
   const satirlar = useMemo(() => {
     const ara = arama.trim().toLocaleLowerCase("tr");
-    const liste = ozet.satirlar.filter(
-      (s) =>
-        (!ara || s.ad.toLocaleLowerCase("tr").includes(ara)) &&
-        (!grup || gruplama.get(s.anahtar) === grup)
-    );
+    const liste = ozet.satirlar.filter((s) => !ara || s.ad.toLocaleLowerCase("tr").includes(ara));
 
     const yon = sira.artan ? 1 : -1;
     if (sira.alan === "degisim") {
@@ -947,7 +957,14 @@ function Urunler({ ozet }: { ozet: UrunOzeti }) {
       }
       return (Number(a[alan]) - Number(b[alan])) * yon;
     });
-  }, [ozet.satirlar, sira, arama, grup, gruplama]);
+  }, [ozet.satirlar, sira, arama]);
+
+  // %80 çizgisi yalnız liste ciroya göre büyükten küçüğe dizili ve süzülmemişken
+  // anlamlı; başka sıralamada çizginin üstü "cironun %80'i" olmaz.
+  const esikSirasi =
+    tasiyanlar && !arama.trim() && (sira.alan === "ciro" || sira.alan === "pay") && !sira.artan
+      ? tasiyanlar.adet
+      : null;
 
   const sirala = (alan: UrunAlani) =>
     setSira((s) =>
@@ -1052,12 +1069,23 @@ function Urunler({ ozet }: { ozet: UrunOzeti }) {
         </section>
       </div>
 
-      <UrunGruplari
-        satirlar={ozet.satirlar}
-        toplam={ozet.ciro}
-        secili={grup}
-        sec={(g) => setGrup(grup === g ? null : g)}
-      />
+      {tasiyanlar || ozet.birlikteler.length ? (
+        <div className="urun-cevaplar">
+          {tasiyanlar ? (
+            <CiroyuTasiyanlar
+              tasiyanlar={tasiyanlar}
+              toplam={ozet.ciro}
+              onTumu={() => setCevapPenceresi("tasiyan")}
+            />
+          ) : null}
+          {ozet.birlikteler.length ? (
+            <BirlikteSatilanlar
+              liste={ozet.birlikteler}
+              onTumu={() => setCevapPenceresi("birlikte")}
+            />
+          ) : null}
+        </div>
+      ) : null}
 
       <section className="ayar-bolum">
         <div className="analiz-liste-ust">
@@ -1091,16 +1119,26 @@ function Urunler({ ozet }: { ozet: UrunOzeti }) {
                   <td colSpan={sutunSayisi}>Aramayla eşleşen ürün yok.</td>
                 </tr>
               ) : (
-                satirlar.map((s) => (
-                  <UrunSatir
-                    key={s.anahtar}
-                    satir={s}
-                    toplam={ozet.ciro}
-                    kiyasVar={kiyasVar}
-                    ikramVar={ikramVar}
-                    iptalVar={iptalVar}
-                    grup={gruplama.get(s.anahtar)}
-                  />
+                satirlar.map((s, i) => (
+                  <Fragment key={s.anahtar}>
+                    <UrunSatir
+                      satir={s}
+                      toplam={ozet.ciro}
+                      kiyasVar={kiyasVar}
+                      ikramVar={ikramVar}
+                      iptalVar={iptalVar}
+                    />
+                    {esikSirasi === i + 1 && esikSirasi < satirlar.length ? (
+                      <tr className="urun-esik">
+                        <td colSpan={sutunSayisi}>
+                          <span>
+                            <ArrowUp size={14} /> Cironun %{tasiyanlar?.pay}'
+                            {iyelik(tasiyanlar?.pay ?? 0)} bu {esikSirasi} üründen
+                          </span>
+                        </td>
+                      </tr>
+                    ) : null}
+                  </Fragment>
                 ))
               )}
             </tbody>
@@ -1137,53 +1175,188 @@ function Urunler({ ozet }: { ozet: UrunOzeti }) {
           onKapat={() => setKategoriPenceresi(false)}
         />
       ) : null}
+
+      {cevapPenceresi === "tasiyan" && tasiyanlar ? (
+        <CevapPenceresi
+          baslik={
+            <>
+              <Target size={18} /> Ciroyu taşıyan {tasiyanlar.adet} ürün
+            </>
+          }
+          liste={tasiyanlar.liste}
+          ad={(s) => s.ad}
+          satir={(s, i) => <TasiyanSatir key={s.anahtar} satir={s} sira={i + 1} toplam={ozet.ciro} />}
+          onKapat={() => setCevapPenceresi(null)}
+        />
+      ) : null}
+
+      {cevapPenceresi === "birlikte" ? (
+        <CevapPenceresi
+          baslik={
+            <>
+              <Link2 size={18} /> Birlikte satılan {ozet.birlikteler.length} çift
+            </>
+          }
+          liste={ozet.birlikteler}
+          ad={(b) => `${b.ad} ${b.yanindaki}`}
+          satir={(b) => <BirlikteSatir key={`${b.ad}|${b.yanindaki}`} cift={b} />}
+          onKapat={() => setCevapPenceresi(null)}
+        />
+      ) : null}
     </div>
   );
 }
 
-/**
- * Dört kutu, dört cümle. "Çok satan" ile "çok kazandıran" ürün çoğu zaman aynı
- * değil ama iki ayrı sıralamada bakınca bu ayrım görünmüyor: her iki listede de
- * ortalarda kalan ürün gözden kaçıyor. Kutuya basınca alttaki liste o gruba
- * daralıyor.
- */
-function UrunGruplari({
-  satirlar,
-  toplam,
-  secili,
-  sec,
-}: {
-  satirlar: UrunSatiri[];
-  toplam: number;
-  secili: UrunGrubu | null;
-  sec: (g: UrunGrubu) => void;
-}) {
-  const harita = useMemo(() => urunGruplari(satirlar), [satirlar]);
-  if (harita.size === 0) return null;
+/** Kartın altındaki devam şeridi; kategori halkasındakiyle aynı düzen. */
+function CevapDevam({ kalan, birim, onTumu }: { kalan: number; birim: string; onTumu: () => void }) {
+  if (kalan <= 0) return null;
+  return (
+    <button type="button" className="cevap-devam" onClick={onTumu}>
+      <span>
+        {kalan} {birim} daha
+      </span>
+      <b>
+        Tümünü gör
+        <ChevronRight size={15} />
+      </b>
+    </button>
+  );
+}
 
-  const sirali: UrunGrubu[] = ["yildiz", "hacim", "pahali", "geride"];
+/** Menünün yükünü kaç ürünün çektiği. Tablodaki kesik çizgi aynı sınırı gösteriyor. */
+function CiroyuTasiyanlar({
+  tasiyanlar,
+  toplam,
+  onTumu,
+}: {
+  tasiyanlar: Tasiyanlar;
+  toplam: number;
+  onTumu: () => void;
+}) {
+  const { adet, kalan, pay, liste } = tasiyanlar;
+  return (
+    <section className="ayar-bolum urun-cevap">
+      <div className="ayar-bolum-ust">
+        <h2>
+          <Target size={17} /> Ciroyu taşıyanlar
+        </h2>
+      </div>
+      <p className="urun-cevap-cumle">
+        Cironun{" "}
+        <strong>
+          %{pay}'{iyelikBelirtme(pay)}
+        </strong>{" "}
+        <strong>{adet} ürün</strong> getiriyor, kalan {kalan} ürün %{100 - pay}'
+        {iyelikBelirtme(100 - pay)}.
+      </p>
+      <ul className="cevap-liste">
+        {liste.slice(0, CEVAP_SATIRI).map((s, i) => (
+          <TasiyanSatir key={s.anahtar} satir={s} sira={i + 1} toplam={toplam} />
+        ))}
+      </ul>
+      <CevapDevam kalan={liste.length - CEVAP_SATIRI} birim="ürün" onTumu={onTumu} />
+    </section>
+  );
+}
+
+function TasiyanSatir({ satir, sira, toplam }: { satir: UrunSatiri; sira: number; toplam: number }) {
+  const pay = toplam > 0 ? (satir.ciro / toplam) * 100 : 0;
+  return (
+    <li className="cevap-satir tasiyan">
+      <b className="cevap-sira">{sira}</b>
+      <strong className="cevap-ad">{satir.ad}</strong>
+      <strong className="cevap-deger">{paraGoster(satir.ciro)}</strong>
+      <em className="cevap-alt">
+        {sayiGoster(satir.miktar)} adet · {satir.kategoriAd}
+      </em>
+      <em className="cevap-alt sag">cironun %{pay < 10 ? pay.toFixed(1) : Math.round(pay)}</em>
+    </li>
+  );
+}
+
+/**
+ * Aynı adisyonda sık geçen ürün çiftleri. Kampanyalı menü kurarken "neyi neyle
+ * birleştireyim" sorusunun cevabı; satış raporu ürünleri tek tek saydığı için
+ * bu ilişkiyi hiçbir zaman göstermez.
+ */
+function BirlikteSatilanlar({ liste, onTumu }: { liste: BirlikteSatis[]; onTumu: () => void }) {
+  return (
+    <section className="ayar-bolum urun-cevap">
+      <div className="ayar-bolum-ust">
+        <h2>
+          <Link2 size={17} /> Birlikte satılanlar
+        </h2>
+      </div>
+      <p className="urun-cevap-cumle">
+        <strong>{liste.length} çift</strong> ürün aynı masada sık buluşuyor; kampanyalı menü
+        için ilk adaylar bunlar.
+      </p>
+      <ul className="cevap-liste">
+        {liste.slice(0, CEVAP_SATIRI).map((b) => (
+          <BirlikteSatir key={`${b.ad}|${b.yanindaki}`} cift={b} />
+        ))}
+      </ul>
+      <CevapDevam kalan={liste.length - CEVAP_SATIRI} birim="çift" onTumu={onTumu} />
+    </section>
+  );
+}
+
+function BirlikteSatir({ cift }: { cift: BirlikteSatis }) {
+  const oran = Math.round((cift.birlikte / cift.adisyon) * 100);
+  return (
+    <li className="cevap-satir birlikte">
+      {/* Yüzde solda kendi rozetinde: adlar uzunluğuna göre kayarken rakamlar
+          alt alta aynı hizada okunuyor. Çubuk aynı rakamı ikinci kez
+          söylediği için kalktı. */}
+      <b className="birlikte-yuzde">%{oran}</b>
+      <span className="birlikte-cift">
+        <span className="birlikte-urun kaynak">{cift.ad}</span>
+        <Plus size={14} />
+        <span className="birlikte-urun">{cift.yanindaki}</span>
+      </span>
+      <em className="cevap-alt">
+        {cift.ad} geçen {cift.adisyon} adisyonun {cift.birlikte}'{iyelik(cift.birlikte)}nde{" "}
+        {cift.yanindaki} {dahi(cift.yanindaki)} var
+      </em>
+    </li>
+  );
+}
+
+/** İki cevap kartının tam listesi; aramalı, kendi içinde kayan pencere. */
+function CevapPenceresi<T>({
+  baslik,
+  liste,
+  ad,
+  satir,
+  onKapat,
+}: {
+  baslik: React.ReactNode;
+  liste: T[];
+  ad: (x: T) => string;
+  satir: (x: T, i: number) => React.ReactNode;
+  onKapat: () => void;
+}) {
+  const [arama, setArama] = useState("");
+  const ara = arama.trim().toLocaleLowerCase("tr");
 
   return (
-    <div className="urun-gruplari">
-      {sirali.map((g) => {
-        const liste = satirlar.filter((s) => harita.get(s.anahtar) === g);
-        const ciro = liste.reduce((t, s) => t + s.ciro, 0);
-        return (
-          <button
-            key={g}
-            type="button"
-            className={`urun-grup ${g}${secili === g ? " secili" : ""}`}
-            onClick={() => sec(g)}
-            disabled={liste.length === 0}
-          >
-            <strong>{GRUP_ADLARI[g].ad}</strong>
-            <span className="urun-grup-sayi">
-              {liste.length} ürün · cironun %{toplam > 0 ? Math.round((ciro / toplam) * 100) : 0}'i
-            </span>
-            <em>{GRUP_ADLARI[g].aciklama}</em>
+    <div className="up-fon" onClick={onKapat}>
+      <div className="up-modal cevap-pencere" onClick={(e) => e.stopPropagation()}>
+        <header className="up-ust">
+          <h3>{baslik}</h3>
+          <button className="up-kapat" onClick={onKapat} aria-label="Kapat">
+            <X size={19} />
           </button>
-        );
-      })}
+        </header>
+        <div className="cevap-pencere-icerik">
+          <AramaKutusu deger={arama} degistir={setArama} yer="Ürün ara" />
+          <ul className="cevap-liste cevap-pencere-govde">
+            {liste.map((x, i) =>
+              !ara || ad(x).toLocaleLowerCase("tr").includes(ara) ? satir(x, i) : null
+            )}
+          </ul>
+        </div>
+      </div>
     </div>
   );
 }
@@ -1454,25 +1627,18 @@ function UrunSatir({
   kiyasVar,
   ikramVar,
   iptalVar,
-  grup,
 }: {
   satir: UrunSatiri;
   toplam: number;
   kiyasVar: boolean;
   ikramVar: boolean;
   iptalVar: boolean;
-  grup?: UrunGrubu;
 }) {
   const pay = toplam > 0 ? (satir.ciro / toplam) * 100 : 0;
 
   return (
     <tr>
-      <td className="hucre-urun">
-        {satir.ad}
-        {/* Grup rozeti adın yanında: ayrı sütun açmak yedi sütunlu tabloyu
-            sekize çıkarırdı, üstelik rozet ürünün kendi künyesi. */}
-        {grup ? <span className={`urun-grup-rozet ${grup}`}>{GRUP_ADLARI[grup].ad}</span> : null}
-      </td>
+      <td className="hucre-urun">{satir.ad}</td>
       <td>
         <span className="urun-kategori">
           <i style={{ background: satir.kategoriRenk || "#d9cbb8" }} />

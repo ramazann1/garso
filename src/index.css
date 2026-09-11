@@ -19925,113 +19925,223 @@ body {
   font-size: 12.5px;
 }
 
-/* Dört grup kutusu. Dağılım grafiğinin yerini aldı: aynı ayrımı gösteriyor
-   ama okumak için grafiği öğrenmek gerekmiyor, üstelik filtre olarak çalışıyor. */
-.urun-gruplari {
+/* Ciroyu taşıyanlar ve birlikte satılanlar yan yana: ikisi de listeyi değil
+   cevabı veriyor. */
+.urun-cevaplar {
   display: grid;
-  grid-template-columns: repeat(4, 1fr);
-  gap: 12px;
+  grid-template-columns: repeat(auto-fit, minmax(340px, 1fr));
+  gap: 16px;
+  align-items: stretch;
   margin-bottom: 16px;
 }
 
-@media (max-width: 900px) {
-  .urun-gruplari {
-    grid-template-columns: repeat(2, 1fr);
-  }
-}
-
-.urun-grup {
+/* İki kart aynı boyda; devam şeridi kısa kalan kartta da dibe oturuyor. */
+.urun-cevaplar > .ayar-bolum {
   display: flex;
   flex-direction: column;
-  align-items: flex-start;
-  gap: 3px;
-  padding: 13px 15px;
-  border: 1px solid var(--cizgi);
-  border-top: 3px solid var(--cizgi-koyu);
-  border-radius: var(--r-or);
-  background: var(--kart);
-  text-align: left;
-  cursor: pointer;
-  transition: border-color var(--gecis), box-shadow var(--gecis);
+  margin-bottom: 0;
 }
 
-.urun-grup:hover:not(:disabled) {
-  box-shadow: var(--g2);
+.urun-cevap-cumle {
+  margin: 0 0 12px;
+  font-size: 15px;
+  line-height: 1.5;
 }
 
-.urun-grup:disabled {
-  opacity: 0.55;
-  cursor: default;
-}
-
-.urun-grup.secili {
-  border-color: var(--mercan);
-  background: var(--mercan-sis);
-}
-
-.urun-grup.yildiz {
-  border-top-color: var(--mercan);
-}
-
-.urun-grup.hacim {
-  border-top-color: #4b93c9;
-}
-
-.urun-grup.pahali {
-  border-top-color: #c98a4b;
-}
-
-.urun-grup.geride {
-  border-top-color: #8fa0b3;
-}
-
-.urun-grup strong {
-  font-size: 17px;
+.urun-cevap-cumle strong {
+  color: var(--mercan);
   font-weight: 700;
 }
 
-.urun-grup-sayi {
+.cevap-liste {
+  display: flex;
+  flex-direction: column;
+  margin: 0;
+  padding: 0;
+  list-style: none;
+}
+
+/* İki satır: üstte ad ve rakam, altta açıklaması. İki kartın satırları aynı
+   yükseklikte ki kartlar yan yana simetrik dursun. */
+.cevap-satir {
+  display: grid;
+  grid-template-columns: minmax(0, 1fr) auto;
+  align-items: center;
+  gap: 3px 14px;
+  padding: 10px 4px;
+  border-top: 1px solid var(--cizgi);
+}
+
+.cevap-satir:first-child {
+  border-top: 0;
+}
+
+.cevap-satir.tasiyan {
+  grid-template-columns: 26px minmax(0, 1fr) auto;
+}
+
+.cevap-sira {
+  grid-row: span 2;
+  display: grid;
+  place-items: center;
+  width: 26px;
+  height: 26px;
+  border-radius: var(--r-tam);
+  background: var(--mercan-sis);
+  color: var(--mercan);
+  font-size: 13px;
+  font-weight: 700;
+}
+
+.cevap-ad {
+  overflow: hidden;
   font-size: 15px;
   font-weight: 600;
+  text-overflow: ellipsis;
+  white-space: nowrap;
 }
 
-.urun-grup em {
+.cevap-deger {
+  font-size: 15px;
+  font-weight: 700;
+  text-align: right;
+  white-space: nowrap;
+}
+
+.cevap-satir.birlikte {
+  grid-template-columns: 52px minmax(0, 1fr);
+  gap: 4px 14px;
+}
+
+.birlikte-yuzde {
+  grid-row: span 2;
+  display: grid;
+  place-items: center;
+  width: 52px;
+  height: 44px;
+  border-radius: var(--r-or);
+  background: var(--mercan-sis);
+  color: var(--mercan);
+  font-size: 15px;
+  font-weight: 700;
+  letter-spacing: -0.01em;
+}
+
+.cevap-alt {
+  overflow: hidden;
   color: var(--soluk);
-  font-size: 13px;
+  font-size: 13.5px;
   font-style: normal;
-  line-height: 1.4;
+  text-overflow: ellipsis;
+  white-space: nowrap;
 }
 
-/* Aynı ayrım tabloda ürünün adının yanında. Renk kutulardakiyle birebir aynı
-   ki iki yer arasında bağ kurulabilsin. */
-.urun-grup-rozet {
-  display: inline-block;
-  margin-left: 8px;
-  padding: 1px 8px;
+.cevap-alt.sag {
+  text-align: right;
+}
+
+.birlikte-cift {
+  display: flex;
+  align-items: center;
+  gap: 6px;
+  min-width: 0;
+  color: var(--soluk);
+}
+
+.birlikte-cift svg {
+  flex: none;
+}
+
+.birlikte-urun {
+  overflow: hidden;
+  padding: 2px 10px;
+  border: 1px solid var(--cizgi);
   border-radius: var(--r-tam);
-  font-size: 12.5px;
+  background: var(--kart-ust);
+  color: var(--metin);
+  font-size: 14px;
   font-weight: 600;
-  vertical-align: middle;
+  text-overflow: ellipsis;
+  white-space: nowrap;
 }
 
-.urun-grup-rozet.yildiz {
-  background: #ffe6dd;
-  color: #b23f26;
+/* Cümlenin öznesi olan ürün hafif mercan: "X alanlar Y'yi de alıyor"
+   ilişkisinin yönü rengiyle okunuyor. */
+.birlikte-urun.kaynak {
+  border-color: transparent;
+  background: var(--mercan-sis);
+  color: var(--mercan-koyu, var(--mercan));
 }
 
-.urun-grup-rozet.hacim {
-  background: #dfeaf6;
-  color: #2f5f87;
+.cevap-devam {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 12px;
+  margin-top: auto;
+  padding: 10px 4px 0;
+  border: 0;
+  border-top: 1px solid var(--cizgi);
+  background: none;
+  color: var(--soluk);
+  font: inherit;
+  font-size: 14px;
+  cursor: pointer;
 }
 
-.urun-grup-rozet.pahali {
-  background: #f7ead6;
-  color: #86601f;
+.cevap-devam span {
+  color: var(--metin);
+  font-size: 14.5px;
+  font-weight: 600;
 }
 
-.urun-grup-rozet.geride {
-  background: #e8ecf1;
-  color: #55637a;
+.cevap-devam b {
+  display: flex;
+  align-items: center;
+  gap: 6px;
+  color: var(--mercan);
+  font-weight: 600;
+}
+
+.cevap-devam:hover b {
+  text-decoration: underline;
+}
+
+.urun-cevap .cevap-liste {
+  margin-bottom: 10px;
+}
+
+.up-modal.cevap-pencere {
+  width: 620px;
+  max-width: calc(100vw - 32px);
+}
+
+.cevap-pencere-icerik {
+  display: flex;
+  flex-direction: column;
+  gap: 10px;
+  padding: 18px 22px 22px;
+}
+
+.cevap-pencere-govde {
+  max-height: 60vh;
+  overflow-y: auto;
+}
+
+/* Cironun %80'inin bittiği yer. Satır değil, iki satır arasındaki sınır gibi
+   dursun diye ince ve kesik. */
+.analiz-tablo tr.urun-esik td {
+  padding: 4px 0;
+  border-bottom: 2px dashed var(--mercan);
+}
+
+.urun-esik span {
+  display: inline-flex;
+  align-items: center;
+  gap: 5px;
+  color: var(--mercan);
+  font-size: 13px;
+  font-weight: 600;
 }
 
 /* Öne çıkan kartta ürün adı düz metin: rengi rozet taşıyor, ad değil. */
@@ -20080,25 +20190,6 @@ body {
 }
 
 .one-cikan em {
-  font-size: 13.5px;
-}
-
-.urun-grup {
-  gap: 4px;
-  padding: 14px 16px;
-}
-
-.urun-grup strong {
-  font-size: 17px;
-  letter-spacing: -0.01em;
-}
-
-.urun-grup-sayi {
-  font-size: 15px;
-  font-weight: 600;
-}
-
-.urun-grup em {
   font-size: 13.5px;
 }
 

@@ -765,6 +765,7 @@ export type UrunOzeti = {
   /** Hangi bölgede ne kadar satıldı; masasız adisyonlar kendi satırında. */
   bolgeler: OzetDilimi[];
   satilmayanlar: SatilmayanUrun[];
+  birlikteler: BirlikteSatis[];
   miktar: number;
   cesit: number;
   ciro: number;
@@ -772,7 +773,65 @@ export type UrunOzeti = {
   oncekiCiro: number | null;
 };
 
+/** "Salep alanların %40'ı yanında Çay da almış" cümlesinin rakamları. */
+export type BirlikteSatis = {
+  ad: string;
+  yanindaki: string;
+  /** Salep geçen adisyon sayısı */
+  adisyon: number;
+  /** Bunların kaçında Çay da var */
+  birlikte: number;
+};
+
 export type UrunKategorisi = { ad: string; renk?: string };
+
+/**
+ * Aynı adisyonda sık birlikte geçen ürünler. Her yere giden ürün (çay gibi)
+ * her çiftte çıkıp listeyi doldurmasın diye, çift yalnız tesadüften belirgin
+ * biçimde sık görülüyorsa sayılıyor: salep alanların çay alma oranı, bütün
+ * masaların çay alma oranından yüksek olmalı.
+ */
+function birlikteSatilanlar(
+  sepetler: string[][],
+  adlar: Map<string, string>,
+  enFazla = 50
+): BirlikteSatis[] {
+  const tekil = new Map<string, number>();
+  const ciftler = new Map<string, number>();
+  for (const sepet of sepetler) {
+    for (const u of sepet) tekil.set(u, (tekil.get(u) ?? 0) + 1);
+    for (let i = 0; i < sepet.length; i++) {
+      for (let j = i + 1; j < sepet.length; j++) {
+        const [a, b] = sepet[i] < sepet[j] ? [sepet[i], sepet[j]] : [sepet[j], sepet[i]];
+        const anahtar = `${a}|${b}`;
+        ciftler.set(anahtar, (ciftler.get(anahtar) ?? 0) + 1);
+      }
+    }
+  }
+
+  const toplam = sepetler.length;
+  const sonuc: BirlikteSatis[] = [];
+  for (const [anahtar, birlikte] of ciftler) {
+    if (birlikte < 3) continue;
+    const [a, b] = anahtar.split("|");
+    // İki yönden oranı yüksek olan cümle kuruluyor: az satanın yanına çok
+    // satanı yazmak ("salep alanlar çay da almış") daha çok şey söylüyor.
+    const [kaynak, hedef] = (tekil.get(a) ?? 0) <= (tekil.get(b) ?? 0) ? [a, b] : [b, a];
+    const adisyon = tekil.get(kaynak) ?? 0;
+    const hedefOrani = (tekil.get(hedef) ?? 0) / toplam;
+    if (adisyon < 5 || birlikte / adisyon <= hedefOrani * 1.2) continue;
+    sonuc.push({
+      ad: adlar.get(kaynak) ?? kaynak,
+      yanindaki: adlar.get(hedef) ?? hedef,
+      adisyon,
+      birlikte,
+    });
+  }
+
+  return sonuc
+    .sort((x, y) => y.birlikte / y.adisyon - x.birlikte / x.adisyon || y.birlikte - x.birlikte)
+    .slice(0, enFazla);
+}
 
 /**
  * Ürün → kategori eşlemesi. Bir ürün birden çok kategoride olabiliyor; rapor tek
@@ -843,13 +902,16 @@ export function analizUrunleri(
   const bolgeler = new Map<string, OzetDilimi>();
 
   const satirlar = new Map<string, UrunSatiri>();
+  const sepetler: string[][] = [];
   for (const a of adisyonlar) {
     if (a.durum !== "kapali") continue;
     // Bölge masadan geliyor; gel al ve paket siparişin masası yok, onlar kendi
     // satırlarında toplanıyor — "salonda mı, dışarıda mı satıyoruz" sorusu.
     const bolgeAd = a.bolgeAd || (a.tip === "masa" ? "Bölgesiz" : TIP_ADLARI[a.tip] ?? "Diğer");
+    const sepet = new Set<string>();
     for (const k of a.kalemler) {
       const anahtar = k.urunId ? `u${k.urunId}` : `a${k.ad}`;
+      if ((k.durum ?? "normal") === "normal") sepet.add(anahtar);
       const kategori = k.urunId ? kategoriler.get(k.urunId) : undefined;
       const satir =
         satirlar.get(anahtar) ??
@@ -877,6 +939,7 @@ export function analizUrunleri(
       }
       satirlar.set(anahtar, satir);
     }
+    if (sepet.size) sepetler.push([...sepet]);
   }
 
   // Önceki dönem ayrı toplanıyor: aynı döngüye sokulsaydı bölge ve seçim
@@ -946,6 +1009,10 @@ export function analizUrunleri(
     kategoriler: [...gruplar.values()].sort((a, b) => b.tutar - a.tutar),
     bolgeler: [...bolgeler.values()].sort((a, b) => b.tutar - a.tutar),
     satilmayanlar,
+    birlikteler: birlikteSatilanlar(
+      sepetler,
+      new Map(liste.map((s) => [s.anahtar, s.ad]))
+    ),
     oncekiCiro: ek?.oncekiler
       ? liste.reduce((t, s) => t + (s.oncekiCiro ?? 0), 0)
       : null,
