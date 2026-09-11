@@ -1,7 +1,131 @@
 # GARSO — Teknik Tasarım: Veri Modeli & Ekran Haritası
 *Restoran ve cafe'ler için bulut tabanlı satış ve işletme yönetim sistemi.*
 
-## 0. SIRADAKİ İŞ (10 Eyl 2026 güncellendi)
+## 0. SIRADAKİ İŞ (11 Eyl 2026 güncellendi)
+
+> **11 Eyl 2026 — Analiz → Ürünler sekmesi baştan kuruldu.**
+>
+> **Adisyo turu — Raporlar > Ürün Satış Raporu** (canlı, Chrome). Sol dikey
+> liste altı kırılım: Bölge, Kategori, Ürün, Reçeteli Ürün, Menü, Özellik.
+> **Bizde olmayan üç şey:** bölge bazında satış (bizde bölge var, Analiz hiç
+> kırmıyordu), özellik/seçenek bazında ağaç (Kahve Özellikleri 12 → Sade 6 /
+> Orta 6), satır detayında saat kırılımı (kategori günün hangi saatinde satıyor).
+> Ürün tablosunda **Birim Fiyat** ve **Maliyet** sütunları da var, bizde yok.
+> **Zayıf yanları (alınmadı):** hiçbir yerde grafik yok; arama kutusu yok;
+> sıralama yalnız üç sütunda; Detay ayrı sayfaya atıp "Geri Dön"e mahkûm ediyor;
+> aynı ekranda iki para biçimi (`18630.00` / `₺0,00`); Ürün Kodu, İkram ve
+> Maliyet sütunları baştan sona boş ama yer kaplıyor; filtre yalnız tarih/saat.
+>
+> **Karar: Adisyo'nun altı kırılımı kopyalanmadı (Ramazan).** "Hepsini yaparsak
+> Adisyo'nun aynısı olmaz mı" sorusu doğruydu: altı kırılım tek soruyu ("ne kadar
+> sattı") altı kez farklı gruplayıp yığıyor, hiçbirini cevaplamıyor. Bizim
+> farkımız **liste vermek yerine cevap vermek**. Adisyo'dan yalnız **bölge**
+> kırılımı alındı. Seçenek kırılımı yazıldı ve **Ramazan kaldırttı** — veri yolu
+> da söküldü (`secenekGruplari`, kalem sorgusundaki `secimler`, sayaç).
+>
+> **Adisyo'da olması imkânsız olan üç şey eklendi:**
+> 1. **Hiç satılmayan ürünler** — menüde durup dönem boyunca tek adet gitmeyenler
+>    (`menuUrunKunyeleri`). Satış raporu yalnız satılanı bilir; menüden kaldırma
+>    kararı ise satılmayana bakılarak veriliyor. Satışa kapalı ve tükendi olanlar
+>    rozetle ayrılıyor — onlar satmadığı için değil, satılamadığı için listede.
+> 2. **Önceki dönemle karşılaştırma** — `oncekiAralik` altyapısı Özet'te vardı,
+>    ürünlere uygulanmamıştı. Şeritte değişim rozeti, tabloda Değişim sütunu
+>    (yalnız kıyas varsa), üstte "En çok yükselen / En çok düşen" kartları.
+>    Önceki dönem **ayrı döngüde** toplanıyor: aynı döngüye sokulsaydı bölge
+>    sayaçlarına da girip bu dönemin rakamlarını şişirirdi.
+> 3. **Çok satan ≠ çok kazandıran** — aşağıda.
+>
+> **Karar: dağılım grafiği (kadran) elendi.** Yatay eksen adet, dikey eksen ciro,
+> ortalamalardan geçen iki çizgi ve dört bölge olarak çizildi; **Ramazan "fikri
+> beğendim ama karışık, ben bile anlamadım" dedi.** İki kusuru vardı: (1) tek
+> yüksek adetli ürün (çay, 148 adet) yatay ekseni tek başına doldurup kalan 19
+> ürünü sol köşeye eziyordu, (2) grafiği okumak için önce grafiği öğrenmek
+> gerekiyordu — veri analizi dili, kasada duran kişinin dili değil.
+> **Yerine dört kutu:** Yıldız · Hacim · Pahalı · Geride; her kutuda ürün sayısı,
+> cirodaki payı ve tek cümlelik karşılığı ("çok satıyor, az kazandırıyor").
+> Kutuya basınca liste o gruba daralıyor, ayrıca **her ürünün adının yanında
+> kendi rozeti** var (ayrı sütun açmak yedi sütunlu tabloyu sekize çıkarırdı).
+> **Eşik ortalama değil ortanca** — ortalamayı da o tek ürün kaydırıyordu.
+> *Bilinen sınırı Ramazan'a söylendi:* ortanca listeyi ortadan böldüğü için
+> gruplar hep kabaca dörde bölünür, yani "Yıldız" mutlak değil **göreli** bir
+> sıralamadır. Sabit eşiğe geçme seçeneği açık bırakıldı.
+>
+> **Kategori kartı iki kez çiziliyordu.** Halkanın kendi lejantı zaten
+> kategorileri tutar ve payla sıralıyor; altına bir de çubuklu `KategoriDagilimi`
+> konunca aynı liste iki kez geliyor, kart ekran boyu uzuyor, yanındaki Bölgeler
+> kartının altında dev boşluk kalıyordu. Dağılım silindi (`KategoriDagilimi`
+> bileşeni tamamen kalktı), halka büyüdü, lejant iki sütuna geçti.
+>
+> **Karar: uzun lejant kesilir, tamamı pencerede.** Menüsünde otuz kategori olan
+> işletmede kart ekran boyu uzuyordu. `Halka` iki yeni özellik aldı: `enFazla`
+> (lejantta kaç satır) ve `onTumu`. Halka **her zaman bütün dilimleri çiziyor**,
+> kısaltma yalnız lejantta. Altında listeyi kapatan kendi şeridi: solda "24
+> kategori daha", sağda "Tümünü gör ›" — önce ortada asılı duran üç nokta vardı,
+> Ramazan amatör buldu. Pencere iki sütun: halka solda (268px, dikey ortalı),
+> arama ve tam liste sağda. **Halka pencerede de duruyor** (Ramazan istedi) ve
+> **listede farenin üstündeki satır halkada yanıyor** (`vurguAd` özelliği) —
+> okunan yüzdenin karşılığı çemberde görünsün diye.
+>
+> **Karar: halka paleti canlandı, tek renk ailesi bitti (Ramazan).** 9 Eyl'deki
+> "tek renk ailesi, mercanın açılan kademeleri" kararı iptal: dilim sayısı
+> arttıkça tonlar birbirine yaklaşıp soluyor, üçüncü dilimden sonra hepsi aynı
+> soluk pembe-griye dönüyordu ("insanın içini kapatıyor"). Beş ayrı ama aynı
+> doygunlukta renk: mercan · amber · yeşil · mavi · mor. Palet artık **dönüyor**
+> (`i % 5`); önce `Math.min(i, 4)` ile altıncı dilimden sonrası tek renge
+> düşüyordu.
+>
+> **Renk seçicinin hazır paleti de değişti** (`components/RenkSecici.tsx`).
+> Pastel sekizli (`#e8b4b4`, `#a8d5c2`…) yerine renk çarkında eşit aralıklı,
+> aynı doygunlukta sekiz renk. Kategori, ürün **ve ödeme tipi** renklerinde
+> kullanılıyor. **Kayıtlı renklere dokunulmadı** — o kullanıcı verisi.
+>
+> **Kural: kaydırma bir kutuda kalır.** Ramazan'ın şikâyeti: "bir yerde tekerlek
+> çevirirken başka yerin hareketlerini etkilememeli". Kendi içinde kayan **48
+> kutunun hepsine** `overscroll-behavior: contain` verildi (tek blok, `:where()`
+> ile — özgüllüğü sıfır olduğu için kutuların kendi kurallarını ezmiyor). Yan
+> menüde bu kural zaten tek tek yazılmıştı.
+> **İkinci ve asıl incelik:** `overscroll-behavior` yalnız **kendi kaydırma
+> çubuğu olan** kutuda çalışıyor. Pencere perdesinin çubuğu yok, o yüzden
+> perdenin boş bir yerinde çevrilen tekerlek doğrudan arkadaki sayfaya
+> gidiyordu. İki katmanlı çözüm: perde açıkken sayfa kilitleniyor
+> (`html:has(.up-fon), body:has(.up-fon) { overflow: hidden }` — her pencere
+> bileşenine ayrı kod eklemek yerine perdenin varlığı yetiyor) **ve** perde
+> kendisi bir kaydırma kutusu oldu (`overflow-y: auto` + `contain`), böylece
+> tekerleği tüketecek bir kutu her zaman var. Perde `align-items: center` yerine
+> `margin: auto` kullanıyor: ortalanmış esnek çocuk kutudan taşınca üst kenarı
+> kaydırmayla erişilemez hâle geliyordu; yan fayda, ekrana sığmayan uzun pencere
+> artık kaydırılarak okunabiliyor.
+> *Not: otomasyonun ürettiği sentetik tekerlek olayı bu kilidi aşıyor, ölçüm
+> orada yanıltıcı çıktı; gerçek fareyle Ramazan doğruladı.*
+>
+> **Tipografi tek ölçeğe indi.** Sekmede yedi ayrı punto birikmişti
+> (13 / 13.5 / 14 / 15 / 17 / 19 / 21); dörde indi: **başlık 17 · sayı 19 ·
+> gövde 14.5–15 · yardımcı 13.5**, ikincil metin `--soluk`. Kart iç boşlukları
+> eşitlendi. Öne çıkan kartlarda ürün adı yeşil/kırmızı yazılıyordu — rengi
+> rozet taşıyor artık, ad düz metin.
+>
+> **Tabloda:** kullanılmayan sütunlar (İkram/İptal) o dönemde hiç
+> kullanılmamışsa **çizilmiyor** (ölçüt dönemin tamamı, arama sonucu değil),
+> boş para hücrelerindeki tireler kalktı, toplam satırında `₺0,00` yerine boşluk.
+> Sıralama okları zaten sessizdi — `.analiz-tablo th:not(.sirali)` kuralı 10
+> Eyl'de ortak sınıfa yazılmış, bu tabloya da uygulanıyormuş.
+>
+> **Aynı ders dördüncü kez: ortak sınıfı ezerken özgüllüğü say.**
+> `.gr-lejant-devam` kuralı `.urun-kat-kart .gr-lejant li`'den düşük özgüllükte
+> kaldığı için devam satırı lejantın grid şablonuna giriyor, düğme 9px'lik renk
+> sütununa sıkışıyor ve "24 kategori daha" yazısı hiç görünmüyordu.
+>
+> **Geçici önizleme yöntemi yine kullanıldı:** giriş ekranı aşılamadığı için
+> `src/pages/UrunOnizleme.tsx` + `App.tsx`'te üç satırlık rota ile ekran sahte
+> veriyle açıldı (`/onizleme-urun`), tasarım orada ölçüldü. 30 kategorilik sahte
+> menü de burada denendi. **Seans sonunda ikisi de silindi.** Dev server
+> **https**'te çalışıyor (`https://localhost:5173`) — http denenip vakit kaybedildi.
+>
+> **Sıradaki işe eklendi:** Analiz → Ürünler'de gerçek veride **"Kategorisiz"
+> cironun %74'ü** çıkıyor. Tasarımla ilgisi yok; muhtemelen o satışların
+> kalemlerinde ürün kimliği yok (ürün menüden silinince kalem satış anındaki
+> adıyla kalıyor, kategorisi bulunamıyor). Bakılacak.
+
 
 > **10 Eyl 2026 — Adisyonlar sekmesi ve sipariş geçmişi.**
 >
@@ -932,24 +1056,30 @@
 >    gezinme yenilendi, mobil ikizler kapandı (7–9 Eyl 2026), İçe/Dışa Aktar ve
 >    Analiz Özeti bitti (9 Eyl). Kalan iş **ekranların gövdesinde**; ekran ekran
 >    gidiliyor. Sıra:
->    a. **Analiz'in kalan sekmeleri** — Özet ve **Adisyonlar** bitti (10 Eyl).
->       Kalan: Ürünler, Mutfak, Personel, Giderler, Ödenmezler, Açık Hesap,
->       Denetim. **Not: 9 Eyl'deki "hepsi düz tablo" teşhisi yanlıştı** — Ürünler,
->       Personel ve Giderler zaten şerit + dağılım + pay çubuğu düzenindeydi.
->       Gerçekten geride kalan üç yer: **Ödenmezler** (Pay düz yüzde metni;
->       ayrıca satır açılınca ürün dökümü **yanlış sütunlara düşüyor** —
->       `colSpan={2}` yüzünden adet Tutar'ın, tutar Pay'ın altına geliyor),
->       **Açık Hesap** ve **Mutfak** (grafiği yok). Ramazan hepsinin sırayla
->       elden geçmesini istiyor: "hepsi çok ilkel görünüyor".
->    b. **Ödeme tipi kartlarının renkleri** — Hızlı Öde'de altı ayrı renk yan
+>    a. **Analiz'in kalan sekmeleri** — Özet, **Adisyonlar** (10 Eyl) ve
+>       **Ürünler** (11 Eyl) bitti. Sıradaki: **Mutfak** (grafiği yok),
+>       **Ödenmezler** (Pay düz yüzde metni; ayrıca satır açılınca ürün dökümü
+>       **yanlış sütunlara düşüyor** — `colSpan={2}` yüzünden adet Tutar'ın,
+>       tutar Pay'ın altına geliyor), **Açık Hesap** (iki tabloya da aynı
+>       `useKutuBoyu` ref'i veriliyor, ikincisine takılıyor), sonra **Personel**,
+>       **Giderler**, **Denetim**. **Not: 9 Eyl'deki "hepsi düz tablo" teşhisi
+>       yanlıştı** — Personel ve Giderler zaten şerit + dağılım + pay çubuğu
+>       düzeninde. Ürünler'de kurulan dil (öne çıkan kartlar, önceki dönem
+>       karşılaştırması, kullanılmayan sütunun çizilmemesi, tek tipografi ölçeği)
+>       kalan sekmelere yayılacak.
+>    b. **"Kategorisiz" cironun %74'ü** — Ürünler sekmesinde gerçek veride çıktı
+>       (11 Eyl). Tasarım sorunu değil: muhtemelen o kalemlerde ürün kimliği yok
+>       (menüden silinen ürün kalemde satış anındaki adıyla kalıyor, kategorisi
+>       bulunamıyor). Önce veriye bakılacak, sonra karar.
+>    c. **Ödeme tipi kartlarının renkleri** — Hızlı Öde'de altı ayrı renk yan
 >       yana. Ramazan'a soruldu (işletmenin kendi tanımı mı, sadeleşsin mi),
 >       cevap bekliyor.
->    c. **Seçenek Grupları ve Birimler/KDV sekmelerinin gövdesi** — Menü
+>    d. **Seçenek Grupları ve Birimler/KDV sekmelerinin gövdesi** — Menü
 >       Stüdyosu'nun kalan üç sekmesi; alt şeritleri 9 Eyl'de düzeldi, liste ve
 >       form düzenleri elden geçmedi.
->    d. **Kalan ekranlar** — Salon dışındakiler tek tek gezilecek. Sıra
+>    e. **Kalan ekranlar** — Salon dışındakiler tek tek gezilecek. Sıra
 >       Ramazan'ın "burası ilkel" dediği yerden kuruluyor, ölçümle değil.
->    e. **Yükleme çemberi** — ekran değişince veri çekilirken çıkan çember
+>    f. **Yükleme çemberi** — ekran değişince veri çekilirken çıkan çember
 >       yanıp sönme hissi veriyor. Yazıcılar'da çözüldü (son liste modülde
 >       tutuluyor, çember yalnız ilk açılışta); aynısı diğer ekranlara.
 >    **Salon'a dokunulmayacak (9 Eyl 2026 kararı).** Ekran ölçüldü: masa

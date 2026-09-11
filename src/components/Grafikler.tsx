@@ -1,4 +1,5 @@
 import { useId, useState } from "react";
+import { ChevronRight } from "lucide-react";
 import { paraGoster } from "../para";
 
 /**
@@ -220,10 +221,39 @@ export type Dilim = { ad: string; tutar: number; adet: number };
  * kademeleri. Adisyo'nun grafiklerinde her dilim başka bir renk ve altında
  * aynı adları tekrar eden lejant var; renk orada bilgi taşımıyor, gürültü.
  */
-export function Halka({ dilimler, toplam }: { dilimler: Dilim[]; toplam: number }) {
-  const [uzerinde, setUzerinde] = useState<number | null>(null);
+export function Halka({
+  dilimler,
+  toplam,
+  enFazla,
+  onTumu,
+  lejantsiz,
+  vurguAd,
+}: {
+  dilimler: Dilim[];
+  toplam: number;
+  /** Lejantta gösterilecek en çok satır; kalanı tek düğmede toplanıyor. */
+  enFazla?: number;
+  onTumu?: () => void;
+  /** Yalnız çember: lejantı kendi listesi olan pencerede tekrarlanmasın. */
+  lejantsiz?: boolean;
+  /**
+   * Dışarıdan gelen vurgu. Lejant başka bir bileşende duruyorsa (kategori
+   * penceresi) halkanın hangi dilimi yakacağını o liste söylüyor.
+   */
+  vurguAd?: string | null;
+}) {
+  const [icVurgu, setIcVurgu] = useState<number | null>(null);
   const gecerli = dilimler.filter((d) => d.tutar > 0);
   if (!gecerli.length || toplam <= 0) return null;
+
+  const disVurgu = vurguAd ? gecerli.findIndex((d) => d.ad === vurguAd) : -1;
+  const uzerinde = disVurgu >= 0 ? disVurgu : icVurgu;
+  const setUzerinde = setIcVurgu;
+
+  // Halka bütün dilimleri çiziyor, kısaltma yalnız lejantta: otuz kategorili
+  // menüde liste kartı ekran boyu uzatıyordu.
+  const lejant = enFazla ? gecerli.slice(0, enFazla) : gecerli;
+  const gizli = gecerli.length - lejant.length;
 
   const R = 62;
   const kalinlik = 22;
@@ -246,7 +276,7 @@ export function Halka({ dilimler, toplam }: { dilimler: Dilim[]; toplam: number 
           {halkalar.map(({ d, pay, kayma, i }) => (
             <circle
               key={d.ad}
-              className={`gr-dilim k${Math.min(i, 4)}${uzerinde === i ? " vurgu" : ""}`}
+              className={`gr-dilim k${i % 5}${uzerinde === i ? " vurgu" : ""}`}
               cx="80"
               cy="80"
               r={R}
@@ -264,21 +294,35 @@ export function Halka({ dilimler, toplam }: { dilimler: Dilim[]; toplam: number 
         </div>
       </div>
 
+      {lejantsiz ? null : (
       <ul className="gr-lejant">
-        {gecerli.map((d, i) => (
+        {lejant.map((d, i) => (
           <li
             key={d.ad}
             className={uzerinde === i ? "vurgu" : ""}
             onMouseEnter={() => setUzerinde(i)}
             onMouseLeave={() => setUzerinde(null)}
           >
-            <i className={`k${Math.min(i, 4)}`} />
+            <i className={`k${i % 5}`} />
             <span>{d.ad}</span>
             <strong>{paraGoster(d.tutar)}</strong>
             <em>%{Math.round((d.tutar / toplam) * 100)}</em>
           </li>
         ))}
+
+        {gizli > 0 && onTumu ? (
+          <li className="gr-lejant-devam">
+            <button type="button" onClick={onTumu}>
+              <span>{gizli} kategori daha</span>
+              <b>
+                Tümünü gör
+                <ChevronRight size={15} />
+              </b>
+            </button>
+          </li>
+        ) : null}
       </ul>
+      )}
     </div>
   );
 }

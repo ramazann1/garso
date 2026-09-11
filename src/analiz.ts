@@ -744,15 +744,32 @@ export type UrunSatiri = {
   ciro: number;
   ikram: number;
   iptal: number;
+  /** Önceki dönemdeki karşılığı; kıyas yoksa boş kalıyor, sıfır yazılmıyor. */
+  oncekiCiro?: number;
+  oncekiMiktar?: number;
+};
+
+/** Menüde durup bu dönemde hiç satılmayan ürün. */
+export type SatilmayanUrun = {
+  id: number;
+  ad: string;
+  kategoriAd: string;
+  kategoriRenk?: string;
+  gizli: boolean;
+  tukendi: boolean;
 };
 
 export type UrunOzeti = {
   satirlar: UrunSatiri[];
   kategoriler: (OzetDilimi & { renk?: string })[];
+  /** Hangi bölgede ne kadar satıldı; masasız adisyonlar kendi satırında. */
+  bolgeler: OzetDilimi[];
+  satilmayanlar: SatilmayanUrun[];
   miktar: number;
   cesit: number;
   ciro: number;
   ikram: number;
+  oncekiCiro: number | null;
 };
 
 export type UrunKategorisi = { ad: string; renk?: string };
@@ -779,6 +796,32 @@ export async function urunKategorileri() {
   return harita;
 }
 
+export type MenuUrunu = {
+  id: number;
+  ad: string;
+  /** Satışta gizlenmiş ürün zaten satılamaz; "satmadı" diye suçlanmasın. */
+  gizli: boolean;
+  tukendi: boolean;
+};
+
+/**
+ * Menüdeki ürünlerin künyesi. Satış listesi yalnız satılanı bilir; "bu dönemde
+ * hiç gitmeyen ürün hangisi" sorusunun cevabı ancak menünün tamamı elde olunca
+ * çıkıyor.
+ */
+export async function menuUrunKunyeleri(): Promise<MenuUrunu[]> {
+  const { data } = await supabase
+    .from("urunler")
+    .select("id, ad, satista_gorunur, tukendi")
+    .order("ad");
+  return (data ?? []).map((u: any) => ({
+    id: u.id,
+    ad: u.ad,
+    gizli: u.satista_gorunur === false,
+    tukendi: !!u.tukendi,
+  }));
+}
+
 const KATEGORISIZ = "Kategorisiz";
 
 /**
@@ -788,14 +831,23 @@ const KATEGORISIZ = "Kategorisiz";
  */
 export function analizUrunleri(
   adisyonlar: AnalizAdisyon[],
-  kategoriler: Map<number, UrunKategorisi>
+  kategoriler: Map<number, UrunKategorisi>,
+  ek?: {
+    oncekiler?: AnalizAdisyon[] | null;
+    menu?: MenuUrunu[];
+  }
 ): UrunOzeti {
   const tutar = (k: SepetKalemi) =>
     Math.max(0, Math.round((k.fiyat * k.adet - (k.indirim ?? 0)) * 100) / 100);
 
+  const bolgeler = new Map<string, OzetDilimi>();
+
   const satirlar = new Map<string, UrunSatiri>();
   for (const a of adisyonlar) {
     if (a.durum !== "kapali") continue;
+    // Bölge masadan geliyor; gel al ve paket siparişin masası yok, onlar kendi
+    // satırlarında toplanıyor — "salonda mı, dışarıda mı satıyoruz" sorusu.
+    const bolgeAd = a.bolgeAd || (a.tip === "masa" ? "Bölgesiz" : TIP_ADLARI[a.tip] ?? "Diğer");
     for (const k of a.kalemler) {
       const anahtar = k.urunId ? `u${k.urunId}` : `a${k.ad}`;
       const kategori = k.urunId ? kategoriler.get(k.urunId) : undefined;
@@ -817,8 +869,43 @@ export function analizUrunleri(
       else {
         satir.miktar += k.adet;
         satir.ciro += tutar(k);
+
+        const b = bolgeler.get(bolgeAd) ?? { ad: bolgeAd, tutar: 0, adet: 0 };
+        b.tutar += tutar(k);
+        b.adet += k.adet;
+        bolgeler.set(bolgeAd, b);
       }
       satirlar.set(anahtar, satir);
+    }
+  }
+
+  // Önceki dönem ayrı toplanıyor: aynı döngüye sokulsaydı bölge ve seçim
+  // sayaçlarına da girer, bu dönemin rakamlarını şişirirdi.
+  if (ek?.oncekiler) {
+    for (const a of ek.oncekiler) {
+      if (a.durum !== "kapali") continue;
+      for (const k of a.kalemler) {
+        if ((k.durum ?? "normal") !== "normal") continue;
+        const anahtar = k.urunId ? `u${k.urunId}` : `a${k.ad}`;
+        const satir = satirlar.get(anahtar);
+        // Önceki dönemde satılıp bu dönemde hiç satılmayan ürün de listeye
+        // giriyor; "düşenler" kartının asıl aradığı satır o.
+        const hedef =
+          satir ??
+          ({
+            anahtar,
+            ad: k.ad,
+            kategoriAd: (k.urunId ? kategoriler.get(k.urunId)?.ad : "") || KATEGORISIZ,
+            kategoriRenk: k.urunId ? kategoriler.get(k.urunId)?.renk : undefined,
+            miktar: 0,
+            ciro: 0,
+            ikram: 0,
+            iptal: 0,
+          } as UrunSatiri);
+        hedef.oncekiCiro = (hedef.oncekiCiro ?? 0) + tutar(k);
+        hedef.oncekiMiktar = (hedef.oncekiMiktar ?? 0) + k.adet;
+        satirlar.set(anahtar, hedef);
+      }
     }
   }
 
@@ -837,9 +924,31 @@ export function analizUrunleri(
     gruplar.set(s.kategoriAd, g);
   }
 
+  // Satılmayanlar satış listesinden değil menüden çıkıyor. Ölçüt miktar: yalnız
+  // ikram veya iptal edilmiş ürün de satılmamış sayılıyor.
+  const satanlar = new Set(
+    liste.filter((s) => s.miktar > 0 && s.anahtar.startsWith("u")).map((s) => s.anahtar)
+  );
+  const satilmayanlar: SatilmayanUrun[] = (ek?.menu ?? [])
+    .filter((u) => !satanlar.has(`u${u.id}`))
+    .map((u) => ({
+      id: u.id,
+      ad: u.ad,
+      kategoriAd: kategoriler.get(u.id)?.ad ?? KATEGORISIZ,
+      kategoriRenk: kategoriler.get(u.id)?.renk,
+      gizli: u.gizli,
+      tukendi: u.tukendi,
+    }))
+    .sort((a, b) => a.kategoriAd.localeCompare(b.kategoriAd, "tr") || a.ad.localeCompare(b.ad, "tr"));
+
   return {
     satirlar: liste,
     kategoriler: [...gruplar.values()].sort((a, b) => b.tutar - a.tutar),
+    bolgeler: [...bolgeler.values()].sort((a, b) => b.tutar - a.tutar),
+    satilmayanlar,
+    oncekiCiro: ek?.oncekiler
+      ? liste.reduce((t, s) => t + (s.oncekiCiro ?? 0), 0)
+      : null,
     miktar: liste.reduce((t, s) => t + s.miktar, 0),
     // Hiç satılmamış, yalnız ikram veya iptal edilmiş ürün "çeşit" sayılmıyor.
     cesit: liste.filter((s) => s.miktar > 0).length,

@@ -1,15 +1,24 @@
 import { useEffect, useState } from "react";
 import { Ban, Plus, X } from "lucide-react";
 
+/**
+ * Hazır renkler. Önce pastel bir paletti; kategori şeridi ve ürün kartı gibi
+ * küçük yüzeylerde renk neredeyse seçilmiyor, yan yana dizilince hepsi aynı
+ * soluk tona düşüyordu. Palet renk çarkında eşit aralıklı ve hepsi aynı
+ * doygunlukta — ilk renk ekranın vurgu rengi.
+ *
+ * Kullanıcının daha önce seçtiği renkler olduğu gibi duruyor; burası yalnız
+ * hazır seçeneklerin listesi, seçicide kendi rengini girmek de mümkün.
+ */
 export const renkler = [
-  "#e8b4b4",
-  "#d4b896",
-  "#a8d5c2",
-  "#9fc5d8",
-  "#c9b8d8",
-  "#e0c9a6",
-  "#b8d4a8",
-  "#d8b8c4",
+  "#ff6b45",
+  "#f2a03d",
+  "#e0bb2e",
+  "#12b886",
+  "#16b8c4",
+  "#3d8fd6",
+  "#8a6fd4",
+  "#e05a8f",
 ];
 
 type Hsl = { h: number; s: number; l: number };

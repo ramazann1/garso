@@ -19812,3 +19812,629 @@ body {
     max-height: none;
   }
 }
+
+/* ---------- Analiz → Ürünler: öne çıkanlar, kadran, satılmayanlar ---------- */
+
+/* Dönemin üç cümlesi. Kart değil şerit gibi duruyorlar: altlarında zaten
+   kartlarla dolu bir ekran var, dört ayrı kutu katmanı ağır olurdu. */
+.one-cikanlar {
+  display: grid;
+  grid-template-columns: repeat(auto-fit, minmax(220px, 1fr));
+  gap: 12px;
+  margin-bottom: 16px;
+}
+
+.one-cikan {
+  display: flex;
+  flex-direction: column;
+  gap: 4px;
+  padding: 14px 16px;
+  border: 1px solid var(--cizgi);
+  border-left: 3px solid var(--cizgi-koyu);
+  border-radius: var(--r-or);
+  background: var(--kart);
+  box-shadow: var(--g1);
+}
+
+.one-cikan.yildiz {
+  border-left-color: var(--mercan);
+}
+
+.one-cikan.artan {
+  border-left-color: var(--yesil);
+}
+
+.one-cikan.azalan {
+  border-left-color: #b23f26;
+}
+
+.one-cikan-etiket {
+  display: flex;
+  align-items: center;
+  gap: 6px;
+  color: var(--soluk);
+  font-size: 14px;
+  font-weight: 600;
+}
+
+.one-cikan-etiket svg {
+  flex: none;
+}
+
+.one-cikan strong {
+  font-size: 19px;
+  font-weight: 700;
+  line-height: 1.25;
+}
+
+.one-cikan em {
+  display: flex;
+  align-items: center;
+  gap: 6px;
+  color: var(--soluk);
+  font-size: 14px;
+  font-style: normal;
+}
+
+/* Kategori halkası ile bölge dağılımı yan yana: ikisi de aynı soruyu
+   ("satış nereden geldi") iki ayrı eksende cevaplıyor. */
+.urun-ikili {
+  display: grid;
+  grid-template-columns: 1.55fr 1fr;
+  gap: 16px;
+  align-items: start;
+}
+
+@media (max-width: 900px) {
+  .urun-ikili {
+    grid-template-columns: 1fr;
+  }
+}
+
+
+.satilmayan-liste {
+  display: grid;
+  grid-template-columns: repeat(auto-fill, minmax(260px, 1fr));
+  gap: 8px 16px;
+  margin-top: 12px;
+  padding: 0;
+  list-style: none;
+}
+
+.satilmayan-liste li {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  padding: 9px 12px;
+  border: 1px solid var(--cizgi);
+  border-radius: var(--r-kk);
+  background: var(--kart-ust);
+  font-size: 14px;
+}
+
+.satilmayan-liste li em {
+  margin-left: auto;
+  color: var(--soluk);
+  font-size: 13px;
+  font-style: normal;
+  white-space: nowrap;
+}
+
+.satilmayan-liste .rozet {
+  flex: none;
+  font-size: 12.5px;
+}
+
+/* Dört grup kutusu. Dağılım grafiğinin yerini aldı: aynı ayrımı gösteriyor
+   ama okumak için grafiği öğrenmek gerekmiyor, üstelik filtre olarak çalışıyor. */
+.urun-gruplari {
+  display: grid;
+  grid-template-columns: repeat(4, 1fr);
+  gap: 12px;
+  margin-bottom: 16px;
+}
+
+@media (max-width: 900px) {
+  .urun-gruplari {
+    grid-template-columns: repeat(2, 1fr);
+  }
+}
+
+.urun-grup {
+  display: flex;
+  flex-direction: column;
+  align-items: flex-start;
+  gap: 3px;
+  padding: 13px 15px;
+  border: 1px solid var(--cizgi);
+  border-top: 3px solid var(--cizgi-koyu);
+  border-radius: var(--r-or);
+  background: var(--kart);
+  text-align: left;
+  cursor: pointer;
+  transition: border-color var(--gecis), box-shadow var(--gecis);
+}
+
+.urun-grup:hover:not(:disabled) {
+  box-shadow: var(--g2);
+}
+
+.urun-grup:disabled {
+  opacity: 0.55;
+  cursor: default;
+}
+
+.urun-grup.secili {
+  border-color: var(--mercan);
+  background: var(--mercan-sis);
+}
+
+.urun-grup.yildiz {
+  border-top-color: var(--mercan);
+}
+
+.urun-grup.hacim {
+  border-top-color: #4b93c9;
+}
+
+.urun-grup.pahali {
+  border-top-color: #c98a4b;
+}
+
+.urun-grup.geride {
+  border-top-color: #8fa0b3;
+}
+
+.urun-grup strong {
+  font-size: 17px;
+  font-weight: 700;
+}
+
+.urun-grup-sayi {
+  font-size: 15px;
+  font-weight: 600;
+}
+
+.urun-grup em {
+  color: var(--soluk);
+  font-size: 13px;
+  font-style: normal;
+  line-height: 1.4;
+}
+
+/* Aynı ayrım tabloda ürünün adının yanında. Renk kutulardakiyle birebir aynı
+   ki iki yer arasında bağ kurulabilsin. */
+.urun-grup-rozet {
+  display: inline-block;
+  margin-left: 8px;
+  padding: 1px 8px;
+  border-radius: var(--r-tam);
+  font-size: 12.5px;
+  font-weight: 600;
+  vertical-align: middle;
+}
+
+.urun-grup-rozet.yildiz {
+  background: #ffe6dd;
+  color: #b23f26;
+}
+
+.urun-grup-rozet.hacim {
+  background: #dfeaf6;
+  color: #2f5f87;
+}
+
+.urun-grup-rozet.pahali {
+  background: #f7ead6;
+  color: #86601f;
+}
+
+.urun-grup-rozet.geride {
+  background: #e8ecf1;
+  color: #55637a;
+}
+
+/* Öne çıkan kartta ürün adı düz metin: rengi rozet taşıyor, ad değil. */
+.one-cikan.artan strong,
+.one-cikan.azalan strong {
+  color: var(--metin);
+}
+
+/* Kategori kartı: halka biraz büyük, lejant iki sütun. Tek sütunda altı
+   kategori kartı iki katına uzatıyor, yanındaki bölge kartının altında ekran
+   boyu boşluk kalıyordu. */
+.urun-kat-kart .gr-halka {
+  width: 196px;
+}
+
+.urun-kat-kart .gr-lejant {
+  display: grid;
+  grid-template-columns: repeat(2, minmax(0, 1fr));
+  gap: 2px 10px;
+}
+
+@media (max-width: 1200px) {
+  .urun-kat-kart .gr-lejant {
+    grid-template-columns: minmax(0, 1fr);
+  }
+}
+
+/* --- Ürünler sekmesi: tek tipografi ölçeği ---
+   Bölümler ayrı ayrı yazılınca sekmede beş farklı punto birikmişti (13 / 13.5 /
+   14 / 15 / 17 / 19 / 21). Ölçek dörde indi: başlık 17, sayı 19, gövde 15,
+   yardımcı 13.5 — hepsi 600/700 ağırlıkta, ikincil metin --soluk tonunda. */
+
+.one-cikan {
+  gap: 5px;
+  padding: 15px 17px;
+}
+
+.one-cikan-etiket {
+  font-size: 13.5px;
+  letter-spacing: 0.01em;
+}
+
+.one-cikan strong {
+  font-size: 19px;
+  letter-spacing: -0.01em;
+}
+
+.one-cikan em {
+  font-size: 13.5px;
+}
+
+.urun-grup {
+  gap: 4px;
+  padding: 14px 16px;
+}
+
+.urun-grup strong {
+  font-size: 17px;
+  letter-spacing: -0.01em;
+}
+
+.urun-grup-sayi {
+  font-size: 15px;
+  font-weight: 600;
+}
+
+.urun-grup em {
+  font-size: 13.5px;
+}
+
+.urun-kat-kart .gr-lejant li {
+  font-size: 14.5px;
+  padding: 7px 9px;
+}
+
+.gr-lejant-devam {
+  display: block;
+  padding: 0;
+}
+
+.gr-lejant-devam button {
+  display: flex;
+  align-items: center;
+  gap: 7px;
+  width: 100%;
+  padding: 7px 9px;
+  border: none;
+  border-radius: var(--r-kk);
+  background: none;
+  color: var(--mercan);
+  font-size: 14.5px;
+  font-weight: 600;
+  cursor: pointer;
+}
+
+.gr-lejant-devam button:hover {
+  background: var(--mercan-sis);
+}
+
+.satilmayan-liste li {
+  font-size: 14.5px;
+}
+
+.satilmayan-liste li em {
+  font-size: 13.5px;
+}
+
+/* Kategori penceresi: orta boy, listesi kendi içinde kayıyor. */
+.up-modal.kat-pencere {
+  width: 880px;
+  max-width: 94vw;
+  display: flex;
+  flex-direction: column;
+  max-height: 82vh;
+}
+
+.up-modal.kat-pencere .up-ust h3 {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+}
+
+.kat-pencere-icerik {
+  display: grid;
+  grid-template-columns: 280px minmax(0, 1fr);
+  gap: 22px;
+  min-height: 0;
+  padding: 18px 22px 22px;
+}
+
+@media (max-width: 760px) {
+  .kat-pencere-icerik {
+    grid-template-columns: minmax(0, 1fr);
+  }
+}
+
+.kat-pencere-sag {
+  display: flex;
+  flex-direction: column;
+  gap: 10px;
+  min-height: 0;
+}
+
+.kat-pencere-govde {
+  overflow-y: auto;
+  min-height: 0;
+}
+
+/* İki sütunlu lejantta "daha fazla" düğmesi kendi hücresine sıkışıp üç satıra
+   bölünüyordu; satırın tamamını kaplıyor. */
+.urun-kat-kart .gr-lejant-devam {
+  grid-column: 1 / -1;
+}
+
+.gr-lejant-devam button {
+  white-space: nowrap;
+}
+
+/* Lejant satırı yeniden dizildi. Ad ile tutar arasında kocaman bir boşluk
+   kalıyor, yüzde ise ikinci satırda sola düşüp hiçbir şeye hizalanmıyordu.
+   Artık yanındaki Bölgeler kartıyla aynı düzen: renk ve ad solda dikey ortalı,
+   tutar ve yüzde sağda alt alta. */
+.urun-kat-kart .gr-lejant li {
+  grid-template-columns: 9px minmax(0, 1fr) auto;
+  gap: 0 10px;
+  padding: 8px 10px;
+  align-items: center;
+}
+
+.urun-kat-kart .gr-lejant li i {
+  grid-row: 1 / 3;
+  width: 9px;
+  height: 9px;
+}
+
+.urun-kat-kart .gr-lejant li span {
+  grid-row: 1 / 3;
+  font-size: 14.5px;
+  font-weight: 600;
+}
+
+.urun-kat-kart .gr-lejant li strong {
+  grid-column: 3;
+  grid-row: 1;
+  font-size: 15px;
+  font-weight: 700;
+  text-align: right;
+}
+
+.urun-kat-kart .gr-lejant li em {
+  grid-column: 3;
+  grid-row: 2;
+  color: var(--soluk);
+  font-size: 13px;
+  font-weight: 600;
+  font-style: normal;
+  text-align: right;
+}
+
+/* "Daha fazla" satırı: ortada asılı duran üç nokta yerine listeyi kapatan
+   kendi şeridi — solda kaç tane kaldığı, sağda eylem. */
+.urun-kat-kart .gr-lejant-devam {
+  margin-top: 6px;
+  padding-top: 8px;
+  border-top: 1px solid var(--cizgi);
+}
+
+.gr-lejant-devam button {
+  justify-content: space-between;
+  gap: 12px;
+  padding: 8px 10px;
+  color: var(--soluk);
+  font-size: 14px;
+}
+
+.gr-lejant-devam button b {
+  display: flex;
+  align-items: center;
+  gap: 6px;
+  color: var(--mercan);
+  font-size: 14px;
+  font-weight: 600;
+}
+
+/* Pencere içindeki halka: kartındakinden biraz büyük, ortada. */
+.kat-pencere-halka {
+  display: flex;
+  align-items: flex-start;
+  justify-content: center;
+  padding-top: 6px;
+}
+
+.kat-pencere-halka .gr-halka {
+  width: 230px;
+}
+
+/* "24 kategori daha" yazısı sıkışıp kayboluyordu: ortak lejant kuralı span'ı
+   esnetip kırpıyor, düğmenin içindeki metin ise kırpılmamalı. */
+.gr-lejant-devam button span {
+  flex: none;
+  overflow: visible;
+}
+
+/* Devam satırı lejantın grid şablonuna giriyordu: kendi kuralı daha düşük
+   özgüllükte kalınca düğme 9px'lik renk sütununa sıkışıyor, "24 kategori daha"
+   yazısı görünmüyordu. */
+.urun-kat-kart .gr-lejant li.gr-lejant-devam {
+  display: block;
+  padding: 8px 0 0;
+}
+
+/* Pencerede halka dikey olarak da ortada ve daha büyük. */
+.kat-pencere-halka {
+  align-items: center;
+  padding-top: 0;
+}
+
+.kat-pencere-halka .gr-halka {
+  width: 100%;
+  max-width: 268px;
+}
+
+/* Pencere listesinde farenin üstünde olduğu satır: halkadaki karşılığıyla
+   birlikte yanıyor. */
+.kat-pencere-govde .analiz-dagilim li.vurgu {
+  background: var(--zemin);
+  border-radius: var(--r-kk);
+}
+
+/* ---------- Kaydırma bir kutuda kalır ----------
+   Tekerlek, üzerinde bulunulan listenin sonuna gelince arkadaki sayfayı
+   kaydırmaya devam ediyordu: sepette gezerken sayfa kayıyor, açık pencerede
+   liste bitince arkadaki ekran oynuyordu. `contain` zinciri kesiyor — kutunun
+   kendi kaydırması bittiğinde hareket dışarı taşmıyor.
+
+   Yan menüde bu kural zaten vardı, tek tek yazılmış; burada kendi içinde kayan
+   bütün kutular toplandı. Yeni bir kaydırılan kutu açarken listeye eklenmeli.
+   `:where()` kullanılıyor: özgüllüğü sıfır olduğu için kutuların kendi
+   kurallarını ezmiyor. */
+:where(
+  .ab-govde,
+  .ak-bolum.uyari,
+  .ak-govde,
+  .bs-izgara,
+  .cari-detay-govde,
+  .cd-form,
+  .detay-govde,
+  .gecmis-govde,
+  .gecmis-pencere,
+  .hizli-govde,
+  .hizli-ode,
+  .hizli-simge,
+  .istasyon-kartlar,
+  .istasyon-panel,
+  .ka-govde,
+  .kalem-detay,
+  .kasa-pencere,
+  .kat-pencere-govde,
+  .kat-pencere-sag,
+  .kategori-serit,
+  .kmp-liste-govde,
+  .kp-govde,
+  .kp-kip,
+  .kuyruk-onizleme,
+  .m-adisyon-icerik,
+  .m-adisyon-kalan,
+  .m-icerik,
+  .m-odeme-govde,
+  .m-sayfa-icerik,
+  .m-serit-bekleyen,
+  .m-urunler,
+  .mp-govde,
+  .ms-govde,
+  .ms-kat-liste,
+  .msc-liste,
+  .onay-modal,
+  .panel-govde,
+  .pencere,
+  .sepet-liste,
+  .sr-liste,
+  .tablo-kaydir,
+  .tablo-kaydir-dikey,
+  .tahsilat-govde,
+  .th-sutun,
+  .up-grup-govde,
+  .up-icerik,
+  .up-kategori-kutu,
+  .up-raf,
+  .urun-alani
+) {
+  overscroll-behavior: contain;
+}
+
+/* Perdenin kendisi kaymıyor ama tekerlek arkadaki sayfaya geçiyordu: pencere
+   açıkken arka plan yerinde duruyor. */
+:where(.up-fon, .menu-perde) {
+  overscroll-behavior: contain;
+}
+
+/* Perde açıkken sayfanın kendisi kilitleniyor. `overscroll-behavior` yalnız
+   kendi kaydırma çubuğu olan kutuda çalışıyor; perdenin çubuğu yok, o yüzden
+   perdenin boş bir yerinde çevrilen tekerlek doğrudan arkadaki sayfaya
+   gidiyordu. Kilit CSS'te: her pencere bileşenine ayrı ayrı kod eklemek yerine
+   perdenin varlığı yetiyor.
+
+   `scrollbar-gutter` kaydırma çubuğunun yerini hep ayrı tutuyor — yoksa çubuk
+   kaybolduğu anda sayfa birkaç piksel yana zıplıyor. */
+html {
+  scrollbar-gutter: stable;
+}
+
+html:has(.up-fon, .menu-perde),
+body:has(.up-fon, .menu-perde) {
+  overflow: hidden;
+}
+
+/* Perde kendisi bir kaydırma kutusu. Yalnız `overflow: hidden` ile sayfayı
+   kilitlemek yetmiyordu: perdenin boş yerinde çevrilen tekerleği tüketecek bir
+   kutu yoksa hareket arkadaki ekrana geçiyor. Perde kaydırılabilir olunca
+   tekerlek orada duruyor, `contain` da zinciri kesiyor. Ekrana sığmayan uzun
+   pencere de artık kaydırılarak okunabiliyor.
+
+   `align-items` yerine `margin: auto`: ortalanmış bir esnek çocuk kutudan
+   taştığında üst kenarı kaydırmayla erişilemez hâle geliyor, `margin: auto`
+   ise taşınca üstü kırpmıyor. */
+.up-fon {
+  align-items: flex-start;
+  overflow-y: auto;
+  overscroll-behavior: contain;
+}
+
+.up-fon > * {
+  margin: auto;
+}
+
+/* --- Halka paleti canlandırıldı ---
+   Önce tek renk ailesi kullanılıyordu: mercanın açılan kademeleri. Dilim sayısı
+   arttıkça tonlar birbirine yaklaşıp soluyor, üçüncü dilimden sonra hepsi aynı
+   soluk pembe-griye dönüyordu. Şimdi beş ayrı ama aynı doygunlukta renk —
+   Adisyo'nun rastgele kütüphane renklerinden farkı, hepsinin bilerek seçilmiş
+   olması ve ekranın geri kalanıyla (mercan, yeşil) aynı dilde konuşması. */
+.gr-dilim.k1 {
+  stroke: #f2a03d;
+}
+.gr-dilim.k2 {
+  stroke: var(--yesil);
+}
+.gr-dilim.k3 {
+  stroke: #3d8fd6;
+}
+.gr-dilim.k4 {
+  stroke: #8a6fd4;
+}
+
+.gr-lejant i.k1 {
+  background: #f2a03d;
+}
+.gr-lejant i.k2 {
+  background: var(--yesil);
+}
+.gr-lejant i.k3 {
+  background: #3d8fd6;
+}
+.gr-lejant i.k4 {
+  background: #8a6fd4;
+}
