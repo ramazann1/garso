@@ -5,7 +5,7 @@ import { SURUM } from "../src/surum.js";
 import { kimlikOku, kimlikSil, kimlikYaz } from "./kimlik.js";
 
 /**
- * Garso Kasa Köprüsü — pencereli sürüm.
+ * RayoPOS Kasa Köprüsü — pencereli sürüm.
  *
  * Program ana pencere olarak yaşamıyor: ilk açılışta giriş penceresi çıkıyor,
  * girildikten sonra saat yanındaki simgeye iniyor. Kasadaki kişi bu programa
@@ -30,12 +30,16 @@ const kopruKoku = join(buDizin, "..");
  * İkisi de motor yüklenmeden önce yazılmak zorunda — yerler.js/ayar.js açılışta
  * okuyor.
  */
-process.env.GARSO_KOK = app.isPackaged
+// Program adı Garso'dan RayoPOS'a döndü; Electron ayar klasörünü addan türettiği
+// için klasör sabitleniyor, yoksa kurulu kasalardaki giriş bilgileri kayboluyor.
+app.setPath("userData", join(app.getPath("appData"), "Garso Kasa Köprüsü"));
+
+process.env.RAYOPOS_KOK = app.isPackaged
   ? kopruKoku.replace("app.asar", "app.asar.unpacked")
   : kopruKoku;
-process.env.GARSO_AYAR_YOLU = join(app.getPath("userData"), "ayarlar.json");
+process.env.RAYOPOS_AYAR_YOLU = join(app.getPath("userData"), "ayarlar.json");
 
-const AYAR_YOLU = process.env.GARSO_AYAR_YOLU;
+const AYAR_YOLU = process.env.RAYOPOS_AYAR_YOLU;
 const simge = (boy) => join(kopruKoku, "varliklar", `simge-${boy}.png`);
 
 // İki köprü aynı kuyruğa bakarsa aynı fişi iki kez basma riski doğuyor.
@@ -52,7 +56,7 @@ let cikiliyor = false;
 const pencereAyari = (genislik, yukseklik) => ({
   width: genislik,
   height: yukseklik,
-  title: "Garso Kasa Köprüsü",
+  title: "RayoPOS Kasa Köprüsü",
   icon: nativeImage.createFromPath(simge(256)),
   autoHideMenuBar: true,
   backgroundColor: "#15171c",
@@ -159,7 +163,7 @@ function tepsiyiTazele() {
   const { isik, cumle } = nabiz();
   const isikSimgesi = nativeImage.createFromPath(join(kopruKoku, "varliklar", `isik-${isik}.png`));
 
-  tepsi.setToolTip(`Garso Kasa Köprüsü\n${cumle}${oturum ? `\n${oturum.isletme}` : ""}`);
+  tepsi.setToolTip(`RayoPOS Kasa Köprüsü\n${cumle}${oturum ? `\n${oturum.isletme}` : ""}`);
   tepsi.setContextMenu(
     Menu.buildFromTemplate([
       // Menünün ilk satırı bilgi değil durum: kasadaki kişi sağ tıkladığında
@@ -175,7 +179,7 @@ function tepsiyiTazele() {
       { label: oturum?.kisi ? `Kasa kişisi: ${oturum.kisi}` : "Kasa kişisi yok", enabled: false },
       { type: "separator" },
       { label: "Durum panelini aç", icon: nativeImage.createFromPath(simge(16)), enabled: Boolean(motor), click: durumPenceresiAc },
-      { label: "Garso'yu tarayıcıda aç", click: () => shell.openExternal("https://garso.app") },
+      { label: "RayoPOS'u tarayıcıda aç", click: () => shell.openExternal("https://rayopos.com.tr") },
       { type: "separator" },
       { label: "Bu kasanın bağlantısını kes", click: oturumuKapat },
       { label: "Köprüyü kapat", click: cik },

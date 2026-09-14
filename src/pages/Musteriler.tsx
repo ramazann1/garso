@@ -349,7 +349,7 @@ export default function Musteriler() {
       sheet: "Müşteriler",
       columns: MUSTERI_SUTUNLARI.map((width) => ({ width })),
       stickyRowsCount: 1,
-    }).toFile(`garso-musteriler-${bugun()}.xlsx`);
+    }).toFile(`rayopos-musteriler-${bugun()}.xlsx`);
   };
 
   const dosyaSecildi = async (dosya?: File) => {

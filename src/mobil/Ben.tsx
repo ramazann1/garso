@@ -4,7 +4,7 @@ import OnayModal from "../components/OnayModal";
 import { kilitle, oturumuKapat, useOturum } from "../oturum";
 import { isletmeAdi } from "../isletmeAyarlari";
 import { kilitliMi } from "../cikisKilidi";
-import { GARSO_SURUM } from "../surum";
+import { RAYOPOS_SURUM } from "../surum";
 import { gorunumSec } from "./mobilTercih";
 
 /**
@@ -63,7 +63,7 @@ export default function Ben() {
         </button>
       </div>
 
-      <div className="m-surum">Garso {GARSO_SURUM}</div>
+      <div className="m-surum">RayoPOS {RAYOPOS_SURUM}</div>
 
       {cikisOnay && (
         <OnayModal

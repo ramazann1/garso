@@ -167,7 +167,7 @@ export default function Odenmezler() {
       sheet: "Ödenmezler",
       columns: ODENMEZ_SUTUNLARI.map((width) => ({ width })),
       stickyRowsCount: 1,
-    }).toFile(`garso-odenmezler-${bugun()}.xlsx`);
+    }).toFile(`rayopos-odenmezler-${bugun()}.xlsx`);
   };
 
   const dosyaSecildi = async (dosya?: File) => {

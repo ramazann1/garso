@@ -9,7 +9,7 @@ const disariCagir = createRequire(import.meta.url);
 /**
  * Kasaya verilecek kurulum dosyasını üretiyor: `npm.cmd run paketle`.
  *
- * Çıkan şey `dagitim/garso-kopru-kurulum-<sürüm>.exe` — işletme çift tıklıyor,
+ * Çıkan şey `dagitim/rayopos-kopru-kurulum-<sürüm>.exe` — işletme çift tıklıyor,
  * program kuruluyor ve kendiliğinden açılıyor. Kasada Node kurulumu, klasör
  * kopyalama ya da terminal komutu yok.
  *
@@ -95,7 +95,7 @@ async function kurulumGorselleri() {
   kc.fillStyle = "#ffffff";
   kc.textAlign = "center";
   kc.font = "600 22px Segoe UI";
-  kc.fillText("Garso", 82, 200);
+  kc.fillText("RayoPOS", 82, 200);
   kc.font = "400 13px Segoe UI";
   kc.fillText("Kasa Köprüsü", 82, 220);
   kc.font = "400 11px Segoe UI";
@@ -132,4 +132,4 @@ execFileSync(process.execPath, [join(kok, "node_modules", "electron-builder", "c
 // Çıktı proje klasörünün dışına yazılıyor: Windows'un dosya dizinleyicisi
 // Masaüstü'nü sürekli tarıyor ve paketleyicinin klasör adı değiştirme adımını
 // engelliyor ("EPERM").
-console.log(`\nHazır: ${join(process.env.LOCALAPPDATA, "Garso", "dagitim")}\n`);
+console.log(`\nHazır: ${join(process.env.LOCALAPPDATA, "RayoPOS", "dagitim")}\n`);

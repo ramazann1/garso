@@ -31,7 +31,7 @@ function nabiz(durum) {
   const kapali = basanlar.filter((y) => y.durum !== "bagli");
 
   if (!basanlar.length) {
-    return { hal: "bekliyor", baslik: "Yazıcı bekleniyor", alt: "Garso'da bu kasaya yazıcı tanımlanmamış" };
+    return { hal: "bekliyor", baslik: "Yazıcı bekleniyor", alt: "RayoPOS'ta bu kasaya yazıcı tanımlanmamış" };
   }
   if (kapali.length === basanlar.length) {
     return { hal: "kapali", baslik: "Yazıcılara ulaşılamıyor", alt: kapali.map((y) => y.ad).join(", ") };
@@ -65,7 +65,7 @@ function ciz(durum) {
   const baglantilar = bul("baglantilar");
   baglantilar.replaceChildren(
     satir(
-      "Garso sunucusu",
+      "RayoPOS sunucusu",
       bagli ? "acik" : "kapali",
       bagli ? "Bağlı" : "Bağlantı yok",
       bagli ? "Fişler anında alınıyor" : durum.bulutHata || "Yeniden deneniyor"
@@ -110,7 +110,7 @@ function ozetMetni() {
   if (!d) return "";
 
   const satirlar = [
-    "Garso Kasa Köprüsü",
+    "RayoPOS Kasa Köprüsü",
     `İşletme : ${d.oturum?.isletme ?? "-"} (${d.oturum?.kod ?? "-"})`,
     `Kişi    : ${d.oturum?.kisi ?? "-"}`,
     `Cihaz   : ${d.cihaz}`,

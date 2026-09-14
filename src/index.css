@@ -1,4 +1,4 @@
-/* Garso — genel görünüm */
+/* RayoPOS — genel görünüm */
 :root {
   --zemin: #f4f6f9;      /* soğuk gri-mavi arka plan */
   --kart: #ffffff;       /* kartların rengi */
@@ -2515,7 +2515,21 @@ body {
   margin-bottom: 2px;
 }
 
-/* İşletme adı markanın altında, onun yazı hizasında: "Garso" ürünün adı,
+.menu-katla b {
+  font-weight: 400;
+}
+
+.menu-katla i {
+  display: inline-block;
+  width: 5px;
+  height: 5px;
+  margin-left: 2px;
+  border-radius: 50%;
+  background: currentColor;
+  vertical-align: 2px;
+}
+
+/* İşletme adı markanın altında, onun yazı hizasında: "RayoPOS" ürünün adı,
    altındaki satır o an içinde bulunulan işletme. */
 .menu-isletme {
   display: flex;
@@ -8368,6 +8382,10 @@ body {
   font-size: 46px;
   font-weight: 600;
   letter-spacing: -1px;
+}
+
+.giris-marka b {
+  font-weight: 400;
 }
 
 /* Markanın sonundaki nokta: adın bittiği yeri işaretliyor. */

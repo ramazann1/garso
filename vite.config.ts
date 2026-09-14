@@ -26,8 +26,8 @@ export default defineConfig({
       registerType: 'autoUpdate',
       includeAssets: ['favicon.svg', 'apple-icon-*.png'],
       manifest: {
-        name: 'Garso',
-        short_name: 'Garso',
+        name: 'RayoPOS',
+        short_name: 'RayoPOS',
         description: 'Restoran ve cafe satış ve işletme yönetim sistemi',
         lang: 'tr',
         start_url: '/',

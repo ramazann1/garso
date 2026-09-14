@@ -45,7 +45,7 @@ export default function KilitEkrani() {
     <div className="kilit">
       <div className="kilit-kart">
         <span className="giris-marka">
-          Garso<i />
+          Rayo<b>POS</b><i />
         </span>
 
         <span className="kilit-im">

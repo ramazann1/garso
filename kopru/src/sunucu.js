@@ -3,12 +3,12 @@ import { join } from "node:path";
 import { kokDizin } from "./yerler.js";
 
 /**
- * Garso'nun kendi sunucusu.
+ * RayoPOS'un kendi sunucusu.
  *
  * Adres ve anon anahtarı her işletmede aynı — işletmecinin bunları bilmesi
  * imkânsız, sorulursa kurulum satılabilir olmaktan çıkar. Bu yüzden programın
  * içine gömülüyor: paketlerken `sunucu-gomulu.js` üretiliyor ve buradan
- * okunuyor. Anahtar gizli bir bilgi değil; tarayıcıda çalışan Garso'nun içinde
+ * okunuyor. Anahtar gizli bir bilgi değil; tarayıcıda çalışan RayoPOS'un içinde
  * de duruyor, veriyi koruyan şey satır güvenliği.
  *
  * Geliştirirken o dosya olmuyor; ana projenin `.env.local`'ı okunuyor.

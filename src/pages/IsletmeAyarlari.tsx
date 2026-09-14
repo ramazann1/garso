@@ -383,7 +383,7 @@ function OdemeTipiPaneli({
             </div>
             <Bilgi>
               Yazarkasa seçilen ödemeler ÖKC cihazına iletilecek şekilde kaydedilir;
-              klasik ödemeler yalnızca Garso'da tutulur.
+              klasik ödemeler yalnızca RayoPOS'ta tutulur.
             </Bilgi>
           </div>
 
@@ -616,7 +616,7 @@ function ServisPaneli({
  * QR menü bölümü: müşterinin masadaki karekodu okutunca gördüğü menünün
  * açma/kapama anahtarı, adresi ve yazdırılabilir karekodu.
  *
- * Menü Garso'nun kendi veritabanından okunuyor; fiyat değiştiği anda müşterinin
+ * Menü RayoPOS'un kendi veritabanından okunuyor; fiyat değiştiği anda müşterinin
  * telefonundaki menü de değişiyor, ayrıca bir yere kopyalamak gerekmiyor.
  */
 function QrMenuBolumu({
@@ -955,7 +955,7 @@ export default function IsletmeAyarlari() {
                 : genelBolumu
                   ? "İşletmenin çalışma düzenini buradan kurarsınız."
                   : qrBolumu
-                    ? "Masalara koyacağınız karekodu okutan müşteri menünüzü telefonunda görür. Menü Garso'daki ürünlerden okunur; fiyatı değiştirdiğinizde müşterinin gördüğü menü de aynı anda değişir. Yalnız satışta görünür kategori ve ürünler listelenir."
+                    ? "Masalara koyacağınız karekodu okutan müşteri menünüzü telefonunda görür. Menü RayoPOS'taki ürünlerden okunur; fiyatı değiştirdiğinizde müşterinin gördüğü menü de aynı anda değişir. Yalnız satışta görünür kategori ve ürünler listelenir."
                     : "Satışın genel kurallarını buradan belirlersiniz."}
           </Bilgi>
           {(genelBolumu || satisBolumu) && (

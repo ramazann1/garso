@@ -8,7 +8,7 @@ import { kuruluYazicilar } from "./usb.js";
 import { paketli } from "./yerler.js";
 
 /**
- * Garso Kasa Köprüsü — terminal sürümü.
+ * RayoPOS Kasa Köprüsü — terminal sürümü.
  *
  * Kasaya giden asıl program pencereli sürüm (`elektron/ana.js`); burası
  * geliştirirken ve tek komutluk işlerde (yazıcı listesi) kullanılıyor. İkisi de
@@ -51,7 +51,7 @@ async function calis() {
 }
 
 /**
- * Kurulu yazıcıları listeleme. Garso tarayıcıda çalıştığı için kasadaki yazıcı
+ * Kurulu yazıcıları listeleme. RayoPOS tarayıcıda çalıştığı için kasadaki yazıcı
  * listesini göremiyor; USB yazıcı tanıtılırken sistemdeki ad birebir yazılmak
  * zorunda ve o ad buradan okunuyor.
  */

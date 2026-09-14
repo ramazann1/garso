@@ -15,7 +15,8 @@ import sharp from "sharp";
 const __dirname = path.dirname(fileURLToPath(import.meta.url));
 
 const KLASOR = path.join(__dirname, "public");
-const MERCAN = "#ff7a59";
+const KOPRU = path.join(__dirname, "kopru", "varliklar");
+const ZEMIN = "#ffffff";
 
 const kaynak = fs.readFileSync(path.join(KLASOR, "favicon.svg"), "utf8");
 
@@ -24,7 +25,7 @@ function kare(oran) {
   const ic = kaynak.replace(/^[\s\S]*?<rect[^>]*\/>/, "").replace("</svg>", "");
   const kayma = (512 * (1 - oran)) / 2;
   return `<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 512 512" width="512" height="512">
-  <rect width="512" height="512" fill="${MERCAN}"/>
+  <rect width="512" height="512" fill="${ZEMIN}"/>
   <g transform="translate(${kayma} ${kayma}) scale(${oran})">${ic}</g>
 </svg>`;
 }
@@ -40,14 +41,17 @@ const isler = [
   ["apple-icon-180.png", kare(0.86), 180],
 ];
 
+// Köprünün pencere, tepsi ve kurulum simgeleri de aynı çizimden.
+const kopruIsleri = [16, 24, 32, 48, 64, 128, 256].map((boy) => [`simge-${boy}.png`, kaynak, boy, KOPRU]);
+
 (async () => {
-  for (const [ad, svg, boy] of isler) {
+  for (const [ad, svg, boy, klasor = KLASOR] of [...isler, ...kopruIsleri]) {
     let is = sharp(Buffer.from(svg)).resize(boy, boy);
     // iOS ana ekran simgesinde saydam alanı siyaha çeviriyor; apple'ınkilerde
     // saydamlık atılıyor. PWA simgelerinde köşe yuvarlaması saydamlıkla
     // yapıldığı için onlara dokunulmuyor.
-    if (ad.startsWith("apple")) is = is.flatten({ background: MERCAN });
-    await is.png().toFile(path.join(KLASOR, ad));
+    if (ad.startsWith("apple")) is = is.flatten({ background: ZEMIN });
+    await is.png().toFile(path.join(klasor, ad));
     console.log(`${ad} yazıldı (${boy}px)`);
   }
 })();

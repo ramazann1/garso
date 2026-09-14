@@ -3,8 +3,8 @@ import { readFileSync, writeFileSync } from "node:fs";
 /**
  * Sürüm artırma: `npm.cmd run surum`
  *
- * Garso ile yazıcı programı tek numarayı paylaşıyor. Ayrı numaralar tutmak,
- * "kasadaki program hangi Garso ile uyumlu" sorusunu her seferinde yeniden
+ * RayoPOS ile yazıcı programı tek numarayı paylaşıyor. Ayrı numaralar tutmak,
+ * "kasadaki program hangi RayoPOS ile uyumlu" sorusunu her seferinde yeniden
  * doğurur; tek numarada bu soru yok.
  *
  * Numara üç parçalı: büyük.orta.küçük. Her seansta küçük parça bir artıyor;
@@ -36,8 +36,8 @@ const yeni = artir(koprununPaketi.version, process.argv[2]);
 degistir("package.json", /"version": "[\d.]+"/, `"version": "${yeni}"`);
 degistir("kopru/package.json", /"version": "[\d.]+"/, `"version": "${yeni}"`);
 degistir("kopru/src/surum.js", /export const SURUM = "[\d.]+";/, `export const SURUM = "${yeni}";`);
-degistir("src/surum.ts", /export const GARSO_SURUM = "[\d.]+";/, `export const GARSO_SURUM = "${yeni}";`);
+degistir("src/surum.ts", /export const RAYOPOS_SURUM = "[\d.]+";/, `export const RAYOPOS_SURUM = "${yeni}";`);
 degistir("src/kopruIndirme.ts", /surum: "[\d.]+"/, `surum: "${yeni}"`);
-degistir("src/kopruIndirme.ts", /garso-kopru-kurulum-[\d.]+\.exe/, `garso-kopru-kurulum-${yeni}.exe`);
+degistir("src/kopruIndirme.ts", /rayopos-kopru-kurulum-[\d.]+\.exe/, `rayopos-kopru-kurulum-${yeni}.exe`);
 
 console.log(`Sürüm ${koprununPaketi.version} → ${yeni}`);

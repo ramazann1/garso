@@ -17,7 +17,7 @@ export const VARSAYILAN_PORT = 7423;
 
 /**
  * Basılan fişlerin kimlikleri. İstek gidip cevap dönerken bağlantı koparsa
- * Garso aynı fişi bulut yoluyla yeniden gönderiyor; kimliği daha önce görülen
+ * RayoPOS aynı fişi bulut yoluyla yeniden gönderiyor; kimliği daha önce görülen
  * iş ikinci kez basılmıyor, "zaten basıldı" cevabı dönüyor.
  *
  * Vardiya boyu yetecek kadar tutuluyor, sonra unutuluyor: liste sonsuza kadar
@@ -85,7 +85,7 @@ function govdeyiOku(istek) {
 /**
  * Dinleyiciyi başlatır.
  *
- * `bilgi()` köprünün kimliğini veriyor — Garso "yerel yol açık mı" diye buna
+ * `bilgi()` köprünün kimliğini veriyor — RayoPOS "yerel yol açık mı" diye buna
  * bakıyor. `bas(is)` asıl yazdırmayı yapıyor; motorun kendi yazdırma yolu, iki
  * ayrı kod olmasın diye dışarıdan geçiliyor.
  *
@@ -119,7 +119,7 @@ export function yerelSunucuBaslat({
       }
 
       if (defter.gorulduMu(is.kimlik)) {
-        // Basıldı diyoruz: Garso bunu başarı sayıp kaydını tamamlasın, aynı
+        // Basıldı diyoruz: RayoPOS bunu başarı sayıp kaydını tamamlasın, aynı
         // fiş bir de bulut yolundan gitmesin.
         return cevapla(cevap, 200, { tamam: true, tekrar: true });
       }
@@ -129,7 +129,7 @@ export function yerelSunucuBaslat({
         defter.isaretle(is.kimlik);
         return cevapla(cevap, 200, { tamam: true, yazici: sonuc?.yazici ?? "" });
       } catch (e) {
-        // Yazıcı kapalıysa Garso eski yola düşsün diye hata açıkça dönüyor.
+        // Yazıcı kapalıysa RayoPOS eski yola düşsün diye hata açıkça dönüyor.
         return cevapla(cevap, 200, { tamam: false, hata: e.message });
       }
     }

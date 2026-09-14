@@ -16,6 +16,7 @@ kopru/ayarlar.json
 # Köprünün paketlenmiş hâli — her paketlemede yeniden üretiliyor
 kopru/dagitim
 kopru/gecici-paket
+kurulum-dosyasi
 dist-ssr
 *.local
 

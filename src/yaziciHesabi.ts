@@ -3,7 +3,7 @@ import { supabase } from "./supabase";
 /**
  * Kasa köprüsünün giriş hesabı.
  *
- * Köprü fiş basmak için Garso'ya giriş yapıyor. Bunu işletmecinin kendi
+ * Köprü fiş basmak için RayoPOS'a giriş yapıyor. Bunu işletmecinin kendi
  * hesabıyla yapmıyor: şifre kasadaki bilgisayarda duruyor ve o makineye
  * ulaşan biri yönetici olurdu. Ayrıca işletmeci şifresini değiştirdiği gün
  * köprü sessizce susardı.

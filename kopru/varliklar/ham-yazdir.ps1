@@ -18,7 +18,7 @@ using System;
 using System.IO;
 using System.Runtime.InteropServices;
 
-public class GarsoHamYazdir
+public class RayoposHamYazdir
 {
     [StructLayout(LayoutKind.Sequential, CharSet = CharSet.Unicode)]
     public struct BELGE
@@ -58,7 +58,7 @@ public class GarsoHamYazdir
         try
         {
             BELGE belge = new BELGE();
-            belge.Ad = "Garso fiş";
+            belge.Ad = "RayoPOS fiş";
             // RAW: baytları dönüştürmeden yazıcıya ilet.
             belge.VeriTuru = "RAW";
 
@@ -89,4 +89,4 @@ public class GarsoHamYazdir
 }
 "@
 
-[GarsoHamYazdir]::Gonder($Yazici, [System.IO.File]::ReadAllBytes($Dosya))
+[RayoposHamYazdir]::Gonder($Yazici, [System.IO.File]::ReadAllBytes($Dosya))

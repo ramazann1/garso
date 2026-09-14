@@ -141,7 +141,7 @@ function denemeFisi(yazici: Yazici) {
     tip: "adisyon",
     puntolar: { isletme_adi: 26, genel: 20, toplam: 24 },
     satirlar: [
-      { t: "orta", m: isletmeAdi() || "Garso", alan: "isletme_adi", kalin: true },
+      { t: "orta", m: isletmeAdi() || "RayoPOS", alan: "isletme_adi", kalin: true },
       { t: "orta", m: "DENEME FİŞİ", alan: "toplam", kalin: true },
       { t: "cizgi" },
       { t: "ikiUc", sol: "Yazıcı", sag: yazici.ad, alan: "genel" },

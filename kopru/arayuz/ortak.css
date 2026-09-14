@@ -1,8 +1,8 @@
-/* Garso Kasa Köprüsü — pencere görünümü.
+/* RayoPOS Kasa Köprüsü — pencere görünümü.
 
-   Köprü, Garso'nun bir sayfası değil; kasada duran bir cihazın paneli. Bu
+   Köprü, RayoPOS'un bir sayfası değil; kasada duran bir cihazın paneli. Bu
    yüzden ana programın açık zemini burada kullanılmıyor: pencere koyu, vurgu
-   mercan. Yazı tipi Garso ile aynı (Poppins) ve pakete gömülü — kasa
+   mercan. Yazı tipi RayoPOS ile aynı (Poppins) ve pakete gömülü — kasa
    çevrimdışıyken de doğru görünmeli. */
 
 @font-face {

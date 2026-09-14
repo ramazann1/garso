@@ -8,11 +8,11 @@ import { VARSAYILAN_PORT } from "./yerelSunucu.js";
 /**
  * Ayar dosyasının tam yolu.
  *
- * Pencereli sürümde ana süreç `GARSO_AYAR_YOLU` ile Windows'un kullanıcı
+ * Pencereli sürümde ana süreç `RAYOPOS_AYAR_YOLU` ile Windows'un kullanıcı
  * klasörünü bildiriyor; program dosyalarının yanına yazmak yönetici yetkisi
  * istiyor ve güncellemede silinip gidiyor.
  */
-export const ayarYolu = () => process.env.GARSO_AYAR_YOLU || join(kokDizin, "ayarlar.json");
+export const ayarYolu = () => process.env.RAYOPOS_AYAR_YOLU || join(kokDizin, "ayarlar.json");
 
 /**
  * Ayarlar: yalnız giriş bilgisi. Sunucu adresi ve anahtarı programa gömülü

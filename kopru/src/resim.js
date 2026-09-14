@@ -13,7 +13,7 @@ const { GlobalFonts, createCanvas, loadImage } = yerelPaket("@napi-rs/canvas");
  * yapıyor, farkı çizimi Windows sürücüsüne bırakması.
  */
 
-// Garso'nun kendi yazı tipi. Paket harfleri parçalara ayırmış: normal alfabe
+// RayoPOS'un kendi yazı tipi. Paket harfleri parçalara ayırmış: normal alfabe
 // bir dosyada, Türkçe harfler ve lira işareti diğerinde. İkisi ayrı adla
 // yükleniyor; aynı ada yüklenirse ikincisi birincinin yerine geçiyor.
 // İnce harfler termal kâğıtta silik çıkıyor: kafa noktayı ısıtıp yakıyor, tek

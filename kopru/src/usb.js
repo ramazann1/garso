@@ -77,7 +77,7 @@ export async function usbBas(sistemAd, baytlar) {
 
   // Baytlar komut satırından geçirilemiyor (ESC/POS'ta her değer var, metin
   // değil); geçici bir dosyaya yazılıp yolu veriliyor.
-  const dosya = join(tmpdir(), `garso-fis-${randomUUID()}.bin`);
+  const dosya = join(tmpdir(), `rayopos-fis-${randomUUID()}.bin`);
   await writeFile(dosya, baytlar);
 
   try {
@@ -94,7 +94,7 @@ export async function usbBas(sistemAd, baytlar) {
 }
 
 /**
- * İşletim sistemine kurulu yazıcıların adları. Garso tarayıcıda çalıştığı için
+ * İşletim sistemine kurulu yazıcıların adları. RayoPOS tarayıcıda çalıştığı için
  * kasadaki yazıcı listesini göremiyor; adın birebir doğru yazılması gerektiğinden
  * liste buradan okunuyor.
  */

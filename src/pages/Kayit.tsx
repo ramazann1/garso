@@ -39,7 +39,7 @@ export default function Kayit({ onGeri }: { onGeri: () => void }) {
     <div className="giris">
       <div className="giris-tanitim">
         <span className="giris-marka">
-          Garso<i />
+          Rayo<b>POS</b><i />
         </span>
         <p>Salonun, mutfağın ve kasanın tek ekranı.</p>
       </div>

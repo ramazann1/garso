@@ -138,7 +138,7 @@ export default function QrMenu({ kod }: { kod: string }) {
       </main>
 
       <footer className="qr-dip">
-        <UtensilsCrossed size={15} /> Garso
+        <UtensilsCrossed size={15} /> RayoPOS
       </footer>
     </div>
   );

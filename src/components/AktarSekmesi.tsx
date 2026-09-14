@@ -54,7 +54,7 @@ export default function AktarSekmesi({
       sheet: "Ürünler",
       columns: SUTUN_GENISLIKLERI.map((width) => ({ width })),
       stickyRowsCount: 1,
-    }).toFile(`garso-menu-${bugun()}.xlsx`);
+    }).toFile(`rayopos-menu-${bugun()}.xlsx`);
   };
 
   // Menüsü boş işletmede indirilen dosya yalnız başlıktan ibaret kalıyor;
@@ -65,7 +65,7 @@ export default function AktarSekmesi({
       sheet: "Ürünler",
       columns: SUTUN_GENISLIKLERI.map((width) => ({ width })),
       stickyRowsCount: 1,
-    }).toFile("garso-ornek-menu.xlsx");
+    }).toFile("rayopos-ornek-menu.xlsx");
   };
 
   const dosyaSecildi = async (dosya?: File) => {

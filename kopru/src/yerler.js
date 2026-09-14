@@ -5,7 +5,7 @@ import { basename, dirname, isAbsolute, join, resolve } from "node:path";
  * Dosya yerleri.
  *
  * Köprü iki biçimde çalışıyor: geliştirirken `node src/index.js`, kasada tek
- * dosyalık `garso-kopru.exe`. Paketlenmiş hâlde kaynak dosyalar exe'nin içinde
+ * dosyalık `rayopos-kopru.exe`. Paketlenmiş hâlde kaynak dosyalar exe'nin içinde
  * kaldığı için yanındaki dosyalar `import.meta.url` ile bulunamıyor; yer
  * hesabı bu yüzden tek yerden yapılıyor.
  */
@@ -27,11 +27,11 @@ const gelistirmeKoku = () => {
 /**
  * Ayarların, varlıkların ve eklentilerin durduğu klasör.
  *
- * Pencereli sürümde bunu ana süreç `GARSO_KOK` ile bildiriyor: orada program
+ * Pencereli sürümde bunu ana süreç `RAYOPOS_KOK` ile bildiriyor: orada program
  * dosyaları kurulum klasöründe, çalışan dosya ise Electron'un kendi exe'si —
  * yer buradan hesaplanamaz.
  */
-export const kokDizin = process.env.GARSO_KOK || (paketli ? dirname(process.execPath) : gelistirmeKoku());
+export const kokDizin = process.env.RAYOPOS_KOK || (paketli ? dirname(process.execPath) : gelistirmeKoku());
 
 /** Programla birlikte gelen dosya (yazı tipi, PowerShell betiği). */
 export const varlik = (ad) => join(kokDizin, "varliklar", ad);
@@ -42,6 +42,6 @@ export const varlik = (ad) => join(kokDizin, "varliklar", ad);
  * okunuyor.
  */
 const disariCagir = createRequire(
-  paketli && !process.env.GARSO_KOK ? process.execPath : join(kokDizin, "src", "index.js")
+  paketli && !process.env.RAYOPOS_KOK ? process.execPath : join(kokDizin, "src", "index.js")
 );
 export const yerelPaket = (ad) => disariCagir(ad);

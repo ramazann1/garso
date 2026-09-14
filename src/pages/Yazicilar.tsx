@@ -420,7 +420,7 @@ function IstasyonPaneli({
 /**
  * Kasa köprüsünün giriş hesabı.
  *
- * Köprü, kasadaki yazıcılara basabilmek için Garso'ya giriş yapıyor. Bunun
+ * Köprü, kasadaki yazıcılara basabilmek için RayoPOS'a giriş yapıyor. Bunun
  * için işletmecinin kendi hesabı kullanılmıyor: şifre kasadaki bilgisayarda
  * duruyor ve o makineye ulaşan biri yönetici olurdu. Buradaki hesabın hiçbir
  * yetkisi yok.
@@ -473,7 +473,7 @@ function KopruHesabi({ onHata }: { onHata: (metin: string) => void }) {
       </div>
 
       <Bilgi>
-        Kasa köprüsü fiş basabilmek için Garso'ya girer. Kendi hesabınızla
+        Kasa köprüsü fiş basabilmek için RayoPOS'a girer. Kendi hesabınızla
         değil, buradaki yetkisiz hesapla girmesi gerekir: şifresi kasadaki
         bilgisayarda saklandığı için, sizin şifreniz orada durmamalıdır.
       </Bilgi>
@@ -661,7 +661,7 @@ export default function Yazicilar() {
             </div>
 
             <Bilgi>
-              Ağa bağlı yazıcılar ve para çekmecesi için kasada Garso Kasa Köprüsü
+              Ağa bağlı yazıcılar ve para çekmecesi için kasada RayoPOS Kasa Köprüsü
               çalışır. Tek USB yazıcı kullanıyorsanız kurulum gerekmez.
             </Bilgi>
 

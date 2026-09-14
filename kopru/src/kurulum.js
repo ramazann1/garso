@@ -12,7 +12,7 @@ import { ayarYolu } from "./ayar.js";
 export async function ayarlariSor() {
   const soru = createInterface({ input: process.stdin, output: process.stdout });
 
-  console.log("\nGarso Kasa Köprüsü ilk kez açılıyor. Giriş bilgileri bir kez isteniyor.\n");
+  console.log("\nRayoPOS Kasa Köprüsü ilk kez açılıyor. Giriş bilgileri bir kez isteniyor.\n");
 
   const ayar = {
     telefon: (await soru.question("Personel telefonu: ")).trim(),

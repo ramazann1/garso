@@ -1,25 +1,90 @@
 # GARSO — Teknik Tasarım: Veri Modeli & Ekran Haritası
 *Restoran ve cafe'ler için bulut tabanlı satış ve işletme yönetim sistemi.*
 
-## 0. SIRADAKİ İŞ (14 Eyl 2026 güncellendi)
+## 0. SIRADAKİ İŞ (15 Eyl 2026 güncellendi)
 
-> **Sıra (14 Eyl 2026 seans sonu):**
-> 1. **Ürün adı — iki kökü kaynaştırarak türetme (Ramazan'ın seçtiği yöntem).**
->    Tek kelimeler hep tescilde çakıştı (aşağıdaki tarama). Beğenilen kökler:
->    Esnaf, Usta, Mekan, Mola, Tempo, Host, Rush, Fişek, Tezgah, Kazan, Masa,
->    Kasa. Kaynaştırılmış on kadar aday üret, **Ramazan'a göstermeden önce**
->    TÜRKPATENT'te (turkpatent.gov.tr → Marka Araştırma, "ile eşit", 9 ve 42.
->    sınıf; tarayıcıda form açık, CAPTCHA yok) ve `.com.tr` WHOIS'te
->    (`whois.trabis.gov.tr` port 43) sorgula, yalnız temiz çıkanları getir.
->    Karar çıkınca değişiklik planı hazır: görünen isim + köprü değişir; cihaz
->    anahtarları (`garso-kuyruk`…) ve `@garso.app` giriş adresi **değişmez**.
+> **Sıra (15 Eyl 2026 seans sonu):**
+> 1. **Garso adının kalan bütün izleri → RayoPOS (Ramazan: "hepsi değişmeli").**
+>    Plan anlatıldı ve kabul edildi; sıra 1 → 3 → 4 → 2 → köprü kurulumu → 5.
+>    Her adımdan sonra Ramazan'a deneme adımı verilir.
+>    1) **Tarayıcı anahtarları** (`garso-kuyruk`, `garso-kilit`, `garso-gecici`,
+>       `garso-sekme`, `garso-onbellek-*`, `garso-hesap-kopyasi`,
+>       `garso-salon-kopyasi`, `garso-pin-yerel`, `garso-menu-acik`,
+>       `garso-mobil-istasyon`, `garso-istasyon-boyut`, `garso.gorunum`) →
+>       `rayopos-…`. Yeni `src/anahtarGocu.ts` main.tsx'te her şeyden önce
+>       çalışır: local+sessionStorage'daki `garso-`/`garso.` anahtarlarını yeni
+>       ada kopyalar (yenisi yoksa), eskisini siler.
+>    2) **Giriş adresi** `@garso.app` → `@rayopos.com.tr`. Yeni SQL:
+>       `hesap_epostasi` yeniden tanımlanır; `auth.users.email` ve
+>       `auth.identities` (identity_data email) yalnız `%@garso.app` olanlarda
+>       güncellenir (gerçek e-postalı hesaplara dokunulmaz). Kod: `src/oturum.ts`
+>       `hesapEpostasi`, `kopru/src/ayar.js` `hesapEpostasi`. Ramazan SQL'i
+>       Supabase SQL ekranında çalıştırır; ardından köprü yeniden kurulmalı.
+>    3) **Köprü kimliği:** `appId` → `app.rayopos.kopru`; `ana.js`'teki
+>       `app.setPath` kalkar/yeni klasör `RayoPOS Kasa Köprüsü` olur; ilk açılışta
+>       yeni klasörde `ayarlar.json` yoksa eski `%APPDATA%\Garso Kasa Köprüsü`
+>       dosyası kopyalanır (DPAPI kullanıcıya bağlı, şifre açılır).
+>       `kaldirma.nsh` ve README yolu güncellenir. Kimlik değiştiği için yeni
+>       kurulum ayrı program görünür: Ramazan eski "Garso Kasa Köprüsü"nü Ayarlar
+>       → Uygulamalar'dan kaldırır (ayarlar sorusuna Hayır). Paketleme çıktısı
+>       Claude'un korumalı alanında kalıyor → `kurulum-dosyasi/`'na kopyala.
+>    4) **SQL arşiv yorumları + dokümanlar:** `sql/` yorumları; `garso-tasarim.md`
+>       → `rayopos-tasarim.md` (içindeki Garso'lar dahil), `pos-yol-haritasi.md`,
+>       `CLAUDE.md` referansları, hafıza notlarındaki dosya adı.
+>    5) **Proje klasörü `Desktop\rayopos` + GitHub deposu `ramazann1/rayopos`** —
+>       en son, commit/push sonrası. Hafıza klasörü
+>       `C--Users-Ramazan-Desktop-garso` → yeni yola taşınır; git remote güncellenir.
 > 2. **Mobilde ekrana göre ölçekleme — kalan ekranlar.** Masa kartı bitti;
 >    sipariş ekranındaki ürün kartları ve alt şerit aynı yöntemle (cqi, taban
 >    11px). Mobilin Adisyo'dan ayrışması için kategori şeridi fikri çizildi,
 >    Ramazan şimdilik yalnız alt şeridi istedi.
-> 3. **Canlıya çıkış** — alan adı (isim kesinleşince), barındırma, güvenlik
->    başlıkları, iPhone simge doğrulaması; ufak ufak.
+> 3. **Canlıya çıkış** — `rayopos.com.tr` alındı (önce WHOIS'te kaydın düştüğüne
+>    bak), barındırma (Vercel/Netlify/Cloudflare; alan adı firmasının paketi
+>    değil), güvenlik başlıkları, iPhone simge doğrulaması; ufak ufak.
 > 4. Sonra aşağıdaki liste kaldığı yerden (Analiz'in kalan sekmeleri…).
+>
+> **Yapılanlar (15 Eyl 2026):** Ürün adı Garso → RayoPOS değişti, Ramazan
+> denedi ve onayladı (köprü yeni kurulumla eskisinin üstüne kuruldu, giriş
+> sormadı). Yan menüdeki "RayoPOS" yazısına da mercan nokta eklendi.
+> Paketlenen kurulum dosyası Claude'un korumalı alanında kaldığı için
+> `kurulum-dosyasi/` klasörüne kopyalandı (gitignore'da) — silinebilir.
+> Ayrıntı: Kararlar (Ramazan): köprü tepsi menüsündeki
+>    "tarayıcıda aç" `rayopos.com.tr`'ye gider; logo "Rayo" kalın (600) + "POS"
+>    ince (400, `<b>` ile) + sonda nokta, yıldırım yok; uygulama simgesi beyaz
+>    zemin, mercan Poppins "R" (çizgiye çevrilmiş), nokta R'nin sağında dikey
+>    ortada; yan menüde üç çizgi kalır. Simgeler `favicon.svg`'den `npm.cmd run
+>    ikon` ile üretiliyor — köprünün `simge-*.png`'leri de artık oradan.
+>    Yeniden adlandırılanlar: görünen metinler, Excel dosya adları, köprü
+>    (başlık, tepsi, kurulum, lisans, `RAYOPOS_KOK`/`RAYOPOS_AYAR_YOLU`),
+>    `RAYOPOS_SURUM`, paket adları, kurulum dosyası adı
+>    (`rayopos-kopru-kurulum-…`, indirme adresi `indir.rayopos.com.tr`).
+>    **Bilerek eski adda kalanlar:** tarayıcı anahtarları (`garso-kuyruk`…,
+>    değişirse kasadaki bekleyen veri kaybolur), `@garso.app` giriş adresleri
+>    (ayrı taşıma işi), köprü `appId` `app.garso.kopru` (güncelleme eskisinin
+>    üstüne kurulsun) ve ayar klasörü `%APPDATA%\Garso Kasa Köprüsü`
+>    (`app.setPath` ile sabit), SQL göç dosyaları, doküman dosya adları, proje
+>    klasörü ve GitHub deposu (Ramazan klasörü de değiştirmek istedi; hafıza
+>    yolu kopmasın diye seans sonuna bırakıldı). **`rayopos.com.tr` alındı
+>    (Ramazan, 14 Eyl 2026), kayıt beklemede — sonraki seansta WHOIS'e bak.**
+>    `rayopos.net` de boştu, istenirse sonra alınır. Barındırma,
+>    SSL ve e-posta alan adı firmasından alınmaz; canlıya çıkışta kararlaşır.
+>
+> **Karar: ürün adı Rayo (Ramazan, 14 Eyl 2026).** İspanyolca "yıldırım"; hız
+> hissi istendi. Önce RushPOS seçildi, "rush" kayıtları yüzünden bırakıldı
+> (Mahmut Kurt 2018/90353 35/42, Temkom 2017/25807 ve 2019/39433 09).
+> Rayo kontrolü: TÜRKPATENT'te 5 "rayo" kaydı, **hiçbiri 9/42'de değil** —
+> geçerliler Yıldırım Deri (18/25/35, 05/18/25/29); 43'teki kayıt geçersiz.
+> "rayopos" kaydı yok. `rayopos.com.tr` boş; `rayo.com.tr`, `rayo.com`,
+> `rayo.app`, `rayopos.com`, `rayopos.app` dolu. Yurt dışında "Rayo Point of
+> Sale" (rayopos.com, ABD) var; Claude yalnız "Rayo" önerdi, **Ramazan
+> "RayoPOS" yazılışını seçti** (risk anlatıldı, Türkiye'de tescil engeli yok).
+> Rayo adlı WMS ve İngiliz radyo uygulaması başka sektörde.
+> Aynı gün elenenler: kaynaştırılmış isimler (Masmola, Kasmola, Ustempo… temizdi
+> ama beğenilmedi), Tempos (Tempo Labs 09/42), Kaspos (Endonezya KasPOS),
+> Hesap (Hesap Bilgi Hizmetleri 09/42), MenuPOS (BYM Yazılım ürünü), TurboPOS
+> (2024 başvurusu 09/42), NitroPOS (Mors Bilişim 42), Rapid/Dash/Zoom/Bolt/Flash/
+> Snap/Jet/Rocket POS (yurt dışında aynı adlı kasa ürünleri), SprintPOS
+> (T-Mobile "sprint" 42). Temiz yedekler: Siftah, Buyur, Geliyor, Yetiş.
 >
 > **Fişek seçildi, sonra geri alındı (Ramazan, aynı gün) — isim hâlâ açık.**
 > Kontrol bilgisi kayıt için duruyor. TÜRKPATENT'te

@@ -1,11 +1,11 @@
-# Garso — Çalışma Kuralları
+# RayoPOS — Çalışma Kuralları
 
-Garso, restoran ve cafeler için bulut tabanlı satış ve işletme yönetim sistemi.
+RayoPOS (eski adı Garso), restoran ve cafeler için bulut tabanlı satış ve işletme yönetim sistemi.
 Ramazan'ın kendi cafe/restoran işletmesi için geliştiriliyor; sonrasında başka
 işletmelere satılacak ticari bir ürün olması hedefleniyor.
 
 Referans ürün Adisyo (pos.adisyo.com) — şu an işletmede o kullanılıyor.
-Ancak Garso birebir kopya olmayacak: kendi terminolojisi, kendi renk paleti ve
+Ancak RayoPOS birebir kopya olmayacak: kendi terminolojisi, kendi renk paleti ve
 kendi arayüz kararları var. Bilinçli farklılaşmalar garso-tasarim.md'de.
 
 ## Kullanıcı hakkında
@@ -90,7 +90,7 @@ React + TypeScript + Vite, Supabase (PostgreSQL), react-router-dom.
 
 ## Sürüm
 
-Garso ile yazıcı programı (köprü) **tek sürüm numarasını** paylaşır. Her
+RayoPOS ile yazıcı programı (köprü) **tek sürüm numarasını** paylaşır. Her
 seansın sonunda, kaynak kontrolünden önce numara artırılır:
 
 - `npm.cmd run surum` — küçük parça artar (1.0.1 → 1.0.2), olağan seans

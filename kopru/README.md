@@ -1,13 +1,13 @@
-# Garso Kasa Köprüsü
+# RayoPOS Kasa Köprüsü
 
-Kasadaki bilgisayarda çalışan küçük program. Garso'da bir fiş üretildiğinde
+Kasadaki bilgisayarda çalışan küçük program. RayoPOS'ta bir fiş üretildiğinde
 bulutta `yazdirma_kuyrugu` tablosuna düşüyor; köprü o satırı alıp yazıcıya
 basıyor. Tarayıcı yerel ağdaki yazıcıya doğrudan bağlanamadığı için bu program
 zincirin zorunlu halkası.
 
 ## Kasaya kurulum
 
-Kasada Node kurulu olması gerekmiyor. Tek dosya: `garso-kopru-kurulum-<sürüm>.exe`.
+Kasada Node kurulu olması gerekmiyor. Tek dosya: `rayopos-kopru-kurulum-<sürüm>.exe`.
 
 1. Kurulum dosyasına çift tıklayın. Windows imzasız program için "bilinmeyen
    yayıncı" uyarısı verir: **Daha fazla bilgi → Yine de çalıştır** (uyarı ancak
@@ -34,10 +34,10 @@ npm.cmd run paketle
 Çıkan dosya proje klasöründe değil, burada:
 
 ```bash
-explorer "$env:LOCALAPPDATA\Garso\dagitim"
+explorer "$env:LOCALAPPDATA\RayoPOS\dagitim"
 ```
 
-İşletmeye giden tek dosya `garso-kopru-kurulum-<sürüm>.exe`; yanındaki
+İşletmeye giden tek dosya `rayopos-kopru-kurulum-<sürüm>.exe`; yanındaki
 `win-unpacked` klasörü ve `.blockmap` dosyası ara ürün. Çıktının proje dışında
 olmasının sebebi Windows'un dosya dizinleyicisi: Masaüstü'nü sürekli taradığı
 için paketleyici klasör adını değiştiremiyor ve "EPERM" hatası veriyor.
@@ -57,7 +57,8 @@ npm.cmd start
 ```
 
 Pencereli sürüm açılır; giriş bilgileri Windows'un kullanıcı klasöründe
-(`%APPDATA%\Garso Kasa Köprüsü\ayarlar.json`) saklanır. Sunucu bilgisi
+(`%APPDATA%\Garso Kasa Köprüsü\ayarlar.json`) saklanır. Klasör adı eski
+kurulumlardaki girişler kaybolmasın diye bilerek eski adda kaldı. Sunucu bilgisi
 geliştirirken ana projenin `.env.local` dosyasından okunur.
 
 Penceresiz, düz terminal sürümü de duruyor:
@@ -71,7 +72,7 @@ npm.cmd run terminal
 - Ağ (Ethernet) yazıcılara doğrudan `IP:9100` üzerinden ESC/POS gönderiyor,
   sürücü kurulumu istemiyor.
 - USB yazıcılara Windows'un yazdırma servisi üzerinden ham veri gönderiyor.
-  Yazıcının Windows'a kurulu olması ve Garso'daki tanımında sistemdeki adının
+  Yazıcının Windows'a kurulu olması ve RayoPOS'taki tanımında sistemdeki adının
   birebir yazılması yeterli. Adları listelemek için:
 
 ```bash

@@ -36,7 +36,7 @@ export default function Giris() {
     <div className="giris">
       <div className="giris-tanitim">
         <span className="giris-marka">
-          Garso<i />
+          Rayo<b>POS</b><i />
         </span>
         <p>Salonun, mutfağın ve kasanın tek ekranı.</p>
       </div>
