@@ -1,6 +1,6 @@
 -- Kasanın kendi köprüsüne doğrudan yazdırması.
 --
--- Fiş şimdiye kadar hep buluttan geçiyordu: Garso kuyruğa yazıyor, köprü
+-- Fiş şimdiye kadar hep buluttan geçiyordu: RayoPOS kuyruğa yazıyor, köprü
 -- buluttan alıp basıyordu. Kasanın interneti gidince yazıcı aynı odada
 -- olduğu hâlde kâğıt çıkmıyordu. Artık kasa fişi önce köprüye veriyor
 -- (127.0.0.1), buluta da "yerel basıldı" diye yazıyor — yazdırma geçmişi

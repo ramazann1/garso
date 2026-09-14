@@ -1,6 +1,6 @@
 -- Kasa köprüsünün kendi hesabı.
 --
--- Köprü fiş basmak için Garso'ya giriş yapıyor ve bugüne kadar işletmecinin
+-- Köprü fiş basmak için RayoPOS'ya giriş yapıyor ve bugüne kadar işletmecinin
 -- kendi yönetici hesabıyla giriyordu. İki sakıncası vardı:
 --
 --   1. Şifre kasadaki bilgisayarda duruyor (kapalı hâlde, Windows'un DPAPI

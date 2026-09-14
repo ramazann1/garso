@@ -154,7 +154,7 @@ function Ikon({ tip }: { tip: string }) {
 // Her sayfa kendi Duzen'ini kuruyor; menünün açık/kapalı hâli bileşenin
 // durumunda tutulsa sayfa değişince kapanırdı. Kasada menüyü kullanıcı açar,
 // kullanıcı kapatır — tercih tarayıcıda saklanıyor.
-const MENU_ANAHTARI = "garso-menu-acik";
+const MENU_ANAHTARI = "rayopos-menu-acik";
 
 // Her sayfa kendi Duzen'ini kuruyor, yani bileşen her geçişte sıfırdan
 // doğuyor. En son hangi ekranda olduğumuz bileşenin durumunda tutulsaydı her

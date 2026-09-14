@@ -18,7 +18,7 @@ import { acikOturum } from "./oturum";
  * öncesinin masa durumu yanlış bilgidir, yokluğu yanlış bilgiden iyidir.
  */
 
-const ON_EK = "garso-onbellek-";
+const ON_EK = "rayopos-onbellek-";
 
 type Paket<T> = {
   /** Kopya hangi işletmenin — başka hesapla girilince eski işletmenin menüsü çıkmasın. */

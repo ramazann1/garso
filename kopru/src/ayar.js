@@ -105,5 +105,5 @@ export function dosyaYaz(kayit) {
 
 /** Telefondan hesap adresi — programın giriş ekranıyla aynı kural. */
 export function hesapEpostasi(telefon) {
-  return `${String(telefon).replace(/\D/g, "")}@garso.app`;
+  return `${String(telefon).replace(/\D/g, "")}@rayopos.com.tr`;
 }

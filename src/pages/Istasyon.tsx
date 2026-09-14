@@ -36,7 +36,7 @@ import type { AdisyonTipi } from "../adisyonlar";
 
 // Yazı boyutu tezgâhın kendi tercihi: aynı işletmede mutfak tabletle, bar
 // duvardaki televizyonla çalışabiliyor. Bu yüzden sunucuda değil cihazda.
-const BOYUT_ANAHTARI = "garso-istasyon-boyut";
+const BOYUT_ANAHTARI = "rayopos-istasyon-boyut";
 const BOYUTLAR = [
   { kod: "kucuk", ad: "Küçük" },
   { kod: "orta", ad: "Orta" },

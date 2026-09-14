@@ -6,7 +6,7 @@ işletmelere satılacak ticari bir ürün olması hedefleniyor.
 
 Referans ürün Adisyo (pos.adisyo.com) — şu an işletmede o kullanılıyor.
 Ancak RayoPOS birebir kopya olmayacak: kendi terminolojisi, kendi renk paleti ve
-kendi arayüz kararları var. Bilinçli farklılaşmalar garso-tasarim.md'de.
+kendi arayüz kararları var. Bilinçli farklılaşmalar rayopos-tasarim.md'de.
 
 ## Kullanıcı hakkında
 
@@ -19,7 +19,7 @@ Açıklama gerekiyorsa en fazla bir-iki cümle.
 ## Çalışma düzeni
 
 - **Seans başlangıcı:** Ramazan sadece "devam edelim" yazar. Bu şu demek:
-  garso-tasarim.md ve pos-yol-haritasi.md'yi oku, tasarım dosyasının
+  rayopos-tasarim.md ve pos-yol-haritasi.md'yi oku, tasarım dosyasının
   "0. SIRADAKİ İŞ" listesindeki **en üstteki maddeyi** al, planını anlat,
   onay bekle. Ne yapılacağını Ramazan'a sorma — liste zaten söylüyor.
 - **Seans sonu:** "0. SIRADAKİ İŞ" listesi güncellenir — biten madde silinir,
@@ -28,8 +28,8 @@ Açıklama gerekiyorsa en fazla bir-iki cümle.
 - Görevler TEK TEK verilir. Bir görev bitip Ramazan onaylamadan yenisine geçilmez.
 - Değişiklik yapmadan önce planını anlat, onay bekle.
 - Bir dosyayı değiştirirken hangi dosyada ne yaptığını ve neden yaptığını söyle.
-- Önemli bir tasarım kararı alınırsa garso-tasarim.md'ye işlenmesi gerektiğini hatırlat.
-- garso-tasarim.md her görev bitiminde değil, seans sonunda güncellenir (kaynak
+- Önemli bir tasarım kararı alınırsa rayopos-tasarim.md'ye işlenmesi gerektiğini hatırlat.
+- rayopos-tasarim.md her görev bitiminde değil, seans sonunda güncellenir (kaynak
   kontrolü adımlarıyla birlikte).
 - Görev bitiminde oturum uzayıp ağırlaştıysa Ramazan'ı uyar ve yeni oturuma
   geçmesini öner. Görev ortasında kesmeyi önerme.
@@ -83,7 +83,7 @@ React + TypeScript + Vite, Supabase (PostgreSQL), react-router-dom.
 
 ## Proje dosyaları
 
-- **garso-tasarim.md** — veri modeli, ekran haritası, tasarım kararları,
+- **rayopos-tasarim.md** — veri modeli, ekran haritası, tasarım kararları,
   geliştirme durumu ve sıradaki adımlar. Bir işe başlamadan önce oku.
 - **pos-yol-haritasi.md** — Adisyo özellik envanteri, faz planı ve rakip
   analizi. "Sırada ne var, Adisyo bunu nasıl yapmış" sorularının kaynağı.
@@ -101,5 +101,5 @@ Komut beş dosyadaki numarayı birlikte değiştirir; sürüm elle yazılmaz.
 
 ## Kaynak kontrolü
 
-Repo: github.com/ramazann1/garso
+Repo: github.com/ramazann1/rayopos
 Seans sonunda: `git add .` → `git commit -m "aciklama"` → `git push`

@@ -94,7 +94,7 @@ Amaç: Sonradan asla değişmeyecek kararları doğru vermek.
 ### FAZ 1 — Satış Çekirdeği / MVP (4-6 hafta)
 Amaç: Tek şubeli bir cafe'nin günlük operasyonu tamamen dönebilmeli.
 **20 Ağu 2026'da tamamlandı.** Bir cafe'nin günlük operasyonu baştan sona
-Garso'da dönüyor.
+RayoPOS'da dönüyor.
 - [x] Masa haritası (bölge/salon desteği), masa açma-taşıma-birleştirme
 - [x] Adisyon: ürün ekleme/çıkarma, not, ikram, indirim, iptal (yetki kontrollü)
 - [x] Kategori/ürün/varyant/seçenek yönetimi
@@ -110,7 +110,7 @@ Amaç: Yoğun bir restoranın mutfak-servis akışını taşıyabilmeli.
       aşamalar (Sırada → Hazırlanıyor → Paketleniyor → Hazır), bir cihazın
       birden çok tezgâha bakabilmesi, Analiz'de hazırlık süresi raporu.
       Manuel mutfak çıktısı (fişi elle yeniden bastırma) iptal edildi —
-      gerekçesi `garso-tasarim.md`'de.
+      gerekçesi `rayopos-tasarim.md`'de.
 - [x] Yazıcı yönetimi: ürün→istasyon→yazıcı zinciri, mutfak fişi, adisyon
       çıktısı, köprü programı ve yerel yazdırma
 - [x] Paket servis + gel-al akışı, müşteri/adres kayıtları
@@ -127,7 +127,7 @@ Amaç: Yoğun bir restoranın mutfak-servis akışını taşıyabilmeli.
       ayrıca **çevrimdışı PIN ile kişi değiştirme** eklendi (`cevrimdisiPin.ts`).
       İnternetsiz sıfırdan giriş 31 Ağu 2026'da **atlandı** (kasa günün
       başında bir kez, internet varken açılıyor); gerekçesi ve gerekirse
-      nasıl yapılacağı `garso-tasarim.md`'de. Açık kalan: masasız adisyonun
+      nasıl yapılacağı `rayopos-tasarim.md`'de. Açık kalan: masasız adisyonun
       çevrimdışı açılması.
 - [x] **İşletme kaydı ekranı (yeni müşteri açılışı).** 19 Ağu 2026'da yapıldı —
       `isletme_kur` fonksiyonu ve `pages/Kayit.tsx`. Örnek salon ve menüyle
@@ -144,7 +144,7 @@ Amaç: Yoğun bir restoranın mutfak-servis akışını taşıyabilmeli.
       hız sınırı/doğrulama düşünülmeli. Ramazan'ın kendi kurulumu bundan
       etkilenmiyor; ürün satışa çıkmadan önce şart. **20 Ağu 2026'da kapandı:**
       IP başına hız sınırı (24 saatte 2, 7 günde 5 işletme) ve değişmez işletme
-      kodu — ayrıntısı `garso-tasarim.md`'de.
+      kodu — ayrıntısı `rayopos-tasarim.md`'de.
 
 ### FAZ 3 — Büyüme Özellikleri (6-8 hafta)
 - [ ] QR menü (public menü sayfası, anlık güncelleme)
@@ -255,9 +255,9 @@ Kategori listesinin üstündeki ⋮ menüsünde gizli — ekranda göze çarpmı
 - **Toplu Ürün İşlemleri:** "seç → toplu aksiyon" değil, **Excel benzeri düzenlenebilir tablo**. Tüm ürünler alt alta; her satırda porsiyon/fiyat (+ "sipariş türüne göre özelleştir"), Ürün KDV Grubu, zorunlu özellik ve porsiyon seçimi, stok takibi, satılabilir, mutfak grubu. Üstte arama + kategori filtresi + **"Tüm Kategorileri Görüntüle"** + "Ürün adına göre sırala". Tek **Kaydet** ile hepsi birden yazılıyor.
 - **Ürünleri İndir / Yükle:** menünün Excel ile dışa/içe aktarımı — ilk kurulumda ve toplu fiyat güncellemede kritik. *(3 Ağu 2026'da canlı hesapta incelendi.)* Ürünler ekranında sol üstteki ⋮ menüsünde: `Toplu Ürün İşlemleri`, `Kategorileri Sırala`, `Ürünleri İndir`, `Ürünleri Yükle`. Yükleme 3 adımlı sihirbaz (şablon indir → dosya seç → sonuç), girişte "günlük 400 ürün" limiti uyarısı. **Boş şablonun sütunları:** Ana Kategori · Alt Kategori · Ürün Adı · Ürün Kodu · Barkod · Barkod Tipi · Ürün Birimi · KDV Oranı · Masa/Gel-Al/Paket Fiyatı. **İndirilen menüde bir sütun fazla: `entegrasyon kodu`** — ürünün kimliği. Aynı isimli iki ürün (farklı kategorilerde "NATURAL SHISHA") bu kodla ayrılıyor; ürün iki kategorideyse iki satır çıkıp ikisinde de aynı kod duruyor. Maliyet, favori ve görünürlük Adisyo'nun Excel'inde yok. Not: `Barkod Tipi` sütununa birim ("Adet") yazılmış, Adisyo'nun kendi tutarsızlığı.
 → **Klon için:** zam dönemlerinde tek tek ürün açmak işkence; toplu düzenleme tablosu Menü Stüdyosu'nun en çok işe yarayacak eklentilerinden biri.
-→ **Garso durumu (1 Ağu 2026):** "Kategorileri Sırala" ve "Ürünleri Sırala" karşılığı `SiralamaModal` ile yapıldı (sürükle-bırak + A-Z). **"Tüm Kategorileri Görüntüle"** arama kapsam seçicisinin bir modu olarak geldi. Kalan: toplu düzenleme tablosu ve Excel indir/yükle.
-→ **Garso durumu (2 Ağu 2026):** Toplu düzenleme tablosu yapıldı — Adisyo'da ⋮ menüsünde gizliyken bizde Menü Stüdyosu'nun dördüncü sekmesi (**Toplu Düzenle**). Satır = porsiyon; ad, kod, birim, fiyat, maliyet, tür fiyatları ve görünürlük anahtarları tabloda. Kategori bazlı toplu işlem modalı ayrı iş olarak duruyor — o alanların (KDV, mutfak grubu, stok) veri modeli henüz yok. Kalan: Excel indir/yükle.
-→ **Garso durumu (3 Ağu 2026, 2. seans):** Excel indir/yükle yapıldı — Menü Stüdyosu'nun **İçe/Dışa Aktar** sekmesi. Adisyo'dan ayrıldığımız yerler: (1) kimlik sütunu "entegrasyon kodu" değil **Ürün No**, açıkça anlatılıyor; (2) **maliyet** sütunu var; (3) tek sihirbaz yerine tek ekran, yazmadan önce **özet + atlanan satır listesi + açılacak kategoriler** gösteriliyor; (4) menüde olmayan kategori adı **açılıyor** (Adisyo'nun ne yaptığı bilinmiyor); (5) **değişmemiş ürün yazılmıyor**; (6) aynı ürünün satırları çelişirse ürün yazılmayıp çelişki gösteriliyor. Kalan: kategori bazlı toplu işlem modalı.
+→ **RayoPOS durumu (1 Ağu 2026):** "Kategorileri Sırala" ve "Ürünleri Sırala" karşılığı `SiralamaModal` ile yapıldı (sürükle-bırak + A-Z). **"Tüm Kategorileri Görüntüle"** arama kapsam seçicisinin bir modu olarak geldi. Kalan: toplu düzenleme tablosu ve Excel indir/yükle.
+→ **RayoPOS durumu (2 Ağu 2026):** Toplu düzenleme tablosu yapıldı — Adisyo'da ⋮ menüsünde gizliyken bizde Menü Stüdyosu'nun dördüncü sekmesi (**Toplu Düzenle**). Satır = porsiyon; ad, kod, birim, fiyat, maliyet, tür fiyatları ve görünürlük anahtarları tabloda. Kategori bazlı toplu işlem modalı ayrı iş olarak duruyor — o alanların (KDV, mutfak grubu, stok) veri modeli henüz yok. Kalan: Excel indir/yükle.
+→ **RayoPOS durumu (3 Ağu 2026, 2. seans):** Excel indir/yükle yapıldı — Menü Stüdyosu'nun **İçe/Dışa Aktar** sekmesi. Adisyo'dan ayrıldığımız yerler: (1) kimlik sütunu "entegrasyon kodu" değil **Ürün No**, açıkça anlatılıyor; (2) **maliyet** sütunu var; (3) tek sihirbaz yerine tek ekran, yazmadan önce **özet + atlanan satır listesi + açılacak kategoriler** gösteriliyor; (4) menüde olmayan kategori adı **açılıyor** (Adisyo'nun ne yaptığı bilinmiyor); (5) **değişmemiş ürün yazılmıyor**; (6) aynı ürünün satırları çelişirse ürün yazılmayıp çelişki gösteriliyor. Kalan: kategori bazlı toplu işlem modalı.
 
 ### Menü/Ürünler Modülü — Derin Tur (31 Tem 2026)
 *Tüm ⋮ menüleri, dropdown'lar ve kapalı anahtarlar tek tek açılarak çıkarıldı.*
@@ -285,9 +285,9 @@ Kategori listesinin üstündeki ⋮ menüsünde gizli — ekranda göze çarpmı
 - **Mutfak Grupları:** grup adı + **"Pişirme aşaması"** ve **"Paketleme aşaması"** kutuları. Varsayılan durum akışı Hazırlanıyor → Hazırlandı; bu kutularla **her istasyonun KDS akışı ayrı ayrı uzatılabiliyor**.
 - **Özellikler:** grup satırı açılınca özellikler chip olarak, ek fiyatlılar "+₺1,00" rozetiyle. Grup formunda: seçim tipi (Tekli/Çoklu), **Reçeteli ürün kullan**, **Özellik seçimi zorunlu olsun**; özellik satırında ad + ekstra tutar + **Varsayılan** + sıralama tutamacı.
 
-→ **Klon için çıkarımlar:** (1) Sipariş türüne göre fiyat, veri modelinde porsiyon fiyatının tek sayı olmadığı anlamına geliyor — Garso'da baştan düşünülmeli. (2) Barkod/reçete/özelliğin porsiyon bazlı olması stok ve KDS tarafını doğrudan etkiliyor. (3) Birim listesinin merkezi olması yazım tutarlılığı sağlıyor ("Tam" / "tam" / "TAM" karmaşası olmuyor). (4) Mutfak grubu bazlı KDS aşamaları, kanban kolonlarımızın sabit olamayacağını gösteriyor.
+→ **Klon için çıkarımlar:** (1) Sipariş türüne göre fiyat, veri modelinde porsiyon fiyatının tek sayı olmadığı anlamına geliyor — RayoPOS'da baştan düşünülmeli. (2) Barkod/reçete/özelliğin porsiyon bazlı olması stok ve KDS tarafını doğrudan etkiliyor. (3) Birim listesinin merkezi olması yazım tutarlılığı sağlıyor ("Tam" / "tam" / "TAM" karmaşası olmuyor). (4) Mutfak grubu bazlı KDS aşamaları, kanban kolonlarımızın sabit olamayacağını gösteriyor.
 
-→ **Garso durumu (1 Ağu 2026, 2. seans):** Bu bölümdeki maddelerden şunlar karşılandı — ürün kodu, ürün kopyalama, kategori/ürün sıralama modalı, kategori adı 25 karakter + sayaç, serbest renk (Adisyo hex kutusu veriyor, biz **renk çemberi** yaptık — kullanıcının kod bilmesi gerekmiyor), ürün ve kategoride satış/mutfak görünürlük anahtarları, seçenek grubunda zorunlu, arama + kapsam seçici. Ürün sırasını Adisyo global tutuyor; biz **kategori bazlı** yaptık (bir ürün iki kategoride farklı sırada durabiliyor). Kalan büyük başlıklar: alt kategori ağacı, KDV grupları, mutfak grupları + KDS aşamaları, menü/kampanya ürünü, reçete ve seçenek grubunun porsiyon bazına inmesi.
+→ **RayoPOS durumu (1 Ağu 2026, 2. seans):** Bu bölümdeki maddelerden şunlar karşılandı — ürün kodu, ürün kopyalama, kategori/ürün sıralama modalı, kategori adı 25 karakter + sayaç, serbest renk (Adisyo hex kutusu veriyor, biz **renk çemberi** yaptık — kullanıcının kod bilmesi gerekmiyor), ürün ve kategoride satış/mutfak görünürlük anahtarları, seçenek grubunda zorunlu, arama + kapsam seçici. Ürün sırasını Adisyo global tutuyor; biz **kategori bazlı** yaptık (bir ürün iki kategoride farklı sırada durabiliyor). Kalan büyük başlıklar: alt kategori ağacı, KDV grupları, mutfak grupları + KDS aşamaları, menü/kampanya ürünü, reçete ve seçenek grubunun porsiyon bazına inmesi.
 
 ### Yetki Matrisi (6 rol × işlem bazlı onay kutuları)
 Roller: **Garson, Mutfak, Kurye, Kasa, Müdür, Çağrı Merkezi**
@@ -597,7 +597,7 @@ ekle · Sil. Düzenleme sağdan panelde: seçim tipi, "Reçeteli ürün kullan",
 - **Kuver/Garsoniye:** üstte tek ana anahtar (kapalıyken tüm alanlar soluk), iki
   sütun; her biri "siparişe otomatik eklensin" + ad + tip (Tutar/Yüzde) + değer.
 
-### Garso ile kıyas (6 Ağu 2026)
+### RayoPOS ile kıyas (6 Ağu 2026)
 Bizde **var:** menü/ürünler (daha zengin — maliyet, kâr, kampanyalı menü, alt
 kategori ağacı, favori, Excel aktarım), birimler, seçenek grupları, KDV grupları.
 Bizde **yok ama sonraki fazın işi:** mutfak grupları (Faz 2 — KDS/yazıcı),
@@ -617,11 +617,11 @@ kuver/garsoniye, ön tanımlı indirimler.
    tekli/çoklu ve zorunlu var, "en az kaç tane" ile "önceden işaretli" yok. → Faz 1
 5. **Bölge–garson yetkisi** ("Tüm Garsonlarda Göster") — rol sistemi kurulunca
    bölge tanımına eklenecek. → Faz 0/1 (rol/yetki)
-6. **Toplu masa ekleme** ve **masa şekli** Garso'ya alındı; ayrıca Adisyo'da
+6. **Toplu masa ekleme** ve **masa şekli** RayoPOS'ya alındı; ayrıca Adisyo'da
    olmayan **masa kapasitesi** eklendi (kuver ve kişi sayısı için).
 7. **Modüllerin eklenti olarak satılması** — Adisyo'da KDS, Stok/Reçete,
    Kuver&Garsoniye, Maliyet Analizi "Uygulama Mağazası"ndan ekleniyor, bazıları
-   Pro Plan'a bağlı. Garso ticarileşirken paketleme modeli için örnek. → Faz 4
+   Pro Plan'a bağlı. RayoPOS ticarileşirken paketleme modeli için örnek. → Faz 4
 
 ---
 
@@ -645,7 +645,7 @@ Liste: No · Ad/Soyad (sıralanabilir) · E-posta · Telefon (kopyalanabilir) ·
 Düzenlemede aynı form + **Sil**. Görevler **sabit ve kapalı liste**: Garson, Mutfak,
 Kurye, Kasa, Müdür, Çağrı Merkezi (üst plan) ve **Teknik** ("yazıcı kullanımı için,
 kullanıcı limitine dahil değildir"). Hesap sahibi ayrıca "Yönetici" olarak görünüyor.
-→ **Garso kararı:** roller kapalı liste değil, `roles` tablosu olacak; ama kurulumda
+→ **RayoPOS kararı:** roller kapalı liste değil, `roles` tablosu olacak; ama kurulumda
 bu 6 rol hazır gelecek (hazır şablon deseni).
 
 ### 9.2 Yetki / İzin ekranı (`/app/rights`)
@@ -744,7 +744,7 @@ kâğıda basmıyor: müşteri detayının üst şeridinde yazıcı düğmesi yo
 modalında yazdırma seçeneği yok, Yapılan Ödemeler satırında yazıcı ikonu yok
 (Tahsilat No'ya tıklamak ödemeyi *düzenleme* penceresi açıyor) ve Çıktı
 Tasarımı'nda yalnız Adisyon ve Mutfak çıktısı var. "Açık Hesap Alacak Fişi"
-kâğıt değil, kaydın türünün adı. Garso da basmıyor — fiş numarası kaydı
+kâğıt değil, kaydın türünün adı. RayoPOS da basmıyor — fiş numarası kaydı
 konuşabilmek için var.
 **Ödeme Al modalı:** Toplam Tutar (borç) · **İndirim Tutarı + "Uygula"** · Ödenecek
 Tutar · Ödeme Tipi · Kaydet. **Bakiye Güncelleme modalı:** tek alan "Yeni Bakiye";
@@ -775,10 +775,10 @@ Diğer) + "Manuel Tanımla". Liste: tarih aralığı (varsayılan **kasa günü*
 Ödeme Tipi · Tutar · Masraf Detayı · İşlemler. **Masraf Ekle:** masraf tipi*, ödeme
 tipi*, tarih*, saat*, tutar*, açıklama*.
 
-### 9.7 Bu turda çıkan kararlar ve Garso'ya alınacaklar
+### 9.7 Bu turda çıkan kararlar ve RayoPOS'ya alınacaklar
 1. **Kapanmış adisyon ayrı bir liste ekranı değil, ortak bir "adisyon detay penceresi".**
    Müşteri kartından, raporlardan, ileride masa geçmişinden hep aynı pencere açılır.
-   Garso'da da tek bileşen olacak. → Faz 1
+   RayoPOS'da da tek bileşen olacak. → Faz 1
 2. **"Siparişi Aktif Et"** — yanlışlıkla kapatılan adisyonu geri açma. Bizim
    `durum = kapali → acik` dönüşümümüz; iptal etmekten daha çok işe yarıyor. → Faz 1
 3. **Sipariş geçmişi zaman çizelgesi** — audit_log'un kullanıcıya görünen yüzü.
@@ -790,13 +790,13 @@ tipi*, tarih*, saat*, tutar*, açıklama*.
    ekran kilit süresi, para üstü, çalışma tipleri (kullanılmayan sipariş türünü
    gizleme), adisyon gruplama. Yazıcı ve ÖKC'ye bağlı olanlar Faz 2'ye. → Faz 1
 6. **Hazır şablon deseni her yerde:** gider grupları, roller, ödeme tipleri hazır
-   listeyle geliyor, kullanıcı seçip başlıyor. Garso'nun ilk kurulum akışı da böyle
+   listeyle geliyor, kullanıcı seçip başlıyor. RayoPOS'nun ilk kurulum akışı da böyle
    olacak. → Faz 1
 7. **Cari/açık hesap modülünün gerçek kapsamı** bu turda netleşti: müşteri kartı +
    ekstre (borç/alacak/yürüyen bakiye) + tahsilat + bakiye düzeltme + aktivite notu.
    Adisyondaki "açık hesaba aktar" bunun tetikleyicisi. → Faz 2/3
 8. **Kullanıcı silmek yerine girişi engelleme** — geçmiş kayıtlar kullanıcıya bağlı
-   kaldığı için silme değil pasifleştirme doğru yol. Garso'da da böyle olacak. → Faz 1
+   kaldığı için silme değil pasifleştirme doğru yol. RayoPOS'da da böyle olacak. → Faz 1
 9. **Bölge–kullanıcı ataması** kullanıcı formunda çoklu seçim olarak duruyor; bizde
    bölge tanımı var, kullanıcı tarafı personel modülüyle gelecek. → Faz 1
 
@@ -870,10 +870,10 @@ tek seviyeli düz bir liste, alt kırılımı yok.
 **Gider ödeme tipi, satışın ödeme tipleriyle aynı liste DEĞİL.** Sabit beş seçenek:
 Nakit · Kredi Kartı · Havale · Çek-Senet · Diğer.
 
-### 10.6 Bu turda çıkan kararlar ve Garso'ya alınacaklar
+### 10.6 Bu turda çıkan kararlar ve RayoPOS'ya alınacaklar
 1. **"Kasa günü" ile "vardiya" iki ayrı kavram.** Kasa günü rapor aralığı (08:45–08:40,
    Genel Ayarlar'da); vardiya ise açılış/kapanış kaydı. Birbirine bağlı değiller —
-   bir kasa gününde birden fazla vardiya olabilir. Garso'da da ayrı tutulacak. → Faz 1
+   bir kasa gününde birden fazla vardiya olabilir. RayoPOS'da da ayrı tutulacak. → Faz 1
 2. **Kasa ekranı sayfa değil pencere.** Satış ekranından çıkmadan açılıyor; kasanın
    başındaki kişi masayı kaybetmiyor. Bizde de aynı desen. → Faz 1
 3. **Para giriş/çıkış ayrı bir işlem.** Gider değil, kasadaki nakdin hareketi. Gider
@@ -1024,12 +1024,12 @@ Satış Kanalı Bazında Satışlar · Garson Bazlı Satışlar · Ödenmez Bazl
   gösteriyor ("Fire Tanımı Nedir? / Nasıl Aktif Edilir?" + satış iletişimi).
   Kapalı modüle boş ekran yerine açıklama gösterme deseni.
 
-### 11.8 Bu turda çıkan kararlar ve Garso'ya alınacaklar
+### 11.8 Bu turda çıkan kararlar ve RayoPOS'ya alınacaklar
 1. **Rapor = sol sekmeli tek sayfa.** Her rapor kendi içinde sekmelere ayrılıyor,
-   üstte tek bir aralık ve Filtrele/İndir/Yazdır şeridi duruyor. Garso'da da
+   üstte tek bir aralık ve Filtrele/İndir/Yazdır şeridi duruyor. RayoPOS'da da
    Raporlar tek başlık, altında rapor listesi; rapor içi sekmeler solda. → Faz 1
 2. **Filtre her yerde aynı bileşen:** hazır aralık (Bugün/Dün/Bu Hafta) + tarih +
-   **saat**. Kasa günü saatleri varsayılan geliyor. Garso'da tek `RaporFiltre`
+   **saat**. Kasa günü saatleri varsayılan geliyor. RayoPOS'da tek `RaporFiltre`
    bileşeni yazılacak. → Faz 1
 3. **Adisyon detay penceresi raporun içinden açılıyor** ve her yerden aynı
    bileşen. Bizde de `AdisyonDetay` tek bileşen; Gün Sonu → Tüm Adisyonlar
@@ -1060,7 +1060,7 @@ Satış Kanalı Bazında Satışlar · Garson Bazlı Satışlar · Ödenmez Bazl
     tarafında da yer tutuyorlar — veri modeline eklenirken rapor sütunları da
     düşünülecek. → Faz 2
 12. **Satın alınmamış/kapalı modül ekranı boş bırakılmıyor**, ne işe yaradığı
-    anlatılıp açma yolu gösteriliyor (Fire, Kasa Raporu). Garso'da kapalı
+    anlatılıp açma yolu gösteriliyor (Fire, Kasa Raporu). RayoPOS'da kapalı
     modüller için aynı desen kullanılacak. → Faz 1
 
 ## 12. YAZICI MODÜLÜ — CANLI DERİN TUR (20 Ağu 2026)
@@ -1157,11 +1157,11 @@ Dört ekranı görüldü:
 **Yani bu program yalnız yazıcı köprüsü değil, yerel donanım köprüsü:** yazıcı,
 para çekmecesi, ÖKC (seri port) ve CallerID aynı programdan geçiyor.
 
-### 12.7 Garso'ya çıkan kararlar
-1. **Tarayıcı yerel ağa ham TCP açamaz.** Ethernet yazıcıya (IP:9100) Garso'nun
+### 12.7 RayoPOS'ya çıkan kararlar
+1. **Tarayıcı yerel ağa ham TCP açamaz.** Ethernet yazıcıya (IP:9100) RayoPOS'nun
    sayfası doğrudan basamaz, bulut sunucusu da işletmenin iç ağına ulaşamaz.
    Köprüsüz çözüm yok — Adisyo'nun da köprü yazmasının sebebi bu. → Faz 2
-2. **Karar: Garso Kasa Köprüsü.** Garso'nun tamamı masaüstü uygulamasına
+2. **Karar: RayoPOS Kasa Köprüsü.** RayoPOS'nun tamamı masaüstü uygulamasına
    taşınmıyor (iki sürüm bakım maliyeti + her güncellemede dağıtım). İndirilen
    tek parça köprü olacak. Baştan **"yazıcı programı" değil "kasa köprüsü"**
    olarak tasarlanıyor: ilk sürümde yazıcı + para çekmecesi, sonra ÖKC ve
@@ -1203,7 +1203,7 @@ diye bir kavram yok.** eGZOZ'da görülen "HAMMADDE" kategorisi Adisyo'nun tasar
 değil — Ramazan'ın ürün tablosunu zorlayarak kendine uydurduğu çare. Krema, tuz,
 karabiber hepsi normal ürün; satış ekranında gizli, fiyatları ₺0.
 
-Bu çarenin doğurduğu sıkıntılar (Garso'nun neden ayrılacağının gerekçesi):
+Bu çarenin doğurduğu sıkıntılar (RayoPOS'nun neden ayrılacağının gerekçesi):
 birim gerçek ölçü değil porsiyon adı ("Tam" yazıyor, Kg olması gerekirdi), alış
 fiyatı girecek yer yok (maliyet zinciri boş, kârlılık hesaplanamıyor), malzeme
 satış ürünüyle aynı listede (sipariş ekranı, raporlar, Excel hep karışıyor),
@@ -1222,7 +1222,7 @@ stok sürekli eksiye gidiyor.
 ### 12.2 Reçeteler iç içe geçiyor
 "KREMALI MANTARLI SOS" hem HAMMADDE kategorisinde, hem kendi reçetesi var
 (KREMA 1 · MANTAR 0,4 · TEREYAĞI 0,01), hem kendi stoğu tutuluyor. Yani yarı
-mamul = reçetesi olan hammadde. Garso'da da malzeme reçeteli olabilmeli.
+mamul = reçetesi olan hammadde. RayoPOS'da da malzeme reçeteli olabilmeli.
 
 ### 12.3 İki stok işlemi, tek tablo
 - **Yeni Stok Girişi** (`/app/stock/0/3`): girilen sayı **eklenir**. Başlıkta
@@ -1247,9 +1247,9 @@ Ayrı ekran (`/app/restaurant-wastages`). Ekle penceresi: Ürün · Miktar ·
 metin)** · **Sorumlu Kişi** · Satış Kanalı. Liste: Ürün · Zayi Nedeni · Adet ·
 Zayi Tarihi · Eklenme Tarihi · Sorumlu Kişi · Maliyet Tutarı + Toplam satırı.
 Üstte "Sorumluları Düzenle". Zayi nedeni serbest metin olduğu için rapor
-gruplanamıyor — Garso'da **seçilebilir neden listesi** olmalı.
+gruplanamıyor — RayoPOS'da **seçilebilir neden listesi** olmalı.
 
-### 12.6 Garso'ya alınacaklar / ayrılacaklar
+### 12.6 RayoPOS'ya alınacaklar / ayrılacaklar
 **Alınacak:** reçete tipi üçlüsü, giriş/sayım ikilisi, "Yeni Miktar" anında
 hesaplama, eski→değişim→yeni defteri, kritik seviye filtresi, iç içe reçete.
 **Ayrılacak:** malzeme ayrı tablo (ürün değil), gerçek ölçü birimi + çevrim,

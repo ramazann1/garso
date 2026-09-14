@@ -21,7 +21,7 @@ import type { AcikOturum } from "./oturum";
  * ucuz özetle cihazı eline geçiren saniyeler içinde tarardı).
  */
 
-const ANAHTAR = "garso-pin-yerel";
+const ANAHTAR = "rayopos-pin-yerel";
 const TUR = 250_000;
 
 /**

@@ -8,7 +8,7 @@ import { useEffect, useState } from "react";
  * telefonda ayar ekranına girmek isteyebilir, kasada mobil akışı denemek
  * isteyebilir. Elle seçim cihazda kalıyor, her açılışta sorulmuyor.
  */
-const ANAHTAR = "garso.gorunum";
+const ANAHTAR = "rayopos-gorunum";
 const SINIR = 820;
 
 export type Gorunum = "mobil" | "masaustu";

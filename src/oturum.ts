@@ -17,9 +17,9 @@ export type AcikOturum = {
   yetkiler: string[];
 };
 
-const KILIT_ANAHTARI = "garso-kilit";
-const GECICI_ANAHTARI = "garso-gecici";
-const SEKME_ANAHTARI = "garso-sekme";
+const KILIT_ANAHTARI = "rayopos-kilit";
+const GECICI_ANAHTARI = "rayopos-gecici";
+const SEKME_ANAHTARI = "rayopos-sekme";
 
 // Kimlik artık Supabase Auth'ta; buradaki kayıt onun uygulama tarafındaki
 // karşılığı (ad, rol, yetkiler). Ekranlar useOturum ile buraya bakıyor.
@@ -60,7 +60,7 @@ type HatirlananOturum = { authId: string; kisi: AcikOturum };
 // Telefon numarasından hesap adresi: veritabanındaki hesap_epostasi ile aynı
 // kural. Kullanıcı bu adresi hiç görmüyor.
 export function hesapEpostasi(telefon: string) {
-  return `${telefonSade(telefon)}@garso.app`;
+  return `${telefonSade(telefon)}@rayopos.com.tr`;
 }
 
 // Yetki kümesi girişte bir kez hesaplanıp bellekte tutuluyor; her düğme için

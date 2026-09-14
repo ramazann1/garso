@@ -34,7 +34,7 @@ import type { AdisyonTipi } from "../adisyonlar";
 
 // Hangi tezgâhın ekranı olduğu cihazda duruyor: mutfaktaki telefon her
 // açılışta aynı soruyu sormasın.
-const ISTASYON_ANAHTARI = "garso-mobil-istasyon";
+const ISTASYON_ANAHTARI = "rayopos-mobil-istasyon";
 
 function gecenSure(baslangic: string) {
   const saniye = Math.max(0, Math.floor((Date.now() - new Date(baslangic).getTime()) / 1000));

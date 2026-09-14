@@ -1,47 +1,26 @@
-# GARSO — Teknik Tasarım: Veri Modeli & Ekran Haritası
+# RAYOPOS — Teknik Tasarım: Veri Modeli & Ekran Haritası
 *Restoran ve cafe'ler için bulut tabanlı satış ve işletme yönetim sistemi.*
 
 ## 0. SIRADAKİ İŞ (15 Eyl 2026 güncellendi)
 
 > **Sıra (15 Eyl 2026 seans sonu):**
-> 1. **Garso adının kalan bütün izleri → RayoPOS (Ramazan: "hepsi değişmeli").**
->    Plan anlatıldı ve kabul edildi; sıra 1 → 3 → 4 → 2 → köprü kurulumu → 5.
->    Her adımdan sonra Ramazan'a deneme adımı verilir.
->    1) **Tarayıcı anahtarları** (`garso-kuyruk`, `garso-kilit`, `garso-gecici`,
->       `garso-sekme`, `garso-onbellek-*`, `garso-hesap-kopyasi`,
->       `garso-salon-kopyasi`, `garso-pin-yerel`, `garso-menu-acik`,
->       `garso-mobil-istasyon`, `garso-istasyon-boyut`, `garso.gorunum`) →
->       `rayopos-…`. Yeni `src/anahtarGocu.ts` main.tsx'te her şeyden önce
->       çalışır: local+sessionStorage'daki `garso-`/`garso.` anahtarlarını yeni
->       ada kopyalar (yenisi yoksa), eskisini siler.
->    2) **Giriş adresi** `@garso.app` → `@rayopos.com.tr`. Yeni SQL:
->       `hesap_epostasi` yeniden tanımlanır; `auth.users.email` ve
->       `auth.identities` (identity_data email) yalnız `%@garso.app` olanlarda
->       güncellenir (gerçek e-postalı hesaplara dokunulmaz). Kod: `src/oturum.ts`
->       `hesapEpostasi`, `kopru/src/ayar.js` `hesapEpostasi`. Ramazan SQL'i
->       Supabase SQL ekranında çalıştırır; ardından köprü yeniden kurulmalı.
->    3) **Köprü kimliği:** `appId` → `app.rayopos.kopru`; `ana.js`'teki
->       `app.setPath` kalkar/yeni klasör `RayoPOS Kasa Köprüsü` olur; ilk açılışta
->       yeni klasörde `ayarlar.json` yoksa eski `%APPDATA%\Garso Kasa Köprüsü`
->       dosyası kopyalanır (DPAPI kullanıcıya bağlı, şifre açılır).
->       `kaldirma.nsh` ve README yolu güncellenir. Kimlik değiştiği için yeni
->       kurulum ayrı program görünür: Ramazan eski "Garso Kasa Köprüsü"nü Ayarlar
->       → Uygulamalar'dan kaldırır (ayarlar sorusuna Hayır). Paketleme çıktısı
->       Claude'un korumalı alanında kalıyor → `kurulum-dosyasi/`'na kopyala.
->    4) **SQL arşiv yorumları + dokümanlar:** `sql/` yorumları; `garso-tasarim.md`
->       → `rayopos-tasarim.md` (içindeki Garso'lar dahil), `pos-yol-haritasi.md`,
->       `CLAUDE.md` referansları, hafıza notlarındaki dosya adı.
->    5) **Proje klasörü `Desktop\rayopos` + GitHub deposu `ramazann1/rayopos`** —
->       en son, commit/push sonrası. Hafıza klasörü
->       `C--Users-Ramazan-Desktop-garso` → yeni yola taşınır; git remote güncellenir.
-> 2. **Mobilde ekrana göre ölçekleme — kalan ekranlar.** Masa kartı bitti;
+> 1. **Mobilde ekrana göre ölçekleme — kalan ekranlar.** Masa kartı bitti;
 >    sipariş ekranındaki ürün kartları ve alt şerit aynı yöntemle (cqi, taban
 >    11px). Mobilin Adisyo'dan ayrışması için kategori şeridi fikri çizildi,
 >    Ramazan şimdilik yalnız alt şeridi istedi.
-> 3. **Canlıya çıkış** — `rayopos.com.tr` alındı (önce WHOIS'te kaydın düştüğüne
+> 2. **Canlıya çıkış** — `rayopos.com.tr` alındı (önce WHOIS'te kaydın düştüğüne
 >    bak), barındırma (Vercel/Netlify/Cloudflare; alan adı firmasının paketi
 >    değil), güvenlik başlıkları, iPhone simge doğrulaması; ufak ufak.
-> 4. Sonra aşağıdaki liste kaldığı yerden (Analiz'in kalan sekmeleri…).
+> 3. Sonra aşağıdaki liste kaldığı yerden (Analiz'in kalan sekmeleri…).
+>
+> **Garso izleri temizlendi (15 Eyl 2026, Ramazan her adımı denedi):**
+> tarayıcı anahtarları, köprü kimliği ve ayar klasörü, dokümanlar ve hafıza
+> notları (ayrıntı aşağıda "Sonradan taşınanlar"). Giriş adresi
+> `@garso.app` → `@rayopos.com.tr`: `sql/2026-09-15-giris-adresi.sql`
+> `hesap_epostasi`'nı yeniden tanımladı, `auth.users` ve `auth.identities`'teki
+> `%@garso.app` adreslerini taşıdı (gerçek e-postalara dokunmadı); kod tarafı
+> `src/oturum.ts` ve `kopru/src/ayar.js`. GitHub deposu `ramazann1/rayopos`,
+> proje klasörü `Desktop\rayopos` oldu.
 >
 > **Yapılanlar (15 Eyl 2026):** Ürün adı Garso → RayoPOS değişti, Ramazan
 > denedi ve onayladı (köprü yeni kurulumla eskisinin üstüne kuruldu, giriş
@@ -58,13 +37,16 @@
 >    (başlık, tepsi, kurulum, lisans, `RAYOPOS_KOK`/`RAYOPOS_AYAR_YOLU`),
 >    `RAYOPOS_SURUM`, paket adları, kurulum dosyası adı
 >    (`rayopos-kopru-kurulum-…`, indirme adresi `indir.rayopos.com.tr`).
->    **Bilerek eski adda kalanlar:** tarayıcı anahtarları (`garso-kuyruk`…,
->    değişirse kasadaki bekleyen veri kaybolur), `@garso.app` giriş adresleri
->    (ayrı taşıma işi), köprü `appId` `app.garso.kopru` (güncelleme eskisinin
->    üstüne kurulsun) ve ayar klasörü `%APPDATA%\Garso Kasa Köprüsü`
->    (`app.setPath` ile sabit), SQL göç dosyaları, doküman dosya adları, proje
->    klasörü ve GitHub deposu (Ramazan klasörü de değiştirmek istedi; hafıza
->    yolu kopmasın diye seans sonuna bırakıldı). **`rayopos.com.tr` alındı
+>    **Sonradan taşınanlar (aynı gün):** tarayıcı anahtarları `rayopos-…`
+>    oldu, `src/anahtarGocu.ts` açılışta eski `garso-`/`garso.` kayıtlarını
+>    yeni ada kopyalayıp siliyor. Köprü `appId` `app.rayopos.kopru`, ayar
+>    klasörü `%APPDATA%\RayoPOS Kasa Köprüsü`; ilk açılışta eski
+>    `Garso Kasa Köprüsü\ayarlar.json` kopyalanıyor (kimlik değiştiği için eski
+>    program Uygulamalar'dan kaldırılıp yenisi kuruldu). Tasarım dosyası
+>    `rayopos-tasarim.md` oldu; dokümanlar, SQL yorumları ve hafıza notları
+>    RayoPOS'a döndü. Eski SQL'lerdeki `@garso.app` çalıştırılmış kayıt olduğu
+>    için bilerek değişmedi. `%APPDATA%`'da eski `Garso Kasa Köprüsü` ve
+>    `garso-kopru` klasörleri duruyor, fiş bir süre sorunsuz çıkınca silinir. **`rayopos.com.tr` alındı
 >    (Ramazan, 14 Eyl 2026), kayıt beklemede — sonraki seansta WHOIS'e bak.**
 >    `rayopos.net` de boştu, istenirse sonra alınır. Barındırma,
 >    SSL ve e-posta alan adı firmasından alınmaz; canlıya çıkışta kararlaşır.
@@ -1253,14 +1235,14 @@
 >    **Stok bu iş bitene kadar bekliyor** — Ramazan görüntüyü öne aldı.
 >
 > 2. **Stok** — malzeme, reçete, otomatik düşüm, kritik stok uyarısı, maliyet/kârlılık
->    **Karar (1 Eyl 2026):** Garso hazır malzeme listesiyle gelmez. Her işletme
+>    **Karar (1 Eyl 2026):** RayoPOS hazır malzeme listesiyle gelmez. Her işletme
 >    kendi malzemesini kendi girer — hangi malzeme setini kullandığı önceden
 >    bilinemez. Modül boş listeyle açılır; kolaylık gerekirse Excel ile toplu
 >    aktarım sunulur, gömülü katalog değil.
 >    **Karar (1 Eyl 2026):** Malzeme ayrı bir varlıktır, ürün değildir. Adisyo'da
 >    hammadde kavramı hiç yok; eGZOZ'daki "HAMMADDE" kategorisi Ramazan'ın ürün
 >    tablosunu zorlayarak uydurduğu çaredir (birim "Tam" görünüyor, alış fiyatı
->    girecek yer yok, malzemeler satış ürünleriyle aynı listede duruyor). Garso
+>    girecek yer yok, malzemeler satış ürünleriyle aynı listede duruyor). RayoPOS
 >    burada Adisyo'yu taklit etmez: `malzemeler` kendi tablosu, kendi ölçü birimi
 >    ve alış fiyatıyla durur.
 >    **Adisyo turu yapıldı (1 Eyl 2026)** — bulgular pos-yol-haritasi.md
@@ -1357,7 +1339,7 @@
 > kırptığı için kare zemin, çizim ortada %70), **apple** (iOS saydam alanı
 > siyaha çevirdiği için saydamlık atılmış, dört boyut: 120/152/167/180).
 > Şablondan kalma `public/icons.svg` silindi. `index.html`: apple satırları,
-> `lang="tr"`, başlık `Garso`. Manifest'ten **SVG girdisi çıkarıldı** —
+> `lang="tr"`, başlık `RayoPOS`. Manifest'ten **SVG girdisi çıkarıldı** —
 > Safari `sizes: any` girdisini seçip çeviremiyor olabilir diye.
 > **Açık kalan:** iPhone'da "Ana Ekrana Ekle" hâlâ harf simgesi veriyor.
 > Sekme simgesi doğru, PNG'ler adresten açılıyor, manifest doğru üretiliyor —
@@ -1473,7 +1455,7 @@
 > Masaüstündeki `MENUPAD KOPYA` klasörü düz HTML+CSS+JS, kendi ayrı Supabase
 > projesine bağlı, menüyü tek `menus` tablosunda `type` alanıyla (tab/category/
 > product) tutuyor; yanında kayıt, işletme paneli, süper admin ve abonelik var.
-> Ne teknoloji (React+TS değil) ne veri yapısı Garso'ya uyuyor — aktarmak
+> Ne teknoloji (React+TS değil) ne veri yapısı RayoPOS'ya uyuyor — aktarmak
 > yeniden yazmakla aynı emek. **Alınacak olan kod değil fikir listesi**, QR
 > menü sırası gelince bakılmak üzere: kategorilerin üstünde sekme katmanı
 > (Yiyecek/İçecek gibi), alt kategori ara başlığı, iki dil (TR/EN ayrı ad ve
@@ -1508,7 +1490,7 @@
 >
 > **10 Eyl 2026: QR menü fotoğrafa mecbur olmayacak — ürünün asıl ayrımı.**
 > Foost ve Adisyo/QRall fotoğrafsız çöküyor: kartlar boş kalıyor, menü bozuk
-> görünüyor. Garso'nun QR menüsü **girilen kadarına göre şekil değiştirecek**:
+> görünüyor. RayoPOS'nun QR menüsü **girilen kadarına göre şekil değiştirecek**:
 > hiç medya yoksa tipografiye dayalı zarif liste, bazı ürünlerde varsa onlar
 > öne çıkan kart olur kalanı satır kalır, hepsinde varsa tam vitrin. Tek sayfa,
 > tek kod. İşletmeciye "fotoğraf çek yoksa menün kötü görünür" denmiyor.
@@ -1517,7 +1499,7 @@
 > (`--zemin`) kalıyor, QR menü beyaza geçiyor. Gerekçe: vitrin galeri gibi
 > dursun, fotoğraf koyan işletmede yemeğin rengi öne çıksın, iki arayüz
 > birbirinden ayrılsın. Yeşil-beyaz elendi: "sağlıklı/vejetaryen" mesajı
-> veriyor, her işletmeye uymuyor. Mercan zaten Garso'nun kimlik rengi.
+> veriyor, her işletmeye uymuyor. Mercan zaten RayoPOS'nun kimlik rengi.
 > Taşıyıcı unsur fotoğraf değil **tipografi ve boşluk**.
 >
 > **10 Eyl 2026: Foost turu (qr.thefoost.com/coolchicken).** Görülen akış:
@@ -1631,7 +1613,7 @@
 >   kapat / Bekle" uyarısı (engel değil).
 > - **Yerel yazdırma: kasa fişi doğrudan köprüye veriyor.** Köprüde
 >   `src/yerelSunucu.js` — yalnız `127.0.0.1:7423`, `GET /durum` +
->   `POST /yazdir`. Garso'da `src/yerelYazdirma.ts` (1,5 sn zaman aşımı,
+>   `POST /yazdir`. RayoPOS'da `src/yerelYazdirma.ts` (1,5 sn zaman aşımı,
 >   yoklama 30 sn akılda). `kuyrugaEkle` önce köprüye gidiyor; kâğıt çıktıysa
 >   bulut kaydı "basıldı · yerel" yazılıyor, internetsizlikten yazılamazsa
 >   sessiz geçiliyor — işin aslı kâğıt zaten çıktı. Çift basımı `istemci_kimlik`
@@ -1790,7 +1772,7 @@
 >
 > **Kural role değil yetkiye bağlanır (5 Eyl 2026 kararı).** Erişim kuralı
 > tasarlarken "bizim işletmede garson bunu yapmıyor" varsayımı kullanılmaz.
-> Garso başka işletmelere satılıyor; oradaki rol dağılımı bambaşka olabilir.
+> RayoPOS başka işletmelere satılıyor; oradaki rol dağılımı bambaşka olabilir.
 > Ölçüt her zaman "bu iş hangi yetki kodunun kapsamında". Yetki canlı okunuyor,
 > işletmeci ayarı değiştirince kural kendiliğinden uyar.
 >
@@ -1910,7 +1892,7 @@ liste. Ayrıca **ayar ekranlarının düzeni yeniden kuruldu** (aşağıda).
 **12 Ağu 2026:** Kasa modülü bitti (Kasa Geçmişi, Giderler, kapanış hatırlatması)
 ve **Adisyo'nun Raporlar bölümü baştan sona turlandı** — altı raporun her sekmesi,
 adisyon detay penceresi ve sipariş geçmişi dahil (yol haritası bölüm 11). Rapor
-kapsamı kararı: **Adisyo'daki her rapor Garso'da da olacak, üstüne bizim
+kapsamı kararı: **Adisyo'daki her rapor RayoPOS'da da olacak, üstüne bizim
 eklediklerimizle daha zengin.** Eksik görünenler vazgeçilmiş değil, dayandığı
 modüle bağlı (stok, cari hesap, entegrasyon). Sıralama kısıtı var, kapsam kısıtı yok.
 
@@ -2482,7 +2464,7 @@ Bu seansta çıkanlar:
   sütunundan okunuyordu, boş çıkıyordu. **Mutfak fişinde turu giren**, adisyon
   fişinde masayı açan yazıyor. Masa adı ve numara da fiş yazılmadan önce
   veritabanından okunuyor.
-- **Göç notu:** `alter table` tabloyu tek başına kilitliyor; köprü ve açık Garso
+- **Göç notu:** `alter table` tabloyu tek başına kilitliyor; köprü ve açık RayoPOS
   sekmesi aynı tabloya bakarken göç çalıştırılırsa **deadlock** oluyor. Göçten
   önce köprü kapatılıp sekmeler kapatılmalı.
 
@@ -2545,7 +2527,7 @@ ekranı bitti.** Köprüden geriye yalnız paketleme kaldı. Bu seansta çıkanl
   verip kapanmıyor, dört soru sorup dosyayı kendi yazıyor.
 - **Windows başlangıcına Başlangıç klasörü kısayoluyla** (`garso-kopru.exe kur`),
   kayıt defterine dokunulmadan; `kaldir` geri alıyor. `kur` önce programı
-  `%LOCALAPPDATA%\Garso\Kopru`'ya kopyalıyor — klasör masaüstünde kalırsa
+  `%LOCALAPPDATA%\RayoPOS\Kopru`'ya kopyalıyor — klasör masaüstünde kalırsa
   silindiği gün köprü de gider, kasa fiş basmayı sessizce bırakır.
 - **Sürüm artık kodda** (`src/surum.js`, 1.0.0): exe'nin yanında `package.json`
   yok. `package.json` ile birlikte elle güncelleniyor.
@@ -2553,7 +2535,7 @@ ekranı bitti.** Köprüden geriye yalnız paketleme kaldı. Bu seansta çıkanl
 **25 Ağu 2026 (2. seans):** **Köprü pencereli bir Windows programı oldu ve tek
 kurulum dosyasına indi.** Terminal penceresi satılacak bir üründe duramazdı.
 Bu seansta çıkanlar:
-- **Electron seçildi.** Garso zaten React; köprünün penceresi de aynı dille
+- **Electron seçildi.** RayoPOS zaten React; köprünün penceresi de aynı dille
   yazılıyor, ana programın rengini ve yazı tipini kullanıyor. Bedeli dosya
   boyutu (~200 MB kurulum), kasaya bir kez kurulan program için önemsiz.
   Eski tek dosya paketlemesi (SEA + esbuild + postject) tamamen kalktı.
@@ -2564,7 +2546,7 @@ Bu seansta çıkanlar:
 - **Sunucu adresi ve anon anahtarı programa gömülü** (`src/sunucu.js`,
   paketlerken `sunucu-gomulu.js` üretiliyor, kaynağı ana projenin `.env.local`
   dosyası). Kurulumda yalnız telefon ve şifre soruluyor. Anahtar gizli bilgi
-  değil, tarayıcıdaki Garso'nun içinde de duruyor.
+  değil, tarayıcıdaki RayoPOS'nun içinde de duruyor.
 - **Şifre diske düz metin yazılmıyor:** Windows'un kendi şifrelemesi (DPAPI,
   Electron `safeStorage`). Dosya kopyalanıp başka bilgisayarda açılamıyor.
   Kalıcı çözüm yine de cihaz anahtarı — aşağıda sırada.
@@ -2588,7 +2570,7 @@ Bu seansta çıkanlar:
   Akan işlem listesi ekranda çirkin duruyordu; "Bilgileri Kopyala" metninde
   duruyor, destek hattı için en değerli bilgi o.
 - **Kurulum dosyası** electron-builder/NSIS ile: `npm.cmd run paketle` →
-  `%LOCALAPPDATA%\Garso\dagitim\garso-kopru-kurulum-<sürüm>.exe`. Çıktı proje
+  `%LOCALAPPDATA%\RayoPOS\dagitim\garso-kopru-kurulum-<sürüm>.exe`. Çıktı proje
   klasörünün dışında: Windows'un dizinleyicisi Masaüstü'nü sürekli tarıyor ve
   paketlemeyi "EPERM" ile durduruyordu. Windows başlangıcına kayıt artık
   Electron'un kendi yoluyla (`setLoginItemSettings`) ve her açılışta kontrol
@@ -2619,10 +2601,10 @@ bağlantısı ve sürüm düzeni kuruldu.** Bu seansta çıkanlar:
   göstermek olmamasından kötü. Karar: dosya **kendi alan adımızda** duracak;
   Supabase deposu elenmiş, çünkü indirme trafiği veritabanıyla aynı kotayı
   yiyor (~200 MB'lık dosya bedava planı 25 indirmede bitirir).
-- **Tek sürüm numarası** (`surum.js`, `npm.cmd run surum`). Garso ile köprü
-  aynı numarayı taşıyor; ayrı numaralar "kasadaki program hangi Garso ile
+- **Tek sürüm numarası** (`surum.js`, `npm.cmd run surum`). RayoPOS ile köprü
+  aynı numarayı taşıyor; ayrı numaralar "kasadaki program hangi RayoPOS ile
   uyumlu" sorusunu doğuruyordu. Numara beş dosyada birden değişiyor, elle
-  yazılmıyor. Seans sonunda artırılıyor (kural CLAUDE.md'de). Garso'nun sürümü
+  yazılmıyor. Seans sonunda artırılıyor (kural CLAUDE.md'de). RayoPOS'nun sürümü
   yan menüde işletme kodunun yanında.
 
 1. **Köprünün kalan işleri:**
@@ -2802,7 +2784,7 @@ fiyatı tek porsiyonunda tutulur, maliyeti içeriğinden hesaplanır.
 
 Kalıcı modelde ayrıca gelecek: `stations` (Mutfak/Bar/Nargile — KDS ve yazıcı hedefi), reçete.
 
-### Satış Çekirdeği — Garso'nun kalbi
+### Satış Çekirdeği — RayoPOS'nun kalbi
 ```sql
 checks         (id, branch_id, tip ENUM('masa','paket','gelal'), table_id NULL,
                 musteri_id NULL, kisi_sayisi, acan_user_id, acilis_ts, kapanis_ts,
@@ -2842,9 +2824,9 @@ wastages       (id, branch_id, product_id, adet, neden, sorumlu_user_id, ts)
 stock_moves    (id, branch_id, urun/malzeme, tip ENUM('giris','sayim','satis_dusum'), miktar, ts, user_id)
 ```
 
-## 3. GARSO EKRAN HARİTASI (web/masaüstü — kendi tasarımımız)
+## 3. RAYOPOS EKRAN HARİTASI (web/masaüstü — kendi tasarımımız)
 
-| # | Ekran | Garso'da adı | Bilinçli farklılaşma |
+| # | Ekran | RayoPOS'da adı | Bilinçli farklılaşma |
 |---|---|---|---|
 | 1 | Salon görünümü | **Salon** | Bölge sekmeleri yerine tek ekranda kaydırılabilir bölge blokları; masa kartında süre + tutar + garson tek satır rozet |
 | 2 | Adisyon ekranı | **Sipariş** | Kategori şeridi solda dikey (dokunmatik dikey ergonomi); sepet sağda sabit; turlar otomatik ayrılmış |
@@ -2857,9 +2839,9 @@ stock_moves    (id, branch_id, urun/malzeme, tip ENUM('giris','sayim','satis_dus
 | 9 | Cari | **Veresiye Defteri** | Müşteri + protokol tek modül, bakiye yaşlandırma göstergesi |
 | 10 | Kasa | **Kasa Defteri** | Açılış/kapanış + gider + zayi tek akış |
 
-**Gezinme (30 Tem 2026 kararı, 2 Ağu'da genişletildi):** Sol dikey şerit, daralt/genişlet düğmesiyle 80px ↔ 205px. Kapalıyken sadece ikon, açıkken ikon + yazı. Adisyo'nun içeriği karartıp kapatan 312px overlay çekmecesi kullanılmıyor — Garso'nun şeridi içeriği hiç kapatmaz. Sipariş ekranında şerit gizlenir (tam ekran odak).
+**Gezinme (30 Tem 2026 kararı, 2 Ağu'da genişletildi):** Sol dikey şerit, daralt/genişlet düğmesiyle 80px ↔ 205px. Kapalıyken sadece ikon, açıkken ikon + yazı. Adisyo'nun içeriği karartıp kapatan 312px overlay çekmecesi kullanılmıyor — RayoPOS'nun şeridi içeriği hiç kapatmaz. Sipariş ekranında şerit gizlenir (tam ekran odak).
 
-**Kimlik farklılaşması:** Garso'nun kendi renk paleti — AYDINLIK TEMA (kesinleşti): krem zemin #faf7f2, kart beyazı #ffffff, mercan vurgu #ff7a59, yumuşak yeşil (onay) #2ecc9a, metin #2d3436, soluk metin #8a9296. Koyu tema kullanılmayacak (kullanıcı kararı), kendi ikon seti, kendi terminolojisi (Adisyon→Hesap/Check, Ödenmezler→Protokol, Özellikler→Seçenekler, Gün Sonu→Kasa Kapanışı).
+**Kimlik farklılaşması:** RayoPOS'nun kendi renk paleti — AYDINLIK TEMA (kesinleşti): krem zemin #faf7f2, kart beyazı #ffffff, mercan vurgu #ff7a59, yumuşak yeşil (onay) #2ecc9a, metin #2d3436, soluk metin #8a9296. Koyu tema kullanılmayacak (kullanıcı kararı), kendi ikon seti, kendi terminolojisi (Adisyon→Hesap/Check, Ödenmezler→Protokol, Özellikler→Seçenekler, Gün Sonu→Kasa Kapanışı).
 
 ## 4. MVP KAPSAMI (ilk çalışan sürüm)
 1. Salon + masa yönetimi (aç/taşı/birleştir)
@@ -3276,7 +3258,7 @@ görüntüle" ve aktif/pasif ürün — 1 Ağu 2026 ikinci seansında tamamland�
    bozuldu" dedi; karar kullanıcının olmalı.)*
 53. **Masa birleştirme ve adisyon aktarma tek maddedir.** Adisyo'da "Masaları
    Birleştir" ve "Adisyon Aktar" ayrı iki menü maddesi ama ikisi de aynı işi
-   yapıyor; Garso'da menü iki satır: "Masayı taşı" (boş masaya) ve "Adisyonu
+   yapıyor; RayoPOS'da menü iki satır: "Masayı taşı" (boş masaya) ve "Adisyonu
    birleştir" (dolu masaya). *(7 Ağu 2026)*
 54. **İkram ve iptal anahtar değil, düğmedir.** Kalem panelinde basar basmaz
    uygulanır; "Uygula" yalnız adet, fiyat, porsiyon ve notu yazar, kalemin
@@ -3313,7 +3295,7 @@ görüntüle" ve aktif/pasif ürün — 1 Ağu 2026 ikinci seansında tamamland�
    üstündeki başlık hangisinde olduğunu söyler. Kalem payı kesirli tutulur,
    kuruş artığı son ödeyene kalır. *(8 Ağu 2026)*
 61. **Gel Al ve Paket, salonun kendi dilinde durur.** Adisyo bunları ayrı ekrana
-   ve sol kısayola koymuş; Garso'da bölge şeridinin sonunda sabit bir sekme ve
+   ve sol kısayola koymuş; RayoPOS'da bölge şeridinin sonunda sabit bir sekme ve
    masa kartıyla aynı düzende sipariş kartları var — garson ekran değiştirmiyor.
    Müşteri alanları isteğe bağlı, paket siparişte ödeme tipi baştan zorunlu
    değil. *(8 Ağu 2026)*
@@ -3513,10 +3495,10 @@ görüntüle" ve aktif/pasif ürün — 1 Ağu 2026 ikinci seansında tamamland�
    *(12 Ağu 2026)*
 
 ## 7. KOD PAYLAŞIM DÜZENİ
-- Kod GitHub'da: `github.com/ramazann1/garso` (şimdilik Public — final'de Private yapılacak)
+- Kod GitHub'da: `github.com/ramazann1/rayopos` (şimdilik Public — final'de Private yapılacak)
 - **Claude'un repoya erişim yöntemi:** seans başında bash ile tarball indirilir:
   ```
-  curl -sL "https://codeload.github.com/ramazann1/garso/tar.gz/refs/heads/main" -o garso.tar.gz && tar xzf garso.tar.gz
+  curl -sL "https://codeload.github.com/ramazann1/rayopos/tar.gz/refs/heads/main" -o garso.tar.gz && tar xzf garso.tar.gz
   ```
   (`raw.githubusercontent.com` doğrudan çekilemiyor, GitHub tree sayfaları robots ile kapalı, `api.github.com` rate limit'e giriyor — tarball çalışan tek yol.)
 - **Claude tarayıcıda test edebiliyor:** Claude in Chrome ile `localhost:5173` (bugün 5174) açılıp uygulama tıklanarak test ediliyor. Dev server açık olmalı (`npm.cmd run dev`).
@@ -3691,7 +3673,7 @@ ikon setinin oraya tam uygulanması (0. bölümdeki 1. madde).
   ve tek satır, üstüne gelince "Adisyon aç" beliriyor. 2 saati geçen adisyonun
   süresi rozetleniyor. Süreler dakikada bir kendiliğinden ilerliyor.
 - ✅ **Adisyo Tanımlamalar modülünün tamamı canlı hesapta gezildi** — on ekran,
-  bulgular `pos-yol-haritasi.md` bölüm 8'e işlendi, Garso ile kıyas tablosu ve
+  bulgular `pos-yol-haritasi.md` bölüm 8'e işlendi, RayoPOS ile kıyas tablosu ve
   yedi yeni faz maddesi çıkarıldı.
 - ✅ **Tipografi elden geçti:** yazı tipi **Poppins** (`@fontsource/poppins`,
   pakete gömülü), `--soluk` okunur tona çekildi (`#6b7578`), 10-11px puntolar

@@ -1,4 +1,5 @@
 import { app, BrowserWindow, clipboard, ipcMain, Menu, nativeImage, shell, Tray } from "electron";
+import { copyFileSync, existsSync, mkdirSync } from "node:fs";
 import { dirname, join } from "node:path";
 import { fileURLToPath } from "node:url";
 import { SURUM } from "../src/surum.js";
@@ -30,9 +31,19 @@ const kopruKoku = join(buDizin, "..");
  * İkisi de motor yüklenmeden önce yazılmak zorunda — yerler.js/ayar.js açılışta
  * okuyor.
  */
-// Program adı Garso'dan RayoPOS'a döndü; Electron ayar klasörünü addan türettiği
-// için klasör sabitleniyor, yoksa kurulu kasalardaki giriş bilgileri kayboluyor.
-app.setPath("userData", join(app.getPath("appData"), "Garso Kasa Köprüsü"));
+// Klasör adı sabit yazılıyor: geliştirirken Electron adı package.json'daki
+// "name"den türetiyor ve ayarlar başka klasöre düşüyor.
+const ayarKlasoru = join(app.getPath("appData"), "RayoPOS Kasa Köprüsü");
+app.setPath("userData", ayarKlasoru);
+
+// Program eskiden Garso adıyla kuruluyordu. Eski klasördeki ayar dosyası
+// taşınmazsa kasada telefon ve şifre yeniden sorulur.
+const eskiAyar = join(app.getPath("appData"), "Garso Kasa Köprüsü", "ayarlar.json");
+const yeniAyar = join(ayarKlasoru, "ayarlar.json");
+if (!existsSync(yeniAyar) && existsSync(eskiAyar)) {
+  mkdirSync(ayarKlasoru, { recursive: true });
+  copyFileSync(eskiAyar, yeniAyar);
+}
 
 process.env.RAYOPOS_KOK = app.isPackaged
   ? kopruKoku.replace("app.asar", "app.asar.unpacked")

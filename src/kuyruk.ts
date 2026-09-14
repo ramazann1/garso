@@ -26,7 +26,7 @@ import type { HesapHedefi } from "./hesapKopyasi";
  * tetikleyici yeniden denetliyor — reddedilirse sebep şeritte yazıyor.
  */
 
-const ANAHTAR = "garso-kuyruk";
+const ANAHTAR = "rayopos-kuyruk";
 
 export type KuyrukIsi =
   | { tip: "masa"; masaId: number; masaAdi?: string; veri: AdisyonVerisi; kapat?: boolean }

@@ -1,3 +1,4 @@
+import './anahtarGocu'
 import { StrictMode } from 'react'
 import { createRoot } from 'react-dom/client'
 // Poppins pakete gömülü geliyor; kasa internetsizken de yazı tipi doğru görünsün.

@@ -14,7 +14,7 @@ import type { AdisyonVerisi, MasaOzeti } from "./adisyonlar";
  * ödeme alan kişi elindeki hesabın son hâli olmayabileceğini görüyor.
  */
 
-const ANAHTAR = "garso-hesap-kopyasi";
+const ANAHTAR = "rayopos-hesap-kopyasi";
 // Bir vardiyadan eski kopya bilgi değil, tahmindir; gösterilmiyor.
 const OMUR = 12 * 60 * 60 * 1000;
 // Cihazın deposu dolmasın: en son bakılan hesaplar tutuluyor.
@@ -89,7 +89,7 @@ export function hesapKopyasiSil(hedef: HesapHedefi) {
  * Boş görünen dolu masaya ikinci hesap açılır. Bu kopya salon her okunduğunda
  * tazeleniyor, ödeme için gereken sepet yine hesap kopyasında duruyor.
  */
-const SALON_ANAHTAR = "garso-salon-kopyasi";
+const SALON_ANAHTAR = "rayopos-salon-kopyasi";
 
 export function salonKopyasiYaz(masalar: Record<number, MasaOzeti>) {
   try {

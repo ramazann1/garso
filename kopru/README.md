@@ -57,8 +57,8 @@ npm.cmd start
 ```
 
 Pencereli sürüm açılır; giriş bilgileri Windows'un kullanıcı klasöründe
-(`%APPDATA%\Garso Kasa Köprüsü\ayarlar.json`) saklanır. Klasör adı eski
-kurulumlardaki girişler kaybolmasın diye bilerek eski adda kaldı. Sunucu bilgisi
+(`%APPDATA%\RayoPOS Kasa Köprüsü\ayarlar.json`) saklanır. Eski Garso adıyla
+kurulmuş kasalarda ilk açılışta eski klasördeki dosya buraya kopyalanır. Sunucu bilgisi
 geliştirirken ana projenin `.env.local` dosyasından okunur.
 
 Penceresiz, düz terminal sürümü de duruyor:
