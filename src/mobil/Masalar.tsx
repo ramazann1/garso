@@ -1,4 +1,4 @@
-import { useEffect, useRef, useState } from "react";
+import { useEffect, useRef, useState, type CSSProperties } from "react";
 import { useNavigate } from "react-router-dom";
 import {
   ArrowRightLeft,
@@ -11,7 +11,6 @@ import {
   Gift,
   History,
   LockKeyhole,
-  Plus,
   Printer,
   RotateCw,
   Users,
@@ -68,6 +67,7 @@ function sure(acilis?: string) {
   const dk = Math.floor((Date.now() - new Date(acilis).getTime()) / 60000);
   if (dk < 1) return "şimdi";
   if (dk < 60) return `${dk} dk`;
+  if (dk >= 1440) return `${Math.floor(dk / 1440)} gün`;
   return `${Math.floor(dk / 60)} sa ${dk % 60} dk`;
 }
 
@@ -450,9 +450,11 @@ export default function MobilMasalar() {
                     satır aşağı kayıyor, ızgaradaki masalar birbirini tutmuyor.
                     Masaya yeni ürün girilirse şerit kendiliğinden kalkıyor. */}
                 {acik && (
-                  <span className={acik.fisBasildi ? "m-masa-fis" : "m-masa-fis gizli"}>
-                    <Printer size={13} />
-                    Hesap çıktı
+                  <span
+                    className={acik.fisBasildi ? "m-masa-fis" : "m-masa-fis gizli"}
+                    aria-label="Hesap fişi basıldı"
+                  >
+                    <Printer size={16} />
                   </span>
                 )}
 
@@ -468,7 +470,12 @@ export default function MobilMasalar() {
                         Hesabı kapanan masada rakam yerine durum yazıyor. Hesap
                         fişi basılmışsa yazıcı işareti tutarın sağına düşüyor;
                         masaya yeni ürün girilirse işaret kendiliğinden kalkıyor. */}
-                    <span className="m-masa-tutar">
+                    {/* Rakamın uzunluğu CSS'e veriliyor: yazı kartın genişliğine
+                        ve hane sayısına göre küçülüp tek satıra sığıyor. */}
+                    <span
+                      className="m-masa-tutar"
+                      style={{ "--hane": odendi ? 8 : paraGoster(acik.tutar).length } as CSSProperties}
+                    >
                       {odendi ? (
                         <>
                           <CircleCheckBig size={17} />
@@ -482,16 +489,18 @@ export default function MobilMasalar() {
                     <span className="m-masa-alt">
                       {acik.bekliyor ? (
                         <>
-                          <CloudUpload size={13} /> Gönderilmedi
+                          <CloudUpload size={13} />
+                          <span className="m-rozet-yazi">Gönderilmedi</span>
                         </>
                       ) : acik.kopyaZamani ? (
                         // Gönderilmemiş kayıt değil: masa sunucuya sorulamadı,
                         // cihazdaki kopyadan çiziliyor. Kopyanın saati yazıyor.
                         <>
-                          <CloudOff size={13} /> {kopyaSaati(acik.kopyaZamani)} hâli
+                          <CloudOff size={13} />
+                          <span className="m-rozet-yazi">{kopyaSaati(acik.kopyaZamani)} hâli</span>
                         </>
                       ) : (
-                        sure(acik.acilis)
+                        <span className="m-rozet-yazi">{sure(acik.acilis)}</span>
                       )}
                     </span>
 
@@ -504,11 +513,7 @@ export default function MobilMasalar() {
                       </span>
                     )}
                   </>
-                ) : (
-                  <span className="m-masa-bos">
-                    <Plus size={22} />
-                  </span>
-                )}
+                ) : null}
               </button>
             );
           })}

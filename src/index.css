@@ -190,50 +190,48 @@ body {
    İçerik alta yaslı — üstteki bant üç nokta düğmesine kalıyor, garson adı ile
    süre onun altına iniyor. */
 .masa-kart.dolu {
+  --durum: #1fa97d;
+  --durum-yazi: #fff;
   justify-content: flex-end;
-  background: linear-gradient(150deg, #45d9ac 0%, #2ecc9a 60%, #23b98a 100%);
+  background: var(--kart);
   color: var(--kart-yazi);
-  box-shadow: 0 3px 12px rgba(255, 107, 69, 0.26);
 }
 
-.masa-kart.dolu:hover {
-  box-shadow: 0 10px 24px rgba(255, 107, 69, 0.42);
-}
-
-/* Kartın üst bandı: solda garson adı, sağ köşe üç nokta düğmesinin — garson
-   adı uzasa bile düğmenin altına girmiyor. */
+/* Kartın üst bandı durum renginde: solda masa adı, sağ köşe kişi sayısı ile
+   üç nokta düğmesinin — ad uzasa bile düğmelerin altına girmiyor. Bant
+   kartın kenarına kadar uzansın diye iç boşluğu eksi paylı alıyor. */
 .masa-ust {
   display: flex;
   align-items: center;
   gap: 8px;
-  min-height: 17px;
-  padding-right: 34px;
+  min-height: 50px;
+  margin: -15px -18px auto;
+  padding: 0 110px 0 18px;
+  background: var(--durum);
+  color: var(--durum-yazi);
 }
 
-/* Hesap fişi basıldı işareti, garson adının yanında: kartın üst bandı zaten
-   ikincil bilgilerin yeri, rakamların düzenine karışmıyor. */
+/* Hesap fişi basıldı işareti, masa adının yanında. */
 .masa-fis {
   display: inline-flex;
   align-items: center;
-  color: var(--kart-yazi);
-  opacity: 0.85;
+  color: inherit;
 }
 
 .masa-garson {
+  min-width: 0;
   overflow: hidden;
   white-space: nowrap;
   text-overflow: ellipsis;
-  font-size: 13px;
+  font-size: 13.5px;
   font-weight: 500;
-  letter-spacing: 0.04em;
-  text-transform: uppercase;
-  color: var(--kart-yazi);
+  color: var(--soluk);
 }
 
 .masa-kart.dolu .masa-ad {
   font-size: 17px;
   font-weight: 600;
-  color: var(--kart-yazi);
+  color: inherit;
   overflow: hidden;
   white-space: nowrap;
   text-overflow: ellipsis;
@@ -290,7 +288,7 @@ body {
   white-space: nowrap;
   padding: 2px 9px 3px;
   border-radius: 999px;
-  background: rgba(255, 255, 255, 0.14);
+  background: var(--zemin);
   font-size: 12px;
   font-weight: 600;
   color: var(--kart-yazi);
@@ -6810,7 +6808,9 @@ body {
 }
 
 .plan-masa .masa-ust {
-  min-height: 0;
+  min-height: 42px;
+  margin: -11px -13px auto;
+  padding: 0 96px 0 13px;
 }
 
 /* Üç nokta düğmesi kartın köşesinden taşmasın diye plana özel biraz içeride. */
@@ -7743,23 +7743,14 @@ body {
    kalanı gösterir, altında ne kadar ödendiği yazar. */
 
 .masa-kart.dolu.odendi {
-  background: linear-gradient(150deg, #9aa3a6 0%, #8b9497 60%, #77807f 100%);
-  box-shadow: 0 3px 12px rgba(119, 128, 127, 0.26);
+  --durum: #77807f;
 }
 
-.masa-kart.dolu.odendi:hover {
-  box-shadow: 0 10px 24px rgba(119, 128, 127, 0.4);
-}
-
-/* Kısmi ödemede hesap sürüyor ama tahsilat başladı: mercanın koyu, mat tonu.
-   Açık ton denendi, açık zeminde açık yazı göz yorduğu için koyuya geçildi. */
+/* Kısmi ödemede hesap sürüyor ama tahsilat başladı. Sarı bantta beyaz yazı
+   okunmuyor, koyu yazı alıyor. */
 .masa-kart.dolu.kismi {
-  background: linear-gradient(150deg, #ffd24d 0%, #fbc02d 60%, #eeaa14 100%);
-  box-shadow: 0 3px 12px rgba(238, 170, 20, 0.26);
-}
-
-.masa-kart.dolu.kismi:hover {
-  box-shadow: 0 10px 24px rgba(238, 170, 20, 0.4);
+  --durum: #f2b21c;
+  --durum-yazi: #2b2100;
 }
 
 /* Bir süredir sipariş vermeyen masa: hesap sürüyor ama masa duruyor. Süreyi
@@ -7767,24 +7758,15 @@ body {
    önüne geçiyor — masanın ne kadardır beklediği daha acil bir bilgi, tahsilat
    durumu kartta zaten rakamla yazıyor. Kural bu yüzden en sonda duruyor. */
 .masa-kart.dolu.durgun {
-  background: linear-gradient(150deg, #b58ae0 0%, #a274d4 60%, #8e5fc4 100%);
-  box-shadow: 0 3px 12px rgba(142, 95, 196, 0.26);
-}
-
-.masa-kart.dolu.durgun:hover {
-  box-shadow: 0 10px 24px rgba(142, 95, 196, 0.4);
+  --durum: #8e5fc4;
+  --durum-yazi: #fff;
 }
 
 /* Hesap fişi basılmış masa: müşteri hesabı istedi, ödeme bekleniyor. Bu bilgi
    durgunluğun da önünde — masa duruyor olabilir ama beklediği şey belli. */
 .masa-kart.dolu.fisli {
-  background: linear-gradient(150deg, #ef2028 0%, #e30a17 60%, #c70813 100%);
-  box-shadow: 0 3px 12px rgba(199, 8, 19, 0.26);
-  color: #fff;
-}
-
-.masa-kart.dolu.fisli:hover {
-  box-shadow: 0 10px 24px rgba(199, 8, 19, 0.4);
+  --durum: #d90b16;
+  --durum-yazi: #fff;
 }
 
 /* Hesabı tamamen ödenmiş ama henüz kalkmamış masa en sonda: iş bitti, kart
@@ -7792,9 +7774,22 @@ body {
 .masa-kart.dolu.odendi,
 .masa-kart.dolu.odendi.durgun,
 .masa-kart.dolu.odendi.fisli {
-  background: linear-gradient(150deg, #9aa3a6 0%, #8b9497 60%, #77807f 100%);
-  box-shadow: 0 3px 12px rgba(119, 128, 127, 0.26);
-  color: var(--kart-yazi);
+  --durum: #77807f;
+  --durum-yazi: #fff;
+}
+
+/* Kişi sayısı ve üç nokta bantın üstünde, bant yazısının renginde. Üç nokta
+   kartın dışında (kardeş öğe), rengi kartın durumundan okunuyor. */
+.masa-kart.dolu .masa-kisi {
+  color: var(--durum-yazi);
+}
+
+.masa-kart.dolu ~ .masa-menu-tus {
+  color: #fff;
+}
+
+.masa-kart.dolu.kismi:not(.odendi):not(.durgun):not(.fisli) ~ .masa-menu-tus {
+  color: #2b2100;
 }
 
 /* Masa adı solda, süre sağda; üç nokta düğmesi bu satırın üstünde kalıyor. */
@@ -13781,7 +13776,7 @@ body {
   flex-shrink: 0;
   padding: 3px 10px;
   border-radius: 999px;
-  background: #fff;
+  background: var(--mercan-sis);
   font-size: 13px;
   font-weight: 600;
   color: var(--mercan);
@@ -13791,7 +13786,7 @@ body {
    kopyadan. İki hâl karışmasın diye rozet mercan değil koyu gri yazıyor. */
 .masa-bekliyor.kopya {
   color: var(--metin);
-  background: rgba(255, 255, 255, 0.88);
+  background: var(--zemin);
 }
 
 /* ---------------------------------------------------------------------------
@@ -13825,33 +13820,53 @@ body {
 /* Sekme çubuğunun katı açıkça yazılıyor. Yazılmadığında tarayıcı sıralamayı
    kendi seçiyordu ve çubuk, alttan açılan pencerelerin (masa işlemleri, ödeme)
    üstüne binip son satırlarını örtüyordu. Perdeler 60'ta, çubuk onların altında. */
+/* Yüzen beyaz şerit: kenarlardan ayrık, seçili sekme mercan kapsülde adıyla,
+   ötekiler yalnız ikon. iPhone'da ev çubuğunun üstünde kalıyor. */
 .m-sekmeler {
   position: fixed;
-  left: 0;
-  right: 0;
-  bottom: 0;
+  left: 14px;
+  right: 14px;
+  bottom: max(12px, env(safe-area-inset-bottom));
   z-index: 30;
   display: flex;
+  align-items: center;
+  justify-content: space-around;
+  gap: 4px;
+  padding: 7px;
   background: var(--kart);
-  border-top: 1px solid #dde4ed;
-  padding-bottom: env(safe-area-inset-bottom);
+  border: 1px solid #dde4ed;
+  border-radius: 30px;
+  box-shadow: 0 6px 20px rgba(22, 27, 33, 0.1);
 }
 
 .m-sekme {
-  flex: 1;
   display: flex;
-  flex-direction: column;
   align-items: center;
-  gap: 3px;
-  padding: 9px 0 8px;
-  color: var(--soluk);
+  justify-content: center;
+  gap: 7px;
+  min-width: 48px;
+  height: 42px;
+  padding: 0 12px;
+  border-radius: 22px;
+  color: var(--metin);
   text-decoration: none;
-  font-size: 12.5px;
+  font-size: 14px;
   font-weight: 500;
+  transition: background 0.15s;
+}
+
+.m-sekme span {
+  display: none;
 }
 
 .m-sekme.secili {
-  color: var(--mercan);
+  padding: 0 18px;
+  background: var(--mercan);
+  color: #fff;
+}
+
+.m-sekme.secili span {
+  display: inline;
 }
 
 .m-baslik {
@@ -13944,36 +13959,33 @@ body {
 }
 
 /* Masa kartının rengi durumu anlatıyor — masaüstündeki dille aynı: dolu yeşil,
-   tahsilat başlamışsa sarı, hesabı kapanmışsa kırmızı. Telefonda gölge yerine
-   düz zemin kullanılıyor, küçük kartta gölge kirli görünüyor. */
+   tahsilat başlamışsa sarı, hesabı kapanmışsa kırmızı. Telefonda renk kartın
+   tamamını boyamıyor, masa adının durduğu üst bantta: kart beyaz kalıyor,
+   tutar ve garson adı düz zeminde okunuyor. */
 .m-masa.dolu {
-  background: linear-gradient(150deg, #45d9ac 0%, #2ecc9a 60%, #23b98a 100%);
-  border-color: #23b98a;
-  /* Yazı rengi tek yerden: açık zeminlerin hepsinde siyah, yalnız kırmızı
-     kartta beyaz. Alt satır ve garson adı bunu miras alıyor. */
-  color: #1a1a1a;
+  --m-durum: #1fa97d;
+  --m-durum-yazi: #fff;
 }
 
 /* Durum renkleri kasadaki masa kartıyla aynı sırada yazılıyor: bir masaya
    birden fazla durum uyduğunda hangisinin kazandığı iki ekranda da aynı olsun.
    Sıra en sakinden en baskına: kısmi ödeme, durgunluk, hesap fişi, ödendi. */
 .m-masa.dolu.kismi {
-  background: linear-gradient(150deg, #ffd24d 0%, #fbc02d 60%, #eeaa14 100%);
-  border-color: #eeaa14;
+  --m-durum: #f2b21c;
+  --m-durum-yazi: #2b2100;
 }
 
 /* Bir süredir sipariş vermeyen masa. Trafik ışığı üçlüsüne katılmayan ayrı bir
    renk seçildi: sarı ve kırmızıyla karışmıyor, "burada hareket durdu" diyor. */
 .m-masa.dolu.durgun {
-  background: linear-gradient(150deg, #b58ae0 0%, #a274d4 60%, #8e5fc4 100%);
-  border-color: #8e5fc4;
+  --m-durum: #8e5fc4;
+  --m-durum-yazi: #fff;
 }
 
 /* Hesap fişi basılmış masa: müşteri hesabı istedi, ödeme bekleniyor. */
 .m-masa.dolu.fisli {
-  background: linear-gradient(150deg, #ef2028 0%, #e30a17 60%, #c70813 100%);
-  border-color: #c70813;
-  color: #fff;
+  --m-durum: #d90b16;
+  --m-durum-yazi: #fff;
 }
 
 /* İş bitmiş masa her şeyin üstünde gri: fişi de basılmış olsa, durgun da olsa
@@ -13981,9 +13993,8 @@ body {
 .m-masa.dolu.odendi,
 .m-masa.dolu.odendi.durgun,
 .m-masa.dolu.odendi.fisli {
-  background: linear-gradient(150deg, #9aa3a6 0%, #8b9497 60%, #77807f 100%);
-  border-color: #77807f;
-  color: #1a1a1a;
+  --m-durum: #77807f;
+  --m-durum-yazi: #fff;
 }
 
 .m-masa-tutar {
@@ -13992,21 +14003,13 @@ body {
   gap: 5px;
 }
 
-/* Hesap fişi basıldı şeridi: kartın en üstünde, masa adının üzerinde. Zemini
-   kart renginden bağımsız — beş ayrı durum renginin hepsinde aynı görünsün. */
+/* Hesap fişi basıldı işareti: bandın altında, ortada tek yazıcı ikonu. Yazı
+   dar kartlarda sığmıyordu; bant zaten kırmızı, ikon bilgiyi tekrar ediyor. */
 .m-masa-fis {
-  align-self: flex-start;
+  align-self: center;
   display: inline-flex;
-  align-items: center;
-  gap: 4px;
   margin-bottom: 1px;
-  padding: 2px 8px;
-  border-radius: 999px;
-  background: rgba(255, 255, 255, 0.9);
-  color: #1a1a1a;
-  font-size: 12.5px;
-  font-weight: 600;
-  white-space: nowrap;
+  color: var(--metin);
 }
 
 /* Fişi basılmamış masada şerit görünmüyor ama yerini tutuyor: iki kartın
@@ -14015,18 +14018,16 @@ body {
   visibility: hidden;
 }
 
-/* Masayı açan kişi, masa adının hemen altında. Kartı uzatmamak için tek satır
-   ve büyük harf: dar telefon kartında ad değil "kimin masası" bilgisi okunuyor. */
+/* Masayı açan kişi, bandın hemen altında; kartı uzatmamak için tek satır. */
 .m-masa-garson {
+  margin-top: 4px;
   line-height: 1.4;
   overflow: hidden;
   white-space: nowrap;
   text-overflow: ellipsis;
-  font-size: 12.5px;
-  font-weight: 600;
-  letter-spacing: 0.05em;
-  text-transform: uppercase;
-  opacity: 0.9;
+  font-size: clamp(11px, 14.4cqi, 13px);
+  font-weight: 500;
+  color: var(--soluk);
 }
 
 /* Kişi sayısı kartın sağ alt köşesinde: akışa girmediği için masadan masaya
@@ -14038,10 +14039,9 @@ body {
   display: inline-flex;
   align-items: center;
   gap: 3px;
-  font-size: 12.5px;
+  font-size: clamp(11px, 13.9cqi, 12.5px);
   font-weight: 600;
-  color: inherit;
-  opacity: 0.92;
+  color: var(--soluk);
 }
 
 .m-masa-ad {
@@ -15624,6 +15624,10 @@ body {
   gap: 3px;
   padding: 11px 12px;
   text-align: left;
+  /* Karttaki yazılar kartın genişliğine göre ölçekleniyor (cqi = kartın iç
+     genişliğinin yüzdesi). 390px'lik telefonda bugünkü boyda, dar telefonda
+     oranla küçülüyor; taban 11px. */
+  container-type: inline-size;
 }
 
 .m-masa-ust {
@@ -15633,27 +15637,58 @@ body {
   gap: 6px;
 }
 
+/* Dolu masada ad satırı durum renginde bir banda dönüyor; kartın kenarına
+   kadar uzansın diye iç boşluğu eksi paylı alıyor. */
+.m-masa.dolu {
+  border-color: #dde4ed;
+  background: var(--kart);
+  color: var(--metin);
+}
+
+.m-masa.dolu .m-masa-ust {
+  min-height: 38px;
+  margin: -11px -12px 2px;
+  padding: 0 12px;
+  background: var(--m-durum);
+  color: var(--m-durum-yazi);
+}
+
 .m-masa-ad {
-  font-size: 15.5px;
+  min-width: 0;
+  overflow: hidden;
+  white-space: nowrap;
+  text-overflow: ellipsis;
+  font-size: clamp(12px, 17cqi, 16px);
   font-weight: 600;
 }
 
 .m-masa-menu {
   width: 28px;
   height: 28px;
-  margin: -4px -5px -4px 0;
+  margin: -4px -6px -4px 0;
   display: grid;
   place-items: center;
   border-radius: 8px;
-  background: rgba(255, 255, 255, 0.2);
+  background: none;
 }
 
-.m-masa:not(.dolu) .m-masa-menu {
-  background: var(--zemin);
+/* Boş masa: kesik çizgili sakin kart, adı ortada. */
+.m-masa:not(.dolu) {
+  justify-content: center;
+  align-items: center;
+  border: 1.5px dashed #c9d2dd;
+  background: var(--kart);
 }
 
+.m-masa:not(.dolu) .m-masa-ust {
+  justify-content: center;
+}
+
+/* Tutar kartın genişliğini hane sayısına bölüp boyunu buluyor: ₺216,00 ile
+   ₺12.345,00 aynı kartta tek satıra sığıyor. En büyük 20px. */
 .m-masa-tutar {
-  font-size: 20px;
+  white-space: nowrap;
+  font-size: clamp(11px, calc(100cqi / (var(--hane, 7) * 0.58)), 20px);
   font-weight: 600;
   letter-spacing: -0.4px;
 }
@@ -15674,10 +15709,33 @@ body {
   gap: 6px;
   overflow: hidden;
   white-space: nowrap;
-  font-size: 12.5px;
+  font-size: clamp(11px, 13.9cqi, 12.5px);
   font-weight: 500;
-  color: inherit;
-  opacity: 0.92;
+  color: var(--soluk);
+}
+
+/* Kişi sayısı yoksa alt satır kartın bütün genişliğini kullanıyor. */
+.m-masa:not(:has(.m-masa-kisi)) .m-masa-alt {
+  max-width: calc(100% - 24px);
+}
+
+/* Rozet ve alt satırdaki yazılar sığmazsa "…" ile kısalıyor, ikon hiç
+   kesilmiyor. */
+.m-rozet-yazi {
+  min-width: 0;
+  overflow: hidden;
+  white-space: nowrap;
+  text-overflow: ellipsis;
+}
+
+.m-masa-alt svg {
+  flex-shrink: 0;
+}
+
+.m-masa .m-masa-kilit {
+  max-width: 100%;
+  overflow-wrap: anywhere;
+  font-size: clamp(11px, 14cqi, 14px);
 }
 
 .m-masa-alt em {
@@ -15685,13 +15743,6 @@ body {
   align-items: center;
   gap: 3px;
   font-style: normal;
-}
-
-.m-masa-bos {
-  display: grid;
-  place-items: center;
-  flex: 1;
-  color: var(--soluk);
 }
 
 /* Seçim kipi masaüstüyle aynı kuralı izliyor: seçilebilen masa mercan
@@ -16084,6 +16135,21 @@ body {
   /* Garson adı satırı eklendiğinde yükseklik büyüdü. Kart taşanı kırptığı için
      yeni satır buradan yer bulmazsa yazının altı üstü kesiliyor. */
   grid-auto-rows: 152px;
+}
+
+/* Çok dar telefonda (eski iPhone SE, 320px) yazı tabana inse de üç kart
+   sığmıyor: ızgara iki sütuna düşüyor. Tablette kartlar devleşmesin diye
+   sütun sayısı genişliğe göre artıyor. */
+@media (max-width: 340px) {
+  .m-masalar {
+    grid-template-columns: repeat(2, 1fr);
+  }
+}
+
+@media (min-width: 600px) {
+  .m-masalar {
+    grid-template-columns: repeat(auto-fill, minmax(140px, 1fr));
+  }
 }
 
 .m-masa {

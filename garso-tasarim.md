@@ -1,7 +1,77 @@
 # GARSO — Teknik Tasarım: Veri Modeli & Ekran Haritası
 *Restoran ve cafe'ler için bulut tabanlı satış ve işletme yönetim sistemi.*
 
-## 0. SIRADAKİ İŞ (11 Eyl 2026 güncellendi)
+## 0. SIRADAKİ İŞ (14 Eyl 2026 güncellendi)
+
+> **Sıra (14 Eyl 2026 seans sonu):**
+> 1. **Ürün adı — iki kökü kaynaştırarak türetme (Ramazan'ın seçtiği yöntem).**
+>    Tek kelimeler hep tescilde çakıştı (aşağıdaki tarama). Beğenilen kökler:
+>    Esnaf, Usta, Mekan, Mola, Tempo, Host, Rush, Fişek, Tezgah, Kazan, Masa,
+>    Kasa. Kaynaştırılmış on kadar aday üret, **Ramazan'a göstermeden önce**
+>    TÜRKPATENT'te (turkpatent.gov.tr → Marka Araştırma, "ile eşit", 9 ve 42.
+>    sınıf; tarayıcıda form açık, CAPTCHA yok) ve `.com.tr` WHOIS'te
+>    (`whois.trabis.gov.tr` port 43) sorgula, yalnız temiz çıkanları getir.
+>    Karar çıkınca değişiklik planı hazır: görünen isim + köprü değişir; cihaz
+>    anahtarları (`garso-kuyruk`…) ve `@garso.app` giriş adresi **değişmez**.
+> 2. **Mobilde ekrana göre ölçekleme — kalan ekranlar.** Masa kartı bitti;
+>    sipariş ekranındaki ürün kartları ve alt şerit aynı yöntemle (cqi, taban
+>    11px). Mobilin Adisyo'dan ayrışması için kategori şeridi fikri çizildi,
+>    Ramazan şimdilik yalnız alt şeridi istedi.
+> 3. **Canlıya çıkış** — alan adı (isim kesinleşince), barındırma, güvenlik
+>    başlıkları, iPhone simge doğrulaması; ufak ufak.
+> 4. Sonra aşağıdaki liste kaldığı yerden (Analiz'in kalan sekmeleri…).
+>
+> **Fişek seçildi, sonra geri alındı (Ramazan, aynı gün) — isim hâlâ açık.**
+> Kontrol bilgisi kayıt için duruyor. TÜRKPATENT'te
+> birebir "FİŞEK" 2 kayıt: 2023/022387 (28. sınıf, geçersiz) ve 2017/09397
+> (Serkan İbrahimağaoğlu, 25/35 — giyim ve perakende). **9 ve 42. sınıf boş**;
+> "FISEK" yazılışında kayıt yok. Adresler: `fisek.app` ve `fisekpos.com` boş,
+> `fisekpos.com.tr` boş; `fisek.com` ve `fisek.com.tr` dolu. Sektörde Fişek
+> adlı ürün yok. Alan adında "ş" yazılamadığı için yazılış "fisek".
+> Değişiklik planı ayrıca onaylanacak; personel giriş adresleri (`…@garso.app`)
+> ayrı ve kontrollü adımda taşınacak.
+>
+> **İsim arayışı (14 Eyl 2026).** Ramazan "Garso Adisyo'ya
+> çok benziyor" diye yeni isim istiyor. Uydurma kelime istenmedi, eski kelimeler
+> (zanaat, divan, kıvam…) reddedildi; gündelik ve dolu dolu kelime aranıyor.
+> Kontrol edilip elenenler: Tabla, Rota (yazılımda kalabalık), Nokta (Nokta
+> Bilişim aynı sektörde), Şef (ŞefPOS var), Cep, Pres POS, Sinyal, Garson,
+> Fişek, Tezgah, Kazan, Esnaf, Usta, Mekan, Ortak, Paket, Salon, Masa, Mutfak,
+> Stand. **Kalan iki aday: Mola ve Lonca** — ikisinde de sektörde ürün yok,
+> `molapos.com`/`.app` ve `loncapos.com`/`.app` boş; düz .com ve .app dolu.
+> **TÜRKPATENT ve .com.tr kontrolü yapıldı (Claude, aynı gün):** `lonca.com.tr`
+> ve `mola.com.tr` dolu; `loncapos.com.tr` ve `molapos.com.tr` boş.
+> Lonca: 42. sınıfta geçerli kayıt var (Lonca Gıda Elektrik Makine…, 2016/35636,
+> sınıf 11/37/42); ayrıca Lonca Bilgi Teknolojileri 35. sınıfta. Mola: 9. sınıfta
+> geçerli kayıt var (Eti Gıda, 2022/201892, sınıf 09/35), 43. sınıfta (restoran
+> hizmetleri) Makro İnşaat (2025/009051). **İkisi de tek başına tescilde
+> itiraz riski taşıyor** — ikisi de bırakıldı.
+> **İngilizce kısa isim taraması (TÜRKPATENT, birebir eşleşme, 9/42. sınıf):**
+> Tempo (Tempo Labs 2026 başvurusu 09/42), Forte (42'de iki geçerli kayıt +
+> ABD'de Forte restoran yazılımı), Beat (Arçelik 09), Rush (42'de Mahmut Kurt,
+> 09'da Temkom), Tab (09 Qingdao, 42'de numarasız kayıt), Pass (42'de Mücahit
+> Kaya), Ping (09/42 Karsten), Shift (09/42 Gearbox, 42 Shift Dijital), Rally
+> (09 Softtech) — hepsi çakışıyor. **Host: birebir kayıt yok** (iki sorgu).
+> Ama "host" 42. sınıfta hosting için tanımlayıcı kelime (içinde geçen 989
+> kayıt, çoğu hosting firması) ve yurt dışında HostPOS (Host Hotel Systems,
+> otel F&B POS) ile Wisely "Host" restoran yazılımı var. `.com.tr` hepsinde
+> dolu, `isimpos.com.tr` hepsinde boş.
+> İsim değişince personel giriş adresleri (`…@garso.app`) dikkatli taşınmalı.
+>
+> **Yapılanlar (aynı seans):** Mobil alt çubuk yüzen beyaz şerit oldu (seçili
+> sekme mercan kapsülde adıyla, ötekiler yalnız ikon; Masalar ikonu masaüstündeki
+> koltuk). **Karar: masa kartı "beyaz kart + durum renginde üst bant" (Ramazan,
+> iki seçenek arasından B).** Degrade kalktı, renk yalnız masa adının durduğu
+> bantta; renk kuralları aynı. **Salon'a dokunmama kararı (9 Eyl) bu noktada
+> esnetildi** — Ramazan masaüstünde de denemek istedi, beğendi; iki yüzey aynı
+> boyanma şekline geçti. Garson adı büyük harften çıktı, süre 24 saati geçince
+> gün yazıyor (mobil), boş mobil masada "+" kalktı (kesik çizgili kart).
+>
+> **Karar: mobilde yazı ekrana göre küçülür, taban 11px (Ramazan).** 12px
+> tabanı masaüstü kuralı; telefonda ekran çok daraldığı için mobilde yazılar
+> kartın genişliğine bağlı ölçekleniyor (container birimleri, `cqi`), en küçük
+> 11px. Yazı tabana gelip yine sığmıyorsa sütun azalır (çok dar telefonda
+> masa ızgarası 2 sütun). Deneme genişlikleri: 320 · 360 · 390 · 430 · 768.
 
 > **11 Eyl 2026 (2. seans) — Karar: dört grup kutusu kaldırıldı (Ramazan).**
 > Yıldız · Hacim · Pahalı · Geride ve tablodaki rozetler söküldü. İki kusuru:

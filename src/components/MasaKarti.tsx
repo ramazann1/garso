@@ -111,8 +111,10 @@ export default function MasaKarti({ masa, durum, aksiyonlar, mesgul, secim, onCl
         </button>
       ) : (
         <button className={sinif} disabled={kilitli} onClick={onClick}>
+          {/* Üst bant durum renginde: masa adı solda, kişi sayısı ve üç nokta
+              sağda. Kartın geri kalanı beyaz, rakamlar düz zeminde okunuyor. */}
           <span className="masa-ust">
-            {durum.garson && <span className="masa-garson">{durum.garson}</span>}
+            <span className="masa-ad">{masa.ad}</span>
             {/* Hesap fişi basılmışsa kartta yazıcı işareti duruyor; masaya yeni
                 ürün girilince işaret kalkıyor, kâğıttaki tutar artık tutmuyor. */}
             {durum.fisBasildi && (
@@ -122,10 +124,8 @@ export default function MasaKarti({ masa, durum, aksiyonlar, mesgul, secim, onCl
             )}
           </span>
 
-          {/* Süre masa adının sağında: üç nokta düğmesinin tam altındaki satır,
-              düğmeyle aynı hizaya düşüp sıkışmıyor. */}
           <span className="masa-baslik">
-            <span className="masa-ad">{masa.ad}</span>
+            <span className="masa-garson">{durum.garson}</span>
             {/* Süre yerine masanın hâli yazıyor, ikisi de olduğunda önemli
                 olan bu: sipariş cihazda mı bekliyor, yoksa masa sunucuya
                 sorulamayıp cihazdaki kopyadan mı çiziliyor. İkisi ayrı şey —
