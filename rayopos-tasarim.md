@@ -1,29 +1,36 @@
 # RAYOPOS — Teknik Tasarım: Veri Modeli & Ekran Haritası
 *Restoran ve cafe'ler için bulut tabanlı satış ve işletme yönetim sistemi.*
 
-## 0. SIRADAKİ İŞ (15 Eyl 2026 güncellendi)
+## 0. SIRADAKİ İŞ (16 Eyl 2026 güncellendi)
 
-> **Sıra (15 Eyl 2026 gece seans sonu):**
-> 1. **Canlıya çıkış** — 16 Eyl: Cloudflare Pages onaylandı, build ve
->    `public/_headers` tamam, site `rayopos.pages.dev`'de yayında (GitHub
->    bağlı, her push'ta kendiliğinden yayınlanır; Node 22). Sırada (5)
->    telefonda deneme, sonra (6) alan adı. Eski plan:
->    (1) `npm.cmd run build` denemesi, (2) `public/_headers` güvenlik başlıkları
->    (önce koddaki bütün bağlantı adresleri taranır — `yerelYazdirma.ts`'teki
->    `http://127.0.0.1` dahil; canlıda Chrome'un yerel ağ izni sorusuna bak),
->    (3) barındırma önerisi **Cloudflare Pages** (ücretsizde ticari kullanım
->    serbest, trafik sınırı yok; Vercel Hobby ticari kullanıma kapalı; DNS ve
->    Turnstile aynı hesapta) — Ramazan henüz onaylamadı, (4) hesap + GitHub
->    bağlantısı + `VITE_SUPABASE_URL`/`VITE_SUPABASE_KEY` Ramazan girer,
->    (5) geçici `*.pages.dev` adreste telefonda hız, giriş, iPhone simgesi,
->    (6) alan adı onaylanınca bağlanır. `BrowserRouter` kullanılıyor — sunucuda
->    SPA yönlendirmesi gerekli. Önce `rayopos-magazaya-cikis-kurallari` notu.
->    **Alan adı durumu:** 15 Eyl'de WHOIS'te kayıt yoktu. Turhost'ta başvuru
->    "Belge Bekleniyor" (TRABIS kullanım amacı beyanı istedi). Şirket adına
->    alındı; Ramazan dilekçe ve belgeleri gönderdi; 15 Eyl 10:33'te Turhost
-   "belgeler kayıt otoritesine iletildi" dedi, TRABIS sonucu bekleniyor. Seans
->    başında Ramazan'a sonucu sor / WHOIS'e bak.
-> 2. Sonra aşağıdaki liste kaldığı yerden (Analiz'in kalan sekmeleri…).
+> **Sıra (16 Eyl 2026 seans sonu):**
+> 1. **Mobilde birkaç düzenleme** — Ramazan seans başında ne olduğunu söyleyecek.
+> 2. **Kayıt kapatma SQL'i** — `sql/2026-09-16-kayit-kapat.sql` Supabase'de
+>    çalıştırılmadı (16 Eyl'de Supabase arızası vardı, panele girilemiyordu).
+>    Ramazan'a SQL Editor'de çalıştırt; o zamana kadar `isletme_kur` açık.
+> 3. **iPhone 12'de beyaz sayfa** — Redmi'de ve Ramazan'ın cihazlarında
+>    açılıyor, o telefonda açılmıyor. Denenecek: gizli sekme → Safari web
+>    sitesi verilerinden `pages.dev` silme → Ekran Süresi kısıtlaması/VPN.
+>    Kod elendi: canlıdaki derleme, `_headers` ile birlikte temiz tarayıcıda
+>    sorunsuz açılıyor.
+> 4. **Kendi alan adı** — `rayopos.com.tr` TRABIS onayında (Turhost 15 Eyl
+>    10:33: "belgeler kayıt otoritesine iletildi"). Seans başında sor/WHOIS'e
+>    bak; gelince Cloudflare Pages'te özel alan adı olarak bağlanır. Erişim
+>    sorunu tekrarlarsa geçici olarak `pos.egzozcafe.com` bağlanabilir
+>    (ikisi de aynı Cloudflare hesabında).
+> 5. **Canlıda fiş yazdırma denemesi** — kasada Chrome'un yerel ağ izni
+>    sorusuna bak (`_headers` içindeki CSP `http://127.0.0.1:*`'a izin veriyor).
+> 6. Sonra aşağıdaki liste kaldığı yerden (Analiz'in kalan sekmeleri…).
+>
+> **Yapılanlar (16 Eyl 2026):**
+> - **Canlıya çıkış.** Cloudflare Pages + GitHub bağlı, `rayopos.pages.dev`
+>   yayında; `npm run build` / `dist` / Node 22, `VITE_*` anahtarları panelde.
+>   `public/_headers`: CSP (self + `*.supabase.co` + `wss` + `127.0.0.1:*`),
+>   `frame-ancestors none`, nosniff, referrer, permissions, HSTS, `sw.js`
+>   önbelleksiz. SPA yönlendirmesini Pages kendisi yapıyor, `_redirects` yok.
+> - **Masaüstü ↔ mobil elle geçiş kaldırıldı**, görünümü ekran genişliği seçer.
+> - **Kayıt kapatıldı** (giriş ekranındaki "Hesap oluştur"; SQL bekliyor).
+> - **Eski iPhone desteği**: Vite hedefi iOS 15.4, `cqi` yazılarına yedek boyut.
 >
 > **Karar (16 Eyl 2026, Ramazan):** masaüstü ↔ mobil elle geçiş kaldırıldı
 > (yan menüdeki telefon simgesi ve Ben sekmesindeki satır). Görünümü yalnız
