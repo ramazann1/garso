@@ -17,7 +17,8 @@
 >    SPA yönlendirmesi gerekli. Önce `rayopos-magazaya-cikis-kurallari` notu.
 >    **Alan adı durumu:** 15 Eyl'de WHOIS'te kayıt yoktu. Turhost'ta başvuru
 >    "Belge Bekleniyor" (TRABIS kullanım amacı beyanı istedi). Şirket adına
->    alındı; Ramazan dilekçe ve belgeleri gönderdi, cevap bekleniyor. Seans
+>    alındı; Ramazan dilekçe ve belgeleri gönderdi; 15 Eyl 10:33'te Turhost
+   "belgeler kayıt otoritesine iletildi" dedi, TRABIS sonucu bekleniyor. Seans
 >    başında Ramazan'a sonucu sor / WHOIS'e bak.
 > 2. Sonra aşağıdaki liste kaldığı yerden (Analiz'in kalan sekmeleri…).
 >
