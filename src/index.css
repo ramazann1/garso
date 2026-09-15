@@ -13290,6 +13290,11 @@ body {
   gap: 8px;
   overflow-x: auto;
   padding-bottom: 12px;
+  margin-bottom: 10px;
+  /* Bölge şeridini masalardan ayıran çizgi: uçlara doğru sönüyor, kutu
+     kenarlığı gibi sert durmuyor. */
+  border-bottom: 1px solid #c9d4e2;
+  border-image: linear-gradient(90deg, transparent, #c9d4e2 18%, #c9d4e2 82%, transparent) 1;
   scrollbar-width: none;
 }
 
@@ -15078,18 +15083,12 @@ body {
 
 /* Kartların hepsi aynı boyda: içeriği kısa olan masa küçülmüyor, ızgara
    satır yüksekliğini sabitliyor. */
-/* Telefonda ekrana çok masa sığsın diye dört sütun: yazılar kartla birlikte
-   küçülüyor. Kart taşanı kırptığı için satır boyu içeriğe yetmeli. */
+/* Telefonda üç sütun: dört sütunda kartlar da yazılar da fazla küçülüyordu.
+   Kartlar bitişik duruyor, aradaki 1px ızgara çizgisini veriyor. */
 .m-masalar {
-  grid-template-columns: repeat(4, 1fr);
-  grid-auto-rows: 100px;
-  gap: 7px;
-}
-
-@media (max-width: 340px) {
-  .m-masalar {
-    grid-template-columns: repeat(3, 1fr);
-  }
+  grid-template-columns: repeat(3, 1fr);
+  grid-auto-rows: 118px;
+  gap: 1px;
 }
 
 @media (min-width: 600px) {
@@ -15098,10 +15097,14 @@ body {
   }
 }
 
+/* Çizgi kartın kendisinde: zeminde olsaydı son satırdaki boş gözler dolu
+   görünürdü. */
 .m-masa {
   height: 100%;
   min-height: 0;
   overflow: hidden;
+  border-radius: 0;
+  box-shadow: 0 0 0 1px #d8e0ea;
 }
 
 .m-masa-alt {
