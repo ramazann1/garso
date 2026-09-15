@@ -1,16 +1,14 @@
 import { useState } from "react";
-import { Lock, LogOut, Monitor } from "lucide-react";
+import { Lock, LogOut } from "lucide-react";
 import OnayModal from "../components/OnayModal";
 import { kilitle, oturumuKapat, useOturum } from "../oturum";
 import { isletmeAdi } from "../isletmeAyarlari";
 import { kilitliMi } from "../cikisKilidi";
 import { RAYOPOS_SURUM } from "../surum";
-import { gorunumSec } from "./mobilTercih";
 
 /**
  * Kişinin kendi sekmesi: kim olarak girdiği, cihazı bırakırken kilitlemesi ve
- * çıkışı. Masaüstü görünüme geçiş de burada — patron aynı telefondan ayar
- * ekranlarına girmek isteyebiliyor.
+ * çıkışı.
  */
 export default function Ben() {
   const { oturum } = useOturum();
@@ -46,14 +44,6 @@ export default function Ben() {
           <span>
             Ekranı kilitle
             <small>Telefonu bırakırken; oturum kapanmaz, adisyonlar yerinde kalır.</small>
-          </span>
-        </button>
-
-        <button className="m-satir" onClick={() => gorunumSec("masaustu")}>
-          <Monitor size={19} />
-          <span>
-            Masaüstü görünüme geç
-            <small>Ayarlar, menü ve raporların tam ekranları.</small>
           </span>
         </button>
 

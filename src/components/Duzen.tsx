@@ -28,7 +28,6 @@ import {
   ScrollText,
   Settings,
   ShieldCheck,
-  Smartphone,
   Sparkles,
   Store,
   Table,
@@ -46,7 +45,6 @@ import { isletmeAdi, isletmeKodu } from "../isletmeAyarlari";
 import { kilitle, oturumuKapat, useOturum } from "../oturum";
 import { yolaGirebilir } from "../rotaYetkileri";
 import { kisaAd } from "../personel";
-import { gorunumSec } from "../mobil/mobilTercih";
 
 // İşletme ayarları tek ekranda büyüdükçe kalabalıklaşıyor; başlıklar menüden
 // ayrı ayrı açılıyor, her biri kendi sayfası.
@@ -411,16 +409,6 @@ export default function Duzen({ children }: { children: React.ReactNode }) {
                   görünmüyorlar. Menü açılınca birden belirdiklerinde
                   ambleminin içinden bir şey çıkıyormuş gibi duruyordu. */}
               <Lock className="kisi-cik" size={16} />
-            </button>
-            {/* Mobil arayüze geçiş. Ekran genişliğine bakılmıyor: işletmeci
-                kasadan da mobili görmek istiyor — ekranını denemek, garsonun
-                gördüğünü görmek için. Dönüş yolu mobildeki Ben sekmesinde. */}
-            <button
-              className="kisi-cikis"
-              onClick={() => gorunumSec("mobil")}
-              title="Mobil görünüme geç"
-            >
-              <Smartphone size={16} />
             </button>
             <button
               className="kisi-cikis"

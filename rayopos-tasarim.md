@@ -4,7 +4,10 @@
 ## 0. SIRADAKİ İŞ (15 Eyl 2026 güncellendi)
 
 > **Sıra (15 Eyl 2026 gece seans sonu):**
-> 1. **Canlıya çıkış** — plan Ramazan'a anlatıldı, **onay bekliyor**:
+> 1. **Canlıya çıkış** — 16 Eyl: Cloudflare Pages onaylandı, build ve
+>    `public/_headers` tamam, site `rayopos.pages.dev`'de yayında (GitHub
+>    bağlı, her push'ta kendiliğinden yayınlanır; Node 22). Sırada (5)
+>    telefonda deneme, sonra (6) alan adı. Eski plan:
 >    (1) `npm.cmd run build` denemesi, (2) `public/_headers` güvenlik başlıkları
 >    (önce koddaki bütün bağlantı adresleri taranır — `yerelYazdirma.ts`'teki
 >    `http://127.0.0.1` dahil; canlıda Chrome'un yerel ağ izni sorusuna bak),
@@ -21,6 +24,10 @@
    "belgeler kayıt otoritesine iletildi" dedi, TRABIS sonucu bekleniyor. Seans
 >    başında Ramazan'a sonucu sor / WHOIS'e bak.
 > 2. Sonra aşağıdaki liste kaldığı yerden (Analiz'in kalan sekmeleri…).
+>
+> **Karar (16 Eyl 2026, Ramazan):** masaüstü ↔ mobil elle geçiş kaldırıldı
+> (yan menüdeki telefon simgesi ve Ben sekmesindeki satır). Görünümü yalnız
+> ekran genişliği seçer (820px); telefondan ayar/rapor ekranlarına girilmez.
 >
 > **Satıştan önce (not):** şirketin faaliyet kodlarında yazılım yok — ürün
 > başka işletmelere satılmadan önce muhasebeciyle yazılım faaliyet kodu eklenir.
