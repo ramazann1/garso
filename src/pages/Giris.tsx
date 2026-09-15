@@ -1,12 +1,10 @@
 import { useState } from "react";
-import { AtSign, Check, Eye, EyeOff, Lock, Store } from "lucide-react";
+import { AtSign, Check, Eye, EyeOff, Lock } from "lucide-react";
 import { girisYap } from "../oturum";
-import Kayit from "./Kayit";
 
+// Kayıt ekranı (Kayit.tsx) satışa geçilene kadar bağlı değil; sunucuda da
+// isletme_kur dışarıya kapalı (sql/2026-09-16-kayit-kapat.sql).
 export default function Giris() {
-  // Kayıt ekranı ayrı bir adres değil: oturum yokken yönlendirici hiç kurulmuyor,
-  // giriş ile kayıt aynı kapının iki yüzü.
-  const [kayit, setKayit] = useState(false);
   const [telefon, setTelefon] = useState("");
   const [sifre, setSifre] = useState("");
   const [hatirla, setHatirla] = useState(true);
@@ -29,8 +27,6 @@ export default function Giris() {
       setBekliyor(false);
     }
   };
-
-  if (kayit) return <Kayit onGeri={() => setKayit(false)} />;
 
   return (
     <div className="giris">
@@ -91,10 +87,6 @@ export default function Giris() {
 
           <button className="giris-gonder" disabled={bekliyor || !telefon || !sifre}>
             {bekliyor ? "Kontrol ediliyor…" : "Giriş yap"}
-          </button>
-
-          <button type="button" className="giris-mod" onClick={() => setKayit(true)}>
-            <Store size={15} /> İşletmen yok mu? Hesap oluştur
           </button>
         </form>
       </div>

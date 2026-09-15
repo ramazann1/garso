@@ -29,6 +29,11 @@
 > (yan menüdeki telefon simgesi ve Ben sekmesindeki satır). Görünümü yalnız
 > ekran genişliği seçer (820px); telefondan ayar/rapor ekranlarına girilmez.
 >
+> **Karar (16 Eyl 2026, Ramazan):** satışa geçilene kadar kayıt kapalı.
+> Giriş ekranındaki "Hesap oluştur" kaldırıldı (`Kayit.tsx` duruyor, bağlı
+> değil); `isletme_kur` çağırma izni `sql/2026-09-16-kayit-kapat.sql` ile
+> kapatıldı. Satışa geçerken: düğme geri bağlanır, izin `anon`'a geri verilir.
+>
 > **Satıştan önce (not):** şirketin faaliyet kodlarında yazılım yok — ürün
 > başka işletmelere satılmadan önce muhasebeciyle yazılım faaliyet kodu eklenir.
 >
