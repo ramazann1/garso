@@ -3,19 +3,42 @@
 
 ## 0. SIRADAKİ İŞ (15 Eyl 2026 güncellendi)
 
-> **Sıra (15 Eyl 2026 seans sonu):**
-> 0. **Önce kontrol:** GitHub deposu adı `rayopos` yapıldı mı (`git remote -v`
->    iki satırda `ramazann1/rayopos` göstermeli), oturum `Desktop\rayopos`'ta mı
->    açıldı. Hafıza klasörü `C--Users-Ramazan-Desktop-rayopos` olarak kopyalandı;
->    her şey yerindeyse eski `C--Users-Ramazan-Desktop-garso` silinir.
-> 1. **Mobilde ekrana göre ölçekleme — kalan ekranlar.** Masa kartı bitti;
->    sipariş ekranındaki ürün kartları ve alt şerit aynı yöntemle (cqi, taban
->    11px). Mobilin Adisyo'dan ayrışması için kategori şeridi fikri çizildi,
->    Ramazan şimdilik yalnız alt şeridi istedi.
-> 2. **Canlıya çıkış** — `rayopos.com.tr` alındı (önce WHOIS'te kaydın düştüğüne
+> **Sıra (15 Eyl 2026 akşam seans sonu):**
+> 1. **Canlıya çıkış** — `rayopos.com.tr` alındı (önce WHOIS'te kaydın düştüğüne
 >    bak), barındırma (Vercel/Netlify/Cloudflare; alan adı firmasının paketi
->    değil), güvenlik başlıkları, iPhone simge doğrulaması; ufak ufak.
-> 3. Sonra aşağıdaki liste kaldığı yerden (Analiz'in kalan sekmeleri…).
+>    değil), güvenlik başlıkları, iPhone simge doğrulaması; ufak ufak. Önce
+>    `rayopos-magazaya-cikis-kurallari` hafıza notunu oku. Canlıda telefonda
+>    hız yeniden ölçülür (geliştirme sunucusunun ilk girişteki ~5 sn'si ve
+>    StrictMode'un çift isteği canlıda yok).
+> 2. Sonra aşağıdaki liste kaldığı yerden (Analiz'in kalan sekmeleri…).
+>
+> **Yapılanlar (15 Eyl 2026 akşam, Ramazan denedi):**
+> - **Mobil yoğun görünüm.** Mobilde punto alt sınırı kalktı (CLAUDE.md'ye
+>   işlendi). Masalar 4 sütun / 100px kart; tutar tüm kartlarda aynı boyda,
+>   yalnız sığmayan küçülüyor; fiş ikonu bandın altında sağ köşede, yer
+>   kaplamıyor. Ürünler 3 sütun, alt şerit ekran genişliğine göre.
+> - **Tahsilat telefonda tek ekran.** Ölçüler `dvh`'ye bağlı, ödeme tipi
+>   kartında ikon adın yanında; yalnız `.th-modal` altında, masaüstü aynı.
+>   Ödeme alınınca biraz kaydırma kabul edildi (Ramazan).
+> - **Hata: mobilde tahsilat sebep sorulmadan siliniyordu.** Mobil ödemeyi
+>   anında kaydediyor ama `TahsilatPanel` kimlikleri öğrenmiyordu; kayıtlı
+>   ödeme "kaydedilmemiş" sanılıp sebepsiz siliniyordu (denetime sebep boş
+>   düşüyordu). Panel artık `kayitliTahsilatlar` değişince listesini alıyor.
+> - **Salon hızı: `masa_ozetleri()`** (`sql/2026-09-15-masa-ozetleri.sql`,
+>   çalıştırıldı). Okuma kuralı her kalem satırında ayrı çalışıyordu; özet
+>   sunucuda toplanıyor, yetki bir kez soruluyor. Ölçüm: 0,33–0,66 sn →
+>   0,11–0,17 sn, kartlar birebir aynı. `tumAdisyonlar` hata olursa artık
+>   boş liste değil hata veriyor (boş salon = dolu masaya ikinci hesap).
+>   **3 Eyl'deki "Salon'a dokunulmadı" kararı bayat veri göstermemek içindi;
+>   bu çözüm veriyi canlı tuttuğu için o kararla çelişmiyor.**
+> - **index.css temizliği: 20.670 → 19.207 satır.** Hiçbir bileşende geçmeyen
+>   84 sınıfın 176 kuralı (eski mobil adisyon/ödeme sayfası, eski tahsilat
+>   paneli, eski menü ağacı…) ve aynı seçicinin sonradan yeniden yazılan 89
+>   bildirimi silindi. Yedek olabilecek değerlere (`dvh`/`clamp`/`min()`
+>   öncesi, `!important`) ve farklı `@media` bağlamına dokunulmadı. postcss ile
+>   doğrulandı: kalan 2.652 seçicinin son hâli birebir aynı. `k0`–`k4`
+>   (`Grafikler.tsx`'te `k${i % 5}`) kodda harf harf geçmediği hâlde kullanılıyor
+>   — sınıf adı şablonla üretiliyorsa aramada görünmez, dikkat.
 >
 > **Garso izleri temizlendi (15 Eyl 2026, Ramazan her adımı denedi):**
 > tarayıcı anahtarları, köprü kimliği ve ayar klasörü, dokümanlar ve hafıza

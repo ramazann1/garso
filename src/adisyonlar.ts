@@ -564,61 +564,30 @@ export async function acikAdisyonSayisi(): Promise<number> {
   return count ?? 0;
 }
 
+/**
+ * Açık masaların özeti sunucuda toplanıyor (`masa_ozetleri`, bkz.
+ * sql/2026-09-15-masa-ozetleri.sql). Bütün kalemleri indirip burada toplamak
+ * kalabalık salonda telefonu saniyelerce bekletiyordu. Okuma düşerse hata
+ * atılıyor: boş liste dönse salon bomboş görünür, garson dolu masaya hesap açar.
+ */
 export async function tumAdisyonlar(): Promise<Record<number, MasaOzeti>> {
-  const { data } = await supabase
-    .from("adisyonlar")
-    .select(
-      `id, masa_id, acilis, indirim, ad, kisi_sayisi, kuver_tutar, garsoniye_tutar,
-       acan:personel!adisyonlar_acan_id_fkey (ad),
-       turlar (olusturma, adisyon_kalemleri (adet, fiyat, durum, indirim)),
-       yazdirma_kuyrugu (tip, durum, basilma),
-       tahsilatlar (tutar)`
-    )
-    .eq("durum", "acik");
+  const { data, error } = await supabase.rpc("masa_ozetleri");
+  if (error) throw error;
 
   const sonuc: Record<number, MasaOzeti> = {};
   for (const satir of (data as any[]) ?? []) {
-    let tutar = 0;
-    let adet = 0;
-    // Masanın en son ne zaman sipariş verdiği turların en yenisinden çıkıyor;
-    // masa kartı bunu "durgun masa" rengi için kullanıyor.
-    let sonSiparis: string | undefined;
-    for (const tur of satir.turlar ?? []) {
-      if (tur.olusturma && (!sonSiparis || tur.olusturma > sonSiparis)) {
-        sonSiparis = tur.olusturma;
-      }
-      for (const k of tur.adisyon_kalemleri ?? []) {
-        if (k.durum === "iptal") continue;
-        adet += Number(k.adet);
-        if (k.durum !== "ikram") {
-          tutar += Math.max(0, Number(k.fiyat) * Number(k.adet) - Number(k.indirim ?? 0));
-        }
-      }
-    }
-    // Hesap fişi basıldıktan sonra masaya yeni sipariş girilirse kâğıttaki
-    // tutar tutmuyor; kart işareti o an düşüyor, fiş yeniden istensin.
-    let fisBasilma: string | undefined;
-    for (const f of satir.yazdirma_kuyrugu ?? []) {
-      if (f.tip !== "adisyon" || f.durum !== "basildi" || !f.basilma) continue;
-      if (!fisBasilma || f.basilma > fisBasilma) fisBasilma = f.basilma;
-    }
-    const fisBasildi = !!fisBasilma && (!sonSiparis || fisBasilma > sonSiparis);
-
-    const net = Math.max(0, tutar - Number(satir.indirim ?? 0)) + servisToplami(satir);
-    const odenen = (satir.tahsilatlar ?? []).reduce(
-      (t: number, o: any) => t + Number(o.tutar),
-      0
-    );
+    const tutar = Number(satir.tutar);
+    const odenen = Number(satir.odenen);
     sonuc[satir.masa_id] = {
       id: satir.id,
-      tutar: net,
+      tutar,
       odenen,
-      kalan: Math.max(0, net - odenen),
-      adet,
+      kalan: Math.max(0, Math.round((tutar - odenen) * 100) / 100),
+      adet: Number(satir.adet),
       acilis: satir.acilis,
-      sonSiparis,
-      fisBasildi,
-      garson: satir.acan?.ad ? kisaAd(satir.acan.ad) : undefined,
+      sonSiparis: satir.son_siparis ?? undefined,
+      fisBasildi: satir.fis_basildi,
+      garson: satir.garson ? kisaAd(satir.garson) : undefined,
       ad: satir.ad ?? undefined,
       kisiSayisi: satir.kisi_sayisi ?? undefined,
     };

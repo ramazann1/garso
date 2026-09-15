@@ -1,4 +1,4 @@
-import { useState } from "react";
+import { useEffect, useState } from "react";
 import { Check, CircleCheckBig, Delete, HandCoins, Percent, Save, Split, X } from "lucide-react";
 import { OdemeIkon } from "../odemeIkon";
 import IndirimModal from "./IndirimModal";
@@ -67,6 +67,11 @@ type Props = {
 
 export default function TahsilatPanel({ kalemler, toplam, araToplam, indirim, servis, kdvSatirlari, kayitliTahsilatlar, musteri, onKaydet, onSil, onIndirimDegis, onKalemIndirim, onKapat, onOdendi }: Props) {
   const [tahsilatlar, setTahsilatlar] = useState<Tahsilat[]>(kayitliTahsilatlar ?? []);
+  // Mobil ödemeyi alındığı anda kaydediyor; kayıttan dönen kimlikler buraya
+  // gelmezse pencere ödemeyi kaydedilmemiş sanıp sebep sormadan siliyordu.
+  useEffect(() => {
+    setTahsilatlar(kayitliTahsilatlar ?? []);
+  }, [kayitliTahsilatlar]);
   const [girilen, setGirilen] = useState("");
   const [secilen, setSecilen] = useState<Record<number, number>>({});
   const odemeTipleri = useTanim<OdemeTipi[]>(ODEME_TIPI_ANAHTAR, odemeTipleriniGetir, []);

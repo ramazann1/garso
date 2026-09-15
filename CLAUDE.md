@@ -67,8 +67,10 @@ kurallar iki yüzeyde birebir aynı sonucu vermelidir.
 
 - **Silik yazı yasak.** Hiçbir ekranda düşük kontrastlı gri metin olmaz.
   İkincil metin bile okunur tondadır (`--soluk`), gövde yazısı 14px'in,
-  başlık 17px'in altına inmez. 12px altı punto kullanılmaz. Mobilde yazılar
-  kart genişliğine göre küçülebilir, taban orada 11px.
+  başlık 17px'in altına inmez. 12px altı punto kullanılmaz (masaüstü). Mobilde
+  alt sınır yok: yazılar kart genişliğine göre küçülür, telefonun masaüstü
+  gibi ferah olması beklenmez (Ramazan kararı, 15 Eyl 2026). Mobilde de yazı
+  koyu tonda kalır — küçük olabilir, silik olamaz.
 - **Yazı tipi Poppins** (`@fontsource/poppins`, pakete gömülü — kasa
   çevrimdışıyken de doğru görünsün diye internetten çekilmiyor).
 - **Vurgu rengi mercan** (`--mercan`). Pastel veya çok renkli paletler ana
