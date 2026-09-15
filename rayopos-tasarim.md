@@ -3,14 +3,26 @@
 
 ## 0. SIRADAKİ İŞ (15 Eyl 2026 güncellendi)
 
-> **Sıra (15 Eyl 2026 akşam seans sonu):**
-> 1. **Canlıya çıkış** — `rayopos.com.tr` alındı (önce WHOIS'te kaydın düştüğüne
->    bak), barındırma (Vercel/Netlify/Cloudflare; alan adı firmasının paketi
->    değil), güvenlik başlıkları, iPhone simge doğrulaması; ufak ufak. Önce
->    `rayopos-magazaya-cikis-kurallari` hafıza notunu oku. Canlıda telefonda
->    hız yeniden ölçülür (geliştirme sunucusunun ilk girişteki ~5 sn'si ve
->    StrictMode'un çift isteği canlıda yok).
+> **Sıra (15 Eyl 2026 gece seans sonu):**
+> 1. **Canlıya çıkış** — plan Ramazan'a anlatıldı, **onay bekliyor**:
+>    (1) `npm.cmd run build` denemesi, (2) `public/_headers` güvenlik başlıkları
+>    (önce koddaki bütün bağlantı adresleri taranır — `yerelYazdirma.ts`'teki
+>    `http://127.0.0.1` dahil; canlıda Chrome'un yerel ağ izni sorusuna bak),
+>    (3) barındırma önerisi **Cloudflare Pages** (ücretsizde ticari kullanım
+>    serbest, trafik sınırı yok; Vercel Hobby ticari kullanıma kapalı; DNS ve
+>    Turnstile aynı hesapta) — Ramazan henüz onaylamadı, (4) hesap + GitHub
+>    bağlantısı + `VITE_SUPABASE_URL`/`VITE_SUPABASE_KEY` Ramazan girer,
+>    (5) geçici `*.pages.dev` adreste telefonda hız, giriş, iPhone simgesi,
+>    (6) alan adı onaylanınca bağlanır. `BrowserRouter` kullanılıyor — sunucuda
+>    SPA yönlendirmesi gerekli. Önce `rayopos-magazaya-cikis-kurallari` notu.
+>    **Alan adı durumu:** 15 Eyl'de WHOIS'te kayıt yoktu. Turhost'ta başvuru
+>    "Belge Bekleniyor" (TRABIS kullanım amacı beyanı istedi). Şirket adına
+>    alındı; Ramazan dilekçe ve belgeleri gönderdi, cevap bekleniyor. Seans
+>    başında Ramazan'a sonucu sor / WHOIS'e bak.
 > 2. Sonra aşağıdaki liste kaldığı yerden (Analiz'in kalan sekmeleri…).
+>
+> **Satıştan önce (not):** şirketin faaliyet kodlarında yazılım yok — ürün
+> başka işletmelere satılmadan önce muhasebeciyle yazılım faaliyet kodu eklenir.
 >
 > **Yapılanlar (15 Eyl 2026 akşam, Ramazan denedi):**
 > - **Mobil yoğun görünüm.** Mobilde punto alt sınırı kalktı (CLAUDE.md'ye

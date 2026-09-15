@@ -5,4 +5,4 @@
  * Elle değiştirilmiyor — `npm.cmd run surum` bütün dosyalardaki numarayı
  * birlikte artırıyor.
  */
-export const RAYOPOS_SURUM = "1.3.30";
+export const RAYOPOS_SURUM = "1.3.31";
