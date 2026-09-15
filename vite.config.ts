@@ -8,6 +8,13 @@ export default defineConfig({
   // Telefonla denemek için sunucu yerel ağa açılıyor: bilgisayarın wifi
   // adresine (örn. https://192.168.1.69:5173) aynı ağdaki cihazdan girilebiliyor.
   server: { host: true },
+  // Vite varsayılanı iOS 16.4: güncellenmemiş iPhone'da (iPhone 11'de görüldü)
+  // Safari kodu anlamayıp bembeyaz sayfa gösteriyordu. Alt sınır iOS 15.4 —
+  // dvh ve :has ondan geliyor; iPhone 6s ve sonrası bu sürümü alabiliyor.
+  build: {
+    target: ['safari15.4', 'ios15.4', 'chrome100', 'edge100', 'firefox100'],
+    cssTarget: ['safari15.4', 'ios15.4', 'chrome100', 'edge100', 'firefox100'],
+  },
   plugins: [
     react(),
     // Geliştirme sunucusu HTTPS. Tarayıcılar bazı özellikleri yalnız güvenli

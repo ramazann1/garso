@@ -32,7 +32,15 @@
 > **Karar (16 Eyl 2026, Ramazan):** satışa geçilene kadar kayıt kapalı.
 > Giriş ekranındaki "Hesap oluştur" kaldırıldı (`Kayit.tsx` duruyor, bağlı
 > değil); `isletme_kur` çağırma izni `sql/2026-09-16-kayit-kapat.sql` ile
-> kapatıldı. Satışa geçerken: düğme geri bağlanır, izin `anon`'a geri verilir.
+> kapatılacak — **SQL henüz çalıştırılmadı** (16 Eyl Supabase arızası,
+> panele girilemedi); seans başında Ramazan'a çalıştırt. Satışa geçerken: düğme geri bağlanır, izin `anon`'a geri verilir.
+>
+> **Karar (16 Eyl 2026, Ramazan):** en eski desteklenen iPhone **iOS 15.4**
+> (iPhone 6s ve sonrası). Güncellenmemiş iPhone 11'de beyaz sayfa çıktı;
+> Vite hedefi `vite.config.ts`'te 15.4'e çekildi. Kural: CSS'te iOS 15.4'ten
+> yeni özellik (cqi, @container, nesting dışı yenilikler) kullanılırsa önüne
+> sabit yedek satır yazılır. Android'de Chrome Play Store'dan güncellendiği
+> için sorun beklenmiyor. Personelin eski telefonunda denenecek.
 >
 > **Satıştan önce (not):** şirketin faaliyet kodlarında yazılım yok — ürün
 > başka işletmelere satılmadan önce muhasebeciyle yazılım faaliyet kodu eklenir.

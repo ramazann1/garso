@@ -13396,7 +13396,11 @@ body {
   color: var(--metin);
 }
 
+/* cqi iOS 16'dan önce yok; her cqi satırının önündeki sabit değer eski
+   Safari'nin yedeği, yenisi onu cqi ile eziyor. */
 .m-masa-fis svg {
+  width: 15px;
+  height: 15px;
   width: min(17cqi, 15px);
   height: min(17cqi, 15px);
 }
@@ -13413,7 +13417,9 @@ body {
   white-space: nowrap;
   text-overflow: ellipsis;
   /* Fiş ikonu sağ köşede duruyorsa ad onun altına girmesin. */
+  padding-right: 18px;
   padding-right: 18cqi;
+  font-size: 13px;
   font-size: min(14.4cqi, 13px);
   font-weight: 500;
   color: var(--soluk);
@@ -13428,6 +13434,7 @@ body {
   display: inline-flex;
   align-items: center;
   gap: 2px;
+  font-size: 12.5px;
   font-size: min(13.9cqi, 12.5px);
   font-weight: 600;
   color: var(--soluk);
@@ -14644,6 +14651,7 @@ body {
   overflow: hidden;
   white-space: nowrap;
   text-overflow: ellipsis;
+  font-size: 15px;
   font-size: min(17cqi, 16px);
   font-weight: 600;
 }
@@ -14674,6 +14682,7 @@ body {
    genişliğini hane sayısına bölüp küçülüyor. */
 .m-masa-tutar {
   white-space: nowrap;
+  font-size: 15px;
   font-size: min(calc(100cqi / (var(--hane, 7) * 0.58)), 19cqi, 17px);
   font-weight: 600;
   letter-spacing: -0.4px;
@@ -14695,6 +14704,7 @@ body {
   gap: 4px;
   overflow: hidden;
   white-space: nowrap;
+  font-size: 12.5px;
   font-size: min(13.9cqi, 12.5px);
   font-weight: 500;
   color: var(--soluk);
@@ -14721,6 +14731,7 @@ body {
 .m-masa .m-masa-kilit {
   max-width: 100%;
   overflow-wrap: anywhere;
+  font-size: 13px;
   font-size: min(14cqi, 14px);
 }
 
@@ -15052,12 +15063,14 @@ body {
 }
 
 .m-urun-ad {
+  font-size: 14px;
   font-size: min(14.5cqi, 15px);
   font-weight: 600;
   overflow-wrap: anywhere;
 }
 
 .m-urun-fiyat {
+  font-size: 13.5px;
   font-size: min(13.5cqi, 14.5px);
   font-weight: 500;
   color: var(--metin);
