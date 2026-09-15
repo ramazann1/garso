@@ -4,6 +4,10 @@
 ## 0. SIRADAKİ İŞ (15 Eyl 2026 güncellendi)
 
 > **Sıra (15 Eyl 2026 seans sonu):**
+> 0. **Önce kontrol:** GitHub deposu adı `rayopos` yapıldı mı (`git remote -v`
+>    iki satırda `ramazann1/rayopos` göstermeli), oturum `Desktop\rayopos`'ta mı
+>    açıldı. Hafıza klasörü `C--Users-Ramazan-Desktop-rayopos` olarak kopyalandı;
+>    her şey yerindeyse eski `C--Users-Ramazan-Desktop-garso` silinir.
 > 1. **Mobilde ekrana göre ölçekleme — kalan ekranlar.** Masa kartı bitti;
 >    sipariş ekranındaki ürün kartları ve alt şerit aynı yöntemle (cqi, taban
 >    11px). Mobilin Adisyo'dan ayrışması için kategori şeridi fikri çizildi,
@@ -19,8 +23,9 @@
 > `@garso.app` → `@rayopos.com.tr`: `sql/2026-09-15-giris-adresi.sql`
 > `hesap_epostasi`'nı yeniden tanımladı, `auth.users` ve `auth.identities`'teki
 > `%@garso.app` adreslerini taşıdı (gerçek e-postalara dokunmadı); kod tarafı
-> `src/oturum.ts` ve `kopru/src/ayar.js`. GitHub deposu `ramazann1/rayopos`,
-> proje klasörü `Desktop\rayopos` oldu.
+> `src/oturum.ts` ve `kopru/src/ayar.js`. GitHub deposu `ramazann1/rayopos`
+> ve proje klasörü `Desktop\rayopos` adını Ramazan elle değiştirdi (Claude'un
+> güvenlik denetimi depo adını, açık oturum klasör adını engelledi).
 >
 > **Yapılanlar (15 Eyl 2026):** Ürün adı Garso → RayoPOS değişti, Ramazan
 > denedi ve onayladı (köprü yeni kurulumla eskisinin üstüne kuruldu, giriş
