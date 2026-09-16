@@ -707,7 +707,7 @@ export async function adisyonIptal(adisyonId: number, sebep: string) {
       guncelleme: new Date().toISOString(),
     })
     .eq("id", adisyonId);
-  if (error) throw new Error("Adisyon iptal edilemedi.");
+  if (error) throw new Error(error.message || "Adisyon iptal edilemedi.");
 
   await denetimYaz([{ islem: "adisyon_iptal", adisyonId, yer, tutar, sebep }]);
 
@@ -767,19 +767,20 @@ export async function adisyonIkram(
   const turIdler = ((turlar as any[]) ?? []).map((t) => t.id);
   if (turIdler.length) {
     // İptal edilmiş kalemler olduğu gibi kalıyor: iptal ikramdan başka bir şey.
-    await supabase
+    // Kalem güncellemesi sessiz geçerse adisyon kapanır ama ürünler normal
+    // kalır: hesap kapanmış görünür, ciro yanlış çıkar. Hata varsa burada durulur.
+    const { error: kalemHatasi } = await supabase
       .from("adisyon_kalemleri")
       .update({
         durum: "ikram",
         indirim: 0,
         indirim_tanim_id: null,
         indirim_ad: null,
-        // Kalemler de aynı kişiye yazılıyor: ödenmez dökümü kalem kalem
-        // toplandığı için hepsinin üstünde bilgi durmalı.
         odenmez_id: odenmezId ?? null,
       })
       .in("tur_id", turIdler)
       .eq("durum", "normal");
+    if (kalemHatasi) throw new Error(kalemHatasi.message || "Adisyon ikram edilemedi.");
   }
 
   const { error } = await supabase
@@ -800,7 +801,7 @@ export async function adisyonIkram(
       guncelleme: new Date().toISOString(),
     })
     .eq("id", adisyonId);
-  if (error) throw new Error("Adisyon ikram edilemedi.");
+  if (error) throw new Error(error.message || "Adisyon ikram edilemedi.");
 
   const adlar = await odenmezAdlariniGetir(odenmezId ? [odenmezId] : []);
 
