@@ -1896,7 +1896,10 @@ body {
     overflow-y: auto;
   }
 
-  .th-sutun { overflow: visible; }
+  /* Tek sütunlu ızgarada sütun, en geniş içeriğinden (bahşiş düğmeleri gibi)
+     daha dar olamıyordu; pencere ekranı aşıp sağa taşıyordu. */
+  .th-sutun { overflow: visible; min-width: 0; }
+  .th-sutunlar > * { min-width: 0; }
   /* Numpadi sütunun dibine iten kural masaüstü içindi; alt alta dizilince
      tuş takımıyla ödeme tipleri arasında boşluk bırakıyor. */
   .th-orta { justify-content: flex-start; }
@@ -2007,14 +2010,19 @@ body {
     font-size: 13.5px;
   }
   .th-modal .th-bahsis-serit span { min-width: 0; }
+  /* Uzun düğme yazısı ("Nakit ile tahsil et") yan yana sığmıyor: telefonda
+     ikisi alt alta, tam genişlikte. */
   .th-modal .th-bahsis-aksiyon {
-    flex-wrap: wrap;
+    flex-direction: column;
     gap: 6px;
   }
   .th-modal .th-bahsis-aksiyon .th-eylem {
     min-width: 0;
-    flex: 1 1 130px;
+    width: 100%;
+    flex: 0 0 auto;
+    justify-content: center;
     text-align: center;
+    overflow-wrap: anywhere;
   }
 }
 
