@@ -43,22 +43,38 @@ export async function rolYetkileriniGetir(): Promise<Set<string>> {
   return new Set(((data as any[]) ?? []).map((r) => `${r.rol_id}-${r.yetki_id}`));
 }
 
-// Matris tek Kaydet ile yazılıyor: eski satırlar silinip yenileri basılıyor.
-// Satır sayısı birkaç yüzü geçmediği için tek tek karşılaştırmaya değmiyor.
+// Matris kaydedilirken yalnız değişen satırlara dokunuluyor. Önce hepsini
+// silip yeniden yazmak kendi kendini vuruyordu: veritabanı her silinen satırda
+// "bu kişinin yetki düzenleme yetkisi var mı" diye sorduğu için, kaydeden
+// kişinin kendi yetkisi silindiği anda işlem duruyor ve hiçbir şey kaydedilmiyordu.
 export async function rolYetkileriniKaydet(secili: Set<string>) {
-  const satirlar = [...secili].map((anahtar) => {
+  const kayitli = await rolYetkileriniGetir();
+
+  const eklenecek = [...secili]
+    .filter((anahtar) => !kayitli.has(anahtar))
+    .map((anahtar) => {
+      const [rolId, yetkiId] = anahtar.split("-");
+      return { rol_id: Number(rolId), yetki_id: Number(yetkiId) };
+    });
+
+  const silinecek = [...kayitli].filter((anahtar) => !secili.has(anahtar));
+
+  if (eklenecek.length) {
+    // Sunucunun kendi mesajı ekrana çıkıyor: "… yetkiniz yok" gibi cevaplar
+    // genel bir cümlenin altında kaybolmasın.
+    const { error } = await supabase.from("rol_yetkileri").insert(eklenecek);
+    if (error) throw new Error(error.message || "Yetkiler kaydedilemedi.");
+  }
+
+  for (const anahtar of silinecek) {
     const [rolId, yetkiId] = anahtar.split("-");
-    return { rol_id: Number(rolId), yetki_id: Number(yetkiId) };
-  });
-
-  // Sunucunun kendi mesajı ekrana çıkıyor: "… yetkiniz yok" gibi cevaplar
-  // genel bir cümlenin altında kaybolmasın.
-  const { error: silHatasi } = await supabase.from("rol_yetkileri").delete().gt("rol_id", 0);
-  if (silHatasi) throw new Error(silHatasi.message || "Yetkiler kaydedilemedi.");
-  if (satirlar.length === 0) return;
-
-  const { error } = await supabase.from("rol_yetkileri").insert(satirlar);
-  if (error) throw new Error(error.message || "Yetkiler kaydedilemedi.");
+    const { error } = await supabase
+      .from("rol_yetkileri")
+      .delete()
+      .eq("rol_id", Number(rolId))
+      .eq("yetki_id", Number(yetkiId));
+    if (error) throw new Error(error.message || "Yetkiler kaydedilemedi.");
+  }
 }
 
 export async function kisiYetkileriniGetir(personelId: number) {
@@ -97,14 +113,31 @@ export async function kisiYetkileriniKaydet(
       izin: durum === "verildi",
     }));
 
-  const { error: silHatasi } = await supabase
-    .from("personel_yetkileri")
-    .delete()
-    .eq("personel_id", personelId);
-  if (silHatasi) throw new Error(silHatasi.message || "Kişiye özel yetkiler kaydedilemedi.");
-  if (satirlar.length === 0) return;
+  // Rol matrisindeki kural burada da geçerli: kendi istisnasını düzenleyen
+  // kişi, satırları toptan silinirken kendi yetkisini kaybedip işlemi
+  // durduruyordu. Yalnız değişen satıra dokunuluyor.
+  const kayitli = await kisiYetkileriniGetir(personelId);
+  const hedef = new Map(satirlar.map((s) => [s.yetki_id, s.izin]));
 
-  const { error } = await supabase.from("personel_yetkileri").insert(satirlar);
+  const eklenecek = satirlar.filter(
+    (s) => kayitli.get(s.yetki_id) !== (s.izin ? "verildi" : "kaldirildi")
+  );
+  const silinecek = [...kayitli.keys()].filter(
+    (yetkiId) => hedef.get(yetkiId) === undefined || eklenecek.some((e) => e.yetki_id === yetkiId)
+  );
+
+  for (const yetkiId of silinecek) {
+    const { error } = await supabase
+      .from("personel_yetkileri")
+      .delete()
+      .eq("personel_id", personelId)
+      .eq("yetki_id", yetkiId);
+    if (error) throw new Error(error.message || "Kişiye özel yetkiler kaydedilemedi.");
+  }
+
+  if (eklenecek.length === 0) return;
+
+  const { error } = await supabase.from("personel_yetkileri").insert(eklenecek);
   if (error) throw new Error(error.message || "Kişiye özel yetkiler kaydedilemedi.");
 }
 
