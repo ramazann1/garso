@@ -30,7 +30,7 @@ import MasaPlani, { yerlesimiVar } from "../components/MasaPlani";
 import OnayModal from "../components/OnayModal";
 import HizliOde from "../components/HizliOde";
 import SiparisGecmisi from "../components/SiparisGecmisi";
-import { useTanim, useTanimEtkisi } from "../tanimAbonelik";
+import { useTanimEtkisi } from "../tanimAbonelik";
 import MasasizSiparis from "../components/MasasizSiparis";
 import Kasa from "../components/Kasa";
 import { yetkiVar } from "../oturum";

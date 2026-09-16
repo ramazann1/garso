@@ -46,7 +46,7 @@ import { hesapKopyasiSil, kopyaSaati } from "../hesapKopyasi";
 import { baglantiHatasi, baglantiVar, sureSinirli, useBaglanti } from "../baglanti";
 import { useCanli } from "../canli";
 import { devralabilir, masayiDevral, useMesguliyetler } from "../mesguliyet";
-import { useTanim, useTanimEtkisi } from "../tanimAbonelik";
+import { useTanimEtkisi } from "../tanimAbonelik";
 import { paraGoster } from "../para";
 import type { Bolge, Masa } from "../types";
 
