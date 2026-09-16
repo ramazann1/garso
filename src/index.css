@@ -1992,6 +1992,30 @@ body {
   }
   .th-modal .odeme-tip-ikon { flex-shrink: 0; width: 24px; height: 24px; }
   .th-modal .odeme-tip-ikon svg { width: 15px; height: 15px; }
+
+  /* Bahşiş sekmesi telefonda taşıyordu: düğmeler ve şerit yazıları kendi
+     en dar hâllerinden küçülmediği için satır ekrandan dışarı çıkıyordu. */
+  .th-modal .th-bahsis { gap: clamp(8px, 1.4dvh, 14px); }
+  .th-modal .th-bahsis-not { padding: 10px 12px; font-size: 13.5px; }
+  .th-modal .th-bahsis-alan input {
+    padding: 10px 12px;
+    font-size: clamp(18px, 3.2dvh, 24px);
+  }
+  .th-modal .th-bahsis-serit {
+    flex-wrap: wrap;
+    padding: 8px 12px;
+    font-size: 13.5px;
+  }
+  .th-modal .th-bahsis-serit span { min-width: 0; }
+  .th-modal .th-bahsis-aksiyon {
+    flex-wrap: wrap;
+    gap: 6px;
+  }
+  .th-modal .th-bahsis-aksiyon .th-eylem {
+    min-width: 0;
+    flex: 1 1 130px;
+    text-align: center;
+  }
 }
 
 .numpad-ekran {
