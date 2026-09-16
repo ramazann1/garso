@@ -176,12 +176,27 @@ export function fisIcerigi(
   const listelenecek =
     !mutfak && p.urun_birlestir !== false ? kalemleriTopla(satilanlar, secenekliYaz) : satilanlar;
 
-  for (const k of listelenecek) {
+  // İkram edilen ürün hesap fişinde de görünüyor: müşteri masaya ne geldiğini
+  // fişte görmeli, ikram olduğu tutar yerine yazıyor. Toplamlara girmiyor —
+  // hesabın kendisi `satilanlar` üzerinden çıkıyor.
+  const ikramlar =
+    mutfak || iptal
+      ? []
+      : (kalemler ?? adisyon.sepet).filter((k) => k.durum === "ikram");
+  const ikramListesi =
+    p.urun_birlestir !== false ? kalemleriTopla(ikramlar, secenekliYaz) : ikramlar;
+
+  const kalemYaz = (k: SepetKalemi, ikramMi: boolean) => {
     const ad = `${adetGoster(k.adet)} x ${k.ad}${!mutfak && p.urun_birimleri && k.porsiyon ? ` (${k.porsiyon})` : ""}`;
     const fiyatli = !mutfak || p.urun_fiyatlari;
     s.push(
       fiyatli
-        ? { t: "ikiUc", sol: ad, sag: paraGoster(kalemTutari(k)), alan: "urun_listesi" }
+        ? {
+            t: "ikiUc",
+            sol: ad,
+            sag: ikramMi ? "İkram" : paraGoster(kalemTutari(k)),
+            alan: "urun_listesi",
+          }
         : { t: "sol", m: ad, alan: "urun_listesi" }
     );
     // Ürün altı satırların başındaki nokta, satırın üstteki ürüne ait olduğunu
@@ -190,7 +205,10 @@ export function fisIcerigi(
       if (k.secimler?.length) s.push({ t: "ic", m: `• ${k.secimler.join(", ")}`, alan: "secenek" });
       if (k.not) s.push({ t: "ic", m: `• Not: ${k.not}`, alan: "secenek" });
     }
-  }
+  };
+
+  for (const k of listelenecek) kalemYaz(k, false);
+  for (const k of ikramListesi) kalemYaz(k, true);
 
   s.push({ t: "cizgi" });
 
