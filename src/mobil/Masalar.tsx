@@ -46,7 +46,6 @@ import { hesapKopyasiSil, kopyaSaati } from "../hesapKopyasi";
 import { baglantiHatasi, baglantiVar, sureSinirli, useBaglanti } from "../baglanti";
 import { useCanli } from "../canli";
 import { devralabilir, masayiDevral, useMesguliyetler } from "../mesguliyet";
-import { ODENMEZ_ANAHTAR, odenmezleriGetir, type Odenmez } from "../odenmezler";
 import { useTanim, useTanimEtkisi } from "../tanimAbonelik";
 import { paraGoster } from "../para";
 import type { Bolge, Masa } from "../types";
@@ -130,7 +129,6 @@ export default function MobilMasalar() {
   const [ikramSorusu, setIkramSorusu] = useState<{ masa: Masa; adisyonId: number } | null>(null);
   // İkramın kime yazıldığı soruluyor; liste ekran açılırken bir kez okunuyor.
   // Liste sunucuda değişince ekran kendiliğinden yeniliyor.
-  const odenmezler = useTanim<Odenmez[]>(ODENMEZ_ANAHTAR, odenmezleriGetir, []);
   const [uyari, setUyari] = useState<string | null>(null);
   const [, setTik] = useState(0);
 
@@ -638,13 +636,12 @@ export default function MobilMasalar() {
           ikon={<Gift size={20} />}
           mesaj={`*${ikramSorusu.masa.ad}* masasındaki ürünlerin tamamı ikrama çevrilecek, hesap sıfırlanıp kapanacak. Sebebi nedir?`}
           sebepler={IKRAM_SEBEPLERI}
-          odenmezler={odenmezler}
           onayMetni="Evet, ikram et"
-          onOnay={async (sebep, odenmezId) => {
+          onOnay={async (sebep) => {
             const { adisyonId } = ikramSorusu;
             setIkramSorusu(null);
             try {
-              await adisyonIkram(adisyonId, sebep, odenmezId);
+              await adisyonIkram(adisyonId, sebep);
               await oku();
             } catch (e) {
               setUyari(e instanceof Error ? e.message : "Adisyon ikram edilemedi.");

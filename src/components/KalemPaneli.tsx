@@ -8,8 +8,6 @@ import { kalemTutari, tumAdisyonlar, yeniKalemId } from "../adisyonlar";
 import { bolgeleriGetir } from "../masalar";
 import { adetGoster, paraGoster, paraMetin, paraSayi, paraYaz } from "../para";
 import { indirimYapabilir, yetkiVar } from "../oturum";
-import { ODENMEZ_ANAHTAR, odenmezleriGetir, type Odenmez } from "../odenmezler";
-import { useTanim } from "../tanimAbonelik";
 import type { Bolge, MenuUrun, SepetKalemi } from "../types";
 
 type Props = {
@@ -35,10 +33,14 @@ const IPTAL_SEBEPLERI = [
   "Hatalı hazırlandı",
 ];
 
+// İkram da iptal gibi sebebiyle kaydediliyor: denetim defterinde "neden
+// verildi" yazıyor.
+const IKRAM_SEBEPLERI = ["İşletme ikramı", "Müşteri şikâyeti", "Tanıtım"];
+
 /**
  * Kalemin durumunu değiştiren işler pencereyi kip değiştirerek yürüyor:
  * ikram, iptal ve taşıma için pencerenin üstüne ikinci bir pencere açmıyoruz.
- * Kaç adedin işleme gireceği, sebep ve kime yazılacağı hep aynı yüzeyde
+ * Kaç adedin işleme gireceği ve sebebi hep aynı yüzeyde
  * soruluyor; kullanıcı tek "geri" ile düzenlemeye dönüyor.
  */
 type Kip = "ikram" | "iptal" | "tasi";
@@ -65,14 +67,10 @@ export default function KalemPaneli({
   const [notMetni, setNotMetni] = useState(kalem.not ?? "");
   const [kip, setKip] = useState<Kip | null>(null);
   const [indirimAcik, setIndirimAcik] = useState(false);
-  // Liste sunucuda değişince ekran kendiliğinden yeniliyor.
-  const odenmezler = useTanim<Odenmez[]>(ODENMEZ_ANAHTAR, odenmezleriGetir, []);
-
-  // Kipin kendi soruları: kaç adet işleme girecek, sebebi ne, kime yazılacak.
+  // Kipin kendi soruları: kaç adet işleme girecek, sebebi ne.
   const [kipAdet, setKipAdet] = useState(kalem.adet);
   const [sebep, setSebep] = useState("");
   const [serbestSebep, setSerbestSebep] = useState("");
-  const [odenmezId, setOdenmezId] = useState<number | null>(null);
 
   const [masaSecimAcik, setMasaSecimAcik] = useState(false);
   const [bolgeler, setBolgeler] = useState<Bolge[]>([]);
@@ -93,7 +91,6 @@ export default function KalemPaneli({
     setKipAdet(adet);
     setSebep("");
     setSerbestSebep("");
-    setOdenmezId(null);
     setKip(yeni);
   };
 
@@ -106,8 +103,7 @@ export default function KalemPaneli({
   const kaydet = (
     durum: SepetKalemi["durum"],
     islemAdedi = adet,
-    kipSebep?: string,
-    kipOdenmezId?: number | null
+    kipSebep?: string
   ) => {
     const temel = {
       ...kalem,
@@ -116,8 +112,7 @@ export default function KalemPaneli({
       porsiyon,
       not: notMetni.trim() || undefined,
       sebep: kipSebep,
-      // İkramdan çıkan kalem kimseye yazılı kalmasın.
-      odenmezId: durum === "ikram" ? (kipOdenmezId ?? null) : null,
+      odenmezId: null,
     };
 
     // "2 salebin biri ikram": adet satırın tamamından azsa satır ikiye ayrılır —
@@ -157,14 +152,14 @@ export default function KalemPaneli({
         : null;
 
   const kipSebebi = sebep === "diger" ? serbestSebep.trim() : sebep;
-  const kipOnaylanabilir = kip !== "iptal" || !!kipSebebi;
+  const kipOnaylanabilir = kip === "tasi" || !!kipSebebi;
 
   const kipOnayla = () => {
     if (kip === "tasi") {
       setMasaSecimAcik(true);
       return;
     }
-    if (kip === "ikram") kaydet("ikram", kipAdet, undefined, odenmezId);
+    if (kip === "ikram") kaydet("ikram", kipAdet, kipSebebi);
     if (kip === "iptal") kaydet("iptal", kipAdet, kipSebebi);
   };
 
@@ -257,11 +252,11 @@ export default function KalemPaneli({
               </div>
             )}
 
-            {kip === "iptal" && (
+            {(kip === "iptal" || kip === "ikram") && (
               <div className="kp-blok">
                 <label>Sebebi nedir?</label>
                 <div className="kp-secenekler">
-                  {IPTAL_SEBEPLERI.map((s) => (
+                  {(kip === "ikram" ? IKRAM_SEBEPLERI : IPTAL_SEBEPLERI).map((s) => (
                     <button
                       key={s}
                       className={sebep === s ? "kp-secenek secili" : "kp-secenek"}
@@ -287,29 +282,6 @@ export default function KalemPaneli({
                     onChange={(e) => setSerbestSebep(e.target.value)}
                   />
                 )}
-              </div>
-            )}
-
-            {kip === "ikram" && odenmezler.length > 0 && (
-              <div className="kp-blok">
-                <label>Kime yazılsın?</label>
-                <div className="kp-secenekler">
-                  {odenmezler.map((o) => (
-                    <button
-                      key={o.id}
-                      className={odenmezId === o.id ? "kp-secenek secili" : "kp-secenek"}
-                      onClick={() => setOdenmezId(o.id)}
-                    >
-                      {o.ad}
-                    </button>
-                  ))}
-                  <button
-                    className={odenmezId === null ? "kp-secenek secili" : "kp-secenek"}
-                    onClick={() => setOdenmezId(null)}
-                  >
-                    Belirtilmesin
-                  </button>
-                </div>
               </div>
             )}
 

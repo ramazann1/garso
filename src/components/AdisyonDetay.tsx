@@ -15,8 +15,6 @@ import OdemeTipDuzelt from "./OdemeTipDuzelt";
 import { adetGoster, paraGoster } from "../para";
 import { yetkiVar } from "../oturum";
 import { adisyonIkram, adisyonIptal } from "../adisyonlar";
-import { ODENMEZ_ANAHTAR, odenmezleriGetir, type Odenmez } from "../odenmezler";
-import { useTanim } from "../tanimAbonelik";
 import {
   adisyonAktifEt,
   adisyonDetayi,
@@ -64,8 +62,6 @@ export default function AdisyonDetay({
   const [islem, setIslem] = useState<"iptal" | "ikram" | null>(null);
   const [duzeltilen, setDuzeltilen] = useState<Detay["tahsilatlar"][number] | null>(null);
   const [hata, setHata] = useState("");
-  // Liste sunucuda değişince ekran kendiliğinden yeniliyor.
-  const odenmezler = useTanim<Odenmez[]>(ODENMEZ_ANAHTAR, odenmezleriGetir, []);
   const navigate = useNavigate();
 
   useEffect(() => {
@@ -332,13 +328,12 @@ export default function AdisyonDetay({
               : ["İşletme ikramı", "Müşteri şikâyeti", "Tanıtım"]
           }
           onayMetni={islem === "iptal" ? "Evet, iptal et" : "Evet, ikram et"}
-          odenmezler={islem === "ikram" ? odenmezler : undefined}
-          onOnay={async (sebep, odenmezId) => {
+          onOnay={async (sebep) => {
             const tip = islem;
             setIslem(null);
             try {
               if (tip === "iptal") await adisyonIptal(detay.id, sebep ?? "");
-              else await adisyonIkram(detay.id, sebep, odenmezId);
+              else await adisyonIkram(detay.id, sebep);
               setDetay(await adisyonDetayi(adisyonId));
               onDegisti?.();
             } catch (e) {

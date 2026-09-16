@@ -30,7 +30,6 @@ import MasaPlani, { yerlesimiVar } from "../components/MasaPlani";
 import OnayModal from "../components/OnayModal";
 import HizliOde from "../components/HizliOde";
 import SiparisGecmisi from "../components/SiparisGecmisi";
-import { ODENMEZ_ANAHTAR, odenmezleriGetir, type Odenmez } from "../odenmezler";
 import { useTanim, useTanimEtkisi } from "../tanimAbonelik";
 import MasasizSiparis from "../components/MasasizSiparis";
 import Kasa from "../components/Kasa";
@@ -184,7 +183,6 @@ export default function Salon() {
   const [uyari, setUyari] = useState<string | null>(null);
   // İkram penceresindeki "kime yazılsın" listesi; ekran açılırken bir kez okunuyor.
   // Liste sunucuda değişince ekran kendiliğinden yeniliyor.
-  const odenmezler = useTanim<Odenmez[]>(ODENMEZ_ANAHTAR, odenmezleriGetir, []);
   // Adisyonun tamamına iptal/ikram: ikisi de sebep sorduğu için ayrı pencere.
   const [adisyonIslem, setAdisyonIslem] = useState<
     { tip: "iptal" | "ikram"; masa: Masa; adisyonId: number } | null
@@ -890,13 +888,12 @@ export default function Salon() {
             }
             onayMetni={adisyonIslem.tip === "iptal" ? "Evet, iptal et" : "Evet, ikram et"}
             // İkramda kime yazıldığı da soruluyor; iptalde böyle bir şey yok.
-            odenmezler={adisyonIslem.tip === "ikram" ? odenmezler : undefined}
-            onOnay={async (sebep, odenmezId) => {
+            onOnay={async (sebep) => {
               const { tip, adisyonId } = adisyonIslem;
               setAdisyonIslem(null);
               try {
                 if (tip === "iptal") await adisyonIptal(adisyonId, sebep ?? "");
-                else await adisyonIkram(adisyonId, sebep, odenmezId);
+                else await adisyonIkram(adisyonId, sebep);
                 await yenile();
               } catch (e) {
                 setUyari(e instanceof Error ? e.message : "İşlem tamamlanamadı.");
