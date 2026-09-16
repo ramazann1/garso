@@ -51,12 +51,14 @@ export async function rolYetkileriniKaydet(secili: Set<string>) {
     return { rol_id: Number(rolId), yetki_id: Number(yetkiId) };
   });
 
+  // Sunucunun kendi mesajı ekrana çıkıyor: "… yetkiniz yok" gibi cevaplar
+  // genel bir cümlenin altında kaybolmasın.
   const { error: silHatasi } = await supabase.from("rol_yetkileri").delete().gt("rol_id", 0);
-  if (silHatasi) throw new Error("Yetkiler kaydedilemedi.");
+  if (silHatasi) throw new Error(silHatasi.message || "Yetkiler kaydedilemedi.");
   if (satirlar.length === 0) return;
 
   const { error } = await supabase.from("rol_yetkileri").insert(satirlar);
-  if (error) throw new Error("Yetkiler kaydedilemedi.");
+  if (error) throw new Error(error.message || "Yetkiler kaydedilemedi.");
 }
 
 export async function kisiYetkileriniGetir(personelId: number) {
@@ -99,11 +101,11 @@ export async function kisiYetkileriniKaydet(
     .from("personel_yetkileri")
     .delete()
     .eq("personel_id", personelId);
-  if (silHatasi) throw new Error("Kişiye özel yetkiler kaydedilemedi.");
+  if (silHatasi) throw new Error(silHatasi.message || "Kişiye özel yetkiler kaydedilemedi.");
   if (satirlar.length === 0) return;
 
   const { error } = await supabase.from("personel_yetkileri").insert(satirlar);
-  if (error) throw new Error("Kişiye özel yetkiler kaydedilemedi.");
+  if (error) throw new Error(error.message || "Kişiye özel yetkiler kaydedilemedi.");
 }
 
 /**

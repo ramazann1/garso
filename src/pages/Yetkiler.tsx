@@ -4,6 +4,7 @@ import { Check, KeyRound, Lock, ShieldCheck, UserRound, X } from "lucide-react";
 import AyarBasligi from "../components/AyarBasligi";
 import AramaKutusu from "../components/AramaKutusu";
 import Bildirim from "../components/Bildirim";
+import OnayModal from "../components/OnayModal";
 import Bilgi from "../components/Bilgi";
 import { kilitKaldir, kilitKur } from "../cikisKilidi";
 import { eslesiyor } from "../arama";
@@ -128,6 +129,9 @@ export default function YetkilerEkrani() {
   const [degisti, setDegisti] = useState(false);
   const [kisiPaneli, setKisiPaneli] = useState<Personel | null>(null);
   const [bildirim, setBildirim] = useState("");
+  // Kaydetme reddedilirse sessiz kalmıyor: sunucunun kendi mesajı gösteriliyor,
+  // hangi yetkinin eksik olduğu ekrandan okunuyor.
+  const [hata, setHata] = useState("");
   const [ara, setAra] = useState("");
 
   // İki bölüm aynı veriyi kullanıyor; ayrı sayfa yapmak yerine yol hangisiyse
@@ -178,7 +182,12 @@ export default function YetkilerEkrani() {
   };
 
   const matrisiKaydet = async () => {
-    await rolYetkileriniKaydet(rolKumesi);
+    try {
+      await rolYetkileriniKaydet(rolKumesi);
+    } catch (e) {
+      setHata(e instanceof Error ? e.message : "Yetkiler kaydedilemedi.");
+      return;
+    }
     kayitliKume.current = new Set(rolKumesi);
     setDegisti(false);
     setBildirim("Yetkiler kaydedildi");
@@ -192,7 +201,12 @@ export default function YetkilerEkrani() {
 
   const kisiKaydet = async (durumlar: Map<number, KisiDurumu>) => {
     if (!kisiPaneli) return;
-    await kisiYetkileriniKaydet(kisiPaneli.id, durumlar);
+    try {
+      await kisiYetkileriniKaydet(kisiPaneli.id, durumlar);
+    } catch (e) {
+      setHata(e instanceof Error ? e.message : "Kişiye özel yetkiler kaydedilemedi.");
+      return;
+    }
     setKisiPaneli(null);
     setIstisnalar(await istisnaSayilari());
     setBildirim("Kişiye özel yetkiler kaydedildi");
@@ -340,6 +354,8 @@ export default function YetkilerEkrani() {
       )}
 
       {bildirim && <Bildirim mesaj={bildirim} onKapat={() => setBildirim("")} />}
+
+      {hata && <OnayModal mesaj={hata} tekTus onKapat={() => setHata("")} />}
     </>
   );
 }
