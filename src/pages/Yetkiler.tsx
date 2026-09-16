@@ -182,8 +182,14 @@ export default function YetkilerEkrani() {
   };
 
   const matrisiKaydet = async () => {
+    // Yönetici sütunu ekranda kilitli çiziliyor ama kümede yeri yok; kayda
+    // eklenmezse "sil, yeniden yaz" adımında bu rolün bütün yetkileri silinir
+    // ve işletmeci sunucu tarafında yetkisiz kalırdı.
+    const yazilacak = new Set(rolKumesi);
+    if (yoneticiId) for (const y of yetkiler) yazilacak.add(`${yoneticiId}-${y.id}`);
+
     try {
-      await rolYetkileriniKaydet(rolKumesi);
+      await rolYetkileriniKaydet(yazilacak);
     } catch (e) {
       setHata(e instanceof Error ? e.message : "Yetkiler kaydedilemedi.");
       return;
